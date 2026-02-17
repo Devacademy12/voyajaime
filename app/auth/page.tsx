@@ -1,22 +1,13 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-// ✅ CORRECTION : importer 'supabase' directement (nom réel de l'export)
 import { createClient } from '@/lib/supabaseClient'
-
-// ─── SVG Icons ───────────────────────────────────────────────────────────────
 
 function LogoIcon({ size = 32 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 32 32" fill="none">
-      <path
-        d="M16 28C16 28 4 19.5 4 11.5C4 7.91 6.91 5 10.5 5C12.5 5 14.3 5.97 16 7.5C17.7 5.97 19.5 5 21.5 5C25.09 5 28 7.91 28 11.5C28 19.5 16 28 16 28Z"
-        fill="var(--teal)"
-      />
-      <path
-        d="M16 13L14.5 10H12L15 14.5L11 14V16L15.5 15.5L16 19L16.5 15.5L21 16V14L17 14.5L20 10H17.5L16 13Z"
-        fill="white"
-      />
+      <path d="M16 28C16 28 4 19.5 4 11.5C4 7.91 6.91 5 10.5 5C12.5 5 14.3 5.97 16 7.5C17.7 5.97 19.5 5 21.5 5C25.09 5 28 7.91 28 11.5C28 19.5 16 28 16 28Z" fill="var(--teal)"/>
+      <path d="M16 13L14.5 10H12L15 14.5L11 14V16L15.5 15.5L16 19L16.5 15.5L21 16V14L17 14.5L20 10H17.5L16 13Z" fill="white"/>
     </svg>
   )
 }
@@ -56,12 +47,10 @@ function EyeIcon({ show }: { show: boolean }) {
   )
 }
 
-// ─── Background ───────────────────────────────────────────────────────────────
-
 function Background() {
   return (
     <div className="fixed inset-0 z-0">
-      <div style={{ position: 'absolute', inset: 0, background: `linear-gradient(to bottom, #C8DDE8 0%, #D5E6EE 20%, #E8EEF0 45%, #F0EEEA 70%, #E8E4DE 100%)` }} />
+      <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, #C8DDE8 0%, #D5E6EE 20%, #E8EEF0 45%, #F0EEEA 70%, #E8E4DE 100%)' }} />
       <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '45%', background: 'linear-gradient(to bottom, #B8D0DF 0%, transparent 100%)' }} />
       <svg style={{ position: 'absolute', bottom: 0, left: 0, right: 0, width: '100%', height: '80%' }} viewBox="0 0 1440 600" preserveAspectRatio="xMidYMax slice" fill="none">
         <rect x="0" y="180" width="220" height="420" fill="#F5F3F0" rx="4"/>
@@ -94,10 +83,13 @@ function Background() {
   )
 }
 
-// ─── Main Auth Page ───────────────────────────────────────────────────────────
-
 export default function AuthPage() {
-  // ✅ Utiliser 'supabase' directement (pas createClient())
+
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // ✅ FIX — cette ligne était ABSENTE
+  const supabase = createClient()
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
   const [mode, setMode] = useState<'login' | 'register'>('login')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -121,7 +113,6 @@ export default function AuthPage() {
     setLoading(true)
     setError(null)
     setSuccess(null)
-
     try {
       if (mode === 'login') {
         const { error } = await supabase.auth.signInWithPassword({ email, password })
@@ -131,12 +122,10 @@ export default function AuthPage() {
         const { error } = await supabase.auth.signUp({
           email,
           password,
-          options: {
-            emailRedirectTo: `${window.location.origin}/api/auth/callback`,
-          },
+          options: { emailRedirectTo: `${window.location.origin}/api/auth/callback` },
         })
         if (error) throw error
-        setSuccess('Vérifiez votre email pour confirmer votre inscription!')
+        setSuccess('✅ Vérifiez votre email pour confirmer votre inscription !')
       }
     } catch (err: any) {
       const messages: Record<string, string> = {
@@ -154,26 +143,20 @@ export default function AuthPage() {
   const handleOAuth = async (provider: 'google' | 'facebook') => {
     setOauthLoading(provider)
     setError(null)
-
     try {
       const { error } = await supabase.auth.signInWithOAuth({
         provider,
-        options: {
-          redirectTo: `${window.location.origin}/api/auth/callback`,
-        },
+        options: { redirectTo: `${window.location.origin}/api/auth/callback` },
       })
       if (error) throw error
     } catch (err: any) {
-      setError("Impossible de se connecter via " + (provider === 'google' ? 'Google' : 'Facebook') + ".")
+      setError(`Impossible de se connecter via ${provider === 'google' ? 'Google' : 'Facebook'}.`)
       setOauthLoading(null)
     }
   }
 
   const handleForgotPassword = async () => {
-    if (!email) {
-      setError('Entrez votre email pour réinitialiser le mot de passe.')
-      return
-    }
+    if (!email) { setError('Entrez votre email pour réinitialiser le mot de passe.'); return }
     setLoading(true)
     setError(null)
     try {
@@ -181,8 +164,8 @@ export default function AuthPage() {
         redirectTo: `${window.location.origin}/api/auth/callback?next=/reset-password`,
       })
       if (error) throw error
-      setSuccess('Email de réinitialisation envoyé!')
-    } catch (err: any) {
+      setSuccess('Email de réinitialisation envoyé !')
+    } catch {
       setError("Impossible d'envoyer l'email de réinitialisation.")
     } finally {
       setLoading(false)
@@ -193,17 +176,14 @@ export default function AuthPage() {
     <main style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', padding: '20px' }}>
       <Background />
 
-      {/* Logo top-left */}
       <div style={{ position: 'fixed', top: '20px', left: '24px', zIndex: 10 }}
         className={`animate-fade-in ${mounted ? '' : 'opacity-0'}`}>
         <LogoIcon size={36} />
       </div>
 
-      {/* Auth Card */}
       <div className="glass-card animate-slide-up"
         style={{ width: '100%', maxWidth: '400px', borderRadius: '24px', padding: '36px 32px 32px', position: 'relative', zIndex: 5 }}>
 
-        {/* Card Logo + Title */}
         <div className="animate-fade-in delay-100" style={{ marginBottom: '28px' }}>
           <LogoIcon size={40} />
           <h1 style={{ marginTop: '14px', fontSize: '22px', fontWeight: 700, color: '#111827', letterSpacing: '-0.02em' }}>
@@ -214,19 +194,17 @@ export default function AuthPage() {
           </p>
         </div>
 
-        {/* Error / Success */}
         {error && (
-          <div style={{ marginBottom: '16px', padding: '12px 14px', background: 'rgba(254, 226, 226, 0.8)', border: '1px solid rgba(252, 165, 165, 0.5)', borderRadius: '10px', fontSize: '13px', color: '#DC2626' }}>
+          <div style={{ marginBottom: '16px', padding: '12px 14px', background: 'rgba(254,226,226,0.8)', border: '1px solid rgba(252,165,165,0.5)', borderRadius: '10px', fontSize: '13px', color: '#DC2626' }}>
             {error}
           </div>
         )}
         {success && (
-          <div style={{ marginBottom: '16px', padding: '12px 14px', background: 'rgba(209, 250, 229, 0.8)', border: '1px solid rgba(110, 231, 183, 0.5)', borderRadius: '10px', fontSize: '13px', color: '#059669' }}>
+          <div style={{ marginBottom: '16px', padding: '12px 14px', background: 'rgba(209,250,229,0.8)', border: '1px solid rgba(110,231,183,0.5)', borderRadius: '10px', fontSize: '13px', color: '#059669' }}>
             {success}
           </div>
         )}
 
-        {/* Form */}
         <form onSubmit={handleEmailAuth}>
           <div className="animate-fade-in delay-200" style={{ marginBottom: '12px' }}>
             <input type="email" className="auth-input" placeholder="Email" value={email}
@@ -247,18 +225,16 @@ export default function AuthPage() {
           {mode === 'login' && (
             <div className="animate-fade-in delay-300" style={{ marginBottom: '16px', textAlign: 'right' }}>
               <button type="button" onClick={handleForgotPassword}
-                style={{ background: 'none', border: 'none', fontSize: '13px', color: 'var(--teal)', cursor: 'pointer', fontFamily: 'var(--font-outfit), sans-serif', padding: '4px 0' }}>
+                style={{ background: 'none', border: 'none', fontSize: '13px', color: 'var(--teal)', cursor: 'pointer', fontFamily: 'inherit', padding: '4px 0' }}>
                 Mot de passe oublié ?
               </button>
             </div>
           )}
 
-          {/* Divider */}
           <div className="animate-fade-in delay-400" style={{ margin: '16px 0' }}>
             <div className="divider">ou continuer avec</div>
           </div>
 
-          {/* OAuth Buttons */}
           <div className="animate-fade-in delay-400" style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '16px' }}>
             <button type="button" className="oauth-btn" onClick={() => handleOAuth('google')} disabled={!!oauthLoading}>
               {oauthLoading === 'google' ? <div className="spinner" style={{ borderColor: 'rgba(0,0,0,0.15)', borderTopColor: '#374151' }} /> : <GoogleIcon />}
@@ -270,13 +246,12 @@ export default function AuthPage() {
             </button>
           </div>
 
-          {/* Submit */}
           <div className="animate-fade-in delay-500">
             <button type="submit" className="cta-btn" disabled={loading}>
               {loading ? (
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
                   <div className="spinner" />
-                  <span>Connexion...</span>
+                  <span>{mode === 'login' ? 'Connexion...' : 'Inscription...'}</span>
                 </div>
               ) : (
                 mode === 'login' ? 'Se connecter' : "S'inscrire"
@@ -285,19 +260,17 @@ export default function AuthPage() {
           </div>
         </form>
 
-        {/* Toggle mode */}
         <div className="animate-fade-in delay-600"
           style={{ marginTop: '20px', textAlign: 'center', fontSize: '14px', color: '#6B7280' }}>
-          {mode === 'login' ? "Pas encore de compte ? " : "Déjà un compte ? "}
+          {mode === 'login' ? 'Pas encore de compte ? ' : 'Déjà un compte ? '}
           <button type="button"
-            onClick={() => { setMode(mode === 'login' ? 'register' : 'login'); setError(null); setSuccess(null); }}
-            style={{ background: 'none', border: 'none', color: 'var(--teal)', fontWeight: 600, cursor: 'pointer', fontFamily: 'var(--font-outfit), sans-serif', fontSize: '14px' }}>
+            onClick={() => { setMode(mode === 'login' ? 'register' : 'login'); setError(null); setSuccess(null) }}
+            style={{ background: 'none', border: 'none', color: 'var(--teal)', fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', fontSize: '14px' }}>
             {mode === 'login' ? "S'inscrire" : 'Se connecter'}
           </button>
         </div>
       </div>
 
-      {/* Sparkle */}
       <div style={{ position: 'fixed', bottom: '20px', right: '20px', zIndex: 2, opacity: 0.4 }}>
         <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
           <path d="M14 0L15.5 12.5L28 14L15.5 15.5L14 28L12.5 15.5L0 14L12.5 12.5L14 0Z" fill="white"/>
