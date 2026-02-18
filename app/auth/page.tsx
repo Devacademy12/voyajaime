@@ -117,12 +117,12 @@ export default function AuthPage() {
       if (mode === 'login') {
         const { error } = await supabase.auth.signInWithPassword({ email, password })
         if (error) throw error
-        window.location.href = '/dashboard'
+        window.location.href = '/admin'
       } else {
         const { error } = await supabase.auth.signUp({
           email,
           password,
-          options: { emailRedirectTo: `${window.location.origin}/api/auth/callback` },
+          options: { emailRedirectTo: `${window.location.origin}/admin` },
         })
         if (error) throw error
         setSuccess('✅ Vérifiez votre email pour confirmer votre inscription !')
@@ -146,7 +146,7 @@ export default function AuthPage() {
     try {
       const { error } = await supabase.auth.signInWithOAuth({
         provider,
-        options: { redirectTo: `${window.location.origin}/api/auth/callback` },
+        options: { redirectTo: `${window.location.origin}/admin` },
       })
       if (error) throw error
     } catch (err: any) {

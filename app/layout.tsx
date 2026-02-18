@@ -10,8 +10,8 @@ const outfit = Outfit({
 })
 
 export const metadata: Metadata = {
-  title: 'TravelLove — Connexion',
-  description: 'Connectez-vous à votre compte TravelLove',
+  title: 'Voyajaime ',
+  description: 'Connectez-vous à votre compte voyajaime',
 }
 
 export default function RootLayout({
