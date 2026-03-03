@@ -61,7 +61,8 @@ export default function FavorisClient({ favoris: init, userId }: { favoris: Favo
           const exc = f.excursion;
           if (!exc) return null;
           return (
-            <div key={f.id} style={{ background: "white", borderRadius: 20, overflow: "hidden", border: "1px solid #F3F4F6", transition: "all 0.25s", boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}
+            <div key={f.id} style={{ background: "white", borderRadius: 20, overflow: "hidden", border: "1px solid #F3F4F6", transition: "all 0.25s", boxShadow: "0 2px 8px rgba(0,0,0,0.04)", cursor: "pointer" }}
+              onClick={() => window.location.href = `/excursions/${exc.id}`}
               onMouseEnter={e => { const el = e.currentTarget as HTMLDivElement; el.style.transform = "translateY(-4px)"; el.style.boxShadow = "0 12px 36px rgba(0,0,0,0.1)"; }}
               onMouseLeave={e => { const el = e.currentTarget as HTMLDivElement; el.style.transform = "none"; el.style.boxShadow = "0 2px 8px rgba(0,0,0,0.04)"; }}
             >
@@ -72,7 +73,7 @@ export default function FavorisClient({ favoris: init, userId }: { favoris: Favo
                   alt={exc.title}
                   style={{ width: "100%", height: "100%", objectFit: "cover" }}
                 />
-                <button onClick={() => handleRemove(f.id)} disabled={removing === f.id}
+                <button onClick={e => { e.stopPropagation(); handleRemove(f.id); }} disabled={removing === f.id}
                   style={{ position: "absolute", top: 12, right: 12, width: 36, height: 36, borderRadius: "50%", background: "white", border: "none", cursor: "pointer", fontSize: 18, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 2px 8px rgba(0,0,0,0.15)", transition: "transform 0.2s" }}
                   title="Retirer des favoris"
                   onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.transform = "scale(1.15)"}
@@ -103,13 +104,15 @@ export default function FavorisClient({ favoris: init, userId }: { favoris: Favo
                   <span style={{ fontSize: 12, color: "#6B7280" }}>⏱️ {exc.duration_hours}h</span>
                   {exc.rating > 0 && <span style={{ fontSize: 12, color: "#6B7280" }}>⭐ {exc.rating} ({exc.reviews_count})</span>}
                 </div>
-                <div style={{ display: "flex", gap: 8 }}>
-                  <Link href="/touriste/itineraire" style={{ flex: 1, display: "flex", justifyContent: "center", padding: "9px 0", background: "#F9FAFB", color: "#374151", borderRadius: 10, textDecoration: "none", fontSize: 13, fontWeight: 600, border: "1px solid #E5E7EB", transition: "background 0.2s" }}>
-                    + Ajouter au plan
+                <div style={{ display: "flex", gap: 8 }} onClick={e => e.stopPropagation()}>
+                  <Link href={`/excursions/${exc.id}`}
+                    style={{ flex: 1, display: "flex", justifyContent: "center", padding: "9px 0", background: "#F9FAFB", color: "#374151", borderRadius: 10, textDecoration: "none", fontSize: 13, fontWeight: 600, border: "1px solid #E5E7EB", transition: "background 0.2s" }}>
+                    👁️ Voir le détail
                   </Link>
-                  <button style={{ flex: 1, padding: "9px 0", background: "#2B96A8", color: "white", borderRadius: 10, border: "none", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "'DM Sans', sans-serif" }}>
-                    Réserver
-                  </button>
+                  <Link href={`/excursions/${exc.id}#reserver`}
+                    style={{ flex: 1, display: "flex", justifyContent: "center", padding: "9px 0", background: "#2B96A8", color: "white", borderRadius: 10, textDecoration: "none", fontSize: 13, fontWeight: 700 }}>
+                    🗓️ Réserver
+                  </Link>
                 </div>
               </div>
             </div>

@@ -14,7 +14,7 @@ interface Excursion {
 interface Prestataire {
   user_id: string; full_name: string; agency_name: string | null;
   avatar_url: string | null; city: string | null;
-  description: string | null; phone: string | null;
+  description: string | null;
 }
 interface Avis {
   id: string; rating: number; comment: string; created_at: string;
@@ -591,13 +591,7 @@ export default function ExcursionClient({
               </div>
             )}
 
-            {/* Coordonnées */}
-            {prestataire.phone && (
-              <div style={{ display:"flex",justifyContent:"space-between",alignItems:"center",fontSize:13,padding:"10px 0",borderBottom:"1px solid #F9FAFB",marginBottom:10 }}>
-                <span style={{ color:"#6B7280" }}>📞 Téléphone</span>
-                <span style={{ fontWeight:700,color:"#111827" }}>{prestataire.phone}</span>
-              </div>
-            )}
+
 
             <button onClick={() => setShowPrestataire(false)}
               style={{ width:"100%",padding:"13px",background:"#111827",color:"white",border:"none",borderRadius:14,fontSize:14,fontWeight:800,cursor:"pointer",fontFamily:"'DM Sans',sans-serif",marginTop:8 }}>
