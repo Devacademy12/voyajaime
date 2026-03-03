@@ -1,6 +1,6 @@
 import { createServerSupabaseClient } from "@/lib/supabaseServer";
 import { redirect } from "next/navigation";
-import Sidebar from "@/components/shared/Sidebar";
+import Sidebar from "../components/shared/Sidebar";
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createServerSupabaseClient();

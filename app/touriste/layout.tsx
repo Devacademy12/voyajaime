@@ -1,6 +1,6 @@
 import { createServerSupabaseClient } from "@/lib/supabaseServer";
 import { redirect } from "next/navigation";
-import TouristeNav from "@/components/touriste/TouristeNav";
+import TouristeNav from "../components/touriste/TouristeNav";
 
 export default async function TouristeLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createServerSupabaseClient();

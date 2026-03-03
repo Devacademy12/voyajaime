@@ -1,6 +1,6 @@
 import { createServerSupabaseClient } from "@/lib/supabaseServer";
 import { redirect } from "next/navigation";
-import Sidebar from "@/components/shared/Sidebar";
+import Sidebar from "../components/shared/Sidebar";
 import ValidationPending from "./ValidationPending";
 
 export default async function PrestataireLayout({
