@@ -1,0 +1,29 @@
+import { createServerSupabaseClient } from "@/lib/supabaseServer";
+import FavorisClient from "./FavorisClient";
+import Link from "next/link";
+
+export default async function TouristeFavoris() {
+  const supabase = await createServerSupabaseClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  const { data: favoris } = await supabase
+    .from("favoris")
+    .select("id, excursion:excursions(id,title,city,price_per_person,duration_hours,rating,reviews_count,photos,categories)")
+    .eq("touriste_id", user!.id)
+    .order("created_at", { ascending: false });
+
+  return (
+    <div>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 36 }}>
+        <div>
+          <p style={{ fontSize: 12, fontWeight: 700, letterSpacing: 2, color: "#2B96A8", textTransform: "uppercase", marginBottom: 8 }}>MON ESPACE</p>
+          <h1 style={{ fontSize: 32, fontWeight: 900, color: "#111827", letterSpacing: "-0.5px" }}>Mes favoris ❤️</h1>
+        </div>
+        <Link href="/excursions" style={{ padding: "11px 22px", background: "#2B96A8", color: "white", borderRadius: 12, textDecoration: "none", fontSize: 14, fontWeight: 700, boxShadow: "0 4px 14px rgba(43,150,168,0.3)" }}>
+          + Découvrir plus
+        </Link>
+      </div>
+      <FavorisClient favoris={(favoris || []) as Parameters<typeof FavorisClient>[0]["favoris"]} userId={user!.id} />
+    </div>
+  );
+}
