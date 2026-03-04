@@ -17,6 +17,7 @@ const NAV: Record<Role, NavItem[]> = {
     { label: "Mon itinéraire", href: "/touriste/itineraire", icon: "🗺️" },
     { label: "Mes réservations", href: "/touriste/reservations", icon: "📅" },
     { label: "Mes favoris", href: "/touriste/favoris", icon: "❤️" },
+    { label: "Messages", href: "/touriste/messages", icon: "💬" },
   ],
   prestataire: [
     { label: "Dashboard", href: "/prestataire/dashboard", icon: "📊" },
@@ -24,6 +25,7 @@ const NAV: Record<Role, NavItem[]> = {
     { label: "Réservations", href: "/prestataire/reservations", icon: "📅" },
     { label: "Paiements", href: "/prestataire/paiements", icon: "💰" },
     { label: "Avis clients", href: "/prestataire/avis", icon: "⭐" },
+    { label: "Messages", href: "/prestataire/messages", icon: "💬" },
     { label: "Mon profil", href: "/prestataire/profil", icon: "👤" },
   ],
   admin: [
@@ -33,7 +35,6 @@ const NAV: Record<Role, NavItem[]> = {
     { label: "Réservations", href: "/admin/reservations", icon: "📅" },
     { label: "Paiements", href: "/admin/paiements", icon: "💰" },
     { label: "Avis & Modération", href: "/admin/avis", icon: "🛡️" },
-    { label: "Catalogues & Villes", href: "/admin/catalogue", icon: "🗂️" },
   ],
 };
 
@@ -51,8 +52,8 @@ interface SidebarProps {
 
 export default function Sidebar({ role, userName, userEmail }: SidebarProps) {
   const supabase = createClient();
+  const pathname = usePathname(); // ✅ Remplace window.location.pathname
   const items = NAV[role];
-  const currentPath = usePathname();
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
@@ -79,7 +80,7 @@ export default function Sidebar({ role, userName, userEmail }: SidebarProps) {
           <a
             key={item.href}
             href={item.href}
-            className={`sidebar-link ${currentPath === item.href ? "active" : ""}`}
+            className={`sidebar-link ${pathname === item.href ? "active" : ""}`}
           >
             <span style={{ fontSize: "16px", width: "20px", textAlign: "center" }}>{item.icon}</span>
             <span>{item.label}</span>

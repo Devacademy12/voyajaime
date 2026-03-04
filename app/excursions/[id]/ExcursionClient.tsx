@@ -153,7 +153,7 @@ export default function ExcursionClient({
       await supabase.from("messages").insert({ conversation_id: convId, expediteur_id: user.id, contenu: msgText.trim(), lu: false });
       setMsgSent(true);
       setMsgText("");
-      setTimeout(() => { setShowMsgModal(false); setMsgSent(false); window.location.href = "/touriste/messages"; }, 1800);
+      setTimeout(() => { setShowMsgModal(false); setMsgSent(false); }, 2200);
     }
     setMsgSending(false);
   };

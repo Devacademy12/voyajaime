@@ -1,15 +1,16 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { createClient } from "@/lib/supabaseClient";
 
 export default function TouristeNav({ userName, favCount = 0 }: { userName?: string; favCount?: number }) {
+  const [unreadMsg, setUnreadMsg] = useState(0);
   const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
-  const supabase = createClient();
+  const supabase = useMemo(() => createClient(), []);
 
   useEffect(() => {
     const fn = () => setScrolled(window.scrollY > 10);
@@ -17,16 +18,34 @@ export default function TouristeNav({ userName, favCount = 0 }: { userName?: str
     return () => window.removeEventListener("scroll", fn);
   }, []);
 
+  useEffect(() => {
+    supabase.auth.getUser().then(async ({ data: { user } }) => {
+      if (!user) return;
+      const { data: convs } = await supabase
+        .from("conversations")
+        .select("messages(lu, expediteur_id)")
+        .eq("touriste_id", user.id);
+      if (convs) {
+        const total = (convs as Record<string, unknown>[]).reduce((s, c) => {
+          const msgs = (c.messages as { lu: boolean; expediteur_id: string }[]) || [];
+          return s + msgs.filter(m => !m.lu && m.expediteur_id !== user.id).length;
+        }, 0);
+        setUnreadMsg(total);
+      }
+    });
+  }, [supabase]);
+
   const handleSignOut = async () => {
     await supabase.auth.signOut();
     window.location.href = "/";
   };
 
   const links = [
-    { href: "/excursions",           icon: "🏔️", label: "Excursions" },
-    { href: "/touriste/itineraire",  icon: "🗺️", label: "Itinéraire" },
-    { href: "/touriste/favoris",     icon: "❤️",  label: favCount > 0 ? `Favoris (${favCount})` : "Favoris" },
-    { href: "/touriste/reservations",icon: "📅",  label: "Réservations" },
+    { href: "/excursions",            icon: "🏔️", label: "Excursions",  badge: 0 },
+    { href: "/touriste/messages",     icon: "msg", label: "Messages",    badge: unreadMsg },
+    { href: "/touriste/itineraire",   icon: "🗺️", label: "Itinéraire",  badge: 0 },
+    { href: "/touriste/favoris",      icon: "❤️",  label: favCount > 0 ? `Favoris (${favCount})` : "Favoris", badge: 0 },
+    { href: "/touriste/reservations", icon: "📅",  label: "Réservations", badge: 0 },
   ];
 
   const isActive = (href: string) => pathname === href || pathname.startsWith(href + "/");
@@ -76,9 +95,17 @@ export default function TouristeNav({ userName, favCount = 0 }: { userName?: str
         <nav style={{ display: "flex", alignItems: "center", gap: 2, flex: 1, justifyContent: "center" }}>
           {links.map(l => (
             <Link key={l.href} href={l.href} className={`tlink ${isActive(l.href) ? "on" : ""}`}
-              style={{ color: isActive(l.href) ? "#2B96A8" : "#374151" }}>
-              <span style={{ fontSize: 15 }}>{l.icon}</span>
+              style={{ color: isActive(l.href) ? "#2B96A8" : "#374151", position: "relative" }}>
+              {l.icon === "msg"
+                ? <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                : <span style={{ fontSize: 15 }}>{l.icon}</span>
+              }
               {l.label}
+              {(l.badge ?? 0) > 0 && (
+                <span style={{ position: "absolute", top: 2, right: 2, minWidth: 16, height: 16, background: "#EF4444", color: "white", borderRadius: 8, fontSize: 9, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center", padding: "0 3px", border: "1.5px solid white" }}>
+                  {(l.badge ?? 0) > 9 ? "9+" : l.badge}
+                </span>
+              )}
             </Link>
           ))}
         </nav>
@@ -110,6 +137,10 @@ export default function TouristeNav({ userName, favCount = 0 }: { userName?: str
                 <Link href="/touriste/favoris" className="ddi" onClick={() => setMenuOpen(false)}>❤️ Mes favoris {favCount > 0 && <span style={{ marginLeft: "auto", background: "#FEF2F2", color: "#DC2626", padding: "1px 7px", borderRadius: 10, fontSize: 11, fontWeight: 700 }}>{favCount}</span>}</Link>
                 <Link href="/touriste/reservations" className="ddi" onClick={() => setMenuOpen(false)}>📅 Mes réservations</Link>
                 <Link href="/touriste/itineraire" className="ddi" onClick={() => setMenuOpen(false)}>🗺️ Mon itinéraire</Link>
+                <Link href="/touriste/messages" className="ddi" onClick={() => setMenuOpen(false)}>
+                  💬 Mes messages
+                  {unreadMsg > 0 && <span style={{ marginLeft: "auto", background: "#FEF2F2", color: "#EF4444", padding: "1px 7px", borderRadius: 10, fontSize: 11, fontWeight: 700 }}>{unreadMsg}</span>}
+                </Link>
                 <Link href="/excursions" className="ddi" onClick={() => setMenuOpen(false)}>🏔️ Toutes les excursions</Link>
 
                 <div style={{ borderTop: "1px solid #F3F4F6", marginTop: 4, paddingTop: 4 }}>
