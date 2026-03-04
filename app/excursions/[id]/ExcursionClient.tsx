@@ -14,7 +14,7 @@ interface Excursion {
 interface Prestataire {
   user_id: string; full_name: string; agency_name: string | null;
   avatar_url: string | null; city: string | null;
-  description: string | null;
+  description: string | null; phone: string | null;
 }
 interface Avis {
   id: string; rating: number; comment: string; created_at: string;
@@ -34,7 +34,7 @@ export default function ExcursionClient({
   const supabase = createClient();
   const [avis, setAvis] = useState(initialAvis);
   const [likedIds, setLikedIds] = useState<Set<string>>(new Set(myLikedIds));
-  const [user, setUser] = useState<{ id: string } | null>(null);
+  const [user, setUser] = useState<{ id: string; full_name: string } | null>(null);
   const [isFav, setIsFav] = useState(false);
   const [favId, setFavId] = useState<string | null>(null);
   const [currentPhoto, setCurrentPhoto] = useState(0);
@@ -49,16 +49,23 @@ export default function ExcursionClient({
   const [avisError, setAvisError] = useState<string | null>(null);
   const [alreadyReviewed, setAlreadyReviewed] = useState(false);
 
+  // Message
+  const [showMsgModal, setShowMsgModal] = useState(false);
+  const [msgText,      setMsgText]      = useState("");
+  const [msgSending,   setMsgSending]   = useState(false);
+  const [msgSent,      setMsgSent]      = useState(false);
+
   // Checkout
   const [showCheckout, setShowCheckout] = useState(false);
   const [people, setPeople] = useState(1);
   const [date, setDate] = useState("");
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => {
+    supabase.auth.getUser().then(async ({ data }) => {
       if (!data.user) return;
       const uid = data.user.id;
-      setUser({ id: uid });
+      const { data: profile } = await supabase.from("profiles").select("full_name").eq("user_id", uid).single();
+      setUser({ id: uid, full_name: profile?.full_name || data.user.email?.split("@")[0] || "Touriste" });
       supabase.from("favoris").select("id").eq("touriste_id", uid).eq("excursion_id", exc.id)
         .maybeSingle().then(({ data: fav }) => { if (fav) { setIsFav(true); setFavId(fav.id); } });
       supabase.from("avis").select("id").eq("touriste_id", uid).eq("excursion_id", exc.id)
@@ -122,6 +129,33 @@ export default function ExcursionClient({
     setAvisLoading(false);
     if (error) { setAvisError(error.code === "23505" ? "Vous avez déjà soumis un avis." : error.message); return; }
     setAvisSuccess(true); setAlreadyReviewed(true);
+  };
+
+  // ── ENVOYER MESSAGE ──
+  const sendMessage = async () => {
+    if (!user) { sessionStorage.setItem("redirect_after_login", `/excursions/${exc.id}`); window.location.href = "/auth"; return; }
+    if (!msgText.trim() || !prestataire || msgSending) return;
+    setMsgSending(true);
+    const { data: existing } = await supabase.from("conversations")
+      .select("id").eq("touriste_id", user.id).eq("prestataire_id", exc.prestataire_id).eq("excursion_id", exc.id).maybeSingle();
+    let convId = existing?.id;
+    if (!convId) {
+      const { data: newConv } = await supabase.from("conversations").insert({
+        touriste_id:      user.id,
+        prestataire_id:   exc.prestataire_id,
+        excursion_id:     exc.id,
+        touriste_name:    user.full_name,
+        prestataire_name: prestataire.agency_name || prestataire.full_name,
+      }).select().single();
+      convId = newConv?.id;
+    }
+    if (convId) {
+      await supabase.from("messages").insert({ conversation_id: convId, expediteur_id: user.id, contenu: msgText.trim(), lu: false });
+      setMsgSent(true);
+      setMsgText("");
+      setTimeout(() => { setShowMsgModal(false); setMsgSent(false); window.location.href = "/touriste/messages"; }, 1800);
+    }
+    setMsgSending(false);
   };
 
   return (
@@ -451,6 +485,17 @@ export default function ExcursionClient({
                 {user ? "🗓️ Réserver maintenant" : "🔒 Connexion pour réserver"}
               </button>
 
+              {/* Bouton Message */}
+              {prestataire && (
+                <button onClick={() => { if(!user){sessionStorage.setItem("redirect_after_login",`/excursions/${exc.id}`);window.location.href="/auth";return;} setShowMsgModal(true); }}
+                  style={{ width:"100%",padding:"13px",background:"white",color:"#2B96A8",border:"2px solid #B2E3EB",borderRadius:14,fontSize:14,fontWeight:700,cursor:"pointer",fontFamily:"'DM Sans',sans-serif",transition:"all .2s",marginBottom:10,display:"flex",alignItems:"center",justifyContent:"center",gap:7 }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background="#EFF9FB"; }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background="white"; }}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                  Envoyer un message
+                </button>
+              )}
+
               <button onClick={toggleFav}
                 style={{ width:"100%",padding:"12px",background:isFav?"#FEF2F2":"#F9FAFB",color:isFav?"#DC2626":"#374151",border:`1.5px solid ${isFav?"#FECACA":"#E5E7EB"}`,borderRadius:14,fontSize:14,fontWeight:700,cursor:"pointer",fontFamily:"'DM Sans',sans-serif",transition:"all .2s" }}>
                 {isFav ? "❤️ Retiré des favoris" : "🤍 Ajouter aux favoris"}
@@ -495,6 +540,57 @@ export default function ExcursionClient({
           </div>
         </div>
       </div>
+
+      {/* ── MODAL MESSAGE ── */}
+      {showMsgModal && (
+        <div className="overlay" onClick={e => { if(e.target===e.currentTarget){ setShowMsgModal(false); setMsgSent(false); } }}>
+          <div className="modal fu">
+            {msgSent ? (
+              <div style={{ textAlign:"center",padding:"32px 0" }}>
+                <div style={{ fontSize:52,marginBottom:14 }}>✅</div>
+                <h3 style={{ fontSize:18,fontWeight:800,color:"#111827",marginBottom:8 }}>Message envoyé !</h3>
+                <p style={{ fontSize:14,color:"#6B7280" }}>Redirection vers vos messages...</p>
+              </div>
+            ) : (
+              <>
+                <div style={{ display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:18 }}>
+                  <div>
+                    <h3 style={{ fontFamily:"'Playfair Display',serif",fontSize:20,fontWeight:900,color:"#111827",marginBottom:4 }}>Contacter le guide</h3>
+                    <p style={{ fontSize:13,color:"#9CA3AF" }}>À propos de : {exc.title}</p>
+                  </div>
+                  <button onClick={() => { setShowMsgModal(false); setMsgText(""); }} style={{ background:"#F3F4F6",border:"none",fontSize:16,cursor:"pointer",color:"#9CA3AF",width:30,height:30,borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center" }}>✕</button>
+                </div>
+                {prestataire && (
+                  <div style={{ display:"flex",alignItems:"center",gap:10,padding:"10px 14px",background:"#F9FAFB",borderRadius:12,marginBottom:16 }}>
+                    <div style={{ width:38,height:38,borderRadius:"50%",overflow:"hidden",flexShrink:0,background:"linear-gradient(135deg,#2B96A8,#1e7a8a)",display:"flex",alignItems:"center",justifyContent:"center",color:"white",fontWeight:800,fontSize:14 }}>
+                      {prestataire.avatar_url ? <img src={prestataire.avatar_url} style={{ width:"100%",height:"100%",objectFit:"cover" }} alt="" /> : prestName[0].toUpperCase()}
+                    </div>
+                    <div>
+                      <p style={{ fontSize:13,fontWeight:700,color:"#111827" }}>{prestName}</p>
+                      <p style={{ fontSize:11,color:"#059669",fontWeight:600 }}>✅ Prestataire vérifié</p>
+                    </div>
+                  </div>
+                )}
+                <textarea value={msgText} onChange={e => setMsgText(e.target.value)}
+                  placeholder="Bonjour, j'aimerais avoir plus d'informations..."
+                  style={{ width:"100%",height:110,padding:"12px 14px",border:"1.5px solid #E5E7EB",borderRadius:14,fontSize:14,fontFamily:"'DM Sans',sans-serif",resize:"none",outline:"none",color:"#111827",lineHeight:1.6,transition:"border-color .2s" }}
+                  onFocus={e => e.currentTarget.style.borderColor="#2B96A8"}
+                  onBlur={e => e.currentTarget.style.borderColor="#E5E7EB"} />
+                <div style={{ display:"flex",gap:10,marginTop:14 }}>
+                  <button onClick={() => { setShowMsgModal(false); setMsgText(""); }}
+                    style={{ flex:1,padding:12,border:"1px solid #E5E7EB",borderRadius:12,background:"none",cursor:"pointer",fontSize:14,fontFamily:"'DM Sans',sans-serif",color:"#374151" }}>
+                    Annuler
+                  </button>
+                  <button onClick={sendMessage} disabled={!msgText.trim() || msgSending}
+                    style={{ flex:1,padding:12,border:"none",borderRadius:12,background:msgText.trim()?"#2B96A8":"#E5E7EB",color:msgText.trim()?"white":"#9CA3AF",cursor:msgText.trim()?"pointer":"not-allowed",fontSize:14,fontWeight:700,fontFamily:"'DM Sans',sans-serif",transition:"all .2s",display:"flex",alignItems:"center",justifyContent:"center",gap:7 }}>
+                    {msgSending ? "Envoi..." : <><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg> Envoyer</>}
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* ── MODAL RÉSERVATION ── */}
       {showCheckout && (
@@ -591,7 +687,13 @@ export default function ExcursionClient({
               </div>
             )}
 
-
+            {/* Coordonnées */}
+            {prestataire.phone && (
+              <div style={{ display:"flex",justifyContent:"space-between",alignItems:"center",fontSize:13,padding:"10px 0",borderBottom:"1px solid #F9FAFB",marginBottom:10 }}>
+                <span style={{ color:"#6B7280" }}>📞 Téléphone</span>
+                <span style={{ fontWeight:700,color:"#111827" }}>{prestataire.phone}</span>
+              </div>
+            )}
 
             <button onClick={() => setShowPrestataire(false)}
               style={{ width:"100%",padding:"13px",background:"#111827",color:"white",border:"none",borderRadius:14,fontSize:14,fontWeight:800,cursor:"pointer",fontFamily:"'DM Sans',sans-serif",marginTop:8 }}>
