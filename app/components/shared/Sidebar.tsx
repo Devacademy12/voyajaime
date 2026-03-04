@@ -33,6 +33,7 @@ const NAV: Record<Role, NavItem[]> = {
     { label: "Réservations", href: "/admin/reservations", icon: "📅" },
     { label: "Paiements", href: "/admin/paiements", icon: "💰" },
     { label: "Avis & Modération", href: "/admin/avis", icon: "🛡️" },
+    { label: "Catalogues & Villes", href: "/admin/catalogue", icon: "🗂️" },
   ],
 };
 
@@ -50,8 +51,8 @@ interface SidebarProps {
 
 export default function Sidebar({ role, userName, userEmail }: SidebarProps) {
   const supabase = createClient();
-  const pathname = usePathname(); // ✅ Remplace window.location.pathname
   const items = NAV[role];
+  const currentPath = usePathname();
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
@@ -78,7 +79,7 @@ export default function Sidebar({ role, userName, userEmail }: SidebarProps) {
           <a
             key={item.href}
             href={item.href}
-            className={`sidebar-link ${pathname === item.href ? "active" : ""}`}
+            className={`sidebar-link ${currentPath === item.href ? "active" : ""}`}
           >
             <span style={{ fontSize: "16px", width: "20px", textAlign: "center" }}>{item.icon}</span>
             <span>{item.label}</span>

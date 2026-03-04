@@ -11,12 +11,12 @@ export default async function PrestataireAvis() {
   // 1. Excursions du prestataire
   const { data: excursions } = await admin
     .from("excursions")
-    .select("id, title, city")
+    .select("id, title, city, photos")
     .eq("prestataire_id", user.id);
 
   const excIds = excursions?.map(e => e.id) || [];
   const excMap = Object.fromEntries(
-    (excursions || []).map(e => [e.id, { title: e.title, city: e.city }])
+    (excursions || []).map(e => [e.id, { title: e.title, city: e.city, photo: e.photos?.[0] || null }])
   );
 
   // 2. Avis sur ces excursions (admin client voit tout)
@@ -48,8 +48,10 @@ export default async function PrestataireAvis() {
     created_at: a.created_at,
     prestataire_response: a.prestataire_response || null,
     touriste_name: profileMap[a.touriste_id] || "Client anonyme",
+    excursion_id: a.excursion_id,
     excursion_title: excMap[a.excursion_id]?.title || "Excursion",
     excursion_city: excMap[a.excursion_id]?.city || "",
+    excursion_photo: excMap[a.excursion_id]?.photo || null,
   }));
 
   const approved = avis.filter(a => a.is_moderated);
@@ -59,6 +61,7 @@ export default async function PrestataireAvis() {
 
   return (
     <div>
+      <style>{`.exc-link:hover{background:#F0FDF4 !important;border-color:#BBF7D0 !important}`}</style>
       {/* Header */}
       <div style={{ marginBottom: 28 }}>
         <h1 style={{ fontSize: 24, fontWeight: 700, color: "#111827" }}>Avis clients</h1>
@@ -100,7 +103,7 @@ export default async function PrestataireAvis() {
                       )}
                     </div>
                     <p style={{ fontSize: 11, color: "#9CA3AF", marginTop: 2 }}>
-                      {a.excursion_title} · {new Date(a.created_at).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })}
+                      {new Date(a.created_at).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })}
                     </p>
                   </div>
                 </div>
@@ -115,6 +118,22 @@ export default async function PrestataireAvis() {
               <p style={{ fontSize: 14, color: "#374151", lineHeight: 1.75, marginBottom: a.prestataire_response ? 14 : 0 }}>
                 {a.comment}
               </p>
+
+              {/* Mini-card excursion */}
+              <a href={`/prestataire/excursions/${a.excursion_id}`}
+                className="exc-link" style={{ display:"flex",alignItems:"center",gap:10,marginTop:12,marginBottom:a.prestataire_response?12:0,padding:"10px 12px",background:"#F9FAFB",borderRadius:12,border:"1px solid #F0F0F0",textDecoration:"none",cursor:"pointer",transition:"all .2s" }}>
+                <div style={{ width:44,height:36,borderRadius:8,overflow:"hidden",flexShrink:0,background:"#E5E7EB" }}>
+                  {a.excursion_photo
+                    ? <img src={a.excursion_photo} alt="" style={{ width:"100%",height:"100%",objectFit:"cover" }} />
+                    : <div style={{ width:"100%",height:"100%",display:"flex",alignItems:"center",justifyContent:"center",fontSize:16 }}>🏔️</div>
+                  }
+                </div>
+                <div style={{ flex:1,minWidth:0 }}>
+                  <p style={{ fontSize:12,fontWeight:700,color:"#111827",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis" }}>{a.excursion_title}</p>
+                  {a.excursion_city && <p style={{ fontSize:11,color:"#9CA3AF",marginTop:1 }}>📍 {a.excursion_city}</p>}
+                </div>
+                <span style={{ fontSize:12,color:"#9CA3AF",flexShrink:0 }}>→</span>
+              </a>
 
               {/* Réponse prestataire */}
               {a.prestataire_response && (

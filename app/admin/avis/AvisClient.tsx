@@ -10,8 +10,10 @@ interface Avis {
   is_moderated: boolean;
   created_at: string;
   touriste_name: string;
+  excursion_id: string;
   excursion_title: string;
   excursion_city: string;
+  excursion_photo: string | null;
 }
 
 export default function AvisClient({ avis: initial }: { avis: Avis[] }) {
@@ -160,16 +162,23 @@ export default function AvisClient({ avis: initial }: { avis: Avis[] }) {
                   </div>
                 </div>
 
-                {/* Excursion */}
-                <div style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "3px 10px", background: "#F3F4F6", borderRadius: 8, marginBottom: 10 }}>
-                  <span style={{ fontSize: 12 }}>🏔️</span>
-                  <span style={{ fontSize: 12, color: "#374151", fontWeight: 600 }}>
-                    {a.excursion_title}
-                  </span>
-                  {a.excursion_city && (
-                    <span style={{ fontSize: 12, color: "#9CA3AF" }}>— {a.excursion_city}</span>
-                  )}
-                </div>
+                {/* Excursion mini-card */}
+                <a href={`/admin/excursions/${a.excursion_id}`}
+                  style={{ display:"flex",alignItems:"center",gap:10,marginBottom:12,padding:"9px 12px",background:"#F9FAFB",borderRadius:12,border:"1px solid #F0F0F0",textDecoration:"none",transition:"all .2s",cursor:"pointer" }}
+                  onMouseEnter={e=>{(e.currentTarget as HTMLElement).style.background="#EFF9FB";(e.currentTarget as HTMLElement).style.borderColor="#B2E3EB"}}
+                  onMouseLeave={e=>{(e.currentTarget as HTMLElement).style.background="#F9FAFB";(e.currentTarget as HTMLElement).style.borderColor="#F0F0F0"}}>
+                  <div style={{ width:44,height:36,borderRadius:8,overflow:"hidden",flexShrink:0,background:"#E5E7EB" }}>
+                    {a.excursion_photo
+                      ? <img src={a.excursion_photo} alt="" style={{ width:"100%",height:"100%",objectFit:"cover" }} />
+                      : <div style={{ width:"100%",height:"100%",display:"flex",alignItems:"center",justifyContent:"center",fontSize:16 }}>🏔️</div>
+                    }
+                  </div>
+                  <div style={{ flex:1,minWidth:0 }}>
+                    <p style={{ fontSize:12,fontWeight:700,color:"#111827",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis" }}>{a.excursion_title}</p>
+                    {a.excursion_city && <p style={{ fontSize:11,color:"#9CA3AF",marginTop:1 }}>📍 {a.excursion_city}</p>}
+                  </div>
+                  <span style={{ fontSize:11,color:"#9CA3AF",flexShrink:0,fontWeight:600 }}>Voir →</span>
+                </a>
 
                 {/* Commentaire */}
                 {a.comment && (

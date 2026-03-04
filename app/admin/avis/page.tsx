@@ -23,11 +23,11 @@ export default async function AdminAvis() {
   // Titres des excursions
   const excursionIds = [...new Set(avisData.map(a => a.excursion_id).filter(Boolean))];
   const { data: excursions } = excursionIds.length
-    ? await supabase.from("excursions").select("id, title, city").in("id", excursionIds)
+    ? await supabase.from("excursions").select("id, title, city, photos").in("id", excursionIds)
     : { data: [] };
 
   const profileMap = Object.fromEntries((profiles || []).map(p => [p.user_id, p.full_name]));
-  const excMap = Object.fromEntries((excursions || []).map(e => [e.id, { title: e.title, city: e.city }]));
+  const excMap = Object.fromEntries((excursions || []).map(e => [e.id, { title: e.title, city: e.city, photo: e.photos?.[0] || null }]));
 
   const avis = avisData.map(a => ({
     id: a.id,
@@ -36,8 +36,10 @@ export default async function AdminAvis() {
     is_moderated: a.is_moderated,
     created_at: a.created_at,
     touriste_name: profileMap[a.touriste_id] || "Anonyme",
+    excursion_id: a.excursion_id,
     excursion_title: excMap[a.excursion_id]?.title || "Excursion inconnue",
     excursion_city: excMap[a.excursion_id]?.city || "",
+    excursion_photo: excMap[a.excursion_id]?.photo || null,
   }));
 
   const pendingCount = avis.filter(a => !a.is_moderated).length;
