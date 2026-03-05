@@ -3,6 +3,15 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabaseClient";
+import {
+  Search,
+  MapPin,
+  Clock,
+  Star,
+  Heart,
+  Lock,
+  Loader2,
+} from "lucide-react";
 
 const CITIES = ["Toutes", "Tunis", "Sfax", "Sousse", "Djerba", "Tozeur", "Kairouan", "Hammamet", "Douz", "Tataouine", "Gafsa"];
 const CATEGORIES = ["Toutes", "Culture", "Archéologie", "Nature", "Gastronomie", "Aventure", "Relaxation"];
@@ -43,7 +52,6 @@ export default function ExcursionsPage() {
           });
       }
     });
-
     supabase.from("excursions").select("*").eq("is_active", true)
       .then(({ data }) => {
         setExcursions((data as Excursion[]) || []);
@@ -56,10 +64,10 @@ export default function ExcursionsPage() {
     if (city !== "Toutes") list = list.filter(e => e.city === city);
     if (category !== "Toutes") list = list.filter(e => e.categories?.includes(category));
     if (search) list = list.filter(e => e.title.toLowerCase().includes(search.toLowerCase()));
-    if (sort === "price_asc")  list.sort((a, b) => a.price_per_person - b.price_per_person);
+    if (sort === "price_asc")       list.sort((a, b) => a.price_per_person - b.price_per_person);
     else if (sort === "price_desc") list.sort((a, b) => b.price_per_person - a.price_per_person);
     else if (sort === "rating")     list.sort((a, b) => b.rating - a.rating);
-    else list.sort((a, b) => b.reviews_count - a.reviews_count);
+    else                            list.sort((a, b) => b.reviews_count - a.reviews_count);
     setFiltered(list);
   }, [excursions, city, category, search, sort]);
 
@@ -87,11 +95,15 @@ export default function ExcursionsPage() {
         .filter-btn{padding:8px 16px;border-radius:30px;border:1.5px solid #E5E7EB;background:white;font-size:13px;font-weight:500;cursor:pointer;transition:all 0.2s;font-family:'DM Sans',sans-serif;color:#374151}
         .filter-btn.active{background:#111827;color:white;border-color:#111827}
         .filter-btn:hover:not(.active){border-color:#2B96A8;color:#2B96A8}
-        .heart{position:absolute;top:12px;right:12px;width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,0.92);border:none;cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;transition:transform 0.2s;box-shadow:0 2px 8px rgba(0,0,0,0.15)}
-        .heart:hover{transform:scale(1.2)}
+        .heart-btn{position:absolute;top:12px;right:12px;width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,0.92);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:transform 0.2s;box-shadow:0 2px 8px rgba(0,0,0,0.15)}
+        .heart-btn:hover{transform:scale(1.2)}
         @keyframes spin{to{transform:rotate(360deg)}}
         @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
         .skeleton{animation:pulse 1.5s ease infinite;background:#F3F4F6;border-radius:18px}
+        .search-input{width:100%;padding:14px 20px 14px 46px;border-radius:14px;border:1.5px solid #E5E7EB;font-size:14px;background:white;outline:none;font-family:'DM Sans',sans-serif;box-shadow:0 2px 8px rgba(0,0,0,0.05);transition:border-color .2s;color:#111827}
+        .search-input:focus{border-color:#2B96A8}
+        .reserve-btn{padding:7px 14px;border-radius:8px;border:none;font-size:12px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;display:flex;align-items:center;gap:5px;transition:opacity .15s}
+        .reserve-btn:hover{opacity:.85}
       `}</style>
 
       {/* Navbar */}
@@ -131,11 +143,17 @@ export default function ExcursionsPage() {
 
           {/* Search */}
           <div style={{ position:"relative", marginBottom:24 }}>
-            <input type="text" placeholder="🔍  Rechercher une excursion..." value={search} onChange={e => setSearch(e.target.value)}
-              style={{ width:"100%", padding:"14px 20px 14px 48px", borderRadius:14, border:"1.5px solid #E5E7EB", fontSize:14, background:"white", outline:"none", fontFamily:"'DM Sans',sans-serif", boxShadow:"0 2px 8px rgba(0,0,0,0.05)" }} />
+            <Search size={15} color="#9CA3AF" style={{ position:"absolute", left:16, top:"50%", transform:"translateY(-50%)", pointerEvents:"none" }} />
+            <input
+              type="text"
+              placeholder="Rechercher une excursion..."
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              className="search-input"
+            />
           </div>
 
-          {/* Filters */}
+          {/* Filters — Ville */}
           <div style={{ display:"flex", gap:24, marginBottom:28, flexWrap:"wrap" }}>
             <div>
               <p style={{ fontSize:11, fontWeight:700, color:"#9CA3AF", letterSpacing:1, textTransform:"uppercase", marginBottom:8 }}>VILLE</p>
@@ -146,6 +164,8 @@ export default function ExcursionsPage() {
               </div>
             </div>
           </div>
+
+          {/* Filters — Catégorie + Tri */}
           <div style={{ display:"flex", gap:24, marginBottom:36, flexWrap:"wrap", justifyContent:"space-between", alignItems:"flex-end" }}>
             <div>
               <p style={{ fontSize:11, fontWeight:700, color:"#9CA3AF", letterSpacing:1, textTransform:"uppercase", marginBottom:8 }}>CATÉGORIE</p>
@@ -176,11 +196,11 @@ export default function ExcursionsPage() {
           {/* Empty state */}
           {!loading && filtered.length === 0 && (
             <div style={{ textAlign:"center", padding:"80px 20px" }}>
-              <p style={{ fontSize:48 }}>🔍</p>
-              <p style={{ fontSize:18, fontWeight:600, color:"#374151", marginTop:16 }}>
+              <Search size={52} color="#D1D5DB" style={{ margin:"0 auto 16px" }} />
+              <p style={{ fontSize:18, fontWeight:600, color:"#374151", marginBottom:8 }}>
                 {excursions.length === 0 ? "Aucune excursion disponible" : "Aucune excursion trouvée"}
               </p>
-              <p style={{ color:"#9CA3AF", marginTop:8 }}>
+              <p style={{ color:"#9CA3AF" }}>
                 {excursions.length === 0 ? "Revenez bientôt, de nouvelles excursions arrivent !" : "Essayez d'autres filtres"}
               </p>
             </div>
@@ -191,42 +211,76 @@ export default function ExcursionsPage() {
             <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:20 }}>
               {filtered.map((exc) => (
                 <div key={exc.id} className="exc-card" onClick={() => window.location.href = `/excursions/${exc.id}`}>
+
+                  {/* Image */}
                   <div style={{ position:"relative", height:210, overflow:"hidden" }}>
                     <img
                       src={exc.photos?.[0] || "https://images.unsplash.com/photo-1568515387631-8b650bbcdb90?w=600&q=80"}
                       alt={exc.title}
                       style={{ width:"100%", height:"100%", objectFit:"cover" }}
                     />
-                    <button className="heart" onClick={(e) => { e.stopPropagation(); toggleFav(exc.id); }}
-                      title={user ? (favorites.has(exc.id) ? "Retirer des favoris" : "Ajouter aux favoris") : "Connectez-vous"}>
-                      {loadingFav === exc.id ? "⏳" : favorites.has(exc.id) ? "❤️" : "🤍"}
+                    {/* Heart */}
+                    <button
+                      className="heart-btn"
+                      onClick={(e) => { e.stopPropagation(); toggleFav(exc.id); }}
+                      title={user ? (favorites.has(exc.id) ? "Retirer des favoris" : "Ajouter aux favoris") : "Connectez-vous"}
+                    >
+                      {loadingFav === exc.id
+                        ? <Loader2 size={15} color="#9CA3AF" style={{ animation:"spin .65s linear infinite" }} />
+                        : <Heart size={15} fill={favorites.has(exc.id) ? "#DC2626" : "none"} color={favorites.has(exc.id) ? "#DC2626" : "#374151"} strokeWidth={2.5} />
+                      }
                     </button>
+                    {/* Category badge */}
                     {exc.categories?.[0] && (
                       <div style={{ position:"absolute", top:12, left:12, padding:"4px 10px", background:"rgba(0,0,0,0.55)", backdropFilter:"blur(8px)", borderRadius:20, fontSize:11, fontWeight:600, color:"white" }}>
                         {exc.categories[0]}
                       </div>
                     )}
                   </div>
+
+                  {/* Content */}
                   <div style={{ padding:16 }}>
                     <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:8 }}>
-                      <div>
-                        <h3 style={{ fontSize:15, fontWeight:700, color:"#111827", marginBottom:2 }}>{exc.title}</h3>
-                        <p style={{ fontSize:12, color:"#9CA3AF" }}>📍 {exc.city}</p>
+                      <div style={{ flex:1, minWidth:0, paddingRight:10 }}>
+                        <h3 style={{ fontSize:15, fontWeight:700, color:"#111827", marginBottom:4, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>
+                          {exc.title}
+                        </h3>
+                        <p style={{ fontSize:12, color:"#9CA3AF", display:"flex", alignItems:"center", gap:4 }}>
+                          <MapPin size={11} />{exc.city}
+                        </p>
                       </div>
-                      <div style={{ textAlign:"right" }}>
-                        <p style={{ fontSize:18, fontWeight:800, color:"#111827" }}>{exc.price_per_person} <span style={{ fontSize:11, fontWeight:500 }}>TND</span></p>
+                      <div style={{ textAlign:"right", flexShrink:0 }}>
+                        <p style={{ fontSize:18, fontWeight:800, color:"#111827" }}>
+                          {exc.price_per_person} <span style={{ fontSize:11, fontWeight:500 }}>TND</span>
+                        </p>
                         <p style={{ fontSize:11, color:"#9CA3AF" }}>/ pers.</p>
                       </div>
                     </div>
+
                     <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginTop:12 }}>
-                      <div style={{ display:"flex", gap:10 }}>
-                        <span style={{ fontSize:12, color:"#6B7280" }}>⏱️ {exc.duration_hours}h</span>
-                        {exc.rating > 0 && <span style={{ fontSize:12, color:"#6B7280" }}>⭐ {exc.rating} ({exc.reviews_count})</span>}
+                      <div style={{ display:"flex", gap:12 }}>
+                        <span style={{ fontSize:12, color:"#6B7280", display:"flex", alignItems:"center", gap:4 }}>
+                          <Clock size={12} />{exc.duration_hours}h
+                        </span>
+                        {exc.rating > 0 && (
+                          <span style={{ fontSize:12, color:"#6B7280", display:"flex", alignItems:"center", gap:4 }}>
+                            <Star size={12} fill="#F59E0B" color="#F59E0B" strokeWidth={0} />
+                            {exc.rating}
+                            <span style={{ color:"#D1D5DB" }}>({exc.reviews_count})</span>
+                          </span>
+                        )}
                       </div>
                       <button
-                        onClick={(e) => { e.stopPropagation(); if (!user) { sessionStorage.setItem("redirect_after_login", "/excursions"); window.location.href = "/auth"; } else { window.location.href = `/excursions/${exc.id}`; } }}
-                        style={{ padding:"7px 14px", background:user?"#2B96A8":"#F3F4F6", color:user?"white":"#9CA3AF", borderRadius:8, border:"none", fontSize:12, fontWeight:700, cursor:"pointer", fontFamily:"'DM Sans',sans-serif" }}>
-                        {user ? "Réserver" : "🔒 Réserver"}
+                        className="reserve-btn"
+                        style={{ background: user ? "#2B96A8" : "#F3F4F6", color: user ? "white" : "#9CA3AF" }}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (!user) { sessionStorage.setItem("redirect_after_login", "/excursions"); window.location.href = "/auth"; }
+                          else { window.location.href = `/excursions/${exc.id}`; }
+                        }}
+                      >
+                        {!user && <Lock size={11} />}
+                        Réserver
                       </button>
                     </div>
                   </div>
