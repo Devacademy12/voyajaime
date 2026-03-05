@@ -120,7 +120,7 @@ export default function HomePage() {
           {/* Favoris — nécessite auth */}
           {user ? (
             <Link href="/touriste/favoris" style={{ position:"relative", textDecoration:"none", color:scrolled?"#374151":"rgba(255,255,255,0.88)", fontSize:14, fontWeight:500 }}>
-              ❤️ Favoris
+               Favoris
               {favCount > 0 && (
                 <span style={{ position:"absolute", top:-6, right:-10, background:"#DC2626", color:"white", borderRadius:"50%", width:16, height:16, fontSize:10, fontWeight:700, display:"flex", alignItems:"center", justifyContent:"center" }}>
                   {favCount}
@@ -130,7 +130,7 @@ export default function HomePage() {
           ) : (
             <button onClick={(e) => handleAuthRequired(e, "/touriste/favoris")}
               style={{ background:"none", border:"none", cursor:"pointer", color:scrolled?"#374151":"rgba(255,255,255,0.88)", fontSize:14, fontWeight:500, fontFamily:"'DM Sans',sans-serif" }}>
-              ❤️ Favoris
+               Favoris
             </button>
           )}
 
