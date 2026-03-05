@@ -1,5 +1,20 @@
 "use client";
-
+import {
+  LayoutDashboard,
+  Map,
+  CalendarDays,
+  Heart,
+  MessageCircle,
+  Mountain,
+  Wallet,
+  Star,
+  UserCircle,
+  Users,
+  Shield,
+  FolderOpen,
+  LogOut,
+  MapPin,
+} from "lucide-react";
 interface Props {
   profile: Record<string, unknown> | null;
   reservations: Record<string, unknown>[];
@@ -63,14 +78,14 @@ export default function TouristeDashboardClient({ profile, reservations, favoris
       {/* Stats */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(2,1fr)", gap: "16px", maxWidth: "480px", marginBottom: "32px" }}>
         {[
-          { label: "Réservations", value: reservations.length, icon: "📅", href: "/touriste/reservations" },
-          { label: "Favoris", value: favorisCount, icon: "❤️", href: "/touriste/favoris" },
+         { label: "Mes réservations", href: "/touriste/reservations", icon: <CalendarDays size={18} /> },
+         { label: "Mes favoris",      href: "/touriste/favoris",      icon: <Heart size={18} /> },
         ].map((s) => (
           <a key={s.label} href={s.href} style={{ textDecoration: "none" }}>
             <div className="stat-card" style={{ display: "flex", alignItems: "center", gap: "16px", cursor: "pointer" }}>
               <span style={{ fontSize: "28px" }}>{s.icon}</span>
               <div>
-                <p style={{ fontSize: "28px", fontWeight: 700, color: "#111827" }}>{s.value}</p>
+               
                 <p style={{ fontSize: "13px", color: "#6B7280" }}>{s.label}</p>
               </div>
             </div>

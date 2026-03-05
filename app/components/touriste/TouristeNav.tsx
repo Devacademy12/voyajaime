@@ -4,6 +4,22 @@ import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { createClient } from "@/lib/supabaseClient";
+import {
+  LayoutDashboard,
+  Map,
+  CalendarDays,
+  Heart,
+  MessageCircle,
+  Mountain,
+  Wallet,
+  Star,
+  UserCircle,
+  Users,
+  Shield,
+  FolderOpen,
+  LogOut,
+  MapPin,
+} from "lucide-react";
 
 export default function TouristeNav({ userName, favCount = 0 }: { userName?: string; favCount?: number }) {
   const [unreadMsg, setUnreadMsg] = useState(0);
@@ -41,11 +57,13 @@ export default function TouristeNav({ userName, favCount = 0 }: { userName?: str
   };
 
   const links = [
-    { href: "/excursions",            icon: "🏔️", label: "Excursions",  badge: 0 },
-    { href: "/touriste/messages",     icon: "msg", label: "Messages",    badge: unreadMsg },
-    { href: "/touriste/itineraire",   icon: "🗺️", label: "Itinéraire",  badge: 0 },
-    { href: "/touriste/favoris",      icon: "❤️",  label: favCount > 0 ? `Favoris (${favCount})` : "Favoris", badge: 0 },
-    { href: "/touriste/reservations", icon: "📅",  label: "Réservations", badge: 0 },
+  
+    { label: "Accueil",          href: "/touriste/dashboard",    icon: <LayoutDashboard size={18} /> },
+    {  label: "Excursions",      href: "/excursions",           icon: <Mountain size={18} /> },
+    { label: "Mon itinéraire",   href: "/touriste/itineraire",   icon: <Map size={18} /> },
+    { label: "Mes réservations", href: "/touriste/reservations", icon: <CalendarDays size={18} /> },
+    { label: "Mes favoris",      href: "/touriste/favoris",      icon: <Heart size={18} /> },
+    { label: "Messages",         href: "/touriste/messages",     icon: <MessageCircle size={18} /> },
   ];
 
   const isActive = (href: string) => pathname === href || pathname.startsWith(href + "/");

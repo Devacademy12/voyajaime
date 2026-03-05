@@ -98,7 +98,7 @@ export default function ExcursionsPage() {
         </Link>
         <div style={{ display:"flex", gap:12, alignItems:"center" }}>
           {user
-            ? <Link href="/touriste/favoris" style={{ fontSize:14, color:"#374151", textDecoration:"none", fontWeight:500 }}>❤️ Mes favoris {favorites.size > 0 && `(${favorites.size})`}</Link>
+            ? <Link href="/touriste/favoris" style={{ fontSize:14, color:"#374151", textDecoration:"none", fontWeight:500 }}> Mes favoris {favorites.size > 0 && `(${favorites.size})`}</Link>
             : null
           }
           {user
