@@ -35,6 +35,8 @@ const NAV: Record<Role, NavItem[]> = {
     { label: "Réservations", href: "/admin/reservations", icon: "📅" },
     { label: "Paiements", href: "/admin/paiements", icon: "💰" },
     { label: "Avis & Modération", href: "/admin/avis", icon: "🛡️" },
+        { label: "Catalogue & Villes", href: "/admin/catalogue", icon: "🗂️" },
+
   ],
 };
 

@@ -16,23 +16,20 @@ type Filter = "pending" | "validated" | "all";
 
 export default function PrestatairesClient({ prestataires: initial }: { prestataires: Prestataire[] }) {
   const [prestataires, setPrestataires] = useState(initial);
-  const [filter, setFilter] = useState<Filter>("pending");
-  const [search, setSearch] = useState("");
+  const [filter, setFilter]   = useState<Filter>("pending");
+  const [search, setSearch]   = useState("");
   const [cityFilter, setCityFilter] = useState("");
   const [loading, setLoading] = useState<string | null>(null);
-  const [toast, setToast] = useState<{ msg: string; ok: boolean } | null>(null);
-
-  // Modal état
+  const [toast, setToast]     = useState<{ msg: string; ok: boolean } | null>(null);
   const [selected, setSelected] = useState<Prestataire | null>(null);
-  const [mode, setMode] = useState<"view" | "edit">("view");
+  const [mode, setMode]       = useState<"view" | "edit">("view");
 
-  // Edit fields
   const [editFullName, setEditFullName] = useState("");
-  const [editAgency, setEditAgency] = useState("");
-  const [editCity, setEditCity] = useState("");
-  const [editPhone, setEditPhone] = useState("");
-  const [editDesc, setEditDesc] = useState("");
-  const [editLoading, setEditLoading] = useState(false);
+  const [editAgency,   setEditAgency]   = useState("");
+  const [editCity,     setEditCity]     = useState("");
+  const [editPhone,    setEditPhone]    = useState("");
+  const [editDesc,     setEditDesc]     = useState("");
+  const [editLoading,  setEditLoading]  = useState(false);
 
   const showToast = (msg: string, ok = true) => {
     setToast({ msg, ok }); setTimeout(() => setToast(null), 3500);
@@ -116,6 +113,11 @@ export default function PrestatairesClient({ prestataires: initial }: { prestata
   });
 
   const cities = [...new Set(prestataires.map(p => p.city).filter(Boolean))].sort() as string[];
+  const counts = {
+    pending: prestataires.filter(p => !p.is_validated).length,
+    validated: prestataires.filter(p => p.is_validated).length,
+    all: prestataires.length,
+  };
 
   return (
     <>
@@ -126,9 +128,9 @@ export default function PrestatairesClient({ prestataires: initial }: { prestata
         .ptab.on{background:#2B96A8;color:white;border-color:#2B96A8}
         .ptab:not(.on){background:white;color:#6B7280}
         .ptab:not(.on):hover{background:#F9FAFB}
-        .pcard{background:white;border-radius:16px;border:1px solid #F0F0F0;padding:18px 20px;display:flex;align-items:center;gap:16px;transition:all .2s;cursor:pointer;position:relative}
-        .pcard:hover{box-shadow:0 6px 24px rgba(0,0,0,.08);transform:translateY(-1px);border-color:#E0E0E0}
-        .pbtn{padding:8px 14px;border-radius:10px;border:none;cursor:pointer;font-size:12px;font-weight:700;font-family:inherit;transition:all .2s;white-space:nowrap}
+        .pcard{background:white;border-radius:14px;border:1px solid #F0F0F0;padding:16px 18px;display:flex;align-items:center;gap:14px;transition:all .2s;cursor:pointer}
+        .pcard:hover{box-shadow:0 4px 18px rgba(0,0,0,.07);border-color:#E5E7EB;transform:translateY(-1px)}
+        .pbtn{padding:7px 13px;border-radius:9px;border:none;cursor:pointer;font-size:12px;font-weight:700;font-family:inherit;transition:all .2s;white-space:nowrap}
         .pbtn:disabled{opacity:.5;cursor:not-allowed}
         .pbtn-green{background:#F0FDF4;color:#15803D}.pbtn-green:hover:not(:disabled){background:#DCFCE7}
         .pbtn-gray{background:#F9FAFB;color:#374151;border:1px solid #E5E7EB}.pbtn-gray:hover:not(:disabled){background:#F3F4F6}
@@ -150,66 +152,82 @@ export default function PrestatairesClient({ prestataires: initial }: { prestata
         </div>
       )}
 
-      {/* ── STATS HEADER ── */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 12, marginBottom: 24 }}>
-        {[
-          { label: "Total", val: prestataires.length, icon: "👥", color: "#6B7280", bg: "#F9FAFB" },
-          { label: "En attente", val: prestataires.filter(p => !p.is_validated).length, icon: "⏳", color: "#D97706", bg: "#FFFBEB" },
-          { label: "Validés", val: prestataires.filter(p => p.is_validated).length, icon: "✅", color: "#15803D", bg: "#F0FDF4" },
-          { label: "Excursions actives", val: prestataires.reduce((s, p) => s + p.excursion_active, 0), icon: "🗺️", color: "#2B96A8", bg: "rgba(43,150,168,.08)" },
-        ].map(s => (
-          <div key={s.label} style={{ background: s.bg, borderRadius: 14, padding: "16px 18px", border: `1px solid ${s.bg === "#F9FAFB" ? "#E5E7EB" : "transparent"}` }}>
-            <p style={{ fontSize: 22, marginBottom: 4 }}>{s.icon}</p>
-            <p style={{ fontSize: 22, fontWeight: 900, color: s.color, lineHeight: 1 }}>{s.val}</p>
-            <p style={{ fontSize: 11, color: "#9CA3AF", marginTop: 3, fontWeight: 600 }}>{s.label}</p>
+      {/* ── BARRE FILTRES ── */}
+      <div style={{ background: "white", borderRadius: 16, border: "1px solid #F3F4F6", padding: "16px 20px", marginBottom: 16, boxShadow: "0 1px 4px rgba(0,0,0,.04)" }}>
+        <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+          {/* Recherche */}
+          <div style={{ position: "relative", flex: 1, minWidth: 220 }}>
+            <span style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", fontSize: 14, color: "#9CA3AF", pointerEvents: "none" }}>🔍</span>
+            <input className="fi" placeholder="Rechercher par nom, agence, ville..." value={search}
+              onChange={e => setSearch(e.target.value)}
+              style={{ paddingLeft: 36 }} />
           </div>
-        ))}
-      </div>
 
-      {/* ── TOOLBAR ── */}
-      <div style={{ display: "flex", gap: 10, marginBottom: 20, flexWrap: "wrap", alignItems: "center" }}>
-        <input className="fi" placeholder="🔍 Rechercher par nom, agence, ville..." value={search}
-          onChange={e => setSearch(e.target.value)}
-          style={{ flex: 1, minWidth: 200 }} />
-        <select className="fi" value={cityFilter} onChange={e => setCityFilter(e.target.value)}
-          style={{ width: 160, cursor: "pointer", appearance: "none" }}>
-          <option value="">📍 Toutes les villes</option>
-          {cities.map(c => <option key={c} value={c}>{c}</option>)}
-        </select>
-        <div style={{ display: "flex", gap: 6 }}>
-          {([
-            { k: "pending" as const, label: `⏳ En attente (${prestataires.filter(p => !p.is_validated).length})` },
-            { k: "validated" as const, label: `✅ Validés (${prestataires.filter(p => p.is_validated).length})` },
-            { k: "all" as const, label: `👥 Tous` },
-          ]).map(t => (
-            <button key={t.k} className={`ptab ${filter === t.k ? "on" : ""}`} onClick={() => setFilter(t.k)}>
-              {t.label}
-            </button>
-          ))}
+          {/* Ville */}
+          <div style={{ position: "relative", width: 170 }}>
+            <span style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", fontSize: 14, color: "#9CA3AF", pointerEvents: "none" }}>📍</span>
+            <select className="fi" value={cityFilter} onChange={e => setCityFilter(e.target.value)}
+              style={{ paddingLeft: 34, cursor: "pointer", appearance: "none" }}>
+              <option value="">Toutes les villes</option>
+              {cities.map(c => <option key={c} value={c}>{c}</option>)}
+            </select>
+          </div>
+
+          {/* Séparateur vertical */}
+          <div style={{ width: 1, height: 32, background: "#E5E7EB", flexShrink: 0 }} />
+
+          {/* Tabs statut */}
+          <div style={{ display: "flex", gap: 6 }}>
+            {([
+              { k: "pending"   as const, label: "En attente", count: counts.pending,   icon: "⏳" },
+              { k: "validated" as const, label: "Validés",    count: counts.validated, icon: "✅" },
+              { k: "all"       as const, label: "Tous",       count: counts.all,       icon: "👥" },
+            ]).map(t => (
+              <button key={t.k} className={`ptab ${filter === t.k ? "on" : ""}`} onClick={() => setFilter(t.k)}>
+                {t.icon} {t.label}
+                <span style={{ marginLeft: 6, fontSize: 11, background: filter === t.k ? "rgba(255,255,255,.25)" : "#F3F4F6", color: filter === t.k ? "white" : "#6B7280", borderRadius: 12, padding: "1px 7px", fontWeight: 800 }}>
+                  {t.count}
+                </span>
+              </button>
+            ))}
+          </div>
         </div>
+
+        {/* Résumé actif */}
+        {(search || cityFilter || filter !== "all") && (
+          <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 12, paddingTop: 12, borderTop: "1px solid #F3F4F6" }}>
+            <span style={{ fontSize: 12, color: "#9CA3AF" }}>{filtered.length} résultat{filtered.length !== 1 ? "s" : ""}</span>
+            {(search || cityFilter) && (
+              <button onClick={() => { setSearch(""); setCityFilter(""); }}
+                style={{ fontSize: 11, color: "#2B96A8", background: "none", border: "none", cursor: "pointer", fontFamily: "inherit", fontWeight: 700, padding: 0 }}>
+                Effacer les filtres ×
+              </button>
+            )}
+          </div>
+        )}
       </div>
 
       {/* ── LISTE ── */}
       {filtered.length === 0 ? (
-        <div style={{ textAlign: "center", padding: "60px 20px", background: "white", borderRadius: 18, border: "1px solid #F3F4F6" }}>
-          <p style={{ fontSize: 40, marginBottom: 12 }}>{filter === "pending" ? "🎉" : "🔍"}</p>
-          <p style={{ fontWeight: 700, color: "#111827", fontSize: 16 }}>
+        <div style={{ textAlign: "center", padding: "56px 20px", background: "white", borderRadius: 16, border: "1px solid #F3F4F6" }}>
+          <p style={{ fontSize: 38, marginBottom: 10 }}>{filter === "pending" ? "🎉" : "🔍"}</p>
+          <p style={{ fontWeight: 700, color: "#111827", fontSize: 15 }}>
             {filter === "pending" ? "Aucun prestataire en attente" : "Aucun résultat"}
           </p>
-          {filter === "pending" && <p style={{ color: "#9CA3AF", fontSize: 13, marginTop: 6 }}>Toutes les demandes ont été traitées !</p>}
+          {filter === "pending" && <p style={{ color: "#9CA3AF", fontSize: 13, marginTop: 5 }}>Toutes les demandes ont été traitées !</p>}
         </div>
       ) : (
-        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
           {filtered.map(p => {
             const name = p.agency_name || p.full_name || "Sans nom";
             const isLoading = loading === p.user_id;
             return (
               <div key={p.user_id} className="pcard"
-                style={{ borderLeft: `4px solid ${p.is_validated ? "#2B96A8" : "#F59E0B"}` }}
+                style={{ borderLeft: `3px solid ${p.is_validated ? "#2B96A8" : "#F59E0B"}` }}
                 onClick={() => openModal(p, "view")}>
 
                 {/* Avatar */}
-                <div style={{ width: 52, height: 52, borderRadius: "50%", overflow: "hidden", flexShrink: 0, background: p.is_validated ? "linear-gradient(135deg,#2B96A8,#4AABB8)" : "linear-gradient(135deg,#F59E0B,#FBBF24)", display: "flex", alignItems: "center", justifyContent: "center", color: "white", fontWeight: 800, fontSize: 20 }}>
+                <div style={{ width: 46, height: 46, borderRadius: "50%", overflow: "hidden", flexShrink: 0, background: p.is_validated ? "linear-gradient(135deg,#2B96A8,#4AABB8)" : "linear-gradient(135deg,#F59E0B,#FBBF24)", display: "flex", alignItems: "center", justifyContent: "center", color: "white", fontWeight: 800, fontSize: 18 }}>
                   {p.avatar_url
                     ? <img src={p.avatar_url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                     : name[0].toUpperCase()
@@ -218,18 +236,18 @@ export default function PrestatairesClient({ prestataires: initial }: { prestata
 
                 {/* Info */}
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4, flexWrap: "wrap" }}>
-                    <span style={{ fontSize: 15, fontWeight: 800, color: "#111827" }}>{name}</span>
-                    <span style={{ padding: "2px 9px", borderRadius: 20, fontSize: 11, fontWeight: 700, background: p.is_validated ? "#F0FDF4" : "#FFFBEB", color: p.is_validated ? "#15803D" : "#D97706" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 3, flexWrap: "wrap" }}>
+                    <span style={{ fontSize: 14, fontWeight: 800, color: "#111827" }}>{name}</span>
+                    <span style={{ padding: "2px 8px", borderRadius: 18, fontSize: 11, fontWeight: 700, background: p.is_validated ? "#F0FDF4" : "#FFFBEB", color: p.is_validated ? "#15803D" : "#D97706" }}>
                       {p.is_validated ? "✅ Validé" : "⏳ En attente"}
                     </span>
                     {p.excursion_count > 0 && (
-                      <span style={{ padding: "2px 9px", borderRadius: 20, fontSize: 11, fontWeight: 600, background: "rgba(43,150,168,.08)", color: "#2B96A8" }}>
-                        🗺️ {p.excursion_active}/{p.excursion_count} excursions
+                      <span style={{ padding: "2px 8px", borderRadius: 18, fontSize: 11, fontWeight: 600, background: "rgba(43,150,168,.08)", color: "#2B96A8" }}>
+                        🗺️ {p.excursion_active}/{p.excursion_count}
                       </span>
                     )}
                   </div>
-                  <div style={{ display: "flex", gap: 14, flexWrap: "wrap" }}>
+                  <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
                     {p.full_name && p.agency_name && <span style={{ fontSize: 12, color: "#6B7280" }}>👤 {p.full_name}</span>}
                     {p.city && <span style={{ fontSize: 12, color: "#6B7280" }}>📍 {p.city}</span>}
                     {p.phone && <span style={{ fontSize: 12, color: "#6B7280" }}>📞 {p.phone}</span>}
@@ -237,28 +255,22 @@ export default function PrestatairesClient({ prestataires: initial }: { prestata
                   </div>
                 </div>
 
-                {/* Actions rapides — stop propagation */}
-                <div style={{ display: "flex", gap: 8, flexShrink: 0 }} onClick={e => e.stopPropagation()}>
-                  <button className="pbtn pbtn-teal" onClick={() => openModal(p, "edit")} disabled={isLoading}>
-                    ✏️ Modifier
-                  </button>
+                {/* Actions */}
+                <div style={{ display: "flex", gap: 6, flexShrink: 0 }} onClick={e => e.stopPropagation()}>
+                  <button className="pbtn pbtn-teal" onClick={() => openModal(p, "edit")} disabled={isLoading}>✏️</button>
                   {!p.is_validated ? (
                     <>
                       <button className="pbtn pbtn-green" onClick={() => handleValidate(p.user_id, name)} disabled={isLoading}>
                         {isLoading ? "..." : "✅ Valider"}
                       </button>
-                      <button className="pbtn pbtn-red" onClick={() => handleDelete(p.user_id, name)} disabled={isLoading}>
-                        🗑️
-                      </button>
+                      <button className="pbtn pbtn-red" onClick={() => handleDelete(p.user_id, name)} disabled={isLoading}>🗑️</button>
                     </>
                   ) : (
                     <>
                       <button className="pbtn pbtn-gray" onClick={() => handleRevoke(p.user_id, name)} disabled={isLoading}>
                         {isLoading ? "..." : "⚠️ Révoquer"}
                       </button>
-                      <button className="pbtn pbtn-red" onClick={() => handleDelete(p.user_id, name)} disabled={isLoading}>
-                        🗑️
-                      </button>
+                      <button className="pbtn pbtn-red" onClick={() => handleDelete(p.user_id, name)} disabled={isLoading}>🗑️</button>
                     </>
                   )}
                 </div>
@@ -272,10 +284,9 @@ export default function PrestatairesClient({ prestataires: initial }: { prestata
       {selected && (
         <div className="overlay" onClick={e => { if (e.target === e.currentTarget) setSelected(null); }}>
           <div className="modal fu">
-
-            {/* Modal Header */}
-            <div style={{ padding: "24px 28px 0", display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
-              <div style={{ display: "flex", gap: 8 }}>
+            {/* Header modal */}
+            <div style={{ padding: "22px 26px 0", display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 18 }}>
+              <div style={{ display: "flex", gap: 7 }}>
                 <button onClick={() => setMode("view")}
                   style={{ padding: "7px 16px", borderRadius: 20, border: "none", cursor: "pointer", fontSize: 13, fontWeight: 700, fontFamily: "inherit", background: mode === "view" ? "#111827" : "#F3F4F6", color: mode === "view" ? "white" : "#6B7280", transition: "all .2s" }}>
                   👁️ Profil
@@ -286,38 +297,35 @@ export default function PrestatairesClient({ prestataires: initial }: { prestata
                 </button>
               </div>
               <button onClick={() => setSelected(null)}
-                style={{ background: "#F3F4F6", border: "none", borderRadius: "50%", width: 32, height: 32, cursor: "pointer", fontSize: 16, display: "flex", alignItems: "center", justifyContent: "center" }}>✕</button>
+                style={{ background: "#F3F4F6", border: "none", borderRadius: "50%", width: 30, height: 30, cursor: "pointer", fontSize: 15, display: "flex", alignItems: "center", justifyContent: "center" }}>✕</button>
             </div>
 
             {mode === "view" ? (
-              /* ── VUE PROFIL ── */
-              <div style={{ padding: "0 28px 28px" }}>
-                {/* Avatar + Nom */}
-                <div style={{ display: "flex", alignItems: "center", gap: 18, marginBottom: 22, paddingBottom: 18, borderBottom: "1px solid #F3F4F6" }}>
-                  <div style={{ width: 80, height: 80, borderRadius: "50%", overflow: "hidden", flexShrink: 0, border: "3px solid #F0F0F0", boxShadow: "0 4px 16px rgba(0,0,0,.08)" }}>
+              <div style={{ padding: "0 26px 26px" }}>
+                {/* Avatar + nom */}
+                <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 20, paddingBottom: 16, borderBottom: "1px solid #F3F4F6" }}>
+                  <div style={{ width: 72, height: 72, borderRadius: "50%", overflow: "hidden", flexShrink: 0, border: "2px solid #F0F0F0" }}>
                     {selected.avatar_url
                       ? <img src={selected.avatar_url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                      : (
-                        <div style={{ width: "100%", height: "100%", background: selected.is_validated ? "linear-gradient(135deg,#2B96A8,#4AABB8)" : "linear-gradient(135deg,#F59E0B,#FBBF24)", display: "flex", alignItems: "center", justifyContent: "center", color: "white", fontWeight: 800, fontSize: 30 }}>
+                      : <div style={{ width: "100%", height: "100%", background: selected.is_validated ? "linear-gradient(135deg,#2B96A8,#4AABB8)" : "linear-gradient(135deg,#F59E0B,#FBBF24)", display: "flex", alignItems: "center", justifyContent: "center", color: "white", fontWeight: 800, fontSize: 26 }}>
                           {(selected.agency_name || selected.full_name || "?")[0].toUpperCase()}
                         </div>
-                      )
                     }
                   </div>
                   <div style={{ flex: 1 }}>
-                    <h2 style={{ fontSize: 20, fontWeight: 800, color: "#111827", marginBottom: 4 }}>
+                    <h2 style={{ fontSize: 18, fontWeight: 800, color: "#111827", marginBottom: 4 }}>
                       {selected.agency_name || selected.full_name || "Sans nom"}
                     </h2>
                     {selected.full_name && selected.agency_name && (
-                      <p style={{ fontSize: 13, color: "#6B7280", marginBottom: 8 }}>👤 {selected.full_name}</p>
+                      <p style={{ fontSize: 13, color: "#6B7280", marginBottom: 7 }}>👤 {selected.full_name}</p>
                     )}
                     <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                      <span style={{ padding: "3px 10px", borderRadius: 20, fontSize: 11, fontWeight: 700, background: selected.is_validated ? "#F0FDF4" : "#FFFBEB", color: selected.is_validated ? "#15803D" : "#D97706", border: `1px solid ${selected.is_validated ? "#BBF7D0" : "#FDE68A"}` }}>
+                      <span style={{ padding: "2px 9px", borderRadius: 18, fontSize: 11, fontWeight: 700, background: selected.is_validated ? "#F0FDF4" : "#FFFBEB", color: selected.is_validated ? "#15803D" : "#D97706", border: `1px solid ${selected.is_validated ? "#BBF7D0" : "#FDE68A"}` }}>
                         {selected.is_validated ? "✅ Validé" : "⏳ En attente"}
                       </span>
                       {selected.excursion_count > 0 && (
-                        <span style={{ padding: "3px 10px", borderRadius: 20, fontSize: 11, fontWeight: 600, background: "rgba(43,150,168,.08)", color: "#2B96A8", border: "1px solid rgba(43,150,168,.15)" }}>
-                          🗺️ {selected.excursion_active} actives / {selected.excursion_count} total
+                        <span style={{ padding: "2px 9px", borderRadius: 18, fontSize: 11, fontWeight: 600, background: "rgba(43,150,168,.08)", color: "#2B96A8" }}>
+                          🗺️ {selected.excursion_active}/{selected.excursion_count} excursions
                         </span>
                       )}
                     </div>
@@ -325,37 +333,34 @@ export default function PrestatairesClient({ prestataires: initial }: { prestata
                 </div>
 
                 {/* Détails */}
-                <div style={{ display: "flex", flexDirection: "column", gap: 0, marginBottom: 18 }}>
+                <div style={{ marginBottom: 16 }}>
                   {[
-                    { icon: "📍", label: "Ville", val: selected.city || "—" },
-                    { icon: "📞", label: "Téléphone", val: selected.phone || "—" },
-                    { icon: "⭐", label: "Note moyenne", val: selected.rating ? `${selected.rating}/5` : "—" },
-                    { icon: "🗓️", label: "Inscrit le", val: new Date(selected.created_at).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" }) },
+                    { icon: "📍", label: "Ville",         val: selected.city || "—" },
+                    { icon: "📞", label: "Téléphone",     val: selected.phone || "—" },
+                    { icon: "⭐", label: "Note moyenne",  val: selected.rating ? `${selected.rating}/5` : "—" },
+                    { icon: "🗓️", label: "Inscrit le",    val: new Date(selected.created_at).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" }) },
                   ].map((row, i) => (
-                    <div key={row.label} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "11px 0", borderBottom: i < 3 ? "1px solid #F3F4F6" : "none", fontSize: 13 }}>
+                    <div key={row.label} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 0", borderBottom: i < 3 ? "1px solid #F3F4F6" : "none", fontSize: 13 }}>
                       <span style={{ color: "#6B7280" }}>{row.icon} {row.label}</span>
                       <span style={{ fontWeight: 700, color: "#111827" }}>{row.val}</span>
                     </div>
                   ))}
                 </div>
 
-                {/* Description */}
                 {selected.description && (
-                  <div style={{ background: "#F9FAFB", borderRadius: 12, padding: "14px 16px", marginBottom: 20 }}>
-                    <p style={{ fontSize: 11, fontWeight: 700, color: "#9CA3AF", textTransform: "uppercase", letterSpacing: ".5px", marginBottom: 7 }}>Description</p>
-                    <p style={{ fontSize: 14, color: "#374151", lineHeight: 1.75 }}>{selected.description}</p>
+                  <div style={{ background: "#F9FAFB", borderRadius: 12, padding: "12px 14px", marginBottom: 18 }}>
+                    <p style={{ fontSize: 11, fontWeight: 700, color: "#9CA3AF", textTransform: "uppercase", letterSpacing: ".5px", marginBottom: 6 }}>Description</p>
+                    <p style={{ fontSize: 13, color: "#374151", lineHeight: 1.7 }}>{selected.description}</p>
                   </div>
                 )}
 
-                {/* Actions modal */}
-                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                  <button className="pbtn pbtn-teal" style={{ flex: 1 }} onClick={() => setMode("edit")}>
-                    ✏️ Modifier le profil
-                  </button>
+                {/* Actions */}
+                <div style={{ display: "flex", gap: 7, flexWrap: "wrap" }}>
+                  <button className="pbtn pbtn-teal" style={{ flex: 1 }} onClick={() => setMode("edit")}>✏️ Modifier</button>
                   {!selected.is_validated ? (
                     <button className="pbtn pbtn-green" style={{ flex: 1 }}
                       onClick={() => handleValidate(selected.user_id, selected.agency_name || selected.full_name || "—")} disabled={loading === selected.user_id}>
-                      {loading === selected.user_id ? "..." : "✅ Valider le compte"}
+                      {loading === selected.user_id ? "..." : "✅ Valider"}
                     </button>
                   ) : (
                     <button className="pbtn pbtn-gray" style={{ flex: 1 }}
@@ -370,48 +375,46 @@ export default function PrestatairesClient({ prestataires: initial }: { prestata
                 </div>
               </div>
             ) : (
-              /* ── FORMULAIRE ÉDITION ── */
-              <div style={{ padding: "0 28px 28px" }}>
-                <p style={{ fontSize: 13, color: "#9CA3AF", marginBottom: 20 }}>
-                  Modification du profil de <strong style={{ color: "#111827" }}>{selected.agency_name || selected.full_name}</strong>
+              <div style={{ padding: "0 26px 26px" }}>
+                <p style={{ fontSize: 13, color: "#9CA3AF", marginBottom: 18 }}>
+                  Modification de <strong style={{ color: "#111827" }}>{selected.agency_name || selected.full_name}</strong>
                 </p>
-                <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+                <div style={{ display: "flex", flexDirection: "column", gap: 13 }}>
                   <div>
-                    <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: "#374151", textTransform: "uppercase", letterSpacing: ".5px", marginBottom: 6 }}>Nom complet</label>
+                    <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: "#374151", textTransform: "uppercase", letterSpacing: ".5px", marginBottom: 5 }}>Nom complet</label>
                     <input className="fi" value={editFullName} onChange={e => setEditFullName(e.target.value)} placeholder="Nom et prénom" />
                   </div>
                   <div>
-                    <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: "#374151", textTransform: "uppercase", letterSpacing: ".5px", marginBottom: 6 }}>Nom de l&apos;agence</label>
+                    <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: "#374151", textTransform: "uppercase", letterSpacing: ".5px", marginBottom: 5 }}>Nom de l&apos;agence</label>
                     <input className="fi" value={editAgency} onChange={e => setEditAgency(e.target.value)} placeholder="Nom de l'agence" />
                   </div>
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
                     <div>
-                      <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: "#374151", textTransform: "uppercase", letterSpacing: ".5px", marginBottom: 6 }}>Ville</label>
+                      <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: "#374151", textTransform: "uppercase", letterSpacing: ".5px", marginBottom: 5 }}>Ville</label>
                       <select className="fi" value={editCity} onChange={e => setEditCity(e.target.value)} style={{ cursor: "pointer", appearance: "none" }}>
                         <option value="">Sélectionnez</option>
                         {CITIES.map(c => <option key={c} value={c}>{c}</option>)}
                       </select>
                     </div>
                     <div>
-                      <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: "#374151", textTransform: "uppercase", letterSpacing: ".5px", marginBottom: 6 }}>Téléphone</label>
+                      <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: "#374151", textTransform: "uppercase", letterSpacing: ".5px", marginBottom: 5 }}>Téléphone</label>
                       <input className="fi" value={editPhone} onChange={e => setEditPhone(e.target.value)} placeholder="+216 XX XXX XXX" type="tel" />
                     </div>
                   </div>
                   <div>
-                    <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: "#374151", textTransform: "uppercase", letterSpacing: ".5px", marginBottom: 6 }}>Description</label>
-                    <textarea className="fi" rows={4} value={editDesc} onChange={e => setEditDesc(e.target.value)}
-                      placeholder="Description de l'activité..."
-                      style={{ resize: "vertical" }} />
+                    <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: "#374151", textTransform: "uppercase", letterSpacing: ".5px", marginBottom: 5 }}>Description</label>
+                    <textarea className="fi" rows={3} value={editDesc} onChange={e => setEditDesc(e.target.value)}
+                      placeholder="Description de l'activité..." style={{ resize: "vertical" }} />
                   </div>
                 </div>
-                <div style={{ display: "flex", gap: 8, marginTop: 20 }}>
+                <div style={{ display: "flex", gap: 8, marginTop: 18 }}>
                   <button onClick={() => setMode("view")}
                     style={{ flex: 1, padding: "11px", background: "#F3F4F6", color: "#374151", border: "none", borderRadius: 12, fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
                     Annuler
                   </button>
                   <button onClick={handleSaveEdit} disabled={editLoading}
                     style={{ flex: 2, padding: "11px", background: editLoading ? "#9CA3AF" : "#2B96A8", color: "white", border: "none", borderRadius: 12, fontSize: 13, fontWeight: 700, cursor: editLoading ? "not-allowed" : "pointer", fontFamily: "inherit", transition: "all .2s" }}>
-                    {editLoading ? "Sauvegarde..." : "💾 Sauvegarder les modifications"}
+                    {editLoading ? "Sauvegarde..." : "💾 Sauvegarder"}
                   </button>
                 </div>
               </div>

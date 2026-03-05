@@ -12,7 +12,6 @@ export default async function AdminPrestataires() {
 
   if (error) console.error("Erreur chargement prestataires:", error.message);
 
-  // Excursion count per prestataire
   const pIds = (prestataires || []).map(p => p.user_id);
   const { data: excursions } = pIds.length
     ? await supabase.from("excursions").select("prestataire_id, is_active").in("prestataire_id", pIds)
