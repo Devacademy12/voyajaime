@@ -793,12 +793,7 @@ export default function ExcursionClient({
                 <p style={{ fontSize:14,color:"#374151",lineHeight:1.75 }}>{prestataire.description}</p>
               </div>
             )}
-            {prestataire.phone && (
-              <div style={{ display:"flex",justifyContent:"space-between",alignItems:"center",fontSize:13,padding:"10px 0",borderBottom:"1px solid #F9FAFB",marginBottom:10 }}>
-                <span style={{ color:"#6B7280",display:"flex",alignItems:"center",gap:6 }}><HeadphonesIcon size={13}/>Téléphone</span>
-                <span style={{ fontWeight:700,color:"#111827" }}>{prestataire.phone}</span>
-              </div>
-            )}
+           
             <button onClick={() => setShowPrestataire(false)} className="cta-primary" style={{ marginTop:8 }}>Fermer</button>
           </div>
         </div>
