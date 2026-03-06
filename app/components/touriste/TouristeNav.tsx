@@ -11,14 +11,10 @@ import {
   Heart,
   MessageCircle,
   Mountain,
-  Wallet,
-  Star,
   UserCircle,
-  Users,
-  Shield,
-  FolderOpen,
   LogOut,
   MapPin,
+  Plane,
 } from "lucide-react";
 
 export default function TouristeNav({ userName, favCount = 0 }: { userName?: string; favCount?: number }) {
@@ -57,13 +53,12 @@ export default function TouristeNav({ userName, favCount = 0 }: { userName?: str
   };
 
   const links = [
-  
-    { label: "Accueil",          href: "/touriste/dashboard",    icon: <LayoutDashboard size={18} /> },
-    {  label: "Excursions",      href: "/excursions",           icon: <Mountain size={18} /> },
-    { label: "Mon itinéraire",   href: "/touriste/itineraire",   icon: <Map size={18} /> },
-    { label: "Mes réservations", href: "/touriste/reservations", icon: <CalendarDays size={18} /> },
-    { label: "Mes favoris",      href: "/touriste/favoris",      icon: <Heart size={18} /> },
-    { label: "Messages",         href: "/touriste/messages",     icon: <MessageCircle size={18} /> },
+    { label: "Accueil",          href: "/touriste/dashboard",    icon: <LayoutDashboard size={16} /> },
+    { label: "Excursions",       href: "/excursions",            icon: <Mountain size={16} /> },
+    { label: "Mon itinéraire",   href: "/touriste/itineraire",   icon: <Map size={16} /> },
+    { label: "Mes réservations", href: "/touriste/reservations", icon: <CalendarDays size={16} /> },
+    { label: "Mes favoris",      href: "/touriste/favoris",      icon: <Heart size={16} /> },
+    { label: "Messages",         href: "/touriste/messages",     icon: <MessageCircle size={16} />, badge: unreadMsg },
   ];
 
   const isActive = (href: string) => pathname === href || pathname.startsWith(href + "/");
@@ -79,7 +74,7 @@ export default function TouristeNav({ userName, favCount = 0 }: { userName?: str
         .tlink.on{background:rgba(43,150,168,0.11);color:#2B96A8!important;font-weight:700}
         .av{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#2B96A8,#1e7a8a);color:white;border:none;cursor:pointer;font-size:14px;font-weight:800;font-family:'DM Sans',sans-serif;display:flex;align-items:center;justify-content:center;transition:transform 0.15s;flex-shrink:0}
         .av:hover{transform:scale(1.08)}
-        .drop{position:absolute;top:calc(100% + 10px);right:0;background:white;border:1px solid #E5E7EB;border-radius:16px;padding:6px;min-width:210px;box-shadow:0 12px 40px rgba(0,0,0,0.12);z-index:400;animation:dropIn 0.18s ease}
+        .drop{position:absolute;top:calc(100% + 10px);right:0;background:white;border:1px solid #E5E7EB;border-radius:16px;padding:6px;min-width:220px;box-shadow:0 12px 40px rgba(0,0,0,0.12);z-index:400;animation:dropIn 0.18s ease}
         @keyframes dropIn{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:translateY(0)}}
         .ddi{display:flex;align-items:center;gap:9px;padding:9px 12px;border-radius:10px;text-decoration:none;font-size:13px;font-weight:500;color:#374151;cursor:pointer;border:none;background:none;font-family:'DM Sans',sans-serif;width:100%;text-align:left;transition:background 0.15s}
         .ddi:hover{background:#F9FAFB}
@@ -109,15 +104,16 @@ export default function TouristeNav({ userName, favCount = 0 }: { userName?: str
           <span style={{ fontFamily: "'Playfair Display', serif", fontSize: 18, fontWeight: 900, color: "#111", letterSpacing: "-0.3px" }}>voyajaime</span>
         </Link>
 
-        {/* Links */}
+        {/* Nav links */}
         <nav style={{ display: "flex", alignItems: "center", gap: 2, flex: 1, justifyContent: "center" }}>
           {links.map(l => (
-            <Link key={l.href} href={l.href} className={`tlink ${isActive(l.href) ? "on" : ""}`}
-              style={{ color: isActive(l.href) ? "#2B96A8" : "#374151", position: "relative" }}>
-              {l.icon === "msg"
-                ? <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-                : <span style={{ fontSize: 15 }}>{l.icon}</span>
-              }
+            <Link
+              key={l.href}
+              href={l.href}
+              className={`tlink ${isActive(l.href) ? "on" : ""}`}
+              style={{ color: isActive(l.href) ? "#2B96A8" : "#374151", position: "relative" }}
+            >
+              {l.icon}
               {l.label}
               {(l.badge ?? 0) > 0 && (
                 <span style={{ position: "absolute", top: 2, right: 2, minWidth: 16, height: 16, background: "#EF4444", color: "white", borderRadius: 8, fontSize: 9, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center", padding: "0 3px", border: "1.5px solid white" }}>
@@ -128,7 +124,7 @@ export default function TouristeNav({ userName, favCount = 0 }: { userName?: str
           ))}
         </nav>
 
-        {/* Avatar */}
+        {/* Avatar + dropdown */}
         <div style={{ position: "relative", flexShrink: 0 }}>
           <button className="av" onClick={() => setMenuOpen(!menuOpen)}>
             {userName ? userName.charAt(0).toUpperCase() : "T"}
@@ -138,6 +134,7 @@ export default function TouristeNav({ userName, favCount = 0 }: { userName?: str
             <>
               <div style={{ position: "fixed", inset: 0, zIndex: 399 }} onClick={() => setMenuOpen(false)} />
               <div className="drop">
+
                 {/* User info */}
                 <div style={{ padding: "10px 14px 12px", borderBottom: "1px solid #F3F4F6", marginBottom: 4 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
@@ -146,23 +143,51 @@ export default function TouristeNav({ userName, favCount = 0 }: { userName?: str
                     </div>
                     <div>
                       <p style={{ fontSize: 13, fontWeight: 700, color: "#111827" }}>{userName || "Touriste"}</p>
-                      <span style={{ fontSize: 11, color: "#2B96A8", fontWeight: 600 }}>✈️ Compte touriste</span>
+                      <span style={{ fontSize: 11, color: "#2B96A8", fontWeight: 600, display: "flex", alignItems: "center", gap: 4 }}>
+                        <Plane size={11} /> Compte touriste
+                      </span>
                     </div>
                   </div>
                 </div>
 
-                <Link href="/touriste/profil" className="ddi" onClick={() => setMenuOpen(false)}>👤 Mon profil</Link>
-                <Link href="/touriste/favoris" className="ddi" onClick={() => setMenuOpen(false)}>❤️ Mes favoris {favCount > 0 && <span style={{ marginLeft: "auto", background: "#FEF2F2", color: "#DC2626", padding: "1px 7px", borderRadius: 10, fontSize: 11, fontWeight: 700 }}>{favCount}</span>}</Link>
-                <Link href="/touriste/reservations" className="ddi" onClick={() => setMenuOpen(false)}>📅 Mes réservations</Link>
-                <Link href="/touriste/itineraire" className="ddi" onClick={() => setMenuOpen(false)}>🗺️ Mon itinéraire</Link>
-                <Link href="/touriste/messages" className="ddi" onClick={() => setMenuOpen(false)}>
-                  💬 Mes messages
-                  {unreadMsg > 0 && <span style={{ marginLeft: "auto", background: "#FEF2F2", color: "#EF4444", padding: "1px 7px", borderRadius: 10, fontSize: 11, fontWeight: 700 }}>{unreadMsg}</span>}
+                <Link href="/touriste/profil" className="ddi" onClick={() => setMenuOpen(false)}>
+                  <UserCircle size={15} style={{ flexShrink: 0 }} /> Mon profil
                 </Link>
-                <Link href="/excursions" className="ddi" onClick={() => setMenuOpen(false)}>🏔️ Toutes les excursions</Link>
+
+                <Link href="/touriste/favoris" className="ddi" onClick={() => setMenuOpen(false)}>
+                  <Heart size={15} style={{ flexShrink: 0 }} /> Mes favoris
+                  {favCount > 0 && (
+                    <span style={{ marginLeft: "auto", background: "#FEF2F2", color: "#DC2626", padding: "1px 7px", borderRadius: 10, fontSize: 11, fontWeight: 700 }}>
+                      {favCount}
+                    </span>
+                  )}
+                </Link>
+
+                <Link href="/touriste/reservations" className="ddi" onClick={() => setMenuOpen(false)}>
+                  <CalendarDays size={15} style={{ flexShrink: 0 }} /> Mes réservations
+                </Link>
+
+                <Link href="/touriste/itineraire" className="ddi" onClick={() => setMenuOpen(false)}>
+                  <Map size={15} style={{ flexShrink: 0 }} /> Mon itinéraire
+                </Link>
+
+                <Link href="/touriste/messages" className="ddi" onClick={() => setMenuOpen(false)}>
+                  <MessageCircle size={15} style={{ flexShrink: 0 }} /> Mes messages
+                  {unreadMsg > 0 && (
+                    <span style={{ marginLeft: "auto", background: "#FEF2F2", color: "#EF4444", padding: "1px 7px", borderRadius: 10, fontSize: 11, fontWeight: 700 }}>
+                      {unreadMsg}
+                    </span>
+                  )}
+                </Link>
+
+                <Link href="/excursions" className="ddi" onClick={() => setMenuOpen(false)}>
+                  <Mountain size={15} style={{ flexShrink: 0 }} /> Toutes les excursions
+                </Link>
 
                 <div style={{ borderTop: "1px solid #F3F4F6", marginTop: 4, paddingTop: 4 }}>
-                  <button className="ddi red" onClick={handleSignOut}>🚪 Se déconnecter</button>
+                  <button className="ddi red" onClick={handleSignOut}>
+                    <LogOut size={15} style={{ flexShrink: 0 }} /> Se déconnecter
+                  </button>
                 </div>
               </div>
             </>

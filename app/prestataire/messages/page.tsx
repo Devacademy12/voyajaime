@@ -2,6 +2,17 @@
 
 import { useState, useEffect, useRef, useMemo } from "react";
 import { createClient } from "@/lib/supabaseClient";
+import {
+  MessageCircle,
+  Search,
+  Inbox,
+  Mountain,
+  Loader2,
+  Send,
+  CheckCheck,
+  Check,
+  Hand,
+} from "lucide-react";
 
 type Conversation = {
   id: string;
@@ -136,8 +147,8 @@ export default function PrestataireMessagesPage() {
   );
 
   if (loading) return (
-    <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: 400 }}>
-      <div style={{ width: 36, height: 36, border: "3px solid #E5E7EB", borderTop: "3px solid #2B96A8", borderRadius: "50%", animation: "spin .7s linear infinite" }} />
+    <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: 400, gap: 12 }}>
+      <Loader2 size={28} style={{ color: "#2B96A8", animation: "spin .7s linear infinite" }} />
       <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
     </div>
   );
@@ -159,45 +170,67 @@ export default function PrestataireMessagesPage() {
       <div style={{ width: 300, flexShrink: 0, borderRight: "1px solid #E5E7EB", display: "flex", flexDirection: "column", background: "#FAFAFA" }}>
         <div style={{ padding: "16px", borderBottom: "1px solid #E5E7EB", background: "white" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
-            <span style={{ fontSize: 18 }}>💬</span>
+            <MessageCircle size={18} style={{ color: "#2B96A8" }} />
             <h2 style={{ fontSize: 15, fontWeight: 700, color: "#111827" }}>Messages</h2>
-            {totalUnread > 0 && <span style={{ background: "#2B96A8", color: "white", borderRadius: 20, padding: "1px 8px", fontSize: 11, fontWeight: 700 }}>{totalUnread}</span>}
+            {totalUnread > 0 && (
+              <span style={{ background: "#2B96A8", color: "white", borderRadius: 20, padding: "1px 8px", fontSize: 11, fontWeight: 700 }}>
+                {totalUnread}
+              </span>
+            )}
           </div>
           <p style={{ fontSize: 11, color: "#9CA3AF", marginBottom: 10 }}>Conversations avec vos touristes</p>
-          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Rechercher un touriste..."
-            style={{ width: "100%", padding: "8px 12px", border: "1.5px solid #E5E7EB", borderRadius: 10, fontSize: 13, fontFamily: "inherit", outline: "none", color: "#111827", background: "#F9FAFB" }}
-            onFocus={e => e.currentTarget.style.borderColor = "#2B96A8"}
-            onBlur={e => e.currentTarget.style.borderColor = "#E5E7EB"} />
+          <div style={{ position: "relative" }}>
+            <Search size={13} style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: "#9CA3AF" }} />
+            <input
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              placeholder="Rechercher un touriste..."
+              style={{ width: "100%", padding: "8px 12px 8px 30px", border: "1.5px solid #E5E7EB", borderRadius: 10, fontSize: 13, fontFamily: "inherit", outline: "none", color: "#111827", background: "#F9FAFB" }}
+              onFocus={e => e.currentTarget.style.borderColor = "#2B96A8"}
+              onBlur={e => e.currentTarget.style.borderColor = "#E5E7EB"}
+            />
+          </div>
         </div>
 
         <div style={{ flex: 1, overflowY: "auto" }}>
           {filtered.length === 0 ? (
             <div style={{ padding: "48px 20px", textAlign: "center" }}>
-              <div style={{ fontSize: 44, marginBottom: 12 }}>📭</div>
+              <Inbox size={44} style={{ color: "#E5E7EB", margin: "0 auto 12px" }} />
               <p style={{ fontSize: 14, fontWeight: 600, color: "#374151", marginBottom: 6 }}>Aucun message</p>
               <p style={{ fontSize: 12, color: "#9CA3AF", lineHeight: 1.6 }}>Les touristes vous contacteront depuis vos excursions</p>
             </div>
           ) : filtered.map(conv => {
             const isActive = activeConv?.id === conv.id;
-            const name  = conv.touriste?.full_name || "Touriste";
-            const unread = conv.unread_count || 0;
+            const name     = conv.touriste?.full_name || "Touriste";
+            const unread   = conv.unread_count || 0;
             return (
               <div key={conv.id} className={`conv-row${isActive ? " active" : ""}`} onClick={() => openConversation(conv)}
                 style={{ padding: "13px 16px", display: "flex", gap: 10, alignItems: "flex-start" }}>
                 <div style={{ width: 42, height: 42, borderRadius: "50%", flexShrink: 0, overflow: "hidden", background: "linear-gradient(135deg,#7C3AED,#5B21B6)", display: "flex", alignItems: "center", justifyContent: "center", color: "white", fontWeight: 700, fontSize: 15, border: `2px solid ${isActive ? "#7C3AED" : "transparent"}` }}>
-                  {conv.touriste?.avatar_url ? <img src={conv.touriste.avatar_url} style={{ width: "100%", height: "100%", objectFit: "cover" }} alt="" /> : name.charAt(0).toUpperCase()}
+                  {conv.touriste?.avatar_url
+                    ? <img src={conv.touriste.avatar_url} style={{ width: "100%", height: "100%", objectFit: "cover" }} alt="" />
+                    : name.charAt(0).toUpperCase()
+                  }
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 2 }}>
                     <span style={{ fontSize: 13, fontWeight: unread > 0 ? 700 : 600, color: "#111827", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{name}</span>
                     {conv.last_message && <span style={{ fontSize: 10, color: "#9CA3AF", flexShrink: 0, marginLeft: 4 }}>{fmt(conv.last_message.created_at)}</span>}
                   </div>
-                  {conv.excursion && <p style={{ fontSize: 11, color: "#2B96A8", marginBottom: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>🏔️ {conv.excursion.title}</p>}
+                  {conv.excursion && (
+                    <p style={{ fontSize: 11, color: "#2B96A8", marginBottom: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", display: "flex", alignItems: "center", gap: 4 }}>
+                      <Mountain size={10} /> {conv.excursion.title}
+                    </p>
+                  )}
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                     <p style={{ fontSize: 12, color: unread > 0 ? "#374151" : "#9CA3AF", fontWeight: unread > 0 ? 600 : 400, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                       {conv.last_message?.contenu || "Nouvelle conversation..."}
                     </p>
-                    {unread > 0 && <span style={{ background: "#2B96A8", color: "white", borderRadius: "50%", width: 18, height: 18, fontSize: 10, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginLeft: 4 }}>{unread}</span>}
+                    {unread > 0 && (
+                      <span style={{ background: "#2B96A8", color: "white", borderRadius: "50%", width: 18, height: 18, fontSize: 10, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginLeft: 4 }}>
+                        {unread}
+                      </span>
+                    )}
                   </div>
                 </div>
               </div>
@@ -209,21 +242,32 @@ export default function PrestataireMessagesPage() {
       {/* ── Zone chat ── */}
       {activeConv ? (
         <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
+          {/* Chat header */}
           <div style={{ padding: "14px 20px", borderBottom: "1px solid #E5E7EB", display: "flex", alignItems: "center", gap: 12, background: "white" }}>
             <div style={{ width: 40, height: 40, borderRadius: "50%", overflow: "hidden", background: "linear-gradient(135deg,#7C3AED,#5B21B6)", display: "flex", alignItems: "center", justifyContent: "center", color: "white", fontWeight: 700, fontSize: 16, flexShrink: 0 }}>
-              {activeConv.touriste?.avatar_url ? <img src={activeConv.touriste.avatar_url} style={{ width: "100%", height: "100%", objectFit: "cover" }} alt="" /> : (activeConv.touriste?.full_name || "T").charAt(0).toUpperCase()}
+              {activeConv.touriste?.avatar_url
+                ? <img src={activeConv.touriste.avatar_url} style={{ width: "100%", height: "100%", objectFit: "cover" }} alt="" />
+                : (activeConv.touriste?.full_name || "T").charAt(0).toUpperCase()
+              }
             </div>
             <div style={{ flex: 1 }}>
               <p style={{ fontSize: 14, fontWeight: 700, color: "#111827" }}>{activeConv.touriste?.full_name || "Touriste"}</p>
-              {activeConv.excursion && <p style={{ fontSize: 12, color: "#2B96A8" }}>🏔️ {activeConv.excursion.title}</p>}
+              {activeConv.excursion && (
+                <p style={{ fontSize: 12, color: "#2B96A8", display: "flex", alignItems: "center", gap: 4 }}>
+                  <Mountain size={11} /> {activeConv.excursion.title}
+                </p>
+              )}
             </div>
             <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#10B981" }} />
           </div>
 
+          {/* Messages */}
           <div style={{ flex: 1, overflowY: "auto", padding: "20px 24px", display: "flex", flexDirection: "column", gap: 8, background: "#F8FAFB" }}>
             {messages.length === 0 ? (
               <div style={{ textAlign: "center", padding: "60px 0" }}>
-                <div style={{ fontSize: 48, marginBottom: 12 }}>👋</div>
+                <div style={{ width: 72, height: 72, borderRadius: "50%", background: "rgba(43,150,168,.08)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
+                  <Hand size={32} style={{ color: "#2B96A8" }} />
+                </div>
                 <p style={{ fontSize: 15, fontWeight: 600, color: "#374151", marginBottom: 6 }}>Nouveau message</p>
                 <p style={{ fontSize: 13, color: "#9CA3AF" }}>Répondez au touriste pour démarrer la conversation</p>
               </div>
@@ -233,12 +277,17 @@ export default function PrestataireMessagesPage() {
               const showTs = !prev || new Date(msg.created_at).getTime() - new Date(prev.created_at).getTime() > 300000;
               return (
                 <div key={msg.id}>
-                  {showTs && <div style={{ textAlign: "center", margin: "8px 0" }}><span style={{ fontSize: 11, color: "#9CA3AF", background: "#E9EDF0", padding: "3px 10px", borderRadius: 20 }}>{fmt(msg.created_at)}</span></div>}
+                  {showTs && (
+                    <div style={{ textAlign: "center", margin: "8px 0" }}>
+                      <span style={{ fontSize: 11, color: "#9CA3AF", background: "#E9EDF0", padding: "3px 10px", borderRadius: 20 }}>{fmt(msg.created_at)}</span>
+                    </div>
+                  )}
                   <div className="bubble" style={{ display: "flex", justifyContent: isMine ? "flex-end" : "flex-start" }}>
                     <div style={{ maxWidth: "68%", padding: "10px 14px", borderRadius: isMine ? "18px 18px 4px 18px" : "18px 18px 18px 4px", background: isMine ? "#2B96A8" : "white", color: isMine ? "white" : "#111827", fontSize: 14, lineHeight: 1.55, boxShadow: isMine ? "0 2px 12px rgba(43,150,168,.3)" : "0 1px 4px rgba(0,0,0,.06)", border: isMine ? "none" : "1px solid #E5E7EB" }}>
                       <p style={{ wordBreak: "break-word" }}>{msg.contenu}</p>
-                      <p style={{ fontSize: 10, marginTop: 3, opacity: .7, textAlign: "right" }}>
-                        {fmt(msg.created_at)} {isMine && (msg.lu ? " ✓✓" : " ✓")}
+                      <p style={{ fontSize: 10, marginTop: 3, opacity: .7, textAlign: "right", display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 3 }}>
+                        {fmt(msg.created_at)}
+                        {isMine && (msg.lu ? <CheckCheck size={12} /> : <Check size={12} />)}
                       </p>
                     </div>
                   </div>
@@ -248,22 +297,35 @@ export default function PrestataireMessagesPage() {
             <div ref={bottomRef} />
           </div>
 
+          {/* Input */}
           <div style={{ padding: "12px 20px", borderTop: "1px solid #E5E7EB", display: "flex", gap: 10, alignItems: "center", background: "white" }}>
-            <input ref={inputRef} className="msg-input" value={newMsg} onChange={e => setNewMsg(e.target.value)}
+            <input
+              ref={inputRef}
+              className="msg-input"
+              value={newMsg}
+              onChange={e => setNewMsg(e.target.value)}
               onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); } }}
               placeholder="Répondre au touriste..."
-              style={{ flex: 1, padding: "11px 16px", border: "1.5px solid #E5E7EB", borderRadius: 30, fontSize: 14, fontFamily: "inherit", outline: "none", color: "#111827", transition: "all .2s", background: "#F9FAFB" }} />
-            <button className="send-btn" onClick={sendMessage} disabled={!newMsg.trim() || sending}
-              style={{ width: 44, height: 44, borderRadius: "50%", background: newMsg.trim() ? "#2B96A8" : "#E5E7EB", border: "none", cursor: newMsg.trim() ? "pointer" : "not-allowed", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, transition: "all .2s", boxShadow: newMsg.trim() ? "0 4px 12px rgba(43,150,168,.4)" : "none" }}>
+              style={{ flex: 1, padding: "11px 16px", border: "1.5px solid #E5E7EB", borderRadius: 30, fontSize: 14, fontFamily: "inherit", outline: "none", color: "#111827", transition: "all .2s", background: "#F9FAFB" }}
+            />
+            <button
+              className="send-btn"
+              onClick={sendMessage}
+              disabled={!newMsg.trim() || sending}
+              style={{ width: 44, height: 44, borderRadius: "50%", background: newMsg.trim() ? "#2B96A8" : "#E5E7EB", border: "none", cursor: newMsg.trim() ? "pointer" : "not-allowed", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, transition: "all .2s", boxShadow: newMsg.trim() ? "0 4px 12px rgba(43,150,168,.4)" : "none" }}
+            >
               {sending
-                ? <div style={{ width: 16, height: 16, border: "2px solid rgba(255,255,255,.4)", borderTop: "2px solid white", borderRadius: "50%", animation: "spin .65s linear infinite" }} />
-                : <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={newMsg.trim() ? "white" : "#9CA3AF"} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>}
+                ? <Loader2 size={18} color="white" style={{ animation: "spin .65s linear infinite" }} />
+                : <Send size={17} color={newMsg.trim() ? "white" : "#9CA3AF"} />
+              }
             </button>
           </div>
         </div>
       ) : (
         <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: 14, background: "#F8FAFB" }}>
-          <div style={{ width: 80, height: 80, borderRadius: "50%", background: "linear-gradient(135deg,#F3E8FF,#E9D5FF)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 36 }}>💬</div>
+          <div style={{ width: 80, height: 80, borderRadius: "50%", background: "linear-gradient(135deg,#F3E8FF,#E9D5FF)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <MessageCircle size={36} style={{ color: "#7C3AED" }} />
+          </div>
           <div style={{ textAlign: "center" }}>
             <p style={{ fontSize: 17, fontWeight: 700, color: "#374151", marginBottom: 6 }}>Messagerie</p>
             <p style={{ fontSize: 13, color: "#9CA3AF", maxWidth: 280, lineHeight: 1.6 }}>Sélectionnez une conversation pour répondre à vos touristes</p>
