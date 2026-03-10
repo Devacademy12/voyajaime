@@ -1,8 +1,9 @@
-"use client";
-
-import { Calendar, Users, Clock, MapPin, CreditCard } from "lucide-react";
+import { createServerSupabaseClient } from "@/lib/supabaseServer";
 import Link from "next/link";
+import { Plus, Calendar } from "lucide-react";
+import ReservationsClient from "./ReservationsClient";
 
+// Définir un type pour les réservations
 type Reservation = {
   id: string;
   booking_code: string;
@@ -22,46 +23,131 @@ type Reservation = {
   } | null;
 };
 
-export default function ReservationsClient({ reservations }: { reservations: Reservation[] }) {
-  // Valeur par défaut pour éviter l'erreur si reservations est undefined
-  const reservationsList = reservations || [];
-  
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "confirmed":
-        return { bg: "#ECFDF3", text: "#067647", dot: "#12B76A" };
-      case "pending":
-        return { bg: "#FFFAEB", text: "#B54708", dot: "#F79009" };
-      case "cancelled":
-        return { bg: "#FEF3F2", text: "#B42318", dot: "#F04438" };
-      default:
-        return { bg: "#F2F4F7", text: "#344054", dot: "#667085" };
-    }
-  };
+export default async function TouristeReservations() {
+  const supabase = await createServerSupabaseClient();
+  const { data: { user } } = await supabase.auth.getUser();
 
-  const getStatusLabel = (status: string) => {
-    switch (status) {
-      case "confirmed": return "Confirmée";
-      case "pending": return "En attente de paiement";
-      case "cancelled": return "Annulée";
-      default: return status;
-    }
-  };
-
-  // Si pas de réservations, afficher un message
-  if (reservationsList.length === 0) {
+  if (!user) {
     return (
+      <div style={{ textAlign: "center", padding: 48 }}>
+        <p style={{ color: "#6B7280" }}>Veuillez vous connecter pour voir vos réservations</p>
+      </div>
+    );
+  }
+
+  // Fetch des réservations avec toutes les données nécessaires
+  const { data: reservations, error } = await supabase
+    .from("reservations")
+    .select(`
+      id,
+      booking_code,
+      date,
+      time,
+      people_count,
+      total_price,
+      platform_fee,
+      status,
+      created_at,
+      excursion:excursions (
+        title,
+        city,
+        photos,
+        duration_hours,
+        price_per_person
+      )
+    `)
+    .eq("touriste_id", user.id)
+    .order("created_at", { ascending: false });
+
+  // Récupérer les payment_status séparément
+  let paymentStatuses: Record<string, string> = {};
+  try {
+    const { data: ps } = await supabase
+      .from("reservations")
+      .select("id, payment_status")
+      .eq("touriste_id", user.id);
+    
+    if (ps && ps.length > 0) {
+      ps.forEach((r: { id: string; payment_status?: string | null }) => {
+        if (r.payment_status) paymentStatuses[r.id] = r.payment_status;
+      });
+    }
+  } catch (e) {
+    console.log("Payment status column might not exist yet");
+  }
+
+  if (error) {
+    console.error("Reservations fetch error:", error);
+    return (
+      <div style={{ textAlign: "center", padding: 48 }}>
+        <p style={{ color: "#EF4444", marginBottom: 8 }}>Erreur lors du chargement des réservations</p>
+        <p style={{ fontSize: 14, color: "#6B7280" }}>{error.message}</p>
+      </div>
+    );
+  }
+
+  // Vérifier si nous avons des réservations
+  console.log("Réservations brutes:", reservations);
+  
+  // Formater les réservations avec le bon typage
+  const formattedReservations: Reservation[] = (reservations || [])
+    .filter(r => r.excursion !== null)
+    .map(r => ({
+      id: r.id,
+      booking_code: r.booking_code,
+      date: r.date,
+      time: r.time,
+      people_count: r.people_count,
+      total_price: r.total_price,
+      platform_fee: r.platform_fee,
+      status: r.status,
+      payment_status: paymentStatuses[r.id] || null,
+      excursion: r.excursion ? {
+        title: r.excursion.title,
+        city: r.excursion.city,
+        photos: r.excursion.photos || [],
+        duration_hours: r.excursion.duration_hours,
+        price_per_person: r.excursion.price_per_person
+      } : null
+    }));
+
+  console.log("Réservations formatées:", formattedReservations);
+
+  return (
+    <div style={{ 
+      maxWidth: 1000, 
+      margin: "0 auto", 
+      padding: "40px 24px",
+      fontFamily: "system-ui, -apple-system, sans-serif"
+    }}>
+      {/* Header simplifié */}
       <div style={{ 
-        textAlign: "center", 
-        padding: 60, 
-        background: "#F9FAFB", 
-        borderRadius: 20,
-        border: "1px solid #E5E7EB"
+        display: "flex", 
+        justifyContent: "space-between", 
+        alignItems: "center", 
+        marginBottom: 48,
+        flexWrap: "wrap",
+        gap: 20
       }}>
-        <Calendar size={48} color="#9CA3AF" style={{ marginBottom: 16 }} />
-        <p style={{ fontSize: 16, color: "#4B5563", marginBottom: 20 }}>
-          Aucune réservation à afficher
-        </p>
+        <div>
+          <p style={{ 
+            fontSize: 13, 
+            fontWeight: 500, 
+            color: "#6B7280", 
+            marginBottom: 4 
+          }}>
+            Mes réservations
+          </p>
+          <h1 style={{ 
+            fontSize: 32, 
+            fontWeight: 600, 
+            color: "#111827", 
+            margin: 0
+          }}>
+            {formattedReservations.length} {formattedReservations.length > 1 ? "réservations" : "réservation"}
+          </h1>
+        </div>
+        
         <Link 
           href="/touriste/itineraire"
           style={{ 
@@ -71,187 +157,21 @@ export default function ReservationsClient({ reservations }: { reservations: Res
             borderRadius: 30, 
             textDecoration: "none", 
             fontSize: 14, 
-            fontWeight: 500,
-            display: "inline-block"
+            fontWeight: 500, 
+            display: "inline-flex", 
+            alignItems: "center", 
+            gap: 8,
+            border: "none",
+            transition: "opacity 0.2s"
           }}
         >
-          Explorer les excursions
+          <Plus size={18} /> 
+          Nouvelle réservation
         </Link>
       </div>
-    );
-  }
 
-  return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-      {reservationsList.map((res) => {
-        const statusStyle = getStatusColor(res.status);
-        const photo = res.excursion?.photos?.[0] || "/placeholder-excursion.jpg";
-        
-        return (
-          <div
-            key={res.id}
-            style={{
-              background: "white",
-              borderRadius: 20,
-              border: "1px solid #E5E7EB",
-              overflow: "hidden",
-              transition: "box-shadow 0.2s"
-            }}
-          >
-            <div style={{ display: "flex", flexDirection: "column" }}>
-              {/* Header avec statut */}
-              <div style={{
-                padding: "14px 20px",
-                borderBottom: "1px solid #E5E7EB",
-                background: "#F9FAFB",
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                flexWrap: "wrap",
-                gap: 10
-              }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                  <div style={{
-                    padding: "4px 10px",
-                    background: statusStyle.bg,
-                    color: statusStyle.text,
-                    borderRadius: 30,
-                    fontSize: 12,
-                    fontWeight: 500,
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 4
-                  }}>
-                    <span style={{
-                      width: 4,
-                      height: 4,
-                      background: statusStyle.dot,
-                      borderRadius: "50%",
-                      display: "inline-block"
-                    }} />
-                    {getStatusLabel(res.status)}
-                  </div>
-                  <span style={{ color: "#6B7280", fontSize: 12 }}>
-                    #{res.booking_code}
-                  </span>
-                </div>
-                
-                {res.status === "pending" && (
-                  <Link
-                    href={`/paiement/${res.id}`}
-                    style={{
-                      background: "#111827",
-                      color: "white",
-                      padding: "6px 16px",
-                      borderRadius: 30,
-                      textDecoration: "none",
-                      fontSize: 12,
-                      fontWeight: 500,
-                      display: "inline-flex",
-                      alignItems: "center",
-                      gap: 6
-                    }}
-                  >
-                    <CreditCard size={14} />
-                    Payer {res.total_price} TND
-                  </Link>
-                )}
-              </div>
-
-              {/* Contenu */}
-              <div style={{ padding: "20px" }}>
-                <div style={{ display: "flex", gap: 16 }}>
-                  {/* Image */}
-                  <div style={{
-                    width: 100,
-                    height: 100,
-                    borderRadius: 16,
-                    overflow: "hidden",
-                    flexShrink: 0,
-                    background: "#F3F4F6"
-                  }}>
-                    <img
-                      src={photo}
-                      alt={res.excursion?.title}
-                      style={{ width: "100%", height: "100%", objectFit: "cover" }}
-                    />
-                  </div>
-
-                  {/* Détails */}
-                  <div style={{ flex: 1 }}>
-                    <h3 style={{ 
-                      fontSize: 18, 
-                      fontWeight: 600, 
-                      color: "#111827",
-                      marginBottom: 10
-                    }}>
-                      {res.excursion?.title}
-                    </h3>
-                    
-                    <div style={{ 
-                      display: "flex", 
-                      flexWrap: "wrap", 
-                      gap: "12px 20px",
-                      marginBottom: 8
-                    }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                        <MapPin size={14} color="#9CA3AF" />
-                        <span style={{ fontSize: 13, color: "#4B5563" }}>
-                          {res.excursion?.city}
-                        </span>
-                      </div>
-                      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                        <Calendar size={14} color="#9CA3AF" />
-                        <span style={{ fontSize: 13, color: "#4B5563" }}>
-                          {new Date(res.date).toLocaleDateString("fr-FR", {
-                            day: "numeric",
-                            month: "short"
-                          })}
-                        </span>
-                      </div>
-                      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                        <Clock size={14} color="#9CA3AF" />
-                        <span style={{ fontSize: 13, color: "#4B5563" }}>
-                          {res.time} ({res.excursion?.duration_hours}h)
-                        </span>
-                      </div>
-                      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                        <Users size={14} color="#9CA3AF" />
-                        <span style={{ fontSize: 13, color: "#4B5563" }}>
-                          {res.people_count} pers.
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Footer pour les confirmées */}
-              {res.status === "confirmed" && (
-                <div style={{
-                  padding: "12px 20px",
-                  borderTop: "1px solid #E5E7EB",
-                  background: "#F9FAFB",
-                  display: "flex",
-                  justifyContent: "flex-end"
-                }}>
-                  <Link
-                    href={`/touriste/reservations/${res.id}`}
-                    style={{
-                      color: "#3B82F6",
-                      textDecoration: "none",
-                      fontSize: 13,
-                      fontWeight: 500
-                    }}
-                  >
-                    Voir détails →
-                  </Link>
-                </div>
-              )}
-            </div>
-          </div>
-        );
-      })}
+      {/* Passer les réservations au composant client */}
+      <ReservationsClient reservations={formattedReservations} />
     </div>
   );
 }
