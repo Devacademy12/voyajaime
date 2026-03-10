@@ -2,6 +2,23 @@
 
 import { useState } from "react";
 import { createClient } from "@/lib/supabaseClient";
+import {
+  MapPin,
+  Clock,
+  Users,
+  Star,
+  Camera,
+  Pencil,
+  Trash2,
+  PauseCircle,
+  PlayCircle,
+  CheckCircle2,
+  FileText,
+  Loader2,
+  Mountain,
+  AlertTriangle,
+  Plus,
+} from "lucide-react";
 
 interface Excursion {
   id: string; title: string; city: string; duration_hours: number;
@@ -35,9 +52,9 @@ export default function ExcursionsListClient({
       .eq("id", id).eq("prestataire_id", prestataireId);
     if (!error) {
       setExcursions(prev => prev.map(e => e.id === id ? { ...e, is_active: !current } : e));
-      showToast(!current ? "✅ Excursion publiée !" : "📝 Mise en brouillon");
+      showToast(!current ? "Excursion publiée !" : "Mise en brouillon");
     } else {
-      showToast("❌ Erreur lors de la mise à jour", false);
+      showToast("Erreur lors de la mise à jour", false);
     }
     setLoading(null);
   };
@@ -49,9 +66,9 @@ export default function ExcursionsListClient({
       .eq("id", id).eq("prestataire_id", prestataireId);
     if (!error) {
       setExcursions(prev => prev.filter(e => e.id !== id));
-      showToast("🗑️ Excursion supprimée");
+      showToast("Excursion supprimée");
     } else {
-      showToast("❌ Erreur lors de la suppression", false);
+      showToast("Erreur lors de la suppression", false);
     }
     setLoading(null);
   };
@@ -62,12 +79,12 @@ export default function ExcursionsListClient({
 
   if (!excursions.length) return (
     <div style={{ textAlign: "center", padding: "60px 20px", background: "white", borderRadius: 20, border: "1px solid #F3F4F6" }}>
-      <p style={{ fontSize: 52, marginBottom: 16 }}>🏔️</p>
+      <Mountain size={52} style={{ color: "#E5E7EB", margin: "0 auto 16px" }} />
       <p style={{ fontSize: 16, fontWeight: 700, color: "#111827", marginBottom: 8 }}>Aucune excursion</p>
       <p style={{ fontSize: 14, color: "#6B7280", marginBottom: 24 }}>Créez votre première excursion pour recevoir des réservations</p>
       <a href="/prestataire/excursions/nouveau"
-        style={{ padding: "12px 24px", background: "#2B96A8", color: "white", borderRadius: 12, textDecoration: "none", fontSize: 14, fontWeight: 700 }}>
-        + Créer une excursion
+        style={{ padding: "12px 24px", background: "#2B96A8", color: "white", borderRadius: 12, textDecoration: "none", fontSize: 14, fontWeight: 700, display: "inline-flex", alignItems: "center", gap: 7 }}>
+        <Plus size={16} /> Créer une excursion
       </a>
     </div>
   );
@@ -79,17 +96,19 @@ export default function ExcursionsListClient({
         .exc-card:hover{transform:translateY(-3px);box-shadow:0 12px 36px rgba(0,0,0,.09)}
         .exc-card-img{width:100%;height:200px;object-fit:cover;display:block;transition:transform .4s}
         .exc-card:hover .exc-card-img{transform:scale(1.05)}
-        .exc-btn{padding:8px 16px;border-radius:10px;border:1px solid #E5E7EB;cursor:pointer;font-size:13px;font-weight:700;font-family:inherit;transition:all .2s;background:white;white-space:nowrap}
+        .exc-btn{padding:8px 12px;border-radius:10px;border:1px solid #E5E7EB;cursor:pointer;font-size:13px;font-weight:700;font-family:inherit;transition:all .2s;background:white;white-space:nowrap;display:flex;align-items:center;gap:5px}
         .exc-btn:disabled{opacity:.5;cursor:not-allowed}
-        .ftab{padding:7px 16px;border-radius:20px;border:1px solid #E5E7EB;cursor:pointer;font-size:13px;font-weight:600;font-family:inherit;transition:all .2s}
+        .ftab{padding:7px 16px;border-radius:20px;border:1px solid #E5E7EB;cursor:pointer;font-size:13px;font-weight:600;font-family:inherit;transition:all .2s;display:flex;align-items:center;gap:6px}
         .ftab.on{background:#2B96A8;color:white;border-color:#2B96A8}
         .ftab:not(.on){background:white;color:#6B7280}
-        .toast-p{position:fixed;top:24px;right:24px;z-index:999;padding:13px 20px;border-radius:14px;font-size:14px;font-weight:600;font-family:inherit;box-shadow:0 8px 30px rgba(0,0,0,.12);animation:tin .3s ease}
+        .toast-p{position:fixed;top:24px;right:24px;z-index:9999;padding:13px 20px;border-radius:14px;font-size:14px;font-weight:600;font-family:inherit;box-shadow:0 8px 30px rgba(0,0,0,.12);animation:tin .3s ease;display:flex;align-items:center;gap:8px}
         @keyframes tin{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}
+        @keyframes spin{to{transform:rotate(360deg)}}
       `}</style>
 
       {toast && (
         <div className="toast-p" style={{ background: toast.ok ? "#F0FDF4" : "#FEF2F2", color: toast.ok ? "#15803D" : "#DC2626", border: `1px solid ${toast.ok ? "#BBF7D0" : "#FECACA"}` }}>
+          {toast.ok ? <CheckCircle2 size={15} /> : <AlertTriangle size={15} />}
           {toast.msg}
         </div>
       )}
@@ -97,12 +116,12 @@ export default function ExcursionsListClient({
       {/* Filtres */}
       <div style={{ display: "flex", gap: 8, marginBottom: 20 }}>
         {([
-          { k: "all" as const, label: `Toutes (${excursions.length})` },
-          { k: "active" as const, label: `✅ Publiées (${excursions.filter(e => e.is_active).length})` },
-          { k: "draft" as const, label: `📝 Brouillons (${excursions.filter(e => !e.is_active).length})` },
+          { k: "all" as const, label: `Toutes (${excursions.length})`, icon: null },
+          { k: "active" as const, label: `Publiées (${excursions.filter(e => e.is_active).length})`, icon: <CheckCircle2 size={13} /> },
+          { k: "draft" as const, label: `Brouillons (${excursions.filter(e => !e.is_active).length})`, icon: <FileText size={13} /> },
         ]).map(t => (
           <button key={t.k} className={`ftab ${filter === t.k ? "on" : ""}`} onClick={() => setFilter(t.k)}>
-            {t.label}
+            {t.icon} {t.label}
           </button>
         ))}
       </div>
@@ -110,7 +129,10 @@ export default function ExcursionsListClient({
       {/* Grille */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 18 }}>
         {filtered.map(exc => (
-          <div key={exc.id} className="exc-card" onClick={(e) => { if ((e.target as HTMLElement).closest("button,a")) return; window.location.href = `/prestataire/excursions/${exc.id}`; }} style={{ cursor: "pointer" }}>
+          <div key={exc.id} className="exc-card"
+            onClick={(e) => { if ((e.target as HTMLElement).closest("button,a")) return; window.location.href = `/prestataire/excursions/${exc.id}`; }}
+            style={{ cursor: "pointer" }}>
+
             {/* Image */}
             <div style={{ overflow: "hidden", position: "relative", height: 200, background: "#F3F4F6" }}>
               <img
@@ -122,8 +144,9 @@ export default function ExcursionsListClient({
 
               {/* Status */}
               <div style={{ position: "absolute", top: 10, left: 10 }}>
-                <span style={{ padding: "3px 10px", borderRadius: 20, fontSize: 11, fontWeight: 800, backdropFilter: "blur(8px)", color: "white", background: exc.is_active ? "rgba(21,128,61,.88)" : "rgba(107,114,128,.82)" }}>
-                  {exc.is_active ? "● Publié" : "● Brouillon"}
+                <span style={{ padding: "3px 10px", borderRadius: 20, fontSize: 11, fontWeight: 800, backdropFilter: "blur(8px)", color: "white", background: exc.is_active ? "rgba(21,128,61,.88)" : "rgba(107,114,128,.82)", display: "inline-flex", alignItems: "center", gap: 4 }}>
+                  <span style={{ width: 5, height: 5, borderRadius: "50%", background: "currentColor", display: "inline-block" }} />
+                  {exc.is_active ? "Publié" : "Brouillon"}
                 </span>
               </div>
 
@@ -141,8 +164,8 @@ export default function ExcursionsListClient({
 
               {/* Nb photos */}
               {(exc.photos?.filter(Boolean).length || 0) > 1 && (
-                <div style={{ position: "absolute", bottom: 10, left: 12, padding: "3px 8px", background: "rgba(0,0,0,.45)", backdropFilter: "blur(6px)", borderRadius: 12, fontSize: 11, color: "white" }}>
-                  📷 {exc.photos.filter(Boolean).length}
+                <div style={{ position: "absolute", bottom: 10, left: 12, padding: "3px 8px", background: "rgba(0,0,0,.45)", backdropFilter: "blur(6px)", borderRadius: 12, fontSize: 11, color: "white", display: "flex", alignItems: "center", gap: 4 }}>
+                  <Camera size={11} /> {exc.photos.filter(Boolean).length}
                 </div>
               )}
             </div>
@@ -154,27 +177,37 @@ export default function ExcursionsListClient({
               </h3>
 
               <div style={{ display: "flex", gap: 12, fontSize: 12, color: "#6B7280", marginBottom: 14, paddingBottom: 14, borderBottom: "1px solid #F3F4F6", flexWrap: "wrap" }}>
-                <span>📍 {exc.city}</span>
-                <span>⏱️ {exc.duration_hours}h</span>
-                <span>👥 max {exc.max_people}</span>
-                {exc.rating > 0 && <span>⭐ {exc.rating} <span style={{ color: "#9CA3AF" }}>({exc.reviews_count})</span></span>}
+                <span style={{ display: "flex", alignItems: "center", gap: 3 }}><MapPin size={12} /> {exc.city}</span>
+                <span style={{ display: "flex", alignItems: "center", gap: 3 }}><Clock size={12} /> {exc.duration_hours}h</span>
+                <span style={{ display: "flex", alignItems: "center", gap: 3 }}><Users size={12} /> max {exc.max_people}</span>
+                {exc.rating > 0 && (
+                  <span style={{ display: "flex", alignItems: "center", gap: 3 }}>
+                    <Star size={12} fill="#F59E0B" stroke="#F59E0B" /> {exc.rating}
+                    <span style={{ color: "#9CA3AF" }}>({exc.reviews_count})</span>
+                  </span>
+                )}
               </div>
 
               {/* Actions */}
               <div style={{ display: "flex", gap: 8 }}>
                 <button className="exc-btn" disabled={loading === exc.id}
                   onClick={() => toggleActive(exc.id, exc.is_active)}
-                  style={{ flex: 1, color: exc.is_active ? "#374151" : "#059669", background: exc.is_active ? "white" : "#F0FDF4", borderColor: exc.is_active ? "#E5E7EB" : "#BBF7D0" }}>
-                  {loading === exc.id ? "⏳" : exc.is_active ? "⏸ Dépublier" : "▶ Publier"}
+                  style={{ flex: 1, justifyContent: "center", color: exc.is_active ? "#374151" : "#059669", background: exc.is_active ? "white" : "#F0FDF4", borderColor: exc.is_active ? "#E5E7EB" : "#BBF7D0" }}>
+                  {loading === exc.id
+                    ? <Loader2 size={14} style={{ animation: "spin .7s linear infinite" }} />
+                    : exc.is_active
+                    ? <><PauseCircle size={14} /> Dépublier</>
+                    : <><PlayCircle size={14} /> Publier</>
+                  }
                 </button>
                 <a href={`/prestataire/excursions/${exc.id}/edit`}
-                  style={{ padding: "8px 14px", background: "#F3F4F6", color: "#374151", borderRadius: 10, fontSize: 13, fontWeight: 700, textDecoration: "none", display: "flex", alignItems: "center" }}>
-                  ✏️
+                  style={{ padding: "8px 12px", background: "#F3F4F6", color: "#374151", borderRadius: 10, fontSize: 13, fontWeight: 700, textDecoration: "none", display: "flex", alignItems: "center" }}>
+                  <Pencil size={14} />
                 </a>
                 <button className="exc-btn" disabled={loading === exc.id}
                   onClick={() => handleDelete(exc.id, exc.title)}
                   style={{ padding: "8px 12px", color: "#DC2626", borderColor: "#FECACA", background: "#FEF2F2" }}>
-                  🗑️
+                  <Trash2 size={14} />
                 </button>
               </div>
             </div>

@@ -3,6 +3,23 @@
 import { useState, useRef } from "react";
 import { createClient } from "@/lib/supabaseClient";
 import Link from "next/link";
+import {
+  ArrowLeft,
+  FileText,
+  ImageIcon,
+  Settings2,
+  Tag,
+  Globe,
+  CheckSquare,
+  AlertTriangle,
+  CheckCircle2,
+  Loader2,
+  X,
+  Plus,
+  Save,
+  Rocket,
+  Info,
+} from "lucide-react";
 
 interface Excursion {
   id: string; title: string; city: string; description: string;
@@ -30,7 +47,6 @@ export default function EditExcursionClient({
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Form state — pre-filled from exc
   const [title, setTitle]       = useState(exc.title);
   const [city, setCity]         = useState(exc.city);
   const [description, setDesc]  = useState(exc.description);
@@ -42,7 +58,6 @@ export default function EditExcursionClient({
   const [inclus, setInclus]     = useState<string[]>(exc.inclusions || []);
   const [publish, setPublish]   = useState(exc.is_active);
 
-  // Photos: start with existing URLs
   const [photos, setPhotos] = useState<PhotoPreview[]>(
     (exc.photos || []).filter(Boolean).map(url => ({ url, uploading: false, existing: true, uploaded: url }))
   );
@@ -118,7 +133,7 @@ export default function EditExcursionClient({
         is_active: isActive,
       })
       .eq("id", exc.id)
-      .eq("prestataire_id", user.id); // sécurité
+      .eq("prestataire_id", user.id);
 
     setLoading(false);
     if (err) { setError(err.message); return; }
@@ -128,7 +143,7 @@ export default function EditExcursionClient({
 
   if (success) return (
     <div style={{ maxWidth: 520, margin: "0 auto", textAlign: "center", padding: "60px 20px" }}>
-      <p style={{ fontSize: 52, marginBottom: 16 }}>✅</p>
+      <CheckCircle2 size={52} style={{ color: "#15803D", margin: "0 auto 16px" }} />
       <h2 style={{ fontSize: 20, fontWeight: 700, color: "#111827", marginBottom: 8 }}>Excursion mise à jour !</h2>
       <p style={{ color: "#6B7280" }}>Redirection...</p>
     </div>
@@ -142,22 +157,22 @@ export default function EditExcursionClient({
         .fld input,.fld select,.fld textarea{width:100%;padding:12px 14px;border:1.5px solid #E5E7EB;border-radius:12px;font-size:14px;font-family:'DM Sans',sans-serif;color:#111827;outline:none;transition:all .2s;background:#FAFAFA}
         .fld input:focus,.fld select:focus,.fld textarea:focus{border-color:#2B96A8;background:white;box-shadow:0 0 0 4px rgba(43,150,168,.08)}
         .section{background:white;border-radius:20px;border:1px solid #F3F4F6;padding:24px;margin-bottom:16px;box-shadow:0 1px 4px rgba(0,0,0,.04)}
-        .section h2{font-size:15px;font-weight:700;color:#111827;margin-bottom:18px;padding-bottom:10px;border-bottom:1px solid #F3F4F6}
+        .section h2{font-size:15px;font-weight:700;color:#111827;margin-bottom:18px;padding-bottom:10px;border-bottom:1px solid #F3F4F6;display:flex;align-items:center;gap:8px}
         .drop-zone{border:2px dashed #D1D5DB;border-radius:16px;padding:32px;text-align:center;cursor:pointer;transition:all .2s;background:#FAFAFA}
         .drop-zone:hover{border-color:#2B96A8;background:rgba(43,150,168,.04)}
         .photo-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:14px}
         .photo-item{position:relative;aspect-ratio:4/3;border-radius:12px;overflow:hidden;background:#F3F4F6}
         .photo-item img{width:100%;height:100%;object-fit:cover}
         .photo-rm{position:absolute;top:6px;right:6px;width:24px;height:24px;border-radius:50%;background:rgba(0,0,0,.55);color:white;border:none;cursor:pointer;font-size:12px;display:flex;align-items:center;justify-content:center}
-        .photo-loading{position:absolute;inset:0;background:rgba(255,255,255,.7);display:flex;align-items:center;justify-content:center;font-size:20px}
-        .photo-main{position:absolute;bottom:6px;left:6px;padding:2px 8px;background:#2B96A8;color:white;borderRadius:6px;font-size:10px;font-weight:700}
+        .photo-loading{position:absolute;inset:0;background:rgba(255,255,255,.7);display:flex;align-items:center;justify-content:center}
+        @keyframes spin{to{transform:rotate(360deg)}}
       `}</style>
 
       <div style={{ maxWidth: 680 }}>
         <div style={{ marginBottom: 28 }}>
           <Link href={`/prestataire/excursions/${exc.id}`}
-            style={{ fontSize: 13, color: "#9CA3AF", textDecoration: "none", fontWeight: 500 }}>
-            ← Retour à l&apos;excursion
+            style={{ fontSize: 13, color: "#9CA3AF", textDecoration: "none", fontWeight: 500, display: "inline-flex", alignItems: "center", gap: 4 }}>
+            <ArrowLeft size={13} /> Retour à l&apos;excursion
           </Link>
           <h1 style={{ fontSize: 28, fontWeight: 800, color: "#111827", marginTop: 8, letterSpacing: "-0.5px" }}>
             Modifier l&apos;excursion
@@ -166,15 +181,15 @@ export default function EditExcursionClient({
         </div>
 
         {error && (
-          <div style={{ marginBottom: 16, padding: "12px 16px", background: "#FEF2F2", border: "1px solid #FECACA", borderRadius: 10, fontSize: 13, color: "#DC2626" }}>
-            ⚠️ {error}
+          <div style={{ marginBottom: 16, padding: "12px 16px", background: "#FEF2F2", border: "1px solid #FECACA", borderRadius: 10, fontSize: 13, color: "#DC2626", display: "flex", alignItems: "center", gap: 8 }}>
+            <AlertTriangle size={15} /> {error}
           </div>
         )}
 
         <form>
           {/* Infos de base */}
           <div className="section">
-            <h2>📝 Informations de base</h2>
+            <h2><FileText size={16} /> Informations de base</h2>
             <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
               <div className="fld">
                 <label>Titre *</label>
@@ -198,11 +213,11 @@ export default function EditExcursionClient({
 
           {/* Photos */}
           <div className="section">
-            <h2>📸 Photos <span style={{ fontSize: 12, fontWeight: 400, color: "#9CA3AF" }}>(max 6)</span></h2>
+            <h2><ImageIcon size={16} /> Photos <span style={{ fontSize: 12, fontWeight: 400, color: "#9CA3AF" }}>(max 6)</span></h2>
             <div className="drop-zone" onClick={() => fileRef.current?.click()}
               onDragOver={e => { e.preventDefault(); }}
               onDrop={e => { e.preventDefault(); handleFiles(e.dataTransfer.files); }}>
-              <div style={{ fontSize: 32, marginBottom: 6 }}>🖼️</div>
+              <ImageIcon size={32} style={{ color: "#D1D5DB", margin: "0 auto 8px" }} />
               <p style={{ fontSize: 14, fontWeight: 600, color: "#374151", marginBottom: 3 }}>Glissez ou cliquez pour ajouter des photos</p>
               <p style={{ fontSize: 12, color: "#9CA3AF" }}>JPG, PNG, WebP · Max 5MB par photo</p>
             </div>
@@ -214,9 +229,15 @@ export default function EditExcursionClient({
                 {photos.map((p, i) => (
                   <div key={i} className="photo-item">
                     <img src={p.url} alt="" onError={e => { (e.target as HTMLImageElement).style.display="none"; }} />
-                    {p.uploading && <div className="photo-loading">⏳</div>}
+                    {p.uploading && (
+                      <div className="photo-loading">
+                        <Loader2 size={20} style={{ animation: "spin .7s linear infinite", color: "#2B96A8" }} />
+                      </div>
+                    )}
                     {!p.uploading && (
-                      <button type="button" className="photo-rm" onClick={() => removePhoto(i)}>✕</button>
+                      <button type="button" className="photo-rm" onClick={() => removePhoto(i)}>
+                        <X size={12} />
+                      </button>
                     )}
                     {i === 0 && (
                       <div style={{ position: "absolute", bottom: 6, left: 6, padding: "2px 8px", background: "#2B96A8", color: "white", borderRadius: 6, fontSize: 10, fontWeight: 700 }}>
@@ -228,7 +249,7 @@ export default function EditExcursionClient({
                 {photos.length < 6 && (
                   <div style={{ aspectRatio: "4/3", borderRadius: 12, border: "2px dashed #E5E7EB", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", background: "#FAFAFA" }}
                     onClick={() => fileRef.current?.click()}>
-                    <span style={{ fontSize: 24, color: "#D1D5DB" }}>+</span>
+                    <Plus size={24} style={{ color: "#D1D5DB" }} />
                   </div>
                 )}
               </div>
@@ -237,7 +258,7 @@ export default function EditExcursionClient({
 
           {/* Détails pratiques */}
           <div className="section">
-            <h2>⚙️ Détails pratiques</h2>
+            <h2><Settings2 size={16} /> Détails pratiques</h2>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 14 }}>
               {[
                 { label: "Durée (heures)", value: duration, set: setDuration, min: 0.5, max: 24, step: 0.5 },
@@ -255,7 +276,7 @@ export default function EditExcursionClient({
 
           {/* Catégories */}
           <div className="section">
-            <h2>🏷️ Catégories</h2>
+            <h2><Tag size={16} /> Catégories</h2>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
               {categoriesDB.map(c => (
                 <button key={c.id} type="button"
@@ -269,7 +290,7 @@ export default function EditExcursionClient({
 
           {/* Langues */}
           <div className="section">
-            <h2>🌍 Langues disponibles</h2>
+            <h2><Globe size={16} /> Langues disponibles</h2>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
               {LANGUAGES.map(l => (
                 <button key={l} type="button"
@@ -283,7 +304,7 @@ export default function EditExcursionClient({
 
           {/* Inclusions */}
           <div className="section">
-            <h2>✅ Ce qui est inclus</h2>
+            <h2><CheckSquare size={16} /> Ce qui est inclus</h2>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
               {INCLUSIONS.map(inc => (
                 <button key={inc} type="button"
@@ -296,14 +317,16 @@ export default function EditExcursionClient({
           </div>
 
           {/* Résumé prix */}
-          <div style={{ padding: "14px 18px", background: "rgba(43,150,168,.06)", borderRadius: 12, marginBottom: 20, fontSize: 13, color: "#374151", border: "1px solid rgba(43,150,168,.15)" }}>
-            💡 Prix affiché : <strong>{price} TND</strong> · Commission 10% : <strong>{Math.round(price * 0.1)} TND</strong> · Vous recevez : <strong style={{ color: "#059669" }}>{Math.round(price * 0.9)} TND</strong> / personne
+          <div style={{ padding: "14px 18px", background: "rgba(43,150,168,.06)", borderRadius: 12, marginBottom: 20, fontSize: 13, color: "#374151", border: "1px solid rgba(43,150,168,.15)", display: "flex", alignItems: "center", gap: 8 }}>
+            <Info size={15} style={{ color: "#2B96A8", flexShrink: 0 }} />
+            Prix affiché : <strong>{price} TND</strong> · Commission 10% : <strong>{Math.round(price * 0.1)} TND</strong> · Vous recevez : <strong style={{ color: "#059669" }}>{Math.round(price * 0.9)} TND</strong> / personne
           </div>
 
           {/* Statut actuel */}
           <div style={{ padding: "12px 16px", background: "#F9FAFB", borderRadius: 12, marginBottom: 16, display: "flex", alignItems: "center", justifyContent: "space-between", border: "1px solid #E5E7EB" }}>
-            <div style={{ fontSize: 13, color: "#374151" }}>
-              Statut actuel : <strong style={{ color: publish ? "#15803D" : "#9CA3AF" }}>{publish ? "● Publiée" : "● Brouillon"}</strong>
+            <div style={{ fontSize: 13, color: "#374151", display: "flex", alignItems: "center", gap: 6 }}>
+              <span style={{ width: 8, height: 8, borderRadius: "50%", background: publish ? "#15803D" : "#9CA3AF", display: "inline-block" }} />
+              Statut actuel : <strong style={{ color: publish ? "#15803D" : "#9CA3AF" }}>{publish ? "Publiée" : "Brouillon"}</strong>
             </div>
           </div>
 
@@ -311,13 +334,15 @@ export default function EditExcursionClient({
           <div style={{ display: "flex", gap: 12 }}>
             <button type="button" disabled={loading}
               onClick={e => handleSubmit(e as unknown as React.FormEvent, false)}
-              style={{ flex: 1, padding: "13px", background: "white", border: "1.5px solid #E5E7EB", color: "#374151", borderRadius: 12, fontSize: 14, fontWeight: 700, cursor: loading ? "not-allowed" : "pointer", fontFamily: "inherit" }}>
-              {loading ? "Sauvegarde..." : "💾 Enregistrer comme brouillon"}
+              style={{ flex: 1, padding: "13px", background: "white", border: "1.5px solid #E5E7EB", color: "#374151", borderRadius: 12, fontSize: 14, fontWeight: 700, cursor: loading ? "not-allowed" : "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
+              {loading ? <Loader2 size={16} style={{ animation: "spin .7s linear infinite" }} /> : <Save size={16} />}
+              Enregistrer brouillon
             </button>
             <button type="button" disabled={loading}
               onClick={e => handleSubmit(e as unknown as React.FormEvent, true)}
-              style={{ flex: 2, padding: "13px", background: loading ? "#9CA3AF" : "#111827", color: "white", border: "none", borderRadius: 12, fontSize: 14, fontWeight: 700, cursor: loading ? "not-allowed" : "pointer", fontFamily: "inherit", transition: "all .2s" }}>
-              {loading ? "Mise à jour..." : "🚀 Enregistrer et publier"}
+              style={{ flex: 2, padding: "13px", background: loading ? "#9CA3AF" : "#111827", color: "white", border: "none", borderRadius: 12, fontSize: 14, fontWeight: 700, cursor: loading ? "not-allowed" : "pointer", fontFamily: "inherit", transition: "all .2s", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
+              {loading ? <Loader2 size={16} style={{ animation: "spin .7s linear infinite" }} /> : <Rocket size={16} />}
+              {loading ? "Mise à jour..." : "Enregistrer et publier"}
             </button>
           </div>
         </form>

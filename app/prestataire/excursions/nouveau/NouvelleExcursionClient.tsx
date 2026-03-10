@@ -2,6 +2,23 @@
 
 import { useState, useRef } from "react";
 import { createClient } from "@/lib/supabaseClient";
+import {
+  ArrowLeft,
+  FileText,
+  ImageIcon,
+  Settings2,
+  Tag,
+  Globe,
+  CheckSquare,
+  AlertTriangle,
+  CheckCircle2,
+  Loader2,
+  X,
+  Plus,
+  Save,
+  Rocket,
+  Info,
+} from "lucide-react";
 
 const LANGUAGES = ["Français","Anglais","Arabe","Allemand","Espagnol","Italien"];
 const INCLUSIONS = ["Guide francophone","Transport","Repas","Eau minérale","Équipement","Photos","Billet d'entrée"];
@@ -11,7 +28,6 @@ function toggle(arr: string[], item: string) {
 }
 
 interface PhotoPreview { file: File; url: string; uploading: boolean; uploaded?: string; }
-
 interface Ville { id: string; nom: string; emoji: string; active: boolean; }
 interface Categorie { id: string; nom: string; emoji: string; couleur: string; }
 
@@ -27,7 +43,6 @@ export default function NouvelleExcursionClient({
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Form fields
   const [title, setTitle] = useState("");
   const [city, setCity] = useState("");
   const [description, setDescription] = useState("");
@@ -94,7 +109,6 @@ export default function NouvelleExcursionClient({
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) { setError("Session expirée."); setLoading(false); return; }
 
-    // Upload photos first
     const photoUrls = photos.length > 0 ? await uploadPhotos(user.id) : [];
 
     const { error: err } = await supabase.from("excursions").insert({
@@ -113,7 +127,7 @@ export default function NouvelleExcursionClient({
 
   if (success) return (
     <div style={{ maxWidth: 520, margin: "0 auto", textAlign: "center", padding: "60px 20px" }}>
-      <p style={{ fontSize: 52, marginBottom: 16 }}>🎉</p>
+      <CheckCircle2 size={52} style={{ color: "#15803D", margin: "0 auto 16px" }} />
       <h2 style={{ fontSize: 20, fontWeight: 700, color: "#111827", marginBottom: 8 }}>
         Excursion {publish ? "publiée" : "sauvegardée"} !
       </h2>
@@ -129,29 +143,36 @@ export default function NouvelleExcursionClient({
         .fld input,.fld select,.fld textarea{width:100%;padding:12px 14px;border:1.5px solid #E5E7EB;border-radius:12px;font-size:14px;font-family:'DM Sans',sans-serif;color:#111827;outline:none;transition:all .2s;background:#FAFAFA}
         .fld input:focus,.fld select:focus,.fld textarea:focus{border-color:#2B96A8;background:white;box-shadow:0 0 0 4px rgba(43,150,168,.08)}
         .section{background:white;border-radius:20px;border:1px solid #F3F4F6;padding:24px;margin-bottom:16px;box-shadow:0 1px 4px rgba(0,0,0,.04)}
-        .section h2{font-size:15px;font-weight:700;color:#111827;margin-bottom:18px;padding-bottom:10px;border-bottom:1px solid #F3F4F6}
+        .section h2{font-size:15px;font-weight:700;color:#111827;margin-bottom:18px;padding-bottom:10px;border-bottom:1px solid #F3F4F6;display:flex;align-items:center;gap:8px}
         .drop-zone{border:2px dashed #D1D5DB;border-radius:16px;padding:32px;text-align:center;cursor:pointer;transition:all .2s;background:#FAFAFA}
         .drop-zone:hover,.drop-zone.drag{border-color:#2B96A8;background:rgba(43,150,168,.04)}
         .photo-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:14px}
         .photo-item{position:relative;aspect-ratio:4/3;border-radius:12px;overflow:hidden;background:#F3F4F6}
         .photo-item img{width:100%;height:100%;object-fit:cover}
-        .photo-rm{position:absolute;top:6px;right:6px;width:24px;height:24px;border-radius:50%;background:rgba(0,0,0,.55);color:white;border:none;cursor:pointer;font-size:12px;display:flex;align-items:center;justify-content:center}
-        .photo-loading{position:absolute;inset:0;background:rgba(255,255,255,.7);display:flex;align-items:center;justify-content:center;font-size:20px}
+        .photo-rm{position:absolute;top:6px;right:6px;width:24px;height:24px;border-radius:50%;background:rgba(0,0,0,.55);color:white;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center}
+        .photo-loading{position:absolute;inset:0;background:rgba(255,255,255,.7);display:flex;align-items:center;justify-content:center}
+        @keyframes spin{to{transform:rotate(360deg)}}
       `}</style>
 
       <div style={{ maxWidth: 680 }}>
         <div style={{ marginBottom: 28 }}>
-          <a href="/prestataire/excursions" style={{ fontSize: 13, color: "#9CA3AF", textDecoration: "none", fontWeight: 500 }}>← Mes excursions</a>
+          <a href="/prestataire/excursions" style={{ fontSize: 13, color: "#9CA3AF", textDecoration: "none", fontWeight: 500, display: "inline-flex", alignItems: "center", gap: 4 }}>
+            <ArrowLeft size={13} /> Mes excursions
+          </a>
           <h1 style={{ fontSize: 28, fontWeight: 800, color: "#111827", marginTop: 8, letterSpacing: "-0.5px" }}>Nouvelle excursion</h1>
         </div>
 
-        {error && <div style={{ marginBottom: 16, padding: "12px 16px", background: "#FEF2F2", border: "1px solid #FECACA", borderRadius: 10, fontSize: 13, color: "#DC2626" }}>{error}</div>}
+        {error && (
+          <div style={{ marginBottom: 16, padding: "12px 16px", background: "#FEF2F2", border: "1px solid #FECACA", borderRadius: 10, fontSize: 13, color: "#DC2626", display: "flex", alignItems: "center", gap: 8 }}>
+            <AlertTriangle size={15} /> {error}
+          </div>
+        )}
 
         <form onSubmit={handleSubmit}>
 
           {/* Infos de base */}
           <div className="section">
-            <h2>📝 Informations de base *</h2>
+            <h2><FileText size={16} /> Informations de base</h2>
             <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
               <div className="fld">
                 <label>Titre de l&apos;excursion *</label>
@@ -174,13 +195,13 @@ export default function NouvelleExcursionClient({
 
           {/* Photos */}
           <div className="section">
-            <h2>📸 Photos de l&apos;excursion <span style={{ fontSize: 12, fontWeight: 400, color: "#9CA3AF" }}>(max 6 photos, 5MB chacune)</span></h2>
+            <h2><ImageIcon size={16} /> Photos <span style={{ fontSize: 12, fontWeight: 400, color: "#9CA3AF" }}>(max 6, 5MB chacune)</span></h2>
 
             <div className="drop-zone" onClick={() => fileInputRef.current?.click()}
               onDragOver={e => { e.preventDefault(); e.currentTarget.classList.add("drag"); }}
               onDragLeave={e => e.currentTarget.classList.remove("drag")}
               onDrop={e => { e.preventDefault(); e.currentTarget.classList.remove("drag"); handleFiles(e.dataTransfer.files); }}>
-              <div style={{ fontSize: 36, marginBottom: 8 }}>🖼️</div>
+              <ImageIcon size={36} style={{ color: "#D1D5DB", margin: "0 auto 8px" }} />
               <p style={{ fontSize: 14, fontWeight: 600, color: "#374151", marginBottom: 4 }}>
                 Glissez vos photos ici ou cliquez pour parcourir
               </p>
@@ -194,8 +215,16 @@ export default function NouvelleExcursionClient({
                 {photos.map((p, i) => (
                   <div key={i} className="photo-item">
                     <img src={p.url} alt="" />
-                    {p.uploading && <div className="photo-loading">⏳</div>}
-                    {!p.uploading && <button type="button" className="photo-rm" onClick={() => removePhoto(i)}>✕</button>}
+                    {p.uploading && (
+                      <div className="photo-loading">
+                        <Loader2 size={20} style={{ animation: "spin .7s linear infinite", color: "#2B96A8" }} />
+                      </div>
+                    )}
+                    {!p.uploading && (
+                      <button type="button" className="photo-rm" onClick={() => removePhoto(i)}>
+                        <X size={12} />
+                      </button>
+                    )}
                     {i === 0 && !p.uploading && (
                       <div style={{ position: "absolute", bottom: 6, left: 6, padding: "2px 8px", background: "#2B96A8", color: "white", borderRadius: 6, fontSize: 10, fontWeight: 700 }}>
                         PHOTO PRINCIPALE
@@ -206,7 +235,7 @@ export default function NouvelleExcursionClient({
                 {photos.length < 6 && (
                   <div style={{ aspectRatio: "4/3", borderRadius: 12, border: "2px dashed #E5E7EB", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", background: "#FAFAFA" }}
                     onClick={() => fileInputRef.current?.click()}>
-                    <span style={{ fontSize: 24, color: "#D1D5DB" }}>+</span>
+                    <Plus size={24} style={{ color: "#D1D5DB" }} />
                   </div>
                 )}
               </div>
@@ -215,7 +244,7 @@ export default function NouvelleExcursionClient({
 
           {/* Détails pratiques */}
           <div className="section">
-            <h2>⚙️ Détails pratiques</h2>
+            <h2><Settings2 size={16} /> Détails pratiques</h2>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 14 }}>
               {[
                 { label: "Durée (heures)", value: duration, onChange: (v: number) => setDuration(v), min: 0.5, max: 24, step: 0.5 },
@@ -233,7 +262,7 @@ export default function NouvelleExcursionClient({
 
           {/* Catégories */}
           <div className="section">
-            <h2>🏷️ Catégories</h2>
+            <h2><Tag size={16} /> Catégories</h2>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
               {categoriesDB.map(cat => (
                 <button key={cat.id} type="button" onClick={() => setCategories(toggle(categories, cat.nom))}
@@ -246,7 +275,7 @@ export default function NouvelleExcursionClient({
 
           {/* Langues */}
           <div className="section">
-            <h2>🌍 Langues disponibles</h2>
+            <h2><Globe size={16} /> Langues disponibles</h2>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
               {LANGUAGES.map(l => (
                 <button key={l} type="button" onClick={() => setLanguages(toggle(languages, l))} style={chip(languages.includes(l), "#7C3AED")}>
@@ -258,7 +287,7 @@ export default function NouvelleExcursionClient({
 
           {/* Inclusions */}
           <div className="section">
-            <h2>✅ Ce qui est inclus</h2>
+            <h2><CheckSquare size={16} /> Ce qui est inclus</h2>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
               {INCLUSIONS.map(inc => (
                 <button key={inc} type="button" onClick={() => setInclusions(toggle(inclusions, inc))} style={chip(inclusions.includes(inc), "#059669")}>
@@ -269,18 +298,21 @@ export default function NouvelleExcursionClient({
           </div>
 
           {/* Prix résumé */}
-          <div style={{ padding: "14px 18px", background: "rgba(43,150,168,.06)", borderRadius: 12, marginBottom: 20, fontSize: 13, color: "#374151", border: "1px solid rgba(43,150,168,.15)" }}>
-            💡 Prix affiché : <strong>{price} TND</strong> · Commission 10% : <strong>{Math.round(price * 0.1)} TND</strong> · Vous recevez : <strong style={{ color: "#059669" }}>{Math.round(price * 0.9)} TND</strong> / personne
+          <div style={{ padding: "14px 18px", background: "rgba(43,150,168,.06)", borderRadius: 12, marginBottom: 20, fontSize: 13, color: "#374151", border: "1px solid rgba(43,150,168,.15)", display: "flex", alignItems: "center", gap: 8 }}>
+            <Info size={15} style={{ color: "#2B96A8", flexShrink: 0 }} />
+            Prix affiché : <strong>{price} TND</strong> · Commission 10% : <strong>{Math.round(price * 0.1)} TND</strong> · Vous recevez : <strong style={{ color: "#059669" }}>{Math.round(price * 0.9)} TND</strong> / personne
           </div>
 
           <div style={{ display: "flex", gap: 12 }}>
             <button type="submit" onClick={() => setPublish(false)} disabled={loading}
-              style={{ flex: 1, padding: "13px", background: "white", border: "1.5px solid #E5E7EB", color: "#374151", borderRadius: 12, fontSize: 14, fontWeight: 700, cursor: loading ? "not-allowed" : "pointer", fontFamily: "inherit" }}>
-              {loading && !publish ? "Sauvegarde..." : "💾 Brouillon"}
+              style={{ flex: 1, padding: "13px", background: "white", border: "1.5px solid #E5E7EB", color: "#374151", borderRadius: 12, fontSize: 14, fontWeight: 700, cursor: loading ? "not-allowed" : "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
+              {loading && !publish ? <Loader2 size={16} style={{ animation: "spin .7s linear infinite" }} /> : <Save size={16} />}
+              Brouillon
             </button>
             <button type="submit" onClick={() => setPublish(true)} disabled={loading}
-              style={{ flex: 2, padding: "13px", background: "#111827", color: "white", border: "none", borderRadius: 12, fontSize: 14, fontWeight: 700, cursor: loading ? "not-allowed" : "pointer", fontFamily: "inherit" }}>
-              {loading && publish ? "Publication en cours..." : "🚀 Publier l'excursion"}
+              style={{ flex: 2, padding: "13px", background: "#111827", color: "white", border: "none", borderRadius: 12, fontSize: 14, fontWeight: 700, cursor: loading ? "not-allowed" : "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
+              {loading && publish ? <Loader2 size={16} style={{ animation: "spin .7s linear infinite" }} /> : <Rocket size={16} />}
+              {loading && publish ? "Publication en cours..." : "Publier l'excursion"}
             </button>
           </div>
         </form>
