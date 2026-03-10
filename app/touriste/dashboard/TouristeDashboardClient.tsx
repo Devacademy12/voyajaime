@@ -1,14 +1,8 @@
 "use client";
-
 import {
-  CalendarDays,
-  Heart,
-  Bot,
-  PenLine,
-  Search,
-  MapPin,
-  Hash,
-  ArrowRight,
+  LayoutDashboard, Map, CalendarDays, Heart, MessageCircle,
+  Mountain, Wallet, Star, UserCircle, Users, Shield, FolderOpen,
+  LogOut, MapPin, Clock, Bot, Pencil, Search, ChevronRight, Loader2,
 } from "lucide-react";
 
 interface Props {
@@ -18,142 +12,115 @@ interface Props {
 }
 
 const STATUS_LABEL: Record<string, string> = {
-  pending: "En attente",
-  confirmed: "Confirmé",
-  completed: "Terminé",
-  cancelled: "Annulé",
+  pending: "En attente", confirmed: "Confirmé",
+  completed: "Terminé",  cancelled: "Annulé",
 };
-const STATUS_CLASS: Record<string, string> = {
-  pending: "badge-yellow",
-  confirmed: "badge-green",
-  completed: "badge-blue",
-  cancelled: "badge-red",
+const STATUS_COLOR: Record<string, { bg: string; color: string }> = {
+  pending:   { bg: "#FEF9C3", color: "#A16207" },
+  confirmed: { bg: "#DCFCE7", color: "#15803D" },
+  completed: { bg: "#DBEAFE", color: "#1D4ED8" },
+  cancelled: { bg: "#FEE2E2", color: "#DC2626" },
 };
-
-const QUICK_ACTIONS = [
-  {
-    icon: <Bot size={28} />,
-    title: "Mode Assisté",
-    desc: "On crée votre itinéraire",
-    href: "/touriste/itineraire?mode=assiste",
-    color: "#2B96A8",
-  },
-  {
-    icon: <PenLine size={28} />,
-    title: "Mode Libre",
-    desc: "Construisez vous-même",
-    href: "/touriste/itineraire?mode=libre",
-    color: "#7C3AED",
-  },
-  {
-    icon: <Search size={28} />,
-    title: "Explorer",
-    desc: "Parcourir les excursions",
-    href: "/touriste/itineraire",
-    color: "#D97706",
-  },
-];
 
 export default function TouristeDashboardClient({ profile, reservations, favorisCount }: Props) {
   const firstName = String(profile?.full_name || "Voyageur").split(" ")[0];
 
+  const quickActions = [
+    { icon: <Bot size={22} color="#2B96A8"/>,    title: "Mode Assisté",  desc: "On crée votre itinéraire", href: "/touriste/itineraire?mode=assiste", accent: "#2B96A8" },
+    { icon: <Pencil size={22} color="#7C3AED"/>, title: "Mode Libre",    desc: "Construisez vous-même",    href: "/touriste/itineraire",               accent: "#7C3AED" },
+    { icon: <Search size={22} color="#D97706"/>, title: "Explorer",      desc: "Parcourir les excursions", href: "/excursions",                        accent: "#D97706" },
+  ];
+
   return (
-    <div style={{ padding: "36px 48px 60px", maxWidth: 1160, margin: "0 auto", width: "100%" }}>
-    <div>
-      {/* Header */}
-      <div style={{ marginBottom: "32px" }}>
-        <h1 style={{ fontSize: "28px", fontWeight: 700, color: "#111827" }}>
-          Bonjour, {firstName}
+    <div style={{ padding: "40px 48px 80px", maxWidth: 1160, margin: "0 auto", width: "100%", fontFamily: "'DM Sans',system-ui,sans-serif" }}>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@400;500;600;700;800&display=swap');
+        @keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+        .dash-card{animation:fadeUp .3s ease both;transition:transform .2s,box-shadow .2s}
+        .dash-card:hover{transform:translateY(-3px);box-shadow:0 10px 28px -8px rgba(0,0,0,.12)!important}
+        .qa-card{animation:fadeUp .3s ease both;transition:all .2s}
+        .qa-card:hover{transform:translateY(-3px);box-shadow:0 12px 30px -8px rgba(0,0,0,.15)!important}
+      `}</style>
+
+      {/* ── Header ── */}
+      <div style={{ marginBottom: 40, animation:"fadeUp .3s ease" }}>
+        <h1 style={{ fontFamily:"'Playfair Display',serif", fontSize: 36, fontWeight: 900, color: "#111827", margin: 0, letterSpacing:"-1px" }}>
+          Bonjour, {firstName} <span style={{ display:"inline-block", animation:"wave 1.2s ease 1" }}>👋</span>
         </h1>
-        <p style={{ color: "#6B7280", marginTop: "4px" }}>
+        <p style={{ color: "#9CA3AF", marginTop: 8, fontSize: 15 }}>
           Prêt pour votre prochaine aventure en Tunisie ?
         </p>
       </div>
 
-      {/* Quick Actions */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: "16px", marginBottom: "32px" }}>
-        {QUICK_ACTIONS.map((a) => (
-          <a
-            key={a.title}
-            href={a.href}
-            style={{ textDecoration: "none" }}
-            onMouseEnter={(e) => ((e.currentTarget as HTMLAnchorElement).querySelector(".action-card") as HTMLDivElement).style.boxShadow = "0 4px 20px rgba(0,0,0,0.1)"}
-            onMouseLeave={(e) => ((e.currentTarget as HTMLAnchorElement).querySelector(".action-card") as HTMLDivElement).style.boxShadow = "none"}
-          >
-            <div className="action-card card" style={{ cursor: "pointer", transition: "box-shadow 0.2s", height: "100%" }}>
-              {/* Icône dans un badge coloré */}
-              <div style={{
-                width: 52, height: 52, borderRadius: 14,
-                background: `${a.color}12`, color: a.color,
-                display: "flex", alignItems: "center", justifyContent: "center",
-                marginBottom: "12px",
-              }}>
+      {/* ── Quick Actions ── */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 16, marginBottom: 40 }}>
+        {quickActions.map((a, i) => (
+          <a key={a.title} href={a.href} style={{ textDecoration: "none" }}>
+            <div className="qa-card" style={{ background:"white", borderRadius:20, border:"1px solid #E5E7EB", padding:"24px 20px", cursor:"pointer", boxShadow:"0 2px 8px rgba(0,0,0,.04)", animationDelay:`${i*.08}s` }}>
+              <div style={{ width:48, height:48, borderRadius:14, background:`${a.accent}12`, border:`1.5px solid ${a.accent}22`, display:"flex", alignItems:"center", justifyContent:"center", marginBottom:14 }}>
                 {a.icon}
               </div>
-              <h3 style={{ fontSize: "15px", fontWeight: 600, color: "#111827", marginBottom: "4px" }}>{a.title}</h3>
-              <p style={{ fontSize: "13px", color: "#6B7280", marginBottom: "12px" }}>{a.desc}</p>
-              <span style={{
-                padding: "4px 12px", borderRadius: "20px",
-                background: `${a.color}15`, color: a.color,
-                fontSize: "12px", fontWeight: 600,
-                display: "inline-flex", alignItems: "center", gap: 4,
-              }}>
-                Commencer <ArrowRight size={12} />
+              <h3 style={{ fontSize:15, fontWeight:800, color:"#111827", margin:"0 0 4px" }}>{a.title}</h3>
+              <p style={{ fontSize:13, color:"#9CA3AF", margin:"0 0 16px" }}>{a.desc}</p>
+              <span style={{ display:"inline-flex", alignItems:"center", gap:4, padding:"5px 12px", borderRadius:20, background:`${a.accent}12`, color:a.accent, fontSize:12, fontWeight:700 }}>
+                Commencer <ChevronRight size={12}/>
               </span>
             </div>
           </a>
         ))}
       </div>
 
-      {/* Stats */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(2,1fr)", gap: "16px", maxWidth: "480px", marginBottom: "32px" }}>
+      {/* ── Stats ── */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(2,1fr)", gap: 16, maxWidth: 520, marginBottom: 40 }}>
         {[
-          { label: "Mes réservations", href: "/touriste/reservations", icon: <CalendarDays size={22} />, color: "#2B96A8" },
-          { label: "Mes favoris",      href: "/touriste/favoris",      icon: <Heart size={22} />,       color: "#E11D48" },
-        ].map((s) => (
-          <a key={s.label} href={s.href} style={{ textDecoration: "none" }}>
-            <div className="stat-card" style={{ display: "flex", alignItems: "center", gap: "14px", cursor: "pointer" }}>
-              <div style={{
-                width: 42, height: 42, borderRadius: 12,
-                background: `${s.color}12`, color: s.color,
-                display: "flex", alignItems: "center", justifyContent: "center",
-                flexShrink: 0,
-              }}>
+          { label: "Mes réservations", href: "/touriste/reservations", icon: <CalendarDays size={20} color="#2B96A8"/>, count: reservations.length, accent:"#2B96A8" },
+          { label: "Mes favoris",      href: "/touriste/favoris",      icon: <Heart size={20} color="#EF4444"/>,        count: favorisCount,         accent:"#EF4444" },
+        ].map((s, i) => (
+          <a key={s.label} href={s.href} style={{ textDecoration:"none" }}>
+            <div className="dash-card" style={{ background:"white", borderRadius:18, border:"1px solid #E5E7EB", padding:"18px 20px", display:"flex", alignItems:"center", gap:14, boxShadow:"0 2px 8px rgba(0,0,0,.04)", animationDelay:`${.25 + i*.08}s` }}>
+              <div style={{ width:44, height:44, borderRadius:12, background:`${s.accent}10`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
                 {s.icon}
               </div>
-              <p style={{ fontSize: "13px", color: "#6B7280", fontWeight: 500 }}>{s.label}</p>
+              <div>
+                <p style={{ fontSize:22, fontWeight:900, color:"#111827", margin:0, lineHeight:1 }}>{s.count}</p>
+                <p style={{ fontSize:12, color:"#9CA3AF", margin:"3px 0 0", fontWeight:500 }}>{s.label}</p>
+              </div>
             </div>
           </a>
         ))}
       </div>
 
-      {/* Recent Reservations */}
+      {/* ── Recent Reservations ── */}
       {reservations.length > 0 && (
-        <div className="card">
-          <h2 style={{ fontSize: "16px", fontWeight: 600, color: "#111827", marginBottom: "16px" }}>
-            Réservations récentes
-          </h2>
-          <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+        <div style={{ background:"white", borderRadius:24, border:"1px solid #E5E7EB", padding:"24px 28px", boxShadow:"0 2px 10px rgba(0,0,0,.04)", animation:"fadeUp .3s .35s ease both" }}>
+          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:20 }}>
+            <h2 style={{ fontSize:16, fontWeight:800, color:"#111827", margin:0, display:"flex", alignItems:"center", gap:8 }}>
+              <CalendarDays size={16} color="#2B96A8"/> Réservations récentes
+            </h2>
+            <a href="/touriste/reservations" style={{ fontSize:13, color:"#2B96A8", textDecoration:"none", fontWeight:600, display:"flex", alignItems:"center", gap:4 }}>
+              Tout voir <ChevronRight size={13}/>
+            </a>
+          </div>
+          <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
             {reservations.map((r) => {
               const exc = r.excursion as Record<string, unknown> | null;
               const status = String(r.status);
+              const sc = STATUS_COLOR[status] || { bg:"#F3F4F6", color:"#6B7280" };
               return (
-                <div key={String(r.id)} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px", background: "#F9FAFB", borderRadius: "10px" }}>
-                  <div>
-                    <p style={{ fontSize: "14px", fontWeight: 600, color: "#111827" }}>
+                <div key={String(r.id)} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"14px 16px", background:"#F9FAFB", borderRadius:14, border:"1px solid #F3F4F6" }}>
+                  <div style={{ minWidth:0, flex:1 }}>
+                    <p style={{ fontSize:14, fontWeight:700, color:"#111827", margin:"0 0 4px", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
                       {exc?.title as string || "Excursion"}
                     </p>
-                    <p style={{ fontSize: "12px", color: "#6B7280", display: "flex", alignItems: "center", gap: 5, marginTop: 3 }}>
-                      <MapPin size={11} /> {exc?.city as string}
-                      &nbsp;·&nbsp;
-                      <CalendarDays size={11} /> {String(r.date)}
-                      &nbsp;·&nbsp;
-                      <Hash size={11} /> {String(r.booking_code)}
+                    <p style={{ fontSize:12, color:"#9CA3AF", margin:0, display:"flex", alignItems:"center", gap:10 }}>
+                      <span style={{ display:"flex", alignItems:"center", gap:3 }}><MapPin size={10}/>{exc?.city as string}</span>
+                      <span style={{ display:"flex", alignItems:"center", gap:3 }}><CalendarDays size={10}/>{String(r.date)}</span>
+                      <span style={{ fontFamily:"monospace" }}>#{String(r.booking_code)}</span>
                     </p>
                   </div>
-                  <div style={{ display: "flex", alignItems: "center", gap: "10px", flexShrink: 0 }}>
-                    <span style={{ fontWeight: 600 }}>{Number(r.total_price)} TND</span>
-                    <span className={`badge ${STATUS_CLASS[status] || "badge-gray"}`}>
+                  <div style={{ display:"flex", alignItems:"center", gap:12, flexShrink:0, marginLeft:12 }}>
+                    <span style={{ fontWeight:800, color:"#111827", fontSize:15 }}>{Number(r.total_price)} <span style={{ fontSize:11, fontWeight:500, color:"#9CA3AF" }}>TND</span></span>
+                    <span style={{ padding:"4px 10px", borderRadius:20, background:sc.bg, color:sc.color, fontSize:11, fontWeight:700 }}>
                       {STATUS_LABEL[status] || status}
                     </span>
                   </div>
@@ -161,12 +128,8 @@ export default function TouristeDashboardClient({ profile, reservations, favoris
               );
             })}
           </div>
-          <a href="/touriste/reservations" style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 5, marginTop: "12px", fontSize: "13px", color: "#2B96A8", textDecoration: "none", fontWeight: 600 }}>
-            Voir toutes les réservations <ArrowRight size={13} />
-          </a>
         </div>
       )}
-    </div>
     </div>
   );
 }

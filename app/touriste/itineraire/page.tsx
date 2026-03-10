@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect, Suspense, useMemo } from "react";
+import React, { useState, useRef, useEffect, Suspense, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabaseClient";
 import {
@@ -24,57 +24,339 @@ import {
   ChevronLeft,
   ChevronRight,
   Loader2,
+  Sunrise,
+  Sun,
+  Moon,
+  Mountain,
+  Landmark,
+  TreePine,
+  Utensils,
+  Sparkles,
+  Umbrella,
+  Waves,
+  Building2,
+  Tent,
+  Compass,
+  Sailboat,
+  Castle,
+  Church,
+  Coffee,
+  Wine,
+  Beer,
+  Hotel,
+  Plane,
+  Car,
+  Bike,
+  Train,
+  Ship,
+  Anchor,
+  Droplets,
+  Wind,
+  Cloud,
+  CloudRain,
+  CloudSnow,
+  Thermometer,
+  Navigation,
+  Map,
+  Globe,
+  Camera,
+  Heart,
+  Bookmark,
+  Share2,
+  Download,
+  Printer,
+  Info,
+  AlertCircle,
+  CheckCircle,
+  Clock3,
+  DollarSign,
+  Users,
+  Phone,
+  Mail,
+  Link,
+  Menu,
+  Home,
+  Settings,
+  User,
+  LogOut,
+  LogIn,
+  ChevronDown,
+  ChevronUp,
+  MoreHorizontal,
+  MoreVertical,
+  Plus,
+  Minus,
+  X,
+  Edit,
+  Save,
+  Filter,
+  RotateCw,
+  RotateCcw,
+  Undo,
+  Redo,
+  ZoomIn,
+  ZoomOut,
+  Maximize,
+  Minimize,
+  Move,
+  Target,
+  Locate,
+  LocateFixed,
+  Circle,
+  Square,
+  Triangle,
+  Hexagon,
+  Octagon,
+  Diamond,
+  BadgeCheck,
+  BadgeAlert,
+  BadgeInfo,
+  BadgeX,
+  BadgePlus,
+  BadgeMinus,
+  BadgePercent,
+  BadgeHelp,
+  Badge,
+  Sparkle,
+  Flame,
+  Zap,
+  ZapOff,
+  Battery,
+  BatteryCharging,
+  BatteryWarning,
+  Plug,
+  Power,
+  Cpu,
+  HardDrive,
+  Monitor,
+  Smartphone,
+  Tablet,
+  Laptop,
+  Keyboard,
+  Mouse,
+  Scan,
+  QrCode,
+  Barcode,
+  CreditCard,
+  Wallet,
+  Banknote,
+  Coins,
+  Gem,
+  ShoppingCart,
+  ShoppingBag,
+  ShoppingBasket,
+  Package,
+  PackageOpen,
+  PackageCheck,
+  PackageMinus,
+  PackagePlus,
+  PackageSearch,
+  PackageX,
+  Box,
+  Archive,
+  ArchiveRestore,
+  ArchiveX,
+  Folder,
+  FolderOpen,
+  FolderPlus,
+  FolderMinus,
+  FolderClosed,
+  File,
+  FileText as FileTextIcon,
+  FilePlus,
+  FileMinus,
+  FileCheck,
+  FileX,
+  FileSearch,
+  FileEdit,
+  FileSignature,
+  FileSpreadsheet,
+  FileCode,
+  FileJson,
+  FileImage,
+  FileVideo,
+  FileAudio,
+  FileArchive,
+  FilePdf,
+  Image,
+  Video,
+  Music,
+  Headphones,
+  Mic,
+  MicOff,
+  Radio,
+  RadioTower,
+  Podcast,
+  Rss,
+  Wifi,
+  WifiOff,
+  Bluetooth,
+  BluetoothConnected,
+  BluetoothOff,
+  Cast,
+  ScreenShare,
+  MonitorOff,
+  Tv,
+  Speaker,
+  Volume,
+  Volume1,
+  Volume2,
+  VolumeX,
+  Airplay,
+  Wind as WindIcon,
+  Waves as WavesIcon,
+  Droplets as DropletsIcon,
+  Umbrella as UmbrellaIcon,
+  Anchor as AnchorIcon,
+  Ship as ShipIcon,
+  Train as TrainIcon,
+  Bus,
+  Car as CarIcon,
+  Bike as BikeIcon,
+  Plane as PlaneIcon,
+  Hotel as HotelIcon,
+  Coffee as CoffeeIcon,
+  Wine as WineIcon,
+  Beer as BeerIcon,
+  Utensils as UtensilsIcon,
+  Mountain as MountainIcon,
+  TreePine as TreePineIcon,
+  Landmark as LandmarkIcon,
+  Compass as CompassIcon,
+  Sailboat as SailboatIcon,
+  Castle as CastleIcon,
+  Church as ChurchIcon,
+  Navigation as NavigationIcon,
+  Map as MapIcon,
+  Globe as GlobeIcon,
+  Camera as CameraIcon,
+  Heart as HeartIcon,
+  Bookmark as BookmarkIcon,
+  Share2 as ShareIcon,
+  Download as DownloadIcon,
+  Printer as PrinterIcon,
+  Info as InfoIcon,
+  AlertCircle as AlertCircleIcon,
+  CheckCircle as CheckCircleIcon,
+  Clock3 as ClockIcon,
+  DollarSign as DollarIcon,
+  Users as UsersIcon,
+  Phone as PhoneIcon,
+  Mail as MailIcon,
+  Link as LinkIcon,
 } from "lucide-react";
 
-type Excursion = { id:string; title:string; city:string; price_per_person:number; duration_hours:number; rating:number; reviews_count:number; categories:string[]; photos:string[]; };
-type Categorie = { id:string; nom:string; emoji:string; couleur:string; };
-type DragPayload = { kind:"excursion"; excursion:Excursion } | { kind:"activity"; activityId:string; fromDay:number; fromTime:TimeKey };
-type ActivityItem = { id:string; excursion:Excursion; note:string; time:TimeKey; };
-type DayPlan = { city:string; activities:ActivityItem[] };
-type TimeKey = "matin"|"aprem"|"soir";
-type Step = "config"|"builder"|"result";
+// Types
+type Excursion = { 
+  id: string; 
+  title: string; 
+  city: string; 
+  price_per_person: number; 
+  duration_hours: number; 
+  rating: number; 
+  reviews_count: number; 
+  categories: string[]; 
+  photos: string[]; 
+};
 
-const ALL_CITIES = [
-  { name:"Tunis",     emoji:"🏛️", region:"Nord",   description:"Capitale vibrante" },
-  { name:"Sousse",    emoji:"🏖️", region:"Sahel",  description:"Perle du Sahel" },
-  { name:"Hammamet",  emoji:"🌺", region:"Sahel",  description:"Station balnéaire" },
-  { name:"Djerba",    emoji:"🏝️", region:"Sud",    description:"Île aux rêves" },
-  { name:"Tozeur",    emoji:"🌴", region:"Sud",    description:"Porte du désert" },
-  { name:"Douz",      emoji:"🐪", region:"Sud",    description:"Sahara infini" },
-  { name:"Kairouan",  emoji:"🕌", region:"Centre", description:"Ville sainte" },
-  { name:"Sfax",      emoji:"🫒", region:"Centre", description:"Capitale du Sud" },
-  { name:"Tataouine", emoji:"⭐", region:"Sud",    description:"Terre de Star Wars" },
-  { name:"Tabarka",   emoji:"🌊", region:"Nord",   description:"Corail et nature" },
-  { name:"Nabeul",    emoji:"🏺", region:"Nord",   description:"Poterie & art" },
-  { name:"Gafsa",     emoji:"⛏️", region:"Sud",    description:"Oasis millénaire" },
+type Categorie = { 
+  id: string; 
+  nom: string; 
+  emoji: string; 
+  couleur: string; 
+};
+
+type Ville = { 
+  id: string; 
+  nom: string; 
+  emoji: string; 
+  region: string; 
+  description: string; 
+  active: boolean; 
+  latitude?: number;
+  longitude?: number;
+  image_url?: string;
+};
+
+type DragPayload = { kind: "excursion"; excursion: Excursion } | { kind: "activity"; activityId: string; fromDay: number; fromTime: TimeKey };
+type ActivityItem = { id: string; excursion: Excursion; note: string; time: TimeKey; };
+type DayPlan = { city: string; activities: ActivityItem[] };
+type TimeKey = "matin" | "aprem" | "soir";
+type Step = "config" | "builder" | "result";
+
+// Fallback cities in case Supabase fails
+const FALLBACK_CITIES: Ville[] = [
+  { id: "1", nom: "Tunis", emoji: "🏛️", region: "Nord", description: "Capitale vibrante", active: true },
+  { id: "2", nom: "Sousse", emoji: "🏖️", region: "Sahel", description: "Perle du Sahel", active: true },
+  { id: "3", nom: "Hammamet", emoji: "🌺", region: "Sahel", description: "Station balnéaire", active: true },
+  { id: "4", nom: "Djerba", emoji: "🏝️", region: "Sud", description: "Île aux rêves", active: true },
+  { id: "5", nom: "Tozeur", emoji: "🌴", region: "Sud", description: "Porte du désert", active: true },
+  { id: "6", nom: "Douz", emoji: "🐪", region: "Sud", description: "Sahara infini", active: true },
+  { id: "7", nom: "Kairouan", emoji: "🕌", region: "Centre", description: "Ville sainte", active: true },
+  { id: "8", nom: "Sfax", emoji: "🫒", region: "Centre", description: "Capitale du Sud", active: true },
+  { id: "9", nom: "Tataouine", emoji: "⭐", region: "Sud", description: "Terre de Star Wars", active: true },
+  { id: "10", nom: "Tabarka", emoji: "🌊", region: "Nord", description: "Corail et nature", active: true },
+  { id: "11", nom: "Nabeul", emoji: "🏺", region: "Nord", description: "Poterie & art", active: true },
+  { id: "12", nom: "Gafsa", emoji: "⛏️", region: "Sud", description: "Oasis millénaire", active: true },
 ];
-const CITY_EMOJI:Record<string,string> = Object.fromEntries(ALL_CITIES.map(c=>[c.name,c.emoji]));
 
-const FALLBACK_CATS:Categorie[] = [
-  {id:"1",nom:"Culture",    emoji:"🏛️",couleur:"#2B96A8"},
-  {id:"2",nom:"Archéologie",emoji:"🏺",couleur:"#8B5CF6"},
-  {id:"3",nom:"Nature",     emoji:"🌿",couleur:"#059669"},
-  {id:"4",nom:"Gastronomie",emoji:"🍽️",couleur:"#D97706"},
-  {id:"5",nom:"Aventure",   emoji:"⚡",couleur:"#DC2626"},
-  {id:"6",nom:"Relaxation", emoji:"🧘",couleur:"#2563EB"},
+const FALLBACK_CATS: Categorie[] = [
+  { id: "1", nom: "Culture", emoji: "🏛️", couleur: "#2B96A8" },
+  { id: "2", nom: "Archéologie", emoji: "🏺", couleur: "#8B5CF6" },
+  { id: "3", nom: "Nature", emoji: "🌿", couleur: "#059669" },
+  { id: "4", nom: "Gastronomie", emoji: "🍽️", couleur: "#D97706" },
+  { id: "5", nom: "Aventure", emoji: "⚡", couleur: "#DC2626" },
+  { id: "6", nom: "Relaxation", emoji: "🧘", couleur: "#2563EB" },
 ];
 
-const MOCK_EXC:Excursion[] = [
-  {id:"1",title:"Médina de Tunis",    city:"Tunis", price_per_person:45,duration_hours:3,  rating:4.9,reviews_count:128,categories:["Culture","Archéologie"],photos:["https://images.unsplash.com/photo-1568515387631-8b650bbcdb90?w=400&q=80"]},
-  {id:"2",title:"Sidi Bou Saïd",      city:"Tunis", price_per_person:35,duration_hours:2.5,rating:4.8,reviews_count:94, categories:["Culture"],              photos:["https://images.unsplash.com/photo-1539020140153-e479b8c22e70?w=400&q=80"]},
-  {id:"3",title:"Sahara à Douz",      city:"Douz",  price_per_person:95,duration_hours:8,  rating:5.0,reviews_count:67, categories:["Aventure","Nature"],     photos:["https://images.unsplash.com/photo-1509316785289-025f5b846b35?w=400&q=80"]},
-  {id:"4",title:"Île de Djerba",      city:"Djerba",price_per_person:55,duration_hours:4,  rating:4.7,reviews_count:203,categories:["Relaxation","Nature"],   photos:["https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=400&q=80"]},
-  {id:"5",title:"Oasis de Tozeur",    city:"Tozeur",price_per_person:75,duration_hours:5,  rating:4.9,reviews_count:45, categories:["Nature","Aventure"],     photos:["https://images.unsplash.com/photo-1548013146-72479768bada?w=400&q=80"]},
-  {id:"6",title:"Amphithéâtre El Jem",city:"Sfax",  price_per_person:40,duration_hours:4,  rating:4.8,reviews_count:112,categories:["Archéologie","Culture"], photos:["https://images.unsplash.com/photo-1568515387631-8b650bbcdb90?w=400&q=80"]},
+const MOCK_EXC: Excursion[] = [
+  { id: "1", title: "Médina de Tunis", city: "Tunis", price_per_person: 45, duration_hours: 3, rating: 4.9, reviews_count: 128, categories: ["Culture", "Archéologie"], photos: ["https://images.unsplash.com/photo-1568515387631-8b650bbcdb90?w=400&q=80"] },
+  { id: "2", title: "Sidi Bou Saïd", city: "Tunis", price_per_person: 35, duration_hours: 2.5, rating: 4.8, reviews_count: 94, categories: ["Culture"], photos: ["https://images.unsplash.com/photo-1539020140153-e479b8c22e70?w=400&q=80"] },
+  { id: "3", title: "Sahara à Douz", city: "Douz", price_per_person: 95, duration_hours: 8, rating: 5.0, reviews_count: 67, categories: ["Aventure", "Nature"], photos: ["https://images.unsplash.com/photo-1509316785289-025f5b846b35?w=400&q=80"] },
+  { id: "4", title: "Île de Djerba", city: "Djerba", price_per_person: 55, duration_hours: 4, rating: 4.7, reviews_count: 203, categories: ["Relaxation", "Nature"], photos: ["https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=400&q=80"] },
+  { id: "5", title: "Oasis de Tozeur", city: "Tozeur", price_per_person: 75, duration_hours: 5, rating: 4.9, reviews_count: 45, categories: ["Nature", "Aventure"], photos: ["https://images.unsplash.com/photo-1548013146-72479768bada?w=400&q=80"] },
+  { id: "6", title: "Amphithéâtre El Jem", city: "Sfax", price_per_person: 40, duration_hours: 4, rating: 4.8, reviews_count: 112, categories: ["Archéologie", "Culture"], photos: ["https://images.unsplash.com/photo-1568515387631-8b650bbcdb90?w=400&q=80"] },
 ];
 
-const SLOTS:{key:TimeKey;label:string;emoji:string;hint:string}[] = [
-  {key:"matin", label:"Matin",      emoji:"🌅",hint:"8h — 12h"},
-  {key:"aprem", label:"Après-midi", emoji:"☀️",hint:"13h — 17h"},
-  {key:"soir",  label:"Soir",       emoji:"🌙",hint:"18h — 22h"},
+const SLOTS: { key: TimeKey; label: string; icon: React.ReactNode; color: string; hint: string }[] = [
+  { key: "matin", label: "Matin", icon: <Sunrise size={14} color="#F59E0B" />, color: "#F59E0B", hint: "8h — 12h" },
+  { key: "aprem", label: "Après-midi", icon: <Sun size={14} color="#2B96A8" />, color: "#2B96A8", hint: "13h — 17h" },
+  { key: "soir", label: "Soir", icon: <Moon size={14} color="#8B5CF6" />, color: "#8B5CF6", hint: "18h — 22h" },
 ];
 
-function tog<T>(arr:T[],item:T):T[]{return arr.includes(item)?arr.filter(x=>x!==item):[...arr,item];}
+// Helper functions
+function tog<T>(arr: T[], item: T): T[] {
+  return arr.includes(item) ? arr.filter(x => x !== item) : [...arr, item];
+}
+
+// Map city names to emojis for fallback
+const CITY_EMOJI_FALLBACK: Record<string, string> = {
+  Tunis: "🏛️", Sousse: "🏖️", Hammamet: "🌺", Djerba: "🏝️", Tozeur: "🌴", Douz: "🐪",
+  Kairouan: "🕌", Sfax: "🫒", Tataouine: "⭐", Tabarka: "🌊", Nabeul: "🏺", Gafsa: "⛏️",
+};
+
+// Get appropriate icon for city based on region or name
+const getCityIcon = (city: string, region?: string): React.ReactNode => {
+  const cityLower = city.toLowerCase();
+  
+  if (cityLower.includes("tunis")) return <Landmark size={16} color="#2B96A8" />;
+  if (cityLower.includes("sousse") || cityLower.includes("hammamet")) return <Umbrella size={16} color="#F59E0B" />;
+  if (cityLower.includes("djerba")) return <Waves size={16} color="#2563EB" />;
+  if (cityLower.includes("tozeur") || cityLower.includes("douz") || cityLower.includes("gafsa")) return <Tent size={16} color="#DC2626" />;
+  if (cityLower.includes("kairouan")) return <Church size={16} color="#8B5CF6" />;
+  if (cityLower.includes("sfax")) return <Building2 size={16} color="#374151" />;
+  if (cityLower.includes("tabarka")) return <Mountain size={16} color="#059669" />;
+  if (cityLower.includes("nabeul")) return <Sparkles size={16} color="#D97706" />;
+  if (cityLower.includes("tataouine")) return <Castle size={16} color="#6B7280" />;
+  
+  // Fallback by region
+  if (region === "Nord") return <Mountain size={16} color="#059669" />;
+  if (region === "Sahel") return <Umbrella size={16} color="#F59E0B" />;
+  if (region === "Centre") return <Building2 size={16} color="#374151" />;
+  if (region === "Sud") return <Tent size={16} color="#DC2626" />;
+  
+  return <MapPin size={16} color="#2B96A8" />;
+};
 
 const CSS = `
 @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@400;500;600;700;800&display=swap');
@@ -113,123 +395,267 @@ input[type=range]{accent-color:#2B96A8;cursor:pointer}
 ::-webkit-scrollbar-thumb:hover{background:#D1D5DB}
 `;
 
-function ItineraireInner(){
+function ItineraireInner() {
   const router = useRouter();
-  const sb     = useMemo(() => createClient(), []);
+  const sb = useMemo(() => createClient(), []);
 
   // ── Sauvegarde ──────────────────────────────────────────────────────
-  const [userId,    setUserId]    = useState<string|null>(null);
-  const [savedItId, setSavedItId] = useState<string|null>(null);
-  const [saving,    setSaving]    = useState(false);
-  const [saveOk,    setSaveOk]    = useState(false);
+  const [userId, setUserId] = useState<string | null>(null);
+  const [savedItId, setSavedItId] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [saveOk, setSaveOk] = useState(false);
 
-  const [step,       setStep]       = useState<Step>("config");
-  const [days,       setDays]       = useState(3);
-  const [selCities,  setSelCities]  = useState<string[]>([]);
-  const [selCats,    setSelCats]    = useState<string[]>([]);
+  const [step, setStep] = useState<Step>("config");
+  const [days, setDays] = useState(3);
+  const [selCities, setSelCities] = useState<string[]>([]);
+  const [selCats, setSelCats] = useState<string[]>([]);
   const [categories, setCategories] = useState<Categorie[]>([]);
-  const [allExc,     setAllExc]     = useState<Excursion[]>([]);
-  const [ldCats,     setLdCats]     = useState(true);
-  const [ldExc,      setLdExc]      = useState(true);
-  const [search,     setSearch]     = useState("");
-  const [palCat,     setPalCat]     = useState("Toutes");
-  const [palCity,    setPalCity]    = useState("Toutes");
-  const [itin,       setItin]       = useState<DayPlan[]>([]);
-  const [activeDay,  setActiveDay]  = useState(0);
-  const [editNote,   setEditNote]   = useState<string|null>(null);
-  const [noteText,   setNoteText]   = useState("");
-  const [dragOver,   setDragOver]   = useState<{day:number;time:TimeKey}|null>(null);
-  const dragRef = useRef<DragPayload|null>(null);
+  const [allVilles, setAllVilles] = useState<Ville[]>([]);
+  const [ldVilles, setLdVilles] = useState(true);
+  const [villesError, setVillesError] = useState<string | null>(null);
+  const [allExc, setAllExc] = useState<Excursion[]>([]);
+  const [ldCats, setLdCats] = useState(true);
+  const [ldExc, setLdExc] = useState(true);
+  const [search, setSearch] = useState("");
+  const [palCat, setPalCat] = useState("Toutes");
+  const [palCity, setPalCity] = useState("Toutes");
+  const [itin, setItin] = useState<DayPlan[]>([]);
+  const [activeDay, setActiveDay] = useState(0);
+  const [editNote, setEditNote] = useState<string | null>(null);
+  const [noteText, setNoteText] = useState("");
+  const [dragOver, setDragOver] = useState<{ day: number; time: TimeKey } | null>(null);
+  const dragRef = useRef<DragPayload | null>(null);
 
-  useEffect(()=>{
-    sb.from("categories").select("*").order("nom").then(({data,error})=>{
-      setCategories((!error&&data?.length)?data as Categorie[]:FALLBACK_CATS);
-      setLdCats(false);
-    });
-  },[]);
-  useEffect(()=>{
-    sb.from("excursions").select("*").or("is_active.eq.true,is_active.is.null").then(({data,error})=>{
-      setAllExc((!error&&data?.length)?data as Excursion[]:MOCK_EXC);
-      setLdExc(false);
-    });
-  },[]);
+  // Charger les catégories
+  useEffect(() => {
+    sb.from("categories")
+      .select("*")
+      .order("nom")
+      .then(({ data, error }) => {
+        if (error) {
+          console.error("Erreur chargement catégories:", error);
+          setCategories(FALLBACK_CATS);
+        } else {
+          setCategories(data?.length ? (data as Categorie[]) : FALLBACK_CATS);
+        }
+        setLdCats(false);
+      });
+  }, [sb]);
+
+  // Charger les villes depuis Supabase
+  useEffect(() => {
+    const loadVilles = async () => {
+      try {
+        setLdVilles(true);
+        setVillesError(null);
+        
+        const { data, error } = await sb
+          .from("villes")
+          .select("*")
+          .eq("active", true)
+          .order("nom");
+
+        if (error) {
+          console.error("Erreur chargement villes:", error);
+          setVillesError(error.message);
+          setAllVilles(FALLBACK_CITIES);
+        } else {
+          setAllVilles(data?.length ? (data as Ville[]) : FALLBACK_CITIES);
+        }
+      } catch (err) {
+        console.error("Exception chargement villes:", err);
+        setVillesError("Erreur de connexion");
+        setAllVilles(FALLBACK_CITIES);
+      } finally {
+        setLdVilles(false);
+      }
+    };
+
+    loadVilles();
+  }, [sb]);
+
+  // Charger les excursions
+  useEffect(() => {
+    sb.from("excursions")
+      .select("*")
+      .or("is_active.eq.true,is_active.is.null")
+      .then(({ data, error }) => {
+        if (error) {
+          console.error("Erreur chargement excursions:", error);
+          setAllExc(MOCK_EXC);
+        } else {
+          setAllExc(data?.length ? (data as Excursion[]) : MOCK_EXC);
+        }
+        setLdExc(false);
+      });
+  }, [sb]);
 
   // Charger utilisateur + dernier itinéraire sauvegardé
-  useEffect(()=>{
-    sb.auth.getUser().then(async({data:{user}})=>{
-      if(!user) return;
+  useEffect(() => {
+    sb.auth.getUser().then(async ({ data: { user } }) => {
+      if (!user) return;
       setUserId(user.id);
-      const{data}=await sb.from("itineraires").select("*")
-        .eq("user_id",user.id).order("updated_at",{ascending:false}).limit(1).maybeSingle();
-      if(data){
+      const { data } = await sb
+        .from("itineraires")
+        .select("*")
+        .eq("user_id", user.id)
+        .order("updated_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      
+      if (data) {
         setSavedItId(data.id);
-        setDays(data.nb_jours||3);
-        setSelCities(data.villes_selectionnees||[]);
-        setSelCats(data.categories_selectionnees||[]);
-        setItin(data.plan||[]);
-        const hasAct=(data.plan||[]).some((d:DayPlan)=>d.activities?.length>0);
-        if(hasAct) setStep("builder");
+        setDays(data.nb_jours || 3);
+        setSelCities(data.villes_selectionnees || []);
+        setSelCats(data.categories_selectionnees || []);
+        setItin(data.plan || []);
+        // Toujours rester sur "config" pour que l'utilisateur confirme ses villes
       }
     });
-  },[sb]);
+  }, [sb]);
 
-  const cc = (n:string) => categories.find(c=>c.nom===n)?.couleur||"#2B96A8";
-  const ce = (n:string) => categories.find(c=>c.nom===n)?.emoji||"🏔️";
+  const cc = (n: string) => categories.find(c => c.nom === n)?.couleur || "#2B96A8";
+  const ce = (n: string) => categories.find(c => c.nom === n)?.emoji || "🏔️";
 
-  const palette = allExc.filter(e=>{
+  const palette = allExc.filter(e => {
     const q = search.toLowerCase();
-    return (e.title.toLowerCase().includes(q)||e.city.toLowerCase().includes(q))
-      &&(palCat==="Toutes"||e.categories?.includes(palCat))
-      &&(palCity==="Toutes"||e.city===palCity)
-      &&(selCities.length===0||selCities.includes(e.city));
+    return (e.title.toLowerCase().includes(q) || e.city.toLowerCase().includes(q)) &&
+      (palCat === "Toutes" || e.categories?.includes(palCat)) &&
+      (palCity === "Toutes" || e.city === palCity) &&
+      (selCities.length === 0 || selCities.includes(e.city));
   });
 
-  const saveItinerary = async()=>{
-    if(!userId) return;
-    setSaving(true);
-    const payload={
-      user_id:userId, nb_jours:days,
-      villes_selectionnees:selCities, categories_selectionnees:selCats,
-      plan:itin, updated_at:new Date().toISOString(),
-    };
-    if(savedItId){
-      await sb.from("itineraires").update(payload).eq("id",savedItId);
-    } else {
-      const{data}=await sb.from("itineraires")
-        .insert({...payload,created_at:new Date().toISOString()}).select().single();
-      if(data) setSavedItId(data.id);
+  const saveItinerary = async () => {
+    if (!userId) { 
+      alert("❌ Vous devez être connecté pour sauvegarder"); 
+      return;
     }
-    setSaving(false); setSaveOk(true);
-    setTimeout(()=>setSaveOk(false),2500);
+    
+    setSaving(true);
+    const payload = {
+      user_id: userId,
+      nb_jours: days,
+      villes_selectionnees: selCities,
+      categories_selectionnees: selCats,
+      plan: itin,
+      updated_at: new Date().toISOString(),
+    };
+    
+    try {
+      if (savedItId) {
+        const { error } = await sb.from("itineraires").update(payload).eq("id", savedItId);
+        if (error) {
+          console.error("UPDATE error:", error);
+          alert("Erreur lors de la mise à jour: " + error.message);
+        }
+      } else {
+        const { data, error } = await sb
+          .from("itineraires")
+          .insert({ ...payload, created_at: new Date().toISOString() })
+          .select()
+          .single();
+          
+        if (error) {
+          console.error("INSERT error:", error);
+          alert("Erreur lors de la création: " + error.message);
+        }
+        if (data) setSavedItId(data.id);
+      }
+      setSaveOk(true);
+      setTimeout(() => setSaveOk(false), 2500);
+    } catch (err) {
+      console.error("Erreur sauvegarde:", err);
+      alert("Erreur lors de la sauvegarde");
+    } finally {
+      setSaving(false);
+    }
   };
 
   const startBuilder = () => {
-    setItin(Array.from({length:days},(_,i)=>({city:selCities[i%selCities.length]||"Tunis",activities:[]})));
+    setItin(Array.from({ length: days }, (_, i) => ({
+      city: selCities[i % selCities.length] || "Tunis",
+      activities: []
+    })));
     setActiveDay(0);
-    setPalCity(selCities.length===1?selCities[0]:"Toutes");
+    setPalCity(selCities.length === 1 ? selCities[0] : "Toutes");
     setStep("builder");
   };
 
-  const drop = (dayIdx:number, time:TimeKey) => {
-    const p = dragRef.current; if(!p) return;
-    if(p.kind==="excursion"){
-      setItin(prev=>{const u=[...prev];u[dayIdx]={...u[dayIdx],activities:[...u[dayIdx].activities,{id:`${Date.now()}-${Math.random()}`,excursion:p.excursion,note:"",time}]};return u;});
+  const drop = (dayIdx: number, time: TimeKey) => {
+    const p = dragRef.current;
+    if (!p) return;
+    
+    if (p.kind === "excursion") {
+      setItin(prev => {
+        const u = [...prev];
+        u[dayIdx] = {
+          ...u[dayIdx],
+          activities: [
+            ...u[dayIdx].activities,
+            {
+              id: `${Date.now()}-${Math.random()}`,
+              excursion: p.excursion,
+              note: "",
+              time
+            }
+          ]
+        };
+        return u;
+      });
     } else {
-      const{activityId,fromDay,fromTime}=p;
-      if(fromDay===dayIdx&&fromTime===time) return;
-      setItin(prev=>{const u=prev.map(d=>({...d,activities:[...d.activities]}));const idx=u[fromDay].activities.findIndex(a=>a.id===activityId);if(idx===-1)return prev;const[act]=u[fromDay].activities.splice(idx,1);u[dayIdx].activities.push({...act,time});return u;});
+      const { activityId, fromDay, fromTime } = p;
+      if (fromDay === dayIdx && fromTime === time) return;
+      
+      setItin(prev => {
+        const u = prev.map(d => ({ ...d, activities: [...d.activities] }));
+        const idx = u[fromDay].activities.findIndex(a => a.id === activityId);
+        if (idx === -1) return prev;
+        
+        const [act] = u[fromDay].activities.splice(idx, 1);
+        u[dayIdx].activities.push({ ...act, time });
+        return u;
+      });
     }
-    dragRef.current=null; setDragOver(null);
+    
+    dragRef.current = null;
+    setDragOver(null);
   };
 
-  const rmAct = (dayIdx:number, id:string) => setItin(prev=>{const u=[...prev];u[dayIdx]={...u[dayIdx],activities:u[dayIdx].activities.filter(a=>a.id!==id)};return u;});
-  const saveNote = (dayIdx:number, id:string) => {setItin(prev=>{const u=[...prev];u[dayIdx]={...u[dayIdx],activities:u[dayIdx].activities.map(a=>a.id===id?{...a,note:noteText}:a)};return u;});setEditNote(null);setNoteText("");};
+  const rmAct = (dayIdx: number, id: string) => setItin(prev => {
+    const u = [...prev];
+    u[dayIdx] = {
+      ...u[dayIdx],
+      activities: u[dayIdx].activities.filter(a => a.id !== id)
+    };
+    return u;
+  });
 
-  const totAct    = itin.reduce((s,d)=>s+d.activities.length,0);
-  const totBudget = itin.reduce((s,d)=>s+d.activities.reduce((ss,a)=>ss+a.excursion.price_per_person,0),0);
+  const saveNote = (dayIdx: number, id: string) => {
+    setItin(prev => {
+      const u = [...prev];
+      u[dayIdx] = {
+        ...u[dayIdx],
+        activities: u[dayIdx].activities.map(a =>
+          a.id === id ? { ...a, note: noteText } : a
+        )
+      };
+      return u;
+    });
+    setEditNote(null);
+    setNoteText("");
+  };
 
+  const totAct = itin.reduce((s, d) => s + d.activities.length, 0);
+  const totBudget = itin.reduce((s, d) => s + d.activities.reduce((ss, a) => ss + a.excursion.price_per_person, 0), 0);
+
+  // Rendu du composant (les parties JSX restent identiques)
+  // ... (la suite du code JSX est inchangée)
+  
+  // Pour la lisibilité, je ne répète pas tout le JSX ici car il est identique
+  // mais vous devez conserver tout le JSX de votre composant original
+  
   // ════════════════ CONFIG ════════════════
-  if(step==="config") return (
+  if (step === "config") return (
     <div style={{height:"calc(100vh - 64px)",display:"flex",flexDirection:"column",background:"#FAFAF9",fontFamily:"'DM Sans',system-ui,sans-serif",overflow:"hidden"}}>
       <style>{CSS}</style>
 
@@ -321,7 +747,7 @@ function ItineraireInner(){
               <div style={{marginBottom:12,padding:"9px 12px",background:"white",borderRadius:12,border:"1px solid #E5E7EB",fontSize:12,color:"#374151",fontWeight:500}}>
                 <span style={{color:"#9CA3AF",fontSize:11,textTransform:"uppercase",letterSpacing:".04em",fontWeight:700}}>Sélection · </span>
                 <span style={{color:"#2B96A8",fontWeight:700}}>{days} j</span>
-                {" · "}{selCities.slice(0,3).map(c=>`${CITY_EMOJI[c]||""} ${c}`).join(", ")}
+                {" · "}{selCities.slice(0,3).map(c=>`${CITY_EMOJI_FALLBACK[c]||""} ${c}`).join(", ")}
                 {selCities.length>3&&<span style={{color:"#2B96A8"}}> +{selCities.length-3}</span>}
               </div>
             )}
@@ -344,20 +770,38 @@ function ItineraireInner(){
             )}
           </div>
           <div style={{flex:1,overflowY:"auto",padding:"16px 24px"}}>
-            <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(130px,1fr))",gap:10}}>
-              {ALL_CITIES.map(c=>{
-                const sel = selCities.includes(c.name);
-                return(
-                  <button key={c.name} className="city-c vj-btn" onClick={()=>setSelCities(tog(selCities,c.name))}
-                    style={{padding:"14px 10px",borderRadius:16,border:`2px solid ${sel?"#2B96A8":"#F3F4F6"}`,background:sel?"rgba(43,150,168,.05)":"white",textAlign:"center",boxShadow:sel?"0 6px 16px -6px rgba(43,150,168,.28)":"0 1px 4px rgba(0,0,0,.04)",position:"relative"}}>
-                    {sel&&<div style={{position:"absolute",top:8,right:8,width:16,height:16,background:"#2B96A8",borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center"}}><CheckCircle2 size={10} color="white"/></div>}
-                    <div style={{fontSize:28,marginBottom:6}}>{c.emoji}</div>
-                    <div style={{fontSize:12,fontWeight:sel?700:600,color:sel?"#2B96A8":"#374151",marginBottom:2}}>{c.name}</div>
-                    <div style={{fontSize:10,color:sel?"#2B96A8":"#9CA3AF"}}>{c.description}</div>
-                  </button>
-                );
-              })}
-            </div>
+            {ldVilles ? (
+              <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(130px,1fr))",gap:10}}>
+                {[1,2,3,4,5,6,7,8,9,10,11,12].map(i=><div key={i} className="lp" style={{height:96,borderRadius:16,background:"#F3F4F6"}}/>)}
+              </div>
+            ) : villesError ? (
+              <div style={{textAlign:"center",padding:"32px 0"}}>
+                <AlertCircle size={28} color="#DC2626" style={{margin:"0 auto 8px"}}/>
+                <p style={{fontSize:12,color:"#DC2626"}}>Erreur de chargement</p>
+                <p style={{fontSize:11,color:"#9CA3AF",marginTop:4}}>{villesError}</p>
+                <button 
+                  className="vj-btn" 
+                  onClick={() => window.location.reload()}
+                  style={{marginTop:12,padding:"6px 12px",background:"#2B96A8",color:"white",border:"none",borderRadius:20,fontSize:11,fontWeight:600}}>
+                  <RotateCw size={11} style={{marginRight:4}}/> Réessayer
+                </button>
+              </div>
+            ) : (
+              <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(130px,1fr))",gap:10}}>
+                {allVilles.map(c=>{
+                  const sel = selCities.includes(c.nom);
+                  return(
+                    <button key={c.id} className="city-c vj-btn" onClick={()=>setSelCities(tog(selCities,c.nom))}
+                      style={{padding:"14px 10px",borderRadius:16,border:`2px solid ${sel?"#2B96A8":"#F3F4F6"}`,background:sel?"rgba(43,150,168,.05)":"white",textAlign:"center",boxShadow:sel?"0 6px 16px -6px rgba(43,150,168,.28)":"0 1px 4px rgba(0,0,0,.04)",position:"relative"}}>
+                      {sel&&<div style={{position:"absolute",top:8,right:8,width:16,height:16,background:"#2B96A8",borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center"}}><CheckCircle2 size={10} color="white"/></div>}
+                      <div style={{fontSize:28,marginBottom:6}}>{c.emoji || "🏙️"}</div>
+                      <div style={{fontSize:12,fontWeight:sel?700:600,color:sel?"#2B96A8":"#374151",marginBottom:2}}>{c.nom}</div>
+                      <div style={{fontSize:10,color:sel?"#2B96A8":"#9CA3AF"}}>{c.description}</div>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -365,7 +809,7 @@ function ItineraireInner(){
   );
 
   // ════════════════ BUILDER ════════════════
-  if(step==="builder") return (
+  if (step === "builder") return (
     <div style={{height:"calc(100vh - 64px)",display:"flex",flexDirection:"column",background:"#FAFAF9",fontFamily:"'DM Sans',system-ui,sans-serif",overflow:"hidden"}}>
       <style>{CSS}</style>
 
@@ -421,7 +865,7 @@ function ItineraireInner(){
                 {["Toutes",...selCities].map(c=>(
                   <button key={c} className="vj-btn" onClick={()=>setPalCity(c)}
                     style={{padding:"3px 8px",borderRadius:18,border:`1px solid ${palCity===c?"#2B96A8":"#E5E7EB"}`,background:palCity===c?"#2B96A8":"white",color:palCity===c?"white":"#6B7280",fontSize:10,fontWeight:palCity===c?700:500,transition:"all .12s"}}>
-                    {c==="Toutes"?"Toutes":`${CITY_EMOJI[c]||""} ${c}`}
+                    {c==="Toutes"?"Toutes":`${CITY_EMOJI_FALLBACK[c]||""} ${c}`}
                   </button>
                 ))}
               </div>
@@ -510,7 +954,7 @@ function ItineraireInner(){
               return(
                 <button key={i} className="dtab vj-btn" onClick={()=>setActiveDay(i)}
                   style={{padding:"6px 14px",borderRadius:20,border:`2px solid ${act?"#2B96A8":"#E5E7EB"}`,background:act?"#2B96A8":"white",fontSize:12,fontWeight:act?700:500,color:act?"white":"#6B7280",display:"flex",alignItems:"center",gap:5,boxShadow:act?"0 4px 12px -4px rgba(43,150,168,.45)":"none"}}>
-                  <span style={{fontSize:13}}>{CITY_EMOJI[day.city]||"📅"}</span>
+                  <span style={{fontSize:13}}>{CITY_EMOJI_FALLBACK[day.city]||day.city?.[0]||"📍"}</span>
                   Jour {i+1}
                   {cnt>0&&<span style={{fontSize:9,background:act?"rgba(255,255,255,.25)":"#2B96A8",color:"white",borderRadius:12,padding:"1px 6px",fontWeight:800}}>{cnt}</span>}
                 </button>
@@ -526,7 +970,7 @@ function ItineraireInner(){
                 <div style={{padding:"13px 18px",background:"#FAFAF9",borderBottom:"1px solid #F3F4F6",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
                   <div style={{display:"flex",alignItems:"center",gap:10}}>
                     <div style={{width:40,height:40,borderRadius:12,background:"#2B96A8",display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,boxShadow:"0 4px 10px rgba(43,150,168,.35)"}}>
-                      {CITY_EMOJI[itin[activeDay].city]||"📅"}
+                      {CITY_EMOJI_FALLBACK[itin[activeDay].city]||itin[activeDay].city?.[0]||"📍"}
                     </div>
                     <div>
                       <h2 style={{fontSize:15,fontWeight:800,color:"#111827",marginBottom:1}}>Jour {activeDay+1} — {itin[activeDay].city}</h2>
@@ -541,7 +985,7 @@ function ItineraireInner(){
                     <select value={itin[activeDay].city}
                       onChange={e=>setItin(prev=>{const u=[...prev];u[activeDay]={...u[activeDay],city:e.target.value};return u;})}
                       style={{border:"1.5px solid #E5E7EB",borderRadius:16,padding:"5px 10px",fontSize:12,fontFamily:"inherit",color:"#111827",background:"white",cursor:"pointer",outline:"none",fontWeight:600}}>
-                      {ALL_CITIES.map(c=><option key={c.name} value={c.name}>{c.emoji} {c.name}</option>)}
+                      {allVilles.map(c=><option key={c.id} value={c.nom}>{c.emoji||"🏙️"} {c.nom}</option>)}
                     </select>
                   </div>
                 </div>
@@ -554,8 +998,8 @@ function ItineraireInner(){
                     return(
                       <div key={slot.key} style={{marginBottom:13}}>
                         <div style={{display:"flex",alignItems:"center",gap:7,marginBottom:6}}>
-                          <span style={{fontSize:15}}>{slot.emoji}</span>
-                          <span style={{fontSize:12,fontWeight:700,color:"#374151"}}>{slot.label}</span>
+                          <span style={{display:"flex",alignItems:"center"}}>{slot.icon}</span>
+                          <span style={{fontSize:12,fontWeight:700,color:slot.color}}>{slot.label}</span>
                           <span style={{fontSize:10,color:"#9CA3AF",background:"#F3F4F6",padding:"1px 7px",borderRadius:12}}>{slot.hint}</span>
                           {acts.length>0&&(
                             <span style={{marginLeft:"auto",fontSize:10,color:"#059669",background:"rgba(5,150,105,.08)",padding:"2px 8px",borderRadius:12,fontWeight:700}}>
@@ -570,7 +1014,7 @@ function ItineraireInner(){
                           style={{minHeight:64,borderRadius:12,border:`2px dashed ${isOver?"#2B96A8":"#E5E7EB"}`,background:isOver?"rgba(43,150,168,.04)":"#FAFAF9",padding:8,display:"flex",flexWrap:"wrap",gap:7,alignItems:"flex-start"}}>
                           {acts.length===0 ? (
                             <div style={{width:"100%",display:"flex",alignItems:"center",justifyContent:"center",padding:"10px 0",fontSize:12,color:isOver?"#2B96A8":"#C4B8B0",fontStyle:"italic",fontWeight:isOver?700:400,gap:5}}>
-                              {isOver ? <><CheckCircle2 size={13}/>Déposez ici</> : `Glissez une excursion ${slot.emoji}`}
+                              {isOver ? <><CheckCircle2 size={13}/>Déposez ici</> : `Glissez une excursion ici`}
                             </div>
                           ) : acts.map(act=>{
                             const col = cc(act.excursion.categories?.[0]);
@@ -761,7 +1205,7 @@ function ItineraireInner(){
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:day.activities.length>0?10:0}}>
                   <h3 style={{fontSize:13,fontWeight:800,color:"#111827",display:"flex",alignItems:"center",gap:8}}>
                     <span style={{width:28,height:28,borderRadius:8,background:"#2B96A8",display:"inline-flex",alignItems:"center",justifyContent:"center",fontSize:14,boxShadow:"0 3px 8px rgba(43,150,168,.3)"}}>
-                      {CITY_EMOJI[day.city]||"📅"}
+                      {CITY_EMOJI_FALLBACK[day.city]||day.city?.[0]||"📍"}
                     </span>
                     Jour {i+1} — {day.city}
                   </h3>
@@ -779,7 +1223,7 @@ function ItineraireInner(){
                       const col = cc(act.excursion.categories?.[0]);
                       return(
                         <div key={act.id} style={{display:"flex",alignItems:"center",gap:9,padding:"8px 10px",background:"#FAFAF9",borderRadius:10,border:`1px solid ${col}15`}}>
-                          <span style={{fontSize:13,flexShrink:0}}>{slot.emoji}</span>
+                          <span style={{display:"flex",alignItems:"center",flexShrink:0,color:slot.color}}>{slot.icon}</span>
                           {act.excursion.photos?.[0]&&<img src={act.excursion.photos[0]} alt="" style={{width:34,height:34,borderRadius:8,objectFit:"cover",flexShrink:0}}/>}
                           <div style={{flex:1}}>
                             <div style={{fontSize:12,fontWeight:700,color:"#111827",marginBottom:2}}>{act.excursion.title}</div>
@@ -807,8 +1251,8 @@ function ItineraireInner(){
   );
 }
 
-export default function ItinerairePage(){
-  return(
+export default function ItinerairePage() {
+  return (
     <Suspense fallback={
       <div style={{display:"flex",alignItems:"center",justifyContent:"center",height:"100vh",background:"#FAFAF9",fontFamily:"system-ui"}}>
         <Loader2 size={28} color="#2B96A8" style={{animation:"spin .7s linear infinite"}}/>
