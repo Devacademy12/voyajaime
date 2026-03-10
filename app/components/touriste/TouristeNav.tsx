@@ -4,8 +4,6 @@ import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { createClient } from "@/lib/supabaseClient";
-<<<<<<< HEAD
-=======
 import {
   LayoutDashboard,
   Map,
@@ -18,7 +16,6 @@ import {
   MapPin,
   Plane,
 } from "lucide-react";
->>>>>>> 5e804c02d612727b600645cc5b07477675ca426d
 
 export default function TouristeNav({ userName, favCount = 0 }: { userName?: string; favCount?: number }) {
   const [unreadMsg, setUnreadMsg] = useState(0);
@@ -56,20 +53,12 @@ export default function TouristeNav({ userName, favCount = 0 }: { userName?: str
   };
 
   const links = [
-<<<<<<< HEAD
-    { href: "/excursions",            icon: "🏔️", label: "Excursions",  badge: 0 },
-    { href: "/touriste/messages",     icon: "msg", label: "Messages",    badge: unreadMsg },
-    { href: "/touriste/itineraires",  icon: "🗺️", label: "Itinéraires", badge: 0 },
-    { href: "/touriste/favoris",      icon: "❤️",  label: favCount > 0 ? `Favoris (${favCount})` : "Favoris", badge: 0 },
-    { href: "/touriste/reservations", icon: "📅",  label: "Réservations", badge: 0 },
-=======
     { label: "Accueil",          href: "/touriste/dashboard",    icon: <LayoutDashboard size={16} /> },
     { label: "Excursions",       href: "/excursions",            icon: <Mountain size={16} /> },
     { label: "Mon itinéraire",   href: "/touriste/itineraire",   icon: <Map size={16} /> },
     { label: "Mes réservations", href: "/touriste/reservations", icon: <CalendarDays size={16} /> },
     { label: "Mes favoris",      href: "/touriste/favoris",      icon: <Heart size={16} /> },
     { label: "Messages",         href: "/touriste/messages",     icon: <MessageCircle size={16} />, badge: unreadMsg },
->>>>>>> 5e804c02d612727b600645cc5b07477675ca426d
   ];
 
   const isActive = (href: string) => pathname === href || pathname.startsWith(href + "/");
@@ -161,15 +150,6 @@ export default function TouristeNav({ userName, favCount = 0 }: { userName?: str
                   </div>
                 </div>
 
-<<<<<<< HEAD
-                <Link href="/touriste/profil" className="ddi" onClick={() => setMenuOpen(false)}>👤 Mon profil</Link>
-                <Link href="/touriste/favoris" className="ddi" onClick={() => setMenuOpen(false)}>❤️ Mes favoris {favCount > 0 && <span style={{ marginLeft: "auto", background: "#FEF2F2", color: "#DC2626", padding: "1px 7px", borderRadius: 10, fontSize: 11, fontWeight: 700 }}>{favCount}</span>}</Link>
-                <Link href="/touriste/reservations" className="ddi" onClick={() => setMenuOpen(false)}>📅 Mes réservations</Link>
-                <Link href="/touriste/itineraires" className="ddi" onClick={() => setMenuOpen(false)}>🗺️ Mes itinéraires</Link>
-                <Link href="/touriste/messages" className="ddi" onClick={() => setMenuOpen(false)}>
-                  💬 Mes messages
-                  {unreadMsg > 0 && <span style={{ marginLeft: "auto", background: "#FEF2F2", color: "#EF4444", padding: "1px 7px", borderRadius: 10, fontSize: 11, fontWeight: 700 }}>{unreadMsg}</span>}
-=======
                 <Link href="/touriste/profil" className="ddi" onClick={() => setMenuOpen(false)}>
                   <UserCircle size={15} style={{ flexShrink: 0 }} /> Mon profil
                 </Link>
@@ -202,7 +182,6 @@ export default function TouristeNav({ userName, favCount = 0 }: { userName?: str
 
                 <Link href="/excursions" className="ddi" onClick={() => setMenuOpen(false)}>
                   <Mountain size={15} style={{ flexShrink: 0 }} /> Toutes les excursions
->>>>>>> 5e804c02d612727b600645cc5b07477675ca426d
                 </Link>
 
                 <div style={{ borderTop: "1px solid #F3F4F6", marginTop: 4, paddingTop: 4 }}>
