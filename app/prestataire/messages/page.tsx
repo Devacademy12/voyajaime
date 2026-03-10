@@ -143,7 +143,7 @@ export default function PrestataireMessagesPage() {
   );
 
   return (
-    <div style={{ height: "calc(100vh - 64px)", display: "flex", background: "white", borderRadius: 20, border: "1px solid #E5E7EB", overflow: "hidden", boxShadow: "0 4px 24px rgba(0,0,0,.06)" }}>
+    <div style={{ height: "calc(100vh - 64px - 32px)", display: "flex", background: "white", borderRadius: 20, border: "1px solid #E5E7EB", overflow: "hidden", boxShadow: "0 4px 24px rgba(0,0,0,.06)", margin: "16px 16px 0" }}>
       <style>{`
         @keyframes spin{to{transform:rotate(360deg)}}
         @keyframes popIn{from{opacity:0;transform:scale(.94)}to{opacity:1;transform:scale(1)}}

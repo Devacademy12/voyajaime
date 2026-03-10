@@ -18,12 +18,13 @@ export default async function TouristeReservations() {
     .eq("touriste_id", user!.id)
     .order("created_at", { ascending: false });
 
-  const total = reservations?.length || 0;
-  const pending = reservations?.filter(r => r.status === "pending").length || 0;
+  const total     = reservations?.length || 0;
+  const pending   = reservations?.filter(r => r.status === "pending").length || 0;
   const confirmed = reservations?.filter(r => r.status === "confirmed").length || 0;
 
   return (
-    <div>
+    <div style={{ padding: "36px 48px 60px", maxWidth: 1160, margin: "0 auto", width: "100%" }}>
+
       {/* Header */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 36 }}>
         <div>
@@ -39,9 +40,9 @@ export default async function TouristeReservations() {
       {total > 0 && (
         <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16, marginBottom: 32 }}>
           {[
-            { label: "Total", value: total, color: "#2B96A8", bg: "#EFF9FB" },
-            { label: "En attente", value: pending, color: "#D97706", bg: "#FFFBEB" },
-            { label: "Confirmées", value: confirmed, color: "#15803D", bg: "#F0FDF4" },
+            { label: "Total",       value: total,     color: "#2B96A8", bg: "#EFF9FB" },
+            { label: "En attente",  value: pending,   color: "#D97706", bg: "#FFFBEB" },
+            { label: "Confirmées",  value: confirmed, color: "#15803D", bg: "#F0FDF4" },
           ].map(s => (
             <div key={s.label} style={{ background: s.bg, borderRadius: 16, padding: "20px 24px", border: `1px solid ${s.color}20` }}>
               <p style={{ fontSize: 28, fontWeight: 900, color: s.color }}>{s.value}</p>
@@ -66,8 +67,8 @@ export default async function TouristeReservations() {
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
           {reservations!.map(r => {
-            const exc = r.excursion as Record<string, unknown> | null;
-            const s = STATUS[String(r.status)] || STATUS.pending;
+            const exc   = r.excursion as Record<string, unknown> | null;
+            const s     = STATUS[String(r.status)] || STATUS.pending;
             const photo = (exc?.photos as string[] | null)?.[0];
             return (
               <div key={String(r.id)} style={{ background: "white", borderRadius: 20, border: "1px solid #F3F4F6", overflow: "hidden", display: "flex", transition: "box-shadow 0.2s", boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}
@@ -112,6 +113,7 @@ export default async function TouristeReservations() {
           })}
         </div>
       )}
+    </div>
     </div>
   );
 }

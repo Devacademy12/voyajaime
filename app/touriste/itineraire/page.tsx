@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect, Suspense } from "react";
+import { useState, useRef, useEffect, Suspense, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabaseClient";
 import {
@@ -115,7 +115,13 @@ input[type=range]{accent-color:#2B96A8;cursor:pointer}
 
 function ItineraireInner(){
   const router = useRouter();
-  const sb = createClient();
+  const sb     = useMemo(() => createClient(), []);
+
+  // ── Sauvegarde ──────────────────────────────────────────────────────
+  const [userId,    setUserId]    = useState<string|null>(null);
+  const [savedItId, setSavedItId] = useState<string|null>(null);
+  const [saving,    setSaving]    = useState(false);
+  const [saveOk,    setSaveOk]    = useState(false);
 
   const [step,       setStep]       = useState<Step>("config");
   const [days,       setDays]       = useState(3);
@@ -148,6 +154,25 @@ function ItineraireInner(){
     });
   },[]);
 
+  // Charger utilisateur + dernier itinéraire sauvegardé
+  useEffect(()=>{
+    sb.auth.getUser().then(async({data:{user}})=>{
+      if(!user) return;
+      setUserId(user.id);
+      const{data}=await sb.from("itineraires").select("*")
+        .eq("user_id",user.id).order("updated_at",{ascending:false}).limit(1).maybeSingle();
+      if(data){
+        setSavedItId(data.id);
+        setDays(data.nb_jours||3);
+        setSelCities(data.villes_selectionnees||[]);
+        setSelCats(data.categories_selectionnees||[]);
+        setItin(data.plan||[]);
+        const hasAct=(data.plan||[]).some((d:DayPlan)=>d.activities?.length>0);
+        if(hasAct) setStep("builder");
+      }
+    });
+  },[sb]);
+
   const cc = (n:string) => categories.find(c=>c.nom===n)?.couleur||"#2B96A8";
   const ce = (n:string) => categories.find(c=>c.nom===n)?.emoji||"🏔️";
 
@@ -158,6 +183,25 @@ function ItineraireInner(){
       &&(palCity==="Toutes"||e.city===palCity)
       &&(selCities.length===0||selCities.includes(e.city));
   });
+
+  const saveItinerary = async()=>{
+    if(!userId) return;
+    setSaving(true);
+    const payload={
+      user_id:userId, nb_jours:days,
+      villes_selectionnees:selCities, categories_selectionnees:selCats,
+      plan:itin, updated_at:new Date().toISOString(),
+    };
+    if(savedItId){
+      await sb.from("itineraires").update(payload).eq("id",savedItId);
+    } else {
+      const{data}=await sb.from("itineraires")
+        .insert({...payload,created_at:new Date().toISOString()}).select().single();
+      if(data) setSavedItId(data.id);
+    }
+    setSaving(false); setSaveOk(true);
+    setTimeout(()=>setSaveOk(false),2500);
+  };
 
   const startBuilder = () => {
     setItin(Array.from({length:days},(_,i)=>({city:selCities[i%selCities.length]||"Tunis",activities:[]})));
@@ -186,7 +230,7 @@ function ItineraireInner(){
 
   // ════════════════ CONFIG ════════════════
   if(step==="config") return (
-    <div style={{height:"100vh",display:"flex",flexDirection:"column",background:"#FAFAF9",fontFamily:"'DM Sans',system-ui,sans-serif",overflow:"hidden"}}>
+    <div style={{height:"calc(100vh - 64px)",display:"flex",flexDirection:"column",background:"#FAFAF9",fontFamily:"'DM Sans',system-ui,sans-serif",overflow:"hidden"}}>
       <style>{CSS}</style>
 
       {/* ── Top bar ── */}
@@ -322,7 +366,7 @@ function ItineraireInner(){
 
   // ════════════════ BUILDER ════════════════
   if(step==="builder") return (
-    <div style={{height:"100vh",display:"flex",flexDirection:"column",background:"#FAFAF9",fontFamily:"'DM Sans',system-ui,sans-serif",overflow:"hidden"}}>
+    <div style={{height:"calc(100vh - 64px)",display:"flex",flexDirection:"column",background:"#FAFAF9",fontFamily:"'DM Sans',system-ui,sans-serif",overflow:"hidden"}}>
       <style>{CSS}</style>
 
       {/* Topbar */}
@@ -619,7 +663,7 @@ function ItineraireInner(){
 
   // ════════════════ RÉSUMÉ ════════════════
   return (
-    <div style={{height:"100vh",display:"flex",flexDirection:"column",background:"#FAFAF9",fontFamily:"'DM Sans',system-ui,sans-serif",overflow:"hidden"}}>
+    <div style={{height:"calc(100vh - 64px)",display:"flex",flexDirection:"column",background:"#FAFAF9",fontFamily:"'DM Sans',system-ui,sans-serif",overflow:"hidden"}}>
       <style>{CSS}</style>
 
       {/* Top bar */}
@@ -636,9 +680,9 @@ function ItineraireInner(){
             style={{padding:"7px 18px",border:"1.5px solid #2B96A8",borderRadius:20,background:"transparent",fontSize:13,color:"#2B96A8",fontWeight:700,display:"flex",alignItems:"center",gap:6}}>
             <Pencil size={13}/>Modifier
           </button>
-          <button className="vj-btn" onClick={()=>alert("Itinéraire sauvegardé !")}
-            style={{padding:"7px 18px",border:"none",borderRadius:20,background:"#111827",fontSize:13,color:"white",fontWeight:700,display:"flex",alignItems:"center",gap:6,boxShadow:"0 4px 12px rgba(0,0,0,.15)"}}>
-            <Send size={13}/>Sauvegarder
+          <button className="vj-btn" onClick={saveItinerary} disabled={saving}
+            style={{padding:"7px 18px",border:"none",borderRadius:20,background:saving?"#6B7280":saveOk?"#059669":"#111827",fontSize:13,color:"white",fontWeight:700,display:"flex",alignItems:"center",gap:6,boxShadow:"0 4px 12px rgba(0,0,0,.15)",transition:"background .3s"}}>
+            <Send size={13}/>{saving?"Sauvegarde...":saveOk?"✅ Sauvegardé !":"Sauvegarder"}
           </button>
         </div>
       </div>
@@ -702,11 +746,9 @@ function ItineraireInner(){
               onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
               <Pencil size={14}/>Modifier l&apos;itinéraire
             </button>
-            <button className="vj-btn" onClick={()=>alert("Itinéraire sauvegardé !")}
-              style={{width:"100%",padding:"11px",border:"none",borderRadius:14,background:"#111827",fontSize:13,color:"white",fontWeight:700,display:"flex",alignItems:"center",justifyContent:"center",gap:7,boxShadow:"0 6px 16px -6px rgba(0,0,0,.35)"}}
-              onMouseEnter={e=>{(e.target as HTMLButtonElement).style.background="#374151";}}
-              onMouseLeave={e=>{(e.target as HTMLButtonElement).style.background="#111827";}}>
-              <Send size={14}/>Sauvegarder ce voyage
+            <button className="vj-btn" onClick={saveItinerary} disabled={saving}
+              style={{width:"100%",padding:"11px",border:"none",borderRadius:14,background:saving?"#6B7280":saveOk?"#059669":"#111827",fontSize:13,color:"white",fontWeight:700,display:"flex",alignItems:"center",justifyContent:"center",gap:7,boxShadow:"0 6px 16px -6px rgba(0,0,0,.35)",transition:"background .3s"}}>
+              <Send size={14}/>{saving?"Sauvegarde...":saveOk?"✅ Sauvegardé !":savedItId?"Mettre à jour":"Sauvegarder ce voyage"}
             </button>
           </div>
         </div>

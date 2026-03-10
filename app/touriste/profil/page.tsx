@@ -117,14 +117,15 @@ export default function ProfilPage() {
     : null;
 
   if (!profile) return (
-    <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100%" }}>
+    <div style={{ padding: "36px 48px 60px", maxWidth: 1160, margin: "0 auto", width: "100%" }}>
+    <div style={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: "60vh" }}>
       <Loader2 size={28} color="#2B96A8" style={{ animation: "spin 0.7s linear infinite" }} />
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>
   );
 
   return (
-    <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
+    <div style={{ minHeight: "60vh", display: "flex", flexDirection: "column" }}>
       <style>{`
         @keyframes spin { to { transform: rotate(360deg); } }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
@@ -312,6 +313,7 @@ export default function ProfilPage() {
           </div>
         </div>
       </div>
+    </div>
     </div>
   );
 }

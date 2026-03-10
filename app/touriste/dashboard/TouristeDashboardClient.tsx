@@ -38,6 +38,7 @@ export default function TouristeDashboardClient({ profile, reservations, favoris
   const firstName = String(profile?.full_name || "Voyageur").split(" ")[0];
 
   return (
+    <div style={{ padding: "36px 48px 60px", maxWidth: 1160, margin: "0 auto", width: "100%" }}>
     <div>
       {/* Header */}
       <div style={{ marginBottom: "32px" }}>
@@ -128,6 +129,7 @@ export default function TouristeDashboardClient({ profile, reservations, favoris
           </a>
         </div>
       )}
+    </div>
     </div>
   );
 }

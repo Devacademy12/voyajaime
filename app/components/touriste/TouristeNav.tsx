@@ -4,22 +4,6 @@ import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { createClient } from "@/lib/supabaseClient";
-import {
-  LayoutDashboard,
-  Map,
-  CalendarDays,
-  Heart,
-  MessageCircle,
-  Mountain,
-  Wallet,
-  Star,
-  UserCircle,
-  Users,
-  Shield,
-  FolderOpen,
-  LogOut,
-  MapPin,
-} from "lucide-react";
 
 export default function TouristeNav({ userName, favCount = 0 }: { userName?: string; favCount?: number }) {
   const [unreadMsg, setUnreadMsg] = useState(0);
@@ -57,13 +41,11 @@ export default function TouristeNav({ userName, favCount = 0 }: { userName?: str
   };
 
   const links = [
-  
-    { label: "Accueil",          href: "/touriste/dashboard",    icon: <LayoutDashboard size={18} /> },
-    {  label: "Excursions",      href: "/excursions",           icon: <Mountain size={18} /> },
-    { label: "Mon itinéraire",   href: "/touriste/itineraire",   icon: <Map size={18} /> },
-    { label: "Mes réservations", href: "/touriste/reservations", icon: <CalendarDays size={18} /> },
-    { label: "Mes favoris",      href: "/touriste/favoris",      icon: <Heart size={18} /> },
-    { label: "Messages",         href: "/touriste/messages",     icon: <MessageCircle size={18} /> },
+    { href: "/excursions",            icon: "🏔️", label: "Excursions",  badge: 0 },
+    { href: "/touriste/messages",     icon: "msg", label: "Messages",    badge: unreadMsg },
+    { href: "/touriste/itineraires",  icon: "🗺️", label: "Itinéraires", badge: 0 },
+    { href: "/touriste/favoris",      icon: "❤️",  label: favCount > 0 ? `Favoris (${favCount})` : "Favoris", badge: 0 },
+    { href: "/touriste/reservations", icon: "📅",  label: "Réservations", badge: 0 },
   ];
 
   const isActive = (href: string) => pathname === href || pathname.startsWith(href + "/");
@@ -154,7 +136,7 @@ export default function TouristeNav({ userName, favCount = 0 }: { userName?: str
                 <Link href="/touriste/profil" className="ddi" onClick={() => setMenuOpen(false)}>👤 Mon profil</Link>
                 <Link href="/touriste/favoris" className="ddi" onClick={() => setMenuOpen(false)}>❤️ Mes favoris {favCount > 0 && <span style={{ marginLeft: "auto", background: "#FEF2F2", color: "#DC2626", padding: "1px 7px", borderRadius: 10, fontSize: 11, fontWeight: 700 }}>{favCount}</span>}</Link>
                 <Link href="/touriste/reservations" className="ddi" onClick={() => setMenuOpen(false)}>📅 Mes réservations</Link>
-                <Link href="/touriste/itineraire" className="ddi" onClick={() => setMenuOpen(false)}>🗺️ Mon itinéraire</Link>
+                <Link href="/touriste/itineraires" className="ddi" onClick={() => setMenuOpen(false)}>🗺️ Mes itinéraires</Link>
                 <Link href="/touriste/messages" className="ddi" onClick={() => setMenuOpen(false)}>
                   💬 Mes messages
                   {unreadMsg > 0 && <span style={{ marginLeft: "auto", background: "#FEF2F2", color: "#EF4444", padding: "1px 7px", borderRadius: 10, fontSize: 11, fontWeight: 700 }}>{unreadMsg}</span>}

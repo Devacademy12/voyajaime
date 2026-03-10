@@ -13,6 +13,7 @@ export default async function TouristeFavoris() {
     .order("created_at", { ascending: false });
 
   return (
+    <div style={{ padding: "36px 48px 60px", maxWidth: 1160, margin: "0 auto", width: "100%" }}>
     <div>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 36 }}>
         <div>
@@ -24,6 +25,7 @@ export default async function TouristeFavoris() {
         </Link>
       </div>
       <FavorisClient favoris={(favoris || []) as Parameters<typeof FavorisClient>[0]["favoris"]} userId={user!.id} />
+    </div>
     </div>
   );
 }
