@@ -45,15 +45,9 @@ export default async function TouristeReservations() {
       {total > 0 && (
         <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16, marginBottom: 32 }}>
           {[
-<<<<<<< HEAD
-            { label: "Total",       value: total,     color: "#2B96A8", bg: "#EFF9FB" },
-            { label: "En attente",  value: pending,   color: "#D97706", bg: "#FFFBEB" },
-            { label: "Confirmées",  value: confirmed, color: "#15803D", bg: "#F0FDF4" },
-=======
             { label: "Total",       value: total,     color: "#2B96A8", bg: "#EFF9FB", Icon: CalendarDays  },
             { label: "En attente",  value: pending,   color: "#D97706", bg: "#FFFBEB", Icon: AlertCircle   },
             { label: "Confirmées",  value: confirmed, color: "#15803D", bg: "#F0FDF4", Icon: CheckCircle   },
->>>>>>> 5e804c02d612727b600645cc5b07477675ca426d
           ].map(s => (
             <div key={s.label} style={{ background: s.bg, borderRadius: 16, padding: "20px 24px", border: `1px solid ${s.color}20`, display: "flex", alignItems: "center", gap: 16 }}>
               <div style={{ width: 44, height: 44, borderRadius: 13, background: `${s.color}15`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
@@ -151,6 +145,6 @@ export default async function TouristeReservations() {
         </div>
       )}
     </div>
-    </div>
+   
   );
 }
