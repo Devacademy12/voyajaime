@@ -6,16 +6,23 @@ import { usePathname } from "next/navigation";
 import { createClient } from "@/lib/supabaseClient";
 import {
   LayoutDashboard,
-  Map,
-  CalendarDays,
-  Heart,
-  MessageCircle,
   Mountain,
-  UserCircle,
+  MessageCircle,
+  Map,
+  Heart,
+  CalendarDays,
+  User,
   LogOut,
-  MapPin,
   Plane,
+  ChevronDown,
 } from "lucide-react";
+
+
+// Brand colors
+// #053366 Dark Midnight Blue
+// #02AFCF Turquoise Surf (primary)
+// #259FFC Button Blue
+// #DCE5FF Lavender
 
 export default function TouristeNav({ userName, favCount = 0 }: { userName?: string; favCount?: number }) {
   const [unreadMsg, setUnreadMsg] = useState(0);
@@ -53,12 +60,12 @@ export default function TouristeNav({ userName, favCount = 0 }: { userName?: str
   };
 
   const links = [
-    { label: "Accueil",          href: "/touriste/dashboard",    icon: <LayoutDashboard size={16} /> },
-    { label: "Excursions",       href: "/excursions",            icon: <Mountain size={16} /> },
-    { label: "Mon itinéraire",   href: "/touriste/itineraires",   icon: <Map size={16} /> },
-    { label: "Mes réservations", href: "/touriste/reservations", icon: <CalendarDays size={16} /> },
-    { label: "Mes favoris",      href: "/touriste/favoris",      icon: <Heart size={16} /> },
-    { label: "Messages",         href: "/touriste/messages",     icon: <MessageCircle size={16} />, badge: unreadMsg },
+    { href: "/touriste/dashboard",    icon: <LayoutDashboard size={16}/>, label: "Accueil" },
+    { href: "/excursions",            icon: <Mountain size={16}/>,        label: "Excursions" },
+    { href: "/touriste/itineraire",   icon: <Map size={16}/>,             label: "Mon itinéraire" },
+    { href: "/touriste/reservations", icon: <CalendarDays size={16}/>,    label: "Mes réservations" },
+    { href: "/touriste/favoris",      icon: <Heart size={16}/>,           label: favCount > 0 ? `Mes favoris (${favCount})` : "Mes favoris", badge: 0, isFavoris: true },
+    { href: "/touriste/messages",     icon: <MessageCircle size={16}/>,   label: "Messages", badge: unreadMsg },
   ];
 
   const isActive = (href: string) => pathname === href || pathname.startsWith(href + "/");
@@ -66,65 +73,101 @@ export default function TouristeNav({ userName, favCount = 0 }: { userName?: str
   return (
     <>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@400;500;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap');
         .tnav *{box-sizing:border-box;margin:0;padding:0}
         .tnav{font-family:'DM Sans',sans-serif}
-        .tlink{display:flex;align-items:center;gap:5px;padding:7px 12px;border-radius:10px;text-decoration:none;font-size:13.5px;font-weight:500;transition:all 0.18s;white-space:nowrap}
-        .tlink:hover{background:rgba(43,150,168,0.09);color:#2B96A8!important}
-        .tlink.on{background:rgba(43,150,168,0.11);color:#2B96A8!important;font-weight:700}
-        .av{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#2B96A8,#1e7a8a);color:white;border:none;cursor:pointer;font-size:14px;font-weight:800;font-family:'DM Sans',sans-serif;display:flex;align-items:center;justify-content:center;transition:transform 0.15s;flex-shrink:0}
-        .av:hover{transform:scale(1.08)}
-        .drop{position:absolute;top:calc(100% + 10px);right:0;background:white;border:1px solid #E5E7EB;border-radius:16px;padding:6px;min-width:220px;box-shadow:0 12px 40px rgba(0,0,0,0.12);z-index:400;animation:dropIn 0.18s ease}
+        .tlink{
+          display:flex;align-items:center;gap:6px;
+          padding:7px 13px;border-radius:20px;
+          text-decoration:none;font-size:13px;font-weight:500;
+          color:#053366;transition:all 0.18s;white-space:nowrap;
+          border:1px solid transparent;
+        }
+        .tlink:hover{background:#DCE5FF;color:#259FFC!important;}
+        .tlink.on{
+          background:#DCE5FF;color:#02AFCF!important;font-weight:700;
+          border-color:rgba(2,175,207,0.25);
+        }
+        .tlink.on-favoris{
+          background:#DCE5FF;color:#259FFC!important;font-weight:700;
+          border-color:rgba(37,159,252,0.3);
+        }
+        .av{
+          width:38px;height:38px;border-radius:50%;
+          background:linear-gradient(135deg,#02AFCF,#053366);
+          color:white;border:none;cursor:pointer;
+          font-size:15px;font-weight:800;
+          font-family:'DM Sans',sans-serif;
+          display:flex;align-items:center;justify-content:center;
+          transition:transform 0.15s,box-shadow 0.15s;flex-shrink:0;
+          box-shadow:0 3px 10px rgba(2,175,207,0.35);
+        }
+        .av:hover{transform:scale(1.08);box-shadow:0 5px 16px rgba(2,175,207,0.5)}
+        .drop{
+          position:absolute;top:calc(100% + 10px);right:0;
+          background:white;border:1px solid #E8EFFE;border-radius:18px;
+          padding:6px;min-width:220px;
+          box-shadow:0 14px 44px rgba(5,51,102,0.12);
+          z-index:400;animation:dropIn 0.18s ease;
+        }
         @keyframes dropIn{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:translateY(0)}}
-        .ddi{display:flex;align-items:center;gap:9px;padding:9px 12px;border-radius:10px;text-decoration:none;font-size:13px;font-weight:500;color:#374151;cursor:pointer;border:none;background:none;font-family:'DM Sans',sans-serif;width:100%;text-align:left;transition:background 0.15s}
-        .ddi:hover{background:#F9FAFB}
-        .ddi.red{color:#DC2626}.ddi.red:hover{background:#FEF2F2}
+        .ddi{
+          display:flex;align-items:center;gap:9px;padding:9px 12px;
+          border-radius:10px;text-decoration:none;font-size:13px;
+          font-weight:500;color:#053366;cursor:pointer;
+          border:none;background:none;font-family:'DM Sans',sans-serif;
+          width:100%;text-align:left;transition:background 0.15s;
+        }
+        .ddi:hover{background:#DCE5FF;color:#259FFC}
+        .ddi.red{color:#DC2626}.ddi.red:hover{background:#FEF2F2;color:#DC2626}
       `}</style>
 
       <header className="tnav" style={{
         position: "sticky", top: 0, zIndex: 200,
         height: 64,
-        background: "rgba(255,255,255,0.97)",
+        background: "rgba(255,255,255,0.98)",
         backdropFilter: "blur(20px)",
-        borderBottom: "1px solid #F3F4F6",
-        boxShadow: scrolled ? "0 1px 12px rgba(0,0,0,0.06)" : "none",
-        transition: "box-shadow 0.25s",
+        borderBottom: scrolled ? "1px solid #E8EFFE" : "1px solid #F0F4FF",
+        boxShadow: scrolled ? "0 2px 16px rgba(5,51,102,0.07)" : "none",
+        transition: "box-shadow 0.25s, border-color 0.25s",
         display: "flex", alignItems: "center",
         justifyContent: "space-between",
-        padding: "0 48px",
+        padding: "0 40px",
         gap: 24,
       }}>
 
         {/* Logo */}
-        <Link href="/" style={{ display: "flex", alignItems: "center", gap: 9, textDecoration: "none", flexShrink: 0 }}>
-          <svg width="30" height="30" viewBox="0 0 32 32" fill="none">
-            <path d="M16 28C16 28 4 19.5 4 11.5C4 7.91 6.91 5 10.5 5C12.5 5 14.3 5.97 16 7.5C17.7 5.97 19.5 5 21.5 5C25.09 5 28 7.91 28 11.5C28 19.5 16 28 16 28Z" fill="#2B96A8"/>
-            <path d="M16 13L14.5 10H12L15 14.5L11 14V16L15.5 15.5L16 19L16.5 15.5L21 16V14L17 14.5L20 10H17.5L16 13Z" fill="white"/>
-          </svg>
-          <span style={{ fontFamily: "'Playfair Display', serif", fontSize: 18, fontWeight: 900, color: "#111", letterSpacing: "-0.3px" }}>voyajaime</span>
+        <Link href="/touriste/dashboard" style={{ display: "flex", alignItems: "center", textDecoration: "none", flexShrink: 0 }}>
+          <img src="/logo.png" alt="Voyaj'aime" className="nav-logo" />
         </Link>
 
         {/* Nav links */}
         <nav style={{ display: "flex", alignItems: "center", gap: 2, flex: 1, justifyContent: "center" }}>
-          {links.map(l => (
-            <Link
-              key={l.href}
-              href={l.href}
-              className={`tlink ${isActive(l.href) ? "on" : ""}`}
-              style={{ color: isActive(l.href) ? "#2B96A8" : "#374151", position: "relative" }}
-            >
-              {l.icon}
-              {l.label}
-              {(l.badge ?? 0) > 0 && (
-                <span style={{ position: "absolute", top: 2, right: 2, minWidth: 16, height: 16, background: "#EF4444", color: "white", borderRadius: 8, fontSize: 9, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center", padding: "0 3px", border: "1.5px solid white" }}>
-                  {(l.badge ?? 0) > 9 ? "9+" : l.badge}
-                </span>
-              )}
-            </Link>
-          ))}
+          {links.map(l => {
+            const active = isActive(l.href);
+            const cls = active ? (l.isFavoris ? "tlink on-favoris" : "tlink on") : "tlink";
+            return (
+              <Link key={l.href} href={l.href} className={cls} style={{ position: "relative" }}>
+                {l.icon}
+                {l.label}
+                {(l.badge ?? 0) > 0 && (
+                  <span style={{
+                    position: "absolute", top: 1, right: 1,
+                    minWidth: 16, height: 16,
+                    background: "#EF4444", color: "white",
+                    borderRadius: 8, fontSize: 9, fontWeight: 800,
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    padding: "0 3px", border: "2px solid white",
+                  }}>
+                    {(l.badge ?? 0) > 9 ? "9+" : l.badge}
+                  </span>
+                )}
+              </Link>
+            );
+          })}
         </nav>
 
-        {/* Avatar + dropdown */}
+        {/* Avatar */}
         <div style={{ position: "relative", flexShrink: 0 }}>
           <button className="av" onClick={() => setMenuOpen(!menuOpen)}>
             {userName ? userName.charAt(0).toUpperCase() : "T"}
@@ -134,60 +177,40 @@ export default function TouristeNav({ userName, favCount = 0 }: { userName?: str
             <>
               <div style={{ position: "fixed", inset: 0, zIndex: 399 }} onClick={() => setMenuOpen(false)} />
               <div className="drop">
-
                 {/* User info */}
-                <div style={{ padding: "10px 14px 12px", borderBottom: "1px solid #F3F4F6", marginBottom: 4 }}>
+                <div style={{ padding: "10px 14px 12px", borderBottom: "1px solid #E8EFFE", marginBottom: 4 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                    <div style={{ width: 32, height: 32, borderRadius: "50%", background: "linear-gradient(135deg,#2B96A8,#1e7a8a)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 800, color: "white", flexShrink: 0 }}>
+                    <div style={{
+                      width: 34, height: 34, borderRadius: "50%",
+                      background: "linear-gradient(135deg,#02AFCF,#053366)",
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                      fontSize: 14, fontWeight: 800, color: "white", flexShrink: 0,
+                    }}>
                       {userName ? userName.charAt(0).toUpperCase() : "T"}
                     </div>
                     <div>
-                      <p style={{ fontSize: 13, fontWeight: 700, color: "#111827" }}>{userName || "Touriste"}</p>
-                      <span style={{ fontSize: 11, color: "#2B96A8", fontWeight: 600, display: "flex", alignItems: "center", gap: 4 }}>
-                        <Plane size={11} /> Compte touriste
+                      <p style={{ fontSize: 13, fontWeight: 700, color: "#053366" }}>{userName || "Touriste"}</p>
+                      <span style={{ fontSize: 11, color: "#02AFCF", fontWeight: 600, display: "flex", alignItems: "center", gap: 4 }}>
+                        <Plane size={10}/> Compte touriste
                       </span>
                     </div>
                   </div>
                 </div>
 
-                <Link href="/touriste/profil" className="ddi" onClick={() => setMenuOpen(false)}>
-                  <UserCircle size={15} style={{ flexShrink: 0 }} /> Mon profil
+                <Link href="/touriste/profil"       className="ddi" onClick={() => setMenuOpen(false)}><User size={14}/> Mon profil</Link>
+                <Link href="/touriste/favoris"      className="ddi" onClick={() => setMenuOpen(false)}>
+                  <Heart size={14}/> Mes favoris
+                  {favCount > 0 && <span style={{ marginLeft:"auto", background:"#DCE5FF", color:"#259FFC", padding:"1px 7px", borderRadius:10, fontSize:11, fontWeight:700 }}>{favCount}</span>}
+                </Link>
+                <Link href="/touriste/reservations" className="ddi" onClick={() => setMenuOpen(false)}><CalendarDays size={14}/> Mes réservations</Link>
+                <Link href="/touriste/itineraires"  className="ddi" onClick={() => setMenuOpen(false)}><Map size={14}/> Mes itinéraires</Link>
+                <Link href="/touriste/messages"     className="ddi" onClick={() => setMenuOpen(false)}>
+                  <MessageCircle size={14}/> Messages
+                  {unreadMsg > 0 && <span style={{ marginLeft:"auto", background:"#FEF2F2", color:"#EF4444", padding:"1px 7px", borderRadius:10, fontSize:11, fontWeight:700 }}>{unreadMsg}</span>}
                 </Link>
 
-                <Link href="/touriste/favoris" className="ddi" onClick={() => setMenuOpen(false)}>
-                  <Heart size={15} style={{ flexShrink: 0 }} /> Mes favoris
-                  {favCount > 0 && (
-                    <span style={{ marginLeft: "auto", background: "#FEF2F2", color: "#DC2626", padding: "1px 7px", borderRadius: 10, fontSize: 11, fontWeight: 700 }}>
-                      {favCount}
-                    </span>
-                  )}
-                </Link>
-
-                <Link href="/touriste/reservations" className="ddi" onClick={() => setMenuOpen(false)}>
-                  <CalendarDays size={15} style={{ flexShrink: 0 }} /> Mes réservations
-                </Link>
-
-                <Link href="/touriste/itineraire" className="ddi" onClick={() => setMenuOpen(false)}>
-                  <Map size={15} style={{ flexShrink: 0 }} /> Mon itinéraire
-                </Link>
-
-                <Link href="/touriste/messages" className="ddi" onClick={() => setMenuOpen(false)}>
-                  <MessageCircle size={15} style={{ flexShrink: 0 }} /> Mes messages
-                  {unreadMsg > 0 && (
-                    <span style={{ marginLeft: "auto", background: "#FEF2F2", color: "#EF4444", padding: "1px 7px", borderRadius: 10, fontSize: 11, fontWeight: 700 }}>
-                      {unreadMsg}
-                    </span>
-                  )}
-                </Link>
-
-                <Link href="/excursions" className="ddi" onClick={() => setMenuOpen(false)}>
-                  <Mountain size={15} style={{ flexShrink: 0 }} /> Toutes les excursions
-                </Link>
-
-                <div style={{ borderTop: "1px solid #F3F4F6", marginTop: 4, paddingTop: 4 }}>
-                  <button className="ddi red" onClick={handleSignOut}>
-                    <LogOut size={15} style={{ flexShrink: 0 }} /> Se déconnecter
-                  </button>
+                <div style={{ borderTop: "1px solid #E8EFFE", marginTop: 4, paddingTop: 4 }}>
+                  <button className="ddi red" onClick={handleSignOut}><LogOut size={14}/> Se déconnecter</button>
                 </div>
               </div>
             </>

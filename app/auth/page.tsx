@@ -3,19 +3,11 @@
 import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabaseClient";
 import Link from "next/link";
-import {
-  Eye,
-  EyeOff,
-  ArrowRight,
-  ArrowLeft,
-  Loader2,
-  AlertTriangle,
-  CheckCircle2,
-  Chrome,
-} from "lucide-react";
 
 const CITIES = ["Tunis","Sfax","Sousse","Kairouan","Hammamet","Tozeur","Djerba","Tataouine","Gafsa","Douz"];
 type Mode = "login" | "register" | "prestataire";
+
+const STATS = [["2 400+","Voyageurs"],["180+","Excursions"],["4.9 ★","Note moyenne"]];
 
 export default function AuthPage() {
   const supabase = createClient();
@@ -96,11 +88,20 @@ export default function AuthPage() {
 
   const handleForgotPassword = async () => {
     if (!email) { setError("Entrez votre email d'abord."); return; }
-    setLoading(true);
-    const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo: `${window.location.origin}/api/auth/callback` });
-    setLoading(false);
-    if (error) setError("Impossible d'envoyer l'email.");
-    else setSuccess("Email de réinitialisation envoyé !");
+    setLoading(true); setError(null);
+    try {
+      const res = await fetch("/api/auth/forgot-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+      if (!res.ok) throw new Error();
+      setSuccess("Email de réinitialisation envoyé ! Vérifiez votre boîte mail.");
+    } catch {
+      setError("Impossible d'envoyer l'email. Réessayez.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const isPresta = mode === "prestataire";
@@ -112,6 +113,7 @@ export default function AuthPage() {
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
         html, body { height: 100%; overflow: hidden; font-family: 'DM Sans', sans-serif; }
 
+        /* ── ROOT ── */
         .root {
           display: flex;
           height: 100vh;
@@ -122,6 +124,7 @@ export default function AuthPage() {
           justify-content: center;
         }
 
+        /* ── RIGHT PANEL ── */
         .right {
           display: flex;
           align-items: center;
@@ -159,10 +162,10 @@ export default function AuthPage() {
           font-size: 12px; color: #C4C9D4;
           text-decoration: none; font-weight: 600;
           letter-spacing: 0.3px; transition: color .15s;
-          display: flex; align-items: center; gap: 4px;
         }
         .home-link:hover { color: #9CA3AF; }
 
+        /* Form header */
         .form-head { margin-bottom: 22px; }
         .form-title {
           font-family: 'Playfair Display', serif;
@@ -172,6 +175,7 @@ export default function AuthPage() {
         .form-sub { font-size: 13px; color: #9CA3AF; font-weight: 500; }
         .accent { color: #2B96A8; }
 
+        /* Tabs */
         .tabs {
           display: flex; background: #F3F4F6;
           border-radius: 12px; padding: 3px;
@@ -187,6 +191,7 @@ export default function AuthPage() {
         .tab.on { background: white; color: #111827; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
         .tab:not(.on) { background: transparent; color: #9CA3AF; }
 
+        /* Fields */
         .fields { display: flex; flex-direction: column; gap: 9px; }
         .field label {
           display: block; font-size: 11px; font-weight: 700;
@@ -215,8 +220,10 @@ export default function AuthPage() {
         }
         .eye-btn:hover { color: #6B7280; }
 
+        /* 2-col row for prestataire */
         .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
 
+        /* Alerts */
         .alert {
           padding: 10px 13px; border-radius: 10px;
           font-size: 12px; line-height: 1.5; font-weight: 500;
@@ -226,6 +233,7 @@ export default function AuthPage() {
         .alert-err { background: #FEF2F2; border: 1px solid #FECACA; color: #DC2626; }
         .alert-ok  { background: #F0FDF4; border: 1px solid #BBF7D0; color: #15803D; }
 
+        /* Google */
         .google-btn {
           width: 100%; padding: 11px 16px;
           background: white; color: #374151;
@@ -245,6 +253,7 @@ export default function AuthPage() {
         }
         .divider::before, .divider::after { content: ''; flex: 1; height: 1px; background: #F0F0F0; }
 
+        /* Submit */
         .submit-btn {
           width: 100%; padding: 13px;
           background: #111827; color: white;
@@ -257,6 +266,7 @@ export default function AuthPage() {
         }
         .submit-btn:hover:not(:disabled) { background: #0F172A; transform: translateY(-1px); box-shadow: 0 8px 24px rgba(0,0,0,0.18); }
         .submit-btn:disabled { opacity: .55; cursor: not-allowed; transform: none; }
+        .arrow { width: 20px; height: 20px; background: rgba(255,255,255,0.12); border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 13px; }
 
         .forgot-row { text-align: right; margin-top: -2px; margin-bottom: 2px; }
         .forgot-btn {
@@ -279,16 +289,19 @@ export default function AuthPage() {
           padding: 0; margin-bottom: 14px; display: flex; align-items: center; gap: 4px;
         }
 
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .spin { width: 15px; height: 15px; border: 2px solid rgba(255,255,255,.3); border-top-color: white; border-radius: 50%; animation: spin .7s linear infinite; }
+        .spin-dark { width: 15px; height: 15px; border: 2px solid rgba(0,0,0,.1); border-top-color: #374151; border-radius: 50%; animation: spin .7s linear infinite; }
+
         @media (max-width: 480px) {
           .form-wrap { padding: 0 8px; }
         }
       `}</style>
 
       <div className="root">
+        {/* ── DROITE ── */}
         <div className="right">
-          <Link href="/" className="home-link">
-            <ArrowLeft size={12} /> Accueil
-          </Link>
+          <Link href="/" className="home-link">← Accueil</Link>
 
           <div className="form-wrap" key={mode}>
 
@@ -296,12 +309,12 @@ export default function AuthPage() {
             <div className="form-head">
               {isPresta && (
                 <button className="back-btn" onClick={() => { setMode("login"); setError(null); setSuccess(null); }}>
-                  <ArrowLeft size={13} /> Retour
+                  ← Retour
                 </button>
               )}
               <h1 className="form-title">
                 {mode === "login"
-                  ? <>Bienvenue <span className="accent">à nouveau</span></>
+                  ? <>Bon retour <span className="accent">👋</span></>
                   : isPresta
                   ? <>Devenir <span className="accent">prestataire</span></>
                   : <>Créer un <span className="accent">compte</span></>
@@ -327,35 +340,21 @@ export default function AuthPage() {
             )}
 
             {/* Alertes */}
-            {error && (
-              <div className="alert alert-err">
-                <AlertTriangle size={14} style={{ flexShrink: 0, marginTop: 1 }} />
-                {error}
-              </div>
-            )}
-            {success && (
-              <div className="alert alert-ok">
-                <CheckCircle2 size={14} style={{ flexShrink: 0, marginTop: 1 }} />
-                {success}
-              </div>
-            )}
+            {error   && <div className="alert alert-err">⚠️ {error}</div>}
+            {success && <div className="alert alert-ok">✅ {success}</div>}
 
             {/* Google */}
             {!isPresta && (
               <>
                 <button className="google-btn" onClick={handleGoogle} disabled={googleLoading}>
-                  {googleLoading
-                    ? <Loader2 size={16} style={{ animation: "spin .7s linear infinite" }} />
-                    : (
-                      /* Google logo SVG — brand asset, kept as-is */
-                      <svg width="17" height="17" viewBox="0 0 18 18" fill="none">
-                        <path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.874 2.684-6.615z" fill="#4285F4"/>
-                        <path d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z" fill="#34A853"/>
-                        <path d="M3.964 10.71A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.042l3.007-2.332z" fill="#FBBC05"/>
-                        <path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58z" fill="#EA4335"/>
-                      </svg>
-                    )
-                  }
+                  {googleLoading ? <span className="spin-dark" /> : (
+                    <svg width="17" height="17" viewBox="0 0 18 18" fill="none">
+                      <path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.874 2.684-6.615z" fill="#4285F4"/>
+                      <path d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z" fill="#34A853"/>
+                      <path d="M3.964 10.71A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.042l3.007-2.332z" fill="#FBBC05"/>
+                      <path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58z" fill="#EA4335"/>
+                    </svg>
+                  )}
                   Continuer avec Google
                 </button>
                 <div className="divider">OU</div>
@@ -396,7 +395,10 @@ export default function AuthPage() {
                         <input type={showPwd ? "text" : "password"} placeholder="Minimum 6 caractères"
                           value={password} onChange={e => setPassword(e.target.value)} required autoComplete="new-password" />
                         <button type="button" className="eye-btn" onClick={() => setShowPwd(!showPwd)}>
-                          {showPwd ? <EyeOff size={16} /> : <Eye size={16} />}
+                          {showPwd
+                            ? <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                            : <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                          }
                         </button>
                       </div>
                     </div>
@@ -421,7 +423,10 @@ export default function AuthPage() {
                           value={password} onChange={e => setPassword(e.target.value)} required
                           autoComplete={mode === "login" ? "current-password" : "new-password"} />
                         <button type="button" className="eye-btn" onClick={() => setShowPwd(!showPwd)}>
-                          {showPwd ? <EyeOff size={16} /> : <Eye size={16} />}
+                          {showPwd
+                            ? <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                            : <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                          }
                         </button>
                       </div>
                     </div>
@@ -439,8 +444,8 @@ export default function AuthPage() {
 
               <button type="submit" className="submit-btn" disabled={loading}>
                 {loading
-                  ? <><Loader2 size={16} style={{ animation: "spin .7s linear infinite" }} /> Chargement...</>
-                  : <>{mode === "login" ? "Se connecter" : isPresta ? "Envoyer ma demande" : "Créer mon compte"} <ArrowRight size={16} /></>
+                  ? <><span className="spin" />Chargement...</>
+                  : <>{mode === "login" ? "Se connecter" : isPresta ? "Envoyer ma demande" : "Créer mon compte"}<span className="arrow">→</span></>
                 }
               </button>
             </form>

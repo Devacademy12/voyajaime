@@ -12,8 +12,7 @@
   padding: 0;
 }
 
-html,
-body {
+html, body {
   height: 100%;
   overflow-x: hidden;
 }
@@ -25,23 +24,10 @@ body {
 }
 
 /* Scrollbar discret global */
-::-webkit-scrollbar {
-  width: 5px;
-  height: 5px;
-}
-
-::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-::-webkit-scrollbar-thumb {
-  background: #D1D5DB;
-  border-radius: 10px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: #9CA3AF;
-}
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #D1D5DB; border-radius: 10px; }
+::-webkit-scrollbar-thumb:hover { background: #9CA3AF; }
 
 /* ── GLASS CARD ── */
 .glass-card {
@@ -65,7 +51,6 @@ body {
   transition: all 0.2s ease;
   font-family: inherit;
 }
-
 .auth-input:focus {
   border-color: var(--teal);
   background: rgba(255, 255, 255, 0.95);
@@ -84,7 +69,6 @@ body {
   background: white;
   transition: border-color 0.2s;
 }
-
 .form-input:focus {
   border-color: var(--teal);
   box-shadow: 0 0 0 3px rgba(43, 150, 168, 0.1);
@@ -106,12 +90,10 @@ body {
   align-items: center;
   gap: 8px;
 }
-
 .btn-primary:hover:not(:disabled) {
   background: var(--teal-dark);
   transform: translateY(-1px);
 }
-
 .btn-primary:disabled {
   opacity: 0.6;
   cursor: not-allowed;
@@ -132,7 +114,6 @@ body {
   align-items: center;
   gap: 8px;
 }
-
 .btn-secondary:hover:not(:disabled) {
   background: #f9fafb;
   border-color: #d1d5db;
@@ -150,7 +131,6 @@ body {
   font-family: inherit;
   transition: all 0.2s;
 }
-
 .btn-danger:hover:not(:disabled) {
   background: #fecaca;
 }
@@ -167,7 +147,6 @@ body {
   font-family: inherit;
   transition: all 0.2s;
 }
-
 .btn-success:hover:not(:disabled) {
   background: #047857;
 }
@@ -185,11 +164,9 @@ body {
   font-family: inherit;
   transition: all 0.2s ease;
 }
-
 .cta-btn:hover:not(:disabled) {
   background: var(--teal-dark);
 }
-
 .cta-btn:disabled {
   opacity: 0.6;
   cursor: not-allowed;
@@ -212,7 +189,6 @@ body {
   gap: 10px;
   transition: all 0.2s ease;
 }
-
 .oauth-btn:hover:not(:disabled) {
   background: white;
 }
@@ -225,7 +201,6 @@ body {
   font-size: 13px;
   color: #9ca3af;
 }
-
 .divider::before,
 .divider::after {
   content: "";
@@ -244,7 +219,6 @@ body {
   animation: spin 0.7s linear infinite;
   display: inline-block;
 }
-
 .spinner-dark {
   width: 16px;
   height: 16px;
@@ -254,7 +228,6 @@ body {
   animation: spin 0.7s linear infinite;
   display: inline-block;
 }
-
 @keyframes spin {
   to {
     transform: rotate(360deg);
@@ -271,36 +244,12 @@ body {
   font-weight: 600;
   white-space: nowrap;
 }
-
-.badge-green {
-  background: #d1fae5;
-  color: #059669;
-}
-
-.badge-yellow {
-  background: #fef3c7;
-  color: #d97706;
-}
-
-.badge-red {
-  background: #fee2e2;
-  color: #dc2626;
-}
-
-.badge-blue {
-  background: #dbeafe;
-  color: #2563eb;
-}
-
-.badge-gray {
-  background: #f3f4f6;
-  color: #6b7280;
-}
-
-.badge-teal {
-  background: rgba(43, 150, 168, 0.1);
-  color: #2b96a8;
-}
+.badge-green { background: #d1fae5; color: #059669; }
+.badge-yellow { background: #fef3c7; color: #d97706; }
+.badge-red { background: #fee2e2; color: #dc2626; }
+.badge-blue { background: #dbeafe; color: #2563eb; }
+.badge-gray { background: #f3f4f6; color: #6b7280; }
+.badge-teal { background: rgba(43,150,168,0.1); color: #2b96a8; }
 
 /* ── CARDS ── */
 .card {
@@ -309,12 +258,19 @@ body {
   border: 1px solid #e5e7eb;
   padding: 20px;
 }
-
 .stat-card {
   background: white;
   border-radius: 16px;
   border: 1px solid #e5e7eb;
   padding: 20px;
+}
+
+/* ── HEADER LOGO ── */
+.nav-logo {
+  height: 52px;
+  width: auto;
+  object-fit: contain;
+  display: block;
 }
 
 /* ── SIDEBAR ── */
@@ -331,7 +287,6 @@ body {
   flex-direction: column;
   z-index: 50;
 }
-
 .sidebar-link {
   display: flex;
   align-items: center;
@@ -345,12 +300,10 @@ body {
   transition: all 0.15s;
   margin-bottom: 2px;
 }
-
 .sidebar-link:hover {
   background: rgba(43, 150, 168, 0.08);
   color: var(--teal);
 }
-
 .sidebar-link.active {
   background: rgba(43, 150, 168, 0.12);
   color: var(--teal);
@@ -363,7 +316,6 @@ body {
   border: 1px solid #e5e7eb;
   overflow: hidden;
 }
-
 .table-row {
   display: flex;
   align-items: center;
@@ -371,71 +323,29 @@ body {
   border-bottom: 1px solid #f3f4f6;
   gap: 12px;
 }
-
 .table-row:last-child {
   border-bottom: none;
 }
-
 .table-row:hover {
   background: #fafafa;
 }
 
 /* ── ANIMATIONS ── */
-.animate-fade-in {
-  animation: fadeIn 0.4s ease forwards;
-}
-
-.animate-slide-up {
-  animation: slideUp 0.5s ease forwards;
-}
-
-.delay-100 {
-  animation-delay: 0.1s;
-  opacity: 0;
-}
-
-.delay-200 {
-  animation-delay: 0.2s;
-  opacity: 0;
-}
-
-.delay-300 {
-  animation-delay: 0.3s;
-  opacity: 0;
-}
-
-.delay-400 {
-  animation-delay: 0.4s;
-  opacity: 0;
-}
-
-.delay-500 {
-  animation-delay: 0.5s;
-  opacity: 0;
-}
+.animate-fade-in { animation: fadeIn 0.4s ease forwards; }
+.animate-slide-up { animation: slideUp 0.5s ease forwards; }
+.delay-100 { animation-delay: 0.1s; opacity: 0; }
+.delay-200 { animation-delay: 0.2s; opacity: 0; }
+.delay-300 { animation-delay: 0.3s; opacity: 0; }
+.delay-400 { animation-delay: 0.4s; opacity: 0; }
+.delay-500 { animation-delay: 0.5s; opacity: 0; }
 
 @keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(6px);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
 }
-
 @keyframes slideUp {
-  from {
-    opacity: 0;
-    transform: translateY(24px);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  from { opacity: 0; transform: translateY(24px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 /* ── TOAST ── */
@@ -451,15 +361,5 @@ body {
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
   animation: fadeIn 0.3s ease;
 }
-
-.toast-success {
-  background: #d1fae5;
-  color: #059669;
-  border: 1px solid #a7f3d0;
-}
-
-.toast-error {
-  background: #fee2e2;
-  color: #dc2626;
-  border: 1px solid #fecaca;
-}
+.toast-success { background: #d1fae5; color: #059669; border: 1px solid #a7f3d0; }
+.toast-error { background: #fee2e2; color: #dc2626; border: 1px solid #fecaca; }

@@ -31,6 +31,7 @@ import {
   ChevronUp,
   Loader2,
 } from "lucide-react";
+import TouristeNav from "@/app/components/touriste/TouristeNav";
 
 interface Excursion {
   id: string; title: string; city: string; description: string;
@@ -226,24 +227,7 @@ export default function ExcursionClient({
       <style>{CSS}</style>
 
       {/* ── NAVBAR ── */}
-      <header style={{ position:"sticky",top:0,zIndex:200,background:"rgba(255,255,255,.97)",backdropFilter:"blur(20px)",borderBottom:"1px solid #EBEBEB",height:60,display:"flex",alignItems:"center",justifyContent:"space-between",padding:"0 40px",boxShadow:"0 1px 10px rgba(0,0,0,.05)" }}>
-        <Link href="/excursions" style={{ display:"flex",alignItems:"center",gap:7,textDecoration:"none",color:"#374151",fontSize:13,fontWeight:600 }}>
-          <ArrowLeft size={15}/> Toutes les excursions
-        </Link>
-        <Link href="/" style={{ display:"flex",alignItems:"center",gap:8,textDecoration:"none" }}>
-          <svg width="24" height="24" viewBox="0 0 32 32" fill="none">
-            <path d="M16 28C16 28 4 19.5 4 11.5C4 7.91 6.91 5 10.5 5C12.5 5 14.3 5.97 16 7.5C17.7 5.97 19.5 5 21.5 5C25.09 5 28 7.91 28 11.5C28 19.5 16 28 16 28Z" fill="#2B96A8"/>
-            <path d="M16 13L14.5 10H12L15 14.5L11 14V16L15.5 15.5L16 19L16.5 15.5L21 16V14L17 14.5L20 10H17.5L16 13Z" fill="white"/>
-          </svg>
-          <span style={{ fontFamily:"'Playfair Display',serif",fontSize:17,fontWeight:900,color:"#111" }}>voyajaime</span>
-        </Link>
-        <div>
-          {user
-            ? <Link href="/touriste/favoris" style={{ padding:"8px 16px",background:"#F3F4F6",color:"#374151",borderRadius:20,textDecoration:"none",fontSize:13,fontWeight:700 }}>Mon espace</Link>
-            : <Link href="/auth" style={{ padding:"8px 18px",background:"#2B96A8",color:"white",borderRadius:20,textDecoration:"none",fontSize:13,fontWeight:700 }}>Connexion</Link>
-          }
-        </div>
-      </header>
+      <TouristeNav />
 
 
       {/* ══════════ MAIN CONTENT ══════════ */}
@@ -793,7 +777,12 @@ export default function ExcursionClient({
                 <p style={{ fontSize:14,color:"#374151",lineHeight:1.75 }}>{prestataire.description}</p>
               </div>
             )}
-           
+            {prestataire.phone && (
+              <div style={{ display:"flex",justifyContent:"space-between",alignItems:"center",fontSize:13,padding:"10px 0",borderBottom:"1px solid #F9FAFB",marginBottom:10 }}>
+                <span style={{ color:"#6B7280",display:"flex",alignItems:"center",gap:6 }}><HeadphonesIcon size={13}/>Téléphone</span>
+                <span style={{ fontWeight:700,color:"#111827" }}>{prestataire.phone}</span>
+              </div>
+            )}
             <button onClick={() => setShowPrestataire(false)} className="cta-primary" style={{ marginTop:8 }}>Fermer</button>
           </div>
         </div>
