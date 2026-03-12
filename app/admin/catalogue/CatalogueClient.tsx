@@ -7,34 +7,32 @@ import {
 } from "lucide-react";
 
 interface Ville {
-  id: string; nom: string; emoji: string;
+  id: string; nom: string;
   region: string; description: string; active: boolean; created_at: string;
 }
 interface Categorie {
-  id: string; nom: string; emoji: string; couleur: string; created_at: string;
+  id: string; nom: string; couleur: string; created_at: string;
 }
 
 const COULEURS_PRESET = [
   "#2B96A8","#E25B45","#F59E0B","#10B981","#8B5CF6",
   "#EC4899","#0EA5E9","#F97316","#6366F1","#14B8A6",
 ];
-const EMOJI_VILLES = ["🏙️","🏖️","🌴","🏜️","🕌","⛰️","🌊","🌿","🏛️","🐪"];
-const EMOJI_CATS   = ["🏔️","🌊","🏜️","🕌","🌿","🦁","🏊","🎭","🍽️","🚗","⛵","🎒","🌅","🏕️","🦅"];
 
-const DEFAULT_VILLE: Partial<Ville> = { nom:"", emoji:"🏙️", region:"Tunisie", description:"", active:true };
-const DEFAULT_CAT: Partial<Categorie> = { nom:"", emoji:"🏔️", couleur:"#2B96A8" };
+const DEFAULT_VILLE: Partial<Ville> = { nom:"", region:"Tunisie", description:"", active:true };
+const DEFAULT_CAT: Partial<Categorie> = { nom:"", couleur:"#2B96A8" };
 
 export default function CatalogueClient({
   villes: initV, categories: initC,
 }: { villes: Ville[]; categories: Categorie[] }) {
   const [tab, setTab] = useState<"villes"|"categories">("villes");
-  const [villes, setVilles]         = useState(initV);
-  const [villeModal, setVilleModal] = useState<Partial<Ville> | null>(null);
+  const [villes, setVilles]             = useState(initV);
+  const [villeModal, setVilleModal]     = useState<Partial<Ville> | null>(null);
   const [villeLoading, setVilleLoading] = useState<string|null>(null);
-  const [categories, setCategories] = useState(initC);
-  const [catModal, setCatModal]     = useState<Partial<Categorie> | null>(null);
-  const [catLoading, setCatLoading] = useState<string|null>(null);
-  const [toast, setToast]           = useState<{ msg:string; ok:boolean }|null>(null);
+  const [categories, setCategories]     = useState(initC);
+  const [catModal, setCatModal]         = useState<Partial<Categorie> | null>(null);
+  const [catLoading, setCatLoading]     = useState<string|null>(null);
+  const [toast, setToast]               = useState<{ msg:string; ok:boolean }|null>(null);
 
   const showToast = (msg:string, ok=true) => { setToast({msg,ok}); setTimeout(()=>setToast(null),3000); };
 
@@ -50,11 +48,11 @@ export default function CatalogueClient({
     setVilleLoading("save");
     try {
       if (villeModal.id) {
-        const updated = await callVille({ action:"update", id:villeModal.id, nom:villeModal.nom, emoji:villeModal.emoji, region:villeModal.region, description:villeModal.description, active:villeModal.active });
+        const updated = await callVille({ action:"update", id:villeModal.id, nom:villeModal.nom, region:villeModal.region, description:villeModal.description, active:villeModal.active });
         setVilles(p => p.map(v => v.id===villeModal.id ? updated : v));
         showToast("Ville mise à jour");
       } else {
-        const created = await callVille({ action:"create", nom:villeModal.nom, emoji:villeModal.emoji, region:villeModal.region, description:villeModal.description, active:villeModal.active });
+        const created = await callVille({ action:"create", nom:villeModal.nom, region:villeModal.region, description:villeModal.description, active:villeModal.active });
         setVilles(p => [...p, created].sort((a,b)=>a.nom.localeCompare(b.nom)));
         showToast("Ville ajoutée");
       }
@@ -95,11 +93,11 @@ export default function CatalogueClient({
     setCatLoading("save");
     try {
       if (catModal.id) {
-        const updated = await callCat({ action:"update", id:catModal.id, nom:catModal.nom, emoji:catModal.emoji, couleur:catModal.couleur });
+        const updated = await callCat({ action:"update", id:catModal.id, nom:catModal.nom, couleur:catModal.couleur });
         setCategories(p => p.map(c => c.id===catModal.id ? updated : c));
         showToast("Catégorie mise à jour");
       } else {
-        const created = await callCat({ action:"create", nom:catModal.nom, emoji:catModal.emoji, couleur:catModal.couleur });
+        const created = await callCat({ action:"create", nom:catModal.nom, couleur:catModal.couleur });
         setCategories(p => [...p, created].sort((a,b)=>a.nom.localeCompare(b.nom)));
         showToast("Catégorie ajoutée");
       }
@@ -136,9 +134,6 @@ export default function CatalogueClient({
         .modal{background:white;border-radius:22px;width:100%;max-width:480px;box-shadow:0 24px 72px rgba(0,0,0,.18)}
         .toast-c{position:fixed;top:22px;right:22px;z-index:9999;padding:12px 18px;border-radius:13px;font-size:14px;font-weight:600;font-family:inherit;box-shadow:0 8px 28px rgba(0,0,0,.12);animation:tin .3s ease;display:flex;align-items:center;gap:8px}
         @keyframes tin{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}
-        .emoji-grid{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
-        .emoji-opt{width:36px;height:36px;border-radius:8px;border:1.5px solid #E5E7EB;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:18px;transition:all .2s;background:white}
-        .emoji-opt.on{border-color:#2B96A8;background:rgba(43,150,168,.08)}
         .color-swatch{width:28px;height:28px;border-radius:8px;cursor:pointer;transition:all .2s;border:2.5px solid transparent}
         .color-swatch.on{border-color:#111827;transform:scale(1.15)}
       `}</style>
@@ -176,8 +171,8 @@ export default function CatalogueClient({
           <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(320px,1fr))", gap:10 }}>
             {villes.map(v => (
               <div key={v.id} className="ccard" style={{ borderLeft:`3px solid ${v.active?"#2B96A8":"#E5E7EB"}` }}>
-                <div style={{ width:44, height:44, borderRadius:12, background:v.active?"rgba(43,150,168,.1)":"#F3F4F6", display:"flex", alignItems:"center", justifyContent:"center", fontSize:22, flexShrink:0 }}>
-                  {v.emoji}
+                <div style={{ width:44, height:44, borderRadius:12, background:v.active?"rgba(43,150,168,.1)":"#F3F4F6", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+                  <MapPin size={20} color={v.active?"#2B96A8":"#9CA3AF"} strokeWidth={1.5} />
                 </div>
                 <div style={{ flex:1, minWidth:0 }}>
                   <div style={{ display:"flex", alignItems:"center", gap:7, marginBottom:2 }}>
@@ -231,8 +226,8 @@ export default function CatalogueClient({
           <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(280px,1fr))", gap:10 }}>
             {categories.map(c => (
               <div key={c.id} className="ccard" style={{ borderLeft:`3px solid ${c.couleur}` }}>
-                <div style={{ width:44, height:44, borderRadius:12, background:`${c.couleur}18`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:22, flexShrink:0 }}>
-                  {c.emoji}
+                <div style={{ width:44, height:44, borderRadius:12, background:`${c.couleur}18`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+                  <Tag size={20} color={c.couleur} strokeWidth={1.5} />
                 </div>
                 <div style={{ flex:1 }}>
                   <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:3 }}>
@@ -290,14 +285,6 @@ export default function CatalogueClient({
                 <label style={{ display:"block", fontSize:11, fontWeight:700, color:"#374151", textTransform:"uppercase", letterSpacing:.5, marginBottom:6 }}>Description</label>
                 <textarea className="fi" rows={2} value={villeModal.description||""} onChange={e=>setVilleModal(p=>({...p!,description:e.target.value}))} placeholder="Courte description..." style={{ resize:"vertical" }} />
               </div>
-              <div>
-                <label style={{ display:"block", fontSize:11, fontWeight:700, color:"#374151", textTransform:"uppercase", letterSpacing:.5, marginBottom:6 }}>Emoji</label>
-                <div className="emoji-grid">
-                  {EMOJI_VILLES.map(em=>(
-                    <button key={em} type="button" className={`emoji-opt ${villeModal.emoji===em?"on":""}`} onClick={()=>setVilleModal(p=>({...p!,emoji:em}))}>{em}</button>
-                  ))}
-                </div>
-              </div>
               <label style={{ display:"flex", alignItems:"center", gap:10, cursor:"pointer", padding:"10px 14px", background:"#F9FAFB", borderRadius:10, border:"1px solid #E5E7EB" }}>
                 <input type="checkbox" checked={villeModal.active!==false} onChange={e=>setVilleModal(p=>({...p!,active:e.target.checked}))} style={{ width:16, height:16, accentColor:"#2B96A8" }} />
                 <span style={{ fontSize:13, fontWeight:600, color:"#374151" }}>Ville active (visible pour les prestataires)</span>
@@ -334,14 +321,6 @@ export default function CatalogueClient({
                 <input className="fi" value={catModal.nom||""} onChange={e=>setCatModal(p=>({...p!,nom:e.target.value}))} placeholder="Ex: Randonnée" />
               </div>
               <div>
-                <label style={{ display:"block", fontSize:11, fontWeight:700, color:"#374151", textTransform:"uppercase", letterSpacing:.5, marginBottom:6 }}>Emoji</label>
-                <div className="emoji-grid">
-                  {EMOJI_CATS.map(em=>(
-                    <button key={em} type="button" className={`emoji-opt ${catModal.emoji===em?"on":""}`} onClick={()=>setCatModal(p=>({...p!,emoji:em}))}>{em}</button>
-                  ))}
-                </div>
-              </div>
-              <div>
                 <label style={{ display:"block", fontSize:11, fontWeight:700, color:"#374151", textTransform:"uppercase", letterSpacing:.5, marginBottom:8 }}>Couleur</label>
                 <div style={{ display:"flex", gap:8, flexWrap:"wrap", alignItems:"center" }}>
                   {COULEURS_PRESET.map(col=>(
@@ -351,7 +330,7 @@ export default function CatalogueClient({
                     style={{ width:32, height:28, border:"1.5px solid #E5E7EB", borderRadius:8, cursor:"pointer", padding:2 }} />
                 </div>
                 <div style={{ marginTop:10, display:"inline-flex", alignItems:"center", gap:6, padding:"5px 12px", borderRadius:20, background:`${catModal.couleur}15`, border:`1px solid ${catModal.couleur}40` }}>
-                  <span style={{ fontSize:14 }}>{catModal.emoji||"🏷️"}</span>
+                  <Tag size={13} color={catModal.couleur} strokeWidth={2} />
                   <span style={{ fontSize:12, fontWeight:700, color:catModal.couleur }}>{catModal.nom||"Aperçu"}</span>
                 </div>
               </div>
