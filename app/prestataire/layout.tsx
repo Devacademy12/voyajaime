@@ -9,55 +9,34 @@ export default async function PrestataireLayout({
   children: React.ReactNode;
 }) {
   const supabase = await createServerSupabaseClient();
-
-  // USER
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
+  const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/auth");
 
-  // PROFILE
   const { data: profile } = await supabase
-    .from("profiles")
-    .select("*")
-    .eq("user_id", user.id)
-    .single();
+    .from("profiles").select("*").eq("user_id", user.id).single();
 
-  if (!profile || profile.role !== "prestataire") {
-    redirect("/auth");
-  }
+  if (!profile || profile.role !== "prestataire") redirect("/auth");
+  if (!profile.is_validated) return <ValidationPending />;
 
-  // ACCOUNT NOT VALIDATED
-  if (!profile.is_validated) {
-    return <ValidationPending />;
-  }
-
-  // NORMAL DASHBOARD
   return (
-    <div
-      style={{
-        display: "flex",
-        minHeight: "100vh",
-        background: "#F9FAFB",
-      }}
-    >
-      <Sidebar
-        role="prestataire"
-        userName={profile.agency_name || profile.full_name}
-        userEmail={user.email}
-      />
-
-      <main
-        style={{
-          marginLeft: "240px",
-          flex: 1,
-          padding: "32px",
-          minHeight: "100vh",
-        }}
-      >
-        {children}
-      </main>
-    </div>
+    <>
+      <style>{`
+        .layout-wrap { display: flex; min-height: 100vh; background: #F9FAFB; }
+        .layout-main  { flex: 1; margin-left: 240px; padding: 32px; min-height: 100vh; }
+        @media (max-width: 767px) {
+          .layout-main { margin-left: 0; padding: 72px 16px 24px; }
+        }
+      `}</style>
+      <div className="layout-wrap">
+        <Sidebar
+          role="prestataire"
+          userName={profile.agency_name || profile.full_name}
+          userEmail={user.email}
+        />
+        <main className="layout-main">
+          {children}
+        </main>
+      </div>
+    </>
   );
 }
