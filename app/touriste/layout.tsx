@@ -17,12 +17,12 @@ export default async function TouristeLayout({ children }: { children: React.Rea
     .from("favoris").select("*", { count: "exact", head: true }).eq("touriste_id", user.id);
 
   return (
-    <div style={{ height: "100vh", display: "flex", flexDirection: "column", background: "#FAFAF9", overflow: "hidden" }}>
+    <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column", background: "#FAFAF9" }}>
       <TouristeNav
         userName={profile.full_name || user.email || "Touriste"}
         favCount={favCount || 0}
       />
-      <main style={{ flex: 1, overflow: "auto", display: "flex", flexDirection: "column" }}>
+      <main style={{ flex: 1, display: "flex", flexDirection: "column" }}>
         {children}
       </main>
     </div>
