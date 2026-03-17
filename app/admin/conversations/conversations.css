@@ -1,0 +1,45 @@
+.conv-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  cursor: pointer;
+  transition: all 0.15s;
+  border: 1px solid transparent;
+}
+.conv-item:hover  { background: #F8FAFF; border-color: #DCE5FF; }
+.conv-item.active { background: #EEF2FF; border-color: #259FFC; }
+
+.msg-bubble { max-width: 72%; padding: 10px 14px; font-size: 13px; line-height: 1.55; word-break: break-word; }
+.msg-t { background: white; color: #053366; border-radius: 16px 16px 16px 4px; border: 1px solid #EEF2FF; }
+.msg-p { background: linear-gradient(135deg, #02AFCF, #259FFC); color: white; border-radius: 16px 16px 4px 16px; }
+
+.cv-stat-card { background: white; border-radius: 16px; padding: 16px 20px; display: flex; align-items: center; gap: 12px; }
+
+.cv-search-input {
+  width: 100%;
+  padding: 10px 14px 10px 38px;
+  border: 1.5px solid #DCE5FF;
+  border-radius: 12px;
+  font-size: 13px;
+  font-family: inherit;
+  outline: none;
+  color: #053366;
+  background: white;
+  transition: border 0.2s;
+}
+.cv-search-input:focus { border-color: #02AFCF; box-shadow: 0 0 0 3px rgba(2,175,207,0.1); }
+
+.cv-ftab { padding: 6px 14px; border-radius: 20px; border: 1.5px solid #DCE5FF; font-size: 12px; font-weight: 600; cursor: pointer; font-family: inherit; transition: all 0.2s; }
+.cv-ftab.on  { background: linear-gradient(135deg, #02AFCF, #259FFC); color: white; border-color: transparent; }
+.cv-ftab:not(.on) { background: white; color: #053366; }
+
+@keyframes cvFadeUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+.cv-fadein { animation: cvFadeUp 0.3s ease both; }
+.cv-msg-fadein { animation: cvFadeUp 0.2s ease both; }
+
+@media (max-width: 768px) {
+  .cv-layout    { flex-direction: column !important; }
+  .cv-list-pane { width: 100% !important; border-right: none !important; border-bottom: 1px solid #EEF2FF !important; max-height: 320px !important; }
+}

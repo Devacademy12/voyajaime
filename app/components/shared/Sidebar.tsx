@@ -36,6 +36,7 @@ const NAV: Record<Role, NavItem[]> = {
     { label: "Réservations",       href: "/admin/reservations", icon: <CalendarDays size={18} /> },
     { label: "Paiements",          href: "/admin/paiements",    icon: <Wallet size={18} /> },
     { label: "Avis & Modération",  href: "/admin/avis",         icon: <Shield size={18} /> },
+     { label: "Conversations",      href: "/admin/conversations",  icon: <MessageCircle size={18} /> },
     { label: "Catalogue & Villes", href: "/admin/catalogue",    icon: <FolderOpen size={18} /> },
   ],
 };
