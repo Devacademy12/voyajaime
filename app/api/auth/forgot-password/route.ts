@@ -34,8 +34,9 @@ export async function POST(req: Request) {
     const resetLink = data.properties.action_link;
 
     // Envoyer l'email via Resend
+    // Sans domaine vérifié → utilise onboarding@resend.dev (mode test)
     await resend.emails.send({
-      from: "VoyajAime <noreply@voyajaime.tn>",
+      from: "VoyajAime <onboarding@resend.dev>",
       to: email,
       subject: "Réinitialisation de votre mot de passe",
       html: `

@@ -2,9 +2,10 @@
 
 import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabaseClient";
 import {
+<<<<<<< HEAD
   LayoutDashboard, Mountain, MessageCircle, Map,
   Heart, CalendarDays, User, LogOut, Plane, Menu, X,
 } from "lucide-react";
@@ -16,6 +17,22 @@ export default function TouristeNav({ userName, favCount = 0 }: { userName?: str
   const [mobileOpen, setMobileOpen] = useState(false);
   const [scrolled,   setScrolled]   = useState(false);
   const supabase = useMemo(() => createClient(), []);
+=======
+  LayoutDashboard, Mountain, MessageCircle, Map, Heart,
+  CalendarDays, User, LogOut, Plane, ChevronDown, Sparkles, Compass,
+} from "lucide-react";
+
+export default function TouristeNav({ userName, favCount = 0 }: { userName?: string; favCount?: number }) {
+  const [unreadMsg, setUnreadMsg]   = useState(0);
+  const [avatarUrl, setAvatarUrl]   = useState<string | null>(null);
+  const [menuOpen, setMenuOpen]     = useState(false);
+  const [modeOpen, setModeOpen]     = useState(false);
+  const [scrolled, setScrolled]     = useState(false);
+  const [mode, setMode]             = useState<"libre" | "assiste">("libre");
+  const pathname  = usePathname();
+  const router    = useRouter();
+  const supabase  = useMemo(() => createClient(), []);
+>>>>>>> b1cd1df (modification)
 
   useEffect(() => {
     const fn = () => setScrolled(window.scrollY > 10);
@@ -26,10 +43,15 @@ export default function TouristeNav({ userName, favCount = 0 }: { userName?: str
   useEffect(() => {
     supabase.auth.getUser().then(async ({ data: { user } }) => {
       if (!user) return;
+
+      // Avatar
+      const { data: profile } = await supabase
+        .from("profiles").select("avatar_url").eq("user_id", user.id).single();
+      if (profile?.avatar_url) setAvatarUrl(profile.avatar_url);
+
+      // Messages non lus
       const { data: convs } = await supabase
-        .from("conversations")
-        .select("messages(lu, expediteur_id)")
-        .eq("touriste_id", user.id);
+        .from("conversations").select("messages(lu, expediteur_id)").eq("touriste_id", user.id);
       if (convs) {
         const total = (convs as Record<string, unknown>[]).reduce((s, c) => {
           const msgs = (c.messages as { lu: boolean; expediteur_id: string }[]) || [];
@@ -45,17 +67,32 @@ export default function TouristeNav({ userName, favCount = 0 }: { userName?: str
     window.location.href = "/";
   };
 
+  const handleModeSelect = (selected: "libre" | "assiste") => {
+    setMode(selected);
+    setModeOpen(false);
+    if (selected === "assiste") router.push("/touriste/itineraire");
+    else router.push("/touriste/itineraire?mode=libre");
+  };
+
   const links = [
     { href: "/touriste/dashboard",    icon: <LayoutDashboard size={16}/>, label: "Accueil" },
     { href: "/excursions",            icon: <Mountain size={16}/>,        label: "Excursions" },
+<<<<<<< HEAD
     { href: "/touriste/itineraire",   icon: <Map size={16}/>,             label: "Mon itinéraire" },
     { href: "/touriste/reservations", icon: <CalendarDays size={16}/>,    label: "Réservations" },
     { href: "/touriste/favoris",      icon: <Heart size={16}/>,           label: favCount > 0 ? `Favoris (${favCount})` : "Favoris", isFavoris: true },
+=======
+    { href: "/touriste/itineraires",   icon: <Map size={16}/>,             label: "Mon itinéraire" },
+    { href: "/touriste/reservations", icon: <CalendarDays size={16}/>,    label: "Mes réservations" },
+    { href: "/touriste/favoris",      icon: <Heart size={16}/>,           label: favCount > 0 ? `Mes favoris (${favCount})` : "Mes favoris", isFavoris: true },
+>>>>>>> b1cd1df (modification)
     { href: "/touriste/messages",     icon: <MessageCircle size={16}/>,   label: "Messages", badge: unreadMsg },
   ];
 
   const isActive = (href: string) => pathname === href || pathname.startsWith(href + "/");
   const initial  = userName ? userName.charAt(0).toUpperCase() : "T";
+
+  const initiale = userName ? userName.charAt(0).toUpperCase() : "T";
 
   return (
     <>
@@ -64,6 +101,7 @@ export default function TouristeNav({ userName, favCount = 0 }: { userName?: str
         .tnav *{box-sizing:border-box;margin:0;padding:0}
         .tnav{font-family:'DM Sans',sans-serif}
         .tlink{
+<<<<<<< HEAD
           display:flex;align-items:center;gap:6px;padding:7px 13px;border-radius:20px;
           text-decoration:none;font-size:13px;font-weight:500;color:#053366;
           transition:all 0.18s;white-space:nowrap;border:1px solid transparent;position:relative;
@@ -76,16 +114,42 @@ export default function TouristeNav({ userName, favCount = 0 }: { userName?: str
           background:linear-gradient(135deg,#02AFCF,#053366);
           color:white;border:none;cursor:pointer;font-size:15px;font-weight:800;
           font-family:'DM Sans',sans-serif;display:flex;align-items:center;justify-content:center;
+=======
+          display:flex;align-items:center;gap:6px;
+          padding:7px 13px;border-radius:20px;
+          text-decoration:none;font-size:13px;font-weight:500;
+          color:#053366;transition:all 0.18s;white-space:nowrap;
+          border:1px solid transparent;
+        }
+        .tlink:hover{background:#DCE5FF;color:#259FFC!important;}
+        .tlink.on{background:#DCE5FF;color:#02AFCF!important;font-weight:700;border-color:rgba(2,175,207,0.25);}
+        .tlink.on-favoris{background:#DCE5FF;color:#259FFC!important;font-weight:700;border-color:rgba(37,159,252,0.3);}
+        .av{
+          width:38px;height:38px;border-radius:50%;
+          background:linear-gradient(135deg,#02AFCF,#053366);
+          color:white;border:2px solid rgba(2,175,207,0.3);cursor:pointer;
+          font-size:15px;font-weight:800;font-family:'DM Sans',sans-serif;
+          display:flex;align-items:center;justify-content:center;
+>>>>>>> b1cd1df (modification)
           transition:transform 0.15s,box-shadow 0.15s;flex-shrink:0;
-          box-shadow:0 3px 10px rgba(2,175,207,0.35);
+          box-shadow:0 3px 10px rgba(2,175,207,0.35);overflow:hidden;padding:0;
         }
         .av:hover{transform:scale(1.08);box-shadow:0 5px 16px rgba(2,175,207,0.5)}
+        .av img{width:100%;height:100%;object-fit:cover;border-radius:50%;}
         .drop{
           position:absolute;top:calc(100% + 10px);right:0;background:white;
           border:1px solid #E8EFFE;border-radius:18px;padding:6px;min-width:220px;
           box-shadow:0 14px 44px rgba(5,51,102,0.12);z-index:400;animation:dropIn 0.18s ease;
         }
+        .mode-drop{
+          position:absolute;top:calc(100% + 8px);left:50%;transform:translateX(-50%);
+          background:white;border:1px solid #E8EFFE;border-radius:16px;
+          padding:6px;min-width:220px;
+          box-shadow:0 14px 44px rgba(5,51,102,0.12);
+          z-index:400;animation:dropIn 0.18s ease;
+        }
         @keyframes dropIn{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:translateY(0)}}
+        .mode-drop-open{from{opacity:0;transform:translateX(-50%) translateY(-6px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
         .ddi{
           display:flex;align-items:center;gap:9px;padding:9px 12px;border-radius:10px;
           text-decoration:none;font-size:13px;font-weight:500;color:#053366;cursor:pointer;
@@ -93,6 +157,7 @@ export default function TouristeNav({ userName, favCount = 0 }: { userName?: str
         }
         .ddi:hover{background:#DCE5FF;color:#259FFC}
         .ddi.red{color:#DC2626}.ddi.red:hover{background:#FEF2F2;color:#DC2626}
+<<<<<<< HEAD
 
         /* ── Responsive ── */
         .tnav-links { display:flex; align-items:center; gap:2px; flex:1; justify-content:center; }
@@ -115,6 +180,29 @@ export default function TouristeNav({ userName, favCount = 0 }: { userName?: str
         @media (max-width: 1024px) {
           .tnav-links     { display:none; }
           .tnav-hamburger { display:flex; }
+=======
+        .mode-btn{
+          display:flex;align-items:center;gap:8px;
+          padding:8px 14px;border-radius:20px;
+          border:1.5px solid #E8EFFE;background:white;
+          font-size:13px;font-weight:600;color:#053366;
+          cursor:pointer;font-family:'DM Sans',sans-serif;
+          transition:all 0.18s;white-space:nowrap;
+        }
+        .mode-btn:hover{border-color:#02AFCF;background:#F0FBFD;color:#02AFCF;}
+        .mode-btn.active{border-color:#02AFCF;background:#EFF9FB;color:#02AFCF;}
+        .mode-option{
+          display:flex;align-items:center;gap:10px;padding:11px 14px;
+          border-radius:12px;cursor:pointer;transition:background 0.15s;
+          border:none;background:none;font-family:'DM Sans',sans-serif;
+          width:100%;text-align:left;
+        }
+        .mode-option:hover{background:#F0FBFD;}
+        .mode-option.selected{background:#EFF9FB;}
+        .mode-icon{
+          width:32px;height:32px;border-radius:10px;
+          display:flex;align-items:center;justify-content:center;flex-shrink:0;
+>>>>>>> b1cd1df (modification)
         }
       `}</style>
 
@@ -124,8 +212,15 @@ export default function TouristeNav({ userName, favCount = 0 }: { userName?: str
         borderBottom: scrolled ? "1px solid #E8EFFE" : "1px solid #F0F4FF",
         boxShadow: scrolled ? "0 2px 16px rgba(5,51,102,0.07)" : "none",
         transition: "box-shadow 0.25s, border-color 0.25s",
+<<<<<<< HEAD
         display: "flex", alignItems: "center", justifyContent: "space-between",
         padding: "0 24px", gap: 16,
+=======
+        display: "flex", alignItems: "center",
+        justifyContent: "space-between",
+        padding: "0 40px",
+        gap: 16,
+>>>>>>> b1cd1df (modification)
       }}>
 
         {/* Logo */}
@@ -143,9 +238,14 @@ export default function TouristeNav({ userName, favCount = 0 }: { userName?: str
             const active = isActive(l.href);
             const cls    = active ? (l.isFavoris ? "tlink on-fav" : "tlink on") : "tlink";
             return (
+<<<<<<< HEAD
               <Link key={l.href} href={l.href} className={cls}>
                 {l.icon}
                 {l.label}
+=======
+              <Link key={l.href} href={l.href} className={cls} style={{ position: "relative" }}>
+                {l.icon}{l.label}
+>>>>>>> b1cd1df (modification)
                 {(l.badge ?? 0) > 0 && (
                   <span style={{ position:"absolute", top:1, right:1, minWidth:16, height:16, background:"#EF4444", color:"white", borderRadius:8, fontSize:9, fontWeight:800, display:"flex", alignItems:"center", justifyContent:"center", padding:"0 3px", border:"2px solid white" }}>
                     {(l.badge ?? 0) > 9 ? "9+" : l.badge}
