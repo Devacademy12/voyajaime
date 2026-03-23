@@ -246,11 +246,11 @@ export default function HomePage() {
       {/* ── HERO ── */}
       <section style={{ position:"relative", height:"100vh", overflow:"hidden" }}>
         <div className="slide-bg" style={{ backgroundImage:`url(${slide.url})`, opacity:fading?0:1, transform:fading?"scale(1.03)":"scale(1)" }}/>
-        <div style={{ position:"absolute", inset:0, background:"linear-gradient(to right,rgba(5,51,102,0.82) 0%,rgba(5,51,102,0.35) 55%,rgba(5,51,102,0.05) 100%)" }}/>
-        <div style={{ position:"absolute", inset:0, background:"linear-gradient(to top,rgba(5,51,102,0.55) 0%,transparent 50%)" }}/>
+        <div style={{ position:"absolute", inset:0, background:"linear-gradient(to right,rgba(0, 3, 7, 0.82) 0%,rgba(0, 7, 13, 0.35) 55%,rgba(1, 6, 12, 0.05) 100%)" }}/>
+        <div style={{ position:"absolute", inset:0, background:"linear-gradient(to top,rgba(0, 3, 6, 0.55) 0%,transparent 50%)" }}/>
 
         <div key={current} className="hero-content">
-          <div className="fu fu1" style={{ display:"inline-flex", alignItems:"center", gap:6, padding:"6px 14px", borderRadius:30, background:"rgba(2,175,207,0.22)", border:"1px solid rgba(2,175,207,0.5)", backdropFilter:"blur(10px)", marginBottom:18 }}>
+          <div className="fu fu1" style={{ display:"inline-flex", alignItems:"center", gap:6, padding:"6px 14px", borderRadius:30, background:"rgba(2, 27, 55, 0.22)", border:"1px solid rgba(2,175,207,0.5)", backdropFilter:"blur(10px)", marginBottom:18 }}>
             <MapPin size={13} color="#7EDCED"/>
             <span style={{ fontSize:11, fontWeight:700, color:"#7EDCED", letterSpacing:1, textTransform:"uppercase" }}>{slide.region}</span>
           </div>
@@ -287,7 +287,7 @@ export default function HomePage() {
       {/* ── CHEMINS ── */}
       <section id="chemins" style={{ position:"relative", overflow:"hidden" }}>
         <div style={{ position:"absolute", inset:0, backgroundImage:`url(${SLIDES[0].url})`, backgroundSize:"cover", backgroundPosition:"center", filter:"blur(3px) brightness(0.35)", transform:"scale(1.05)" }}/>
-        <div style={{ position:"absolute", inset:0, background:"rgba(5,51,102,0.72)" }}/>
+        <div style={{ position:"absolute", inset:0, background:"rgba(0, 3, 5, 0.72)" }}/>
 
         <div className="chemins-wrap" style={{ position:"relative", zIndex:1 }}>
           <div style={{ textAlign:"center", marginBottom:52 }}>
@@ -307,7 +307,7 @@ export default function HomePage() {
                 title:"Mode Assisté", sub:"Rapide & Intelligent", subColor:"#7EDCED",
                 desc:"Répondez à 3 questions, on génère votre itinéraire jour par jour automatiquement",
                 href:user?"/touriste/itineraire?mode=assiste":"/auth?redirect=itineraire",
-                btnBg:"linear-gradient(135deg,#02AFCF,#259FFC)", btnBorder:"none", btnShadow:"0 6px 20px rgba(2,175,207,0.45)",
+                btnBg:"linear-gradient(135deg,#02AFCF,#259FFC)", btnBorder:"none", btnShadow:"0 6px 20px rgba(0, 2, 3, 0.45)",
                 btnLabel:"Je veux qu'on me propose",
               },
               {
@@ -362,7 +362,7 @@ export default function HomePage() {
           <div className="exc-section-header">
             <div>
               <p style={{ fontSize:11, fontWeight:800, letterSpacing:3, color:"#02AFCF", textTransform:"uppercase", marginBottom:10 }}>EXCURSIONS</p>
-              <h2 style={{ fontFamily:"'Playfair Display',serif", fontSize:"clamp(24px,3.5vw,36px)", fontWeight:900, color:"#053366", letterSpacing:"-0.5px" }}>Les plus populaires</h2>
+              <h2 style={{ fontFamily:"'Playfair Display',serif", fontSize:"clamp(24px,3.5vw,36px)", fontWeight:900, color:"#000509", letterSpacing:"-0.5px" }}>Les plus populaires</h2>
             </div>
             <Link href="/excursions" style={{ fontSize:14, color:"#259FFC", fontWeight:700, textDecoration:"none", display:"inline-flex", alignItems:"center", gap:5, whiteSpace:"nowrap" }}>
               Voir toutes <ArrowRight size={14}/>
@@ -454,7 +454,7 @@ export default function HomePage() {
       </section>
 
       {/* ── FOOTER ── */}
-      <footer style={{ background:"#053366" }}>
+      <footer style={{ background:"#000103" }}>
         <div className="footer-inner">
           <div style={{ display:"flex", alignItems:"center", gap:10 }}>
             <Logo size={26}/>
