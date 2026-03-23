@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { createClient } from "@/lib/supabaseClient";
+import { sanitizeText } from "@/app/lib/sanitize";
 import {
   Camera, Pencil, Plane, CheckCircle2, AlertTriangle,
   LogOut, Loader2, User, Mail, CalendarDays, Save,
@@ -18,14 +19,14 @@ export default function ProfilPage() {
   const supabase = createClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const [profile, setProfile]           = useState<Profile | null>(null);
-  const [userId, setUserId]             = useState<string>("");
-  const [fullName, setFullName]         = useState("");
-  const [avatarUrl, setAvatarUrl]       = useState<string>("");
-  const [loading, setLoading]           = useState(false);
-  const [uploading, setUploading]       = useState(false);
-  const [saved, setSaved]               = useState(false);
-  const [uploadError, setUploadError]   = useState("");
+  const [profile, setProfile]             = useState<Profile | null>(null);
+  const [userId, setUserId]               = useState<string>("");
+  const [fullName, setFullName]           = useState("");
+  const [avatarUrl, setAvatarUrl]         = useState<string>("");
+  const [loading, setLoading]             = useState(false);
+  const [uploading, setUploading]         = useState(false);
+  const [saved, setSaved]                 = useState(false);
+  const [uploadError, setUploadError]     = useState("");
   const [uploadSuccess, setUploadSuccess] = useState(false);
 
   useEffect(() => {
@@ -33,10 +34,7 @@ export default function ProfilPage() {
       if (!user) return;
       setUserId(user.id);
       const { data } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("user_id", user.id)
-        .single();
+        .from("profiles").select("*").eq("user_id", user.id).single();
       const prof: Profile = { ...data, email: user.email || "" };
       setProfile(prof);
       setFullName(data?.full_name || "");
@@ -80,9 +78,16 @@ export default function ProfilPage() {
 
   const handleSave = async () => {
     setLoading(true);
+    // ✅ XSS : nettoie le nom avant de sauvegarder en base
+    const cleanFullName = sanitizeText(fullName);
     const { data: { user } } = await supabase.auth.getUser();
     if (user) {
-      await supabase.from("profiles").update({ full_name: fullName }).eq("user_id", user.id);
+      await supabase
+        .from("profiles")
+        .update({ full_name: cleanFullName })
+        .eq("user_id", user.id);
+      // Met à jour l'état local avec la valeur nettoyée
+      setFullName(cleanFullName);
       setSaved(true);
       setTimeout(() => setSaved(false), 2500);
     }
@@ -94,7 +99,6 @@ export default function ProfilPage() {
     window.location.href = "/";
   };
 
-  /* ── Loading state ── */
   if (!profile) {
     return (
       <div style={{ display:"flex", justifyContent:"center", alignItems:"center", minHeight:"60vh" }}>
@@ -104,7 +108,6 @@ export default function ProfilPage() {
     );
   }
 
-  /* ── Profile loaded ── */
   const initials = fullName
     ? fullName.split(" ").map(w => w[0]).join("").toUpperCase().slice(0, 2)
     : "T";
@@ -128,20 +131,17 @@ export default function ProfilPage() {
         .signout-btn:hover { background:#FEE2E2 !important; border-color:#FCA5A5 !important; }
       `}</style>
 
-      {/* Header */}
       <div style={{ marginBottom:20, flexShrink:0 }}>
         <h1 style={{ fontSize:22, fontWeight:800, color:"#111827", marginBottom:2 }}>Mon profil</h1>
         <p style={{ color:"#9CA3AF", fontSize:13 }}>Gérez vos informations personnelles</p>
       </div>
 
-      {/* 2-column layout */}
       <div style={{ display:"grid", gridTemplateColumns:"260px 1fr", gap:16, flex:1, minHeight:0 }}>
 
-        {/* ── LEFT — Identité ── */}
+        {/* ── LEFT ── */}
         <div style={{ display:"flex", flexDirection:"column", gap:12 }}>
           <div style={{ background:"white", borderRadius:18, border:"1px solid #F3F4F6", padding:"28px 20px", boxShadow:"0 2px 8px rgba(0,0,0,0.04)", display:"flex", flexDirection:"column", alignItems:"center", gap:14, flex:1 }}>
 
-            {/* Avatar */}
             <div className="avatar-wrapper" onClick={() => !uploading && fileInputRef.current?.click()}>
               {avatarUrl ? (
                 <img src={avatarUrl} alt="Avatar"
@@ -154,8 +154,7 @@ export default function ProfilPage() {
               <div className="avatar-overlay" style={{ position:"absolute", inset:0, borderRadius:"50%", background:"rgba(0,0,0,0.45)", display:"flex", alignItems:"center", justifyContent:"center" }}>
                 {uploading
                   ? <Loader2 size={22} color="white" style={{ animation:"spin 0.7s linear infinite" }} />
-                  : <Camera size={22} color="white" />
-                }
+                  : <Camera size={22} color="white" />}
               </div>
               <div style={{ position:"absolute", bottom:2, right:2, width:24, height:24, background:"#2B96A8", borderRadius:"50%", border:"2px solid white", display:"flex", alignItems:"center", justifyContent:"center" }}>
                 <Pencil size={11} color="white" />
@@ -165,16 +164,15 @@ export default function ProfilPage() {
             <input ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/webp"
               style={{ display:"none" }} onChange={handleAvatarChange} />
 
-            {/* Nom & email */}
             <div style={{ textAlign:"center" }}>
-              <p style={{ fontSize:16, fontWeight:700, color:"#111827", marginBottom:3 }}>{fullName || "Touriste"}</p>
+              {/* ✅ XSS : sanitizeText au moment d'afficher le nom */}
+              <p style={{ fontSize:16, fontWeight:700, color:"#111827", marginBottom:3 }}>{sanitizeText(fullName) || "Touriste"}</p>
               <p style={{ fontSize:12, color:"#9CA3AF", marginBottom:10, wordBreak:"break-all" }}>{profile.email}</p>
               <span style={{ display:"inline-flex", alignItems:"center", gap:5, padding:"4px 10px", background:"#EFF9FB", color:"#2B96A8", borderRadius:20, fontSize:11, fontWeight:700 }}>
                 <Plane size={11} /> Touriste
               </span>
             </div>
 
-            {/* Membre depuis */}
             {memberSince && (
               <div style={{ width:"100%", borderTop:"1px solid #F3F4F6", paddingTop:12, display:"flex", flexDirection:"column", alignItems:"center", gap:3 }}>
                 <div style={{ display:"flex", alignItems:"center", gap:5 }}>
@@ -200,10 +198,8 @@ export default function ProfilPage() {
           </div>
         </div>
 
-        {/* ── RIGHT — Formulaire ── */}
+        {/* ── RIGHT ── */}
         <div style={{ display:"flex", flexDirection:"column", gap:12 }}>
-
-          {/* Informations personnelles */}
           <div style={{ background:"white", borderRadius:18, border:"1px solid #F3F4F6", padding:"22px 24px", boxShadow:"0 2px 8px rgba(0,0,0,0.04)", flex:1 }}>
             <h2 style={{ fontSize:14, fontWeight:700, color:"#111827", marginBottom:18, display:"flex", alignItems:"center", gap:8 }}>
               <span style={{ width:3, height:16, background:"#2B96A8", borderRadius:2, display:"inline-block" }} />
@@ -211,15 +207,13 @@ export default function ProfilPage() {
             </h2>
 
             <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:14, marginBottom:20 }}>
-              {/* Nom */}
               <div>
                 <label style={{ display:"block", fontSize:11, fontWeight:700, color:"#6B7280", letterSpacing:"0.05em", textTransform:"uppercase", marginBottom:6 }}>Nom complet</label>
                 <div style={{ position:"relative" }}>
                   <User size={14} color="#9CA3AF" style={{ position:"absolute", left:12, top:"50%", transform:"translateY(-50%)", pointerEvents:"none" }} />
-                  <input className="field-input" value={fullName} onChange={e=>setFullName(e.target.value)} placeholder="Votre nom complet" />
+                  <input className="field-input" value={fullName} onChange={e => setFullName(e.target.value)} placeholder="Votre nom complet" />
                 </div>
               </div>
-              {/* Email */}
               <div>
                 <label style={{ display:"block", fontSize:11, fontWeight:700, color:"#6B7280", letterSpacing:"0.05em", textTransform:"uppercase", marginBottom:6 }}>Adresse email</label>
                 <div style={{ position:"relative" }}>
@@ -240,12 +234,10 @@ export default function ProfilPage() {
               style={{ display:"inline-flex", alignItems:"center", gap:8, padding:"11px 22px", background:"#111827", color:"white", border:"none", borderRadius:10, fontSize:13, fontWeight:700, cursor:loading?"not-allowed":"pointer", opacity:loading?.7:1, transition:"all 0.2s", fontFamily:"inherit" }}>
               {loading
                 ? <><Loader2 size={15} style={{ animation:"spin 0.7s linear infinite" }} /> Sauvegarde…</>
-                : <><Save size={15} /> Sauvegarder les modifications</>
-              }
+                : <><Save size={15} /> Sauvegarder les modifications</>}
             </button>
           </div>
 
-          {/* Déconnexion */}
           <div style={{ background:"white", borderRadius:18, border:"1px solid #F3F4F6", padding:"18px 24px", boxShadow:"0 2px 8px rgba(0,0,0,0.04)", display:"flex", alignItems:"center", justifyContent:"space-between", gap:16, flexShrink:0 }}>
             <div>
               <h2 style={{ fontSize:14, fontWeight:700, color:"#111827", marginBottom:2 }}>Déconnexion</h2>
