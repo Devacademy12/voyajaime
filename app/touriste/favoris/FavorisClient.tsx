@@ -16,7 +16,19 @@ interface Excursion {
   duration_hours: number; rating: number; reviews_count: number;
   max_people: number; photos: string[]; categories: string[];
 }
-interface Favori { id: string; excursion: Excursion | null; }
+
+/* Supabase retourne excursion comme un tableau ou un objet selon la requête */
+interface Favori {
+  id: string;
+  excursion: Excursion | Excursion[] | null;
+}
+
+/* Helper : normalise excursion tableau → objet unique */
+function getExc(f: Favori): Excursion | null {
+  if (!f.excursion) return null;
+  if (Array.isArray(f.excursion)) return f.excursion[0] ?? null;
+  return f.excursion;
+}
 
 function genBookingCode() {
   return "VJ-" + Math.random().toString(36).substring(2, 8).toUpperCase();
@@ -82,7 +94,7 @@ export default function FavorisClient({ favoris: init, userId }: { favoris: Favo
   };
 
   const sorted = [...favoris].sort((a, b) => {
-    const ea = a.excursion, eb = b.excursion;
+    const ea = getExc(a), eb = getExc(b);
     if (!ea || !eb) return 0;
     if (sort === "price_asc")  return ea.price_per_person - eb.price_per_person;
     if (sort === "price_desc") return eb.price_per_person - ea.price_per_person;
@@ -131,7 +143,7 @@ export default function FavorisClient({ favoris: init, userId }: { favoris: Favo
       {/* ── GRID ── */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
         {sorted.map(f => {
-          const exc = f.excursion;
+          const exc = getExc(f);   // ← normalisation ici
           if (!exc) return null;
           return (
             <div key={f.id}
@@ -144,7 +156,6 @@ export default function FavorisClient({ favoris: init, userId }: { favoris: Favo
                   alt={sanitizeText(exc.title)}
                   className="w-full h-full object-cover"
                 />
-                {/* Remove btn */}
                 <button onClick={() => handleRemove(f.id)} disabled={removing === f.id}
                   className="absolute top-3 right-3 w-9 h-9 rounded-full bg-white shadow-md flex items-center justify-center hover:scale-110 transition-transform disabled:opacity-50">
                   {removing === f.id
@@ -152,7 +163,6 @@ export default function FavorisClient({ favoris: init, userId }: { favoris: Favo
                     : <Heart size={15} className="text-rose-500 fill-rose-500" />
                   }
                 </button>
-                {/* Category badge */}
                 {exc.categories?.[0] && (
                   <div className="absolute top-3 left-3 px-3 py-1 bg-black/50 backdrop-blur-sm rounded-full text-xs font-semibold text-white">
                     {sanitizeText(exc.categories[0])}
@@ -203,13 +213,15 @@ export default function FavorisClient({ favoris: init, userId }: { favoris: Favo
         })}
       </div>
 
-      {/* ══════════════ MODAL ══════════════ */}
+      {/* ══ MODAL ══ */}
       {modal && (
         <div
-          className="fixed inset-0 bg-black/55 backdrop-blur-sm z-[1000] flex items-end sm:items-center justify-center p-0 sm:p-5 animate-[fadeIn_.2s_ease]"
+          className="fixed inset-0 bg-black/55 backdrop-blur-sm z-[1000] flex items-end sm:items-center justify-center p-0 sm:p-5"
+          style={{ animation:"fadeIn .2s ease" }}
           onClick={e => { if (e.target === e.currentTarget) closeModal(); }}
         >
-          <div className="bg-white w-full sm:max-w-md rounded-t-3xl sm:rounded-3xl shadow-2xl overflow-hidden max-h-[92vh] overflow-y-auto animate-[slideUp_.25s_ease]">
+          <div className="bg-white w-full sm:max-w-md rounded-t-3xl sm:rounded-3xl shadow-2xl overflow-hidden max-h-[92vh] overflow-y-auto"
+            style={{ animation:"slideUp .25s ease" }}>
 
             {/* Header */}
             <div className="flex items-center justify-between p-5 pb-0">
@@ -221,7 +233,6 @@ export default function FavorisClient({ favoris: init, userId }: { favoris: Favo
             </div>
 
             {booking === "success" ? (
-              /* ── SUCCESS ── */
               <div className="p-6 text-center">
                 <div className="w-16 h-16 rounded-full bg-green-50 flex items-center justify-center mx-auto mb-4">
                   <CheckCircle size={34} className="text-green-500" strokeWidth={1.5} />
@@ -230,9 +241,7 @@ export default function FavorisClient({ favoris: init, userId }: { favoris: Favo
                 <p className="text-sm text-gray-500 leading-relaxed mb-1">
                   Votre réservation pour <strong className="text-gray-900">{sanitizeText(modal.title)}</strong> a bien été enregistrée.
                 </p>
-                <p className="text-xs text-gray-400 mb-6">
-                  Elle apparaît dans vos réservations, en attente de confirmation.
-                </p>
+                <p className="text-xs text-gray-400 mb-6">Elle apparaît dans vos réservations, en attente de confirmation.</p>
                 <div className="flex gap-3">
                   <button onClick={closeModal}
                     className="flex-1 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl text-sm font-bold transition-colors">
@@ -245,10 +254,8 @@ export default function FavorisClient({ favoris: init, userId }: { favoris: Favo
                 </div>
               </div>
             ) : (
-              /* ── FORM ── */
               <div className="p-5 space-y-4">
-
-                {/* Mini card excursion */}
+                {/* Mini card */}
                 <div className="flex items-center gap-3 bg-gray-50 border border-gray-200 rounded-2xl p-3">
                   <div className="w-12 h-12 rounded-xl overflow-hidden flex-shrink-0 bg-gray-200">
                     <img src={modal.photos?.[0] || "https://images.unsplash.com/photo-1568515387631-8b650bbcdb90?w=200&q=80"}
@@ -315,7 +322,6 @@ export default function FavorisClient({ favoris: init, userId }: { favoris: Favo
                   </div>
                 </div>
 
-                {/* Erreur */}
                 {booking === "error" && bookingError && (
                   <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded-xl">
                     <AlertCircle size={14} className="text-red-500 flex-shrink-0" strokeWidth={1.5} />
@@ -323,7 +329,6 @@ export default function FavorisClient({ favoris: init, userId }: { favoris: Favo
                   </div>
                 )}
 
-                {/* Bouton confirmer */}
                 <button onClick={handleConfirm} disabled={booking === "loading" || !date}
                   className="w-full py-4 bg-gray-900 hover:bg-gray-800 disabled:opacity-55 disabled:cursor-not-allowed text-white rounded-xl text-sm font-extrabold flex items-center justify-center gap-2 transition-all hover:-translate-y-0.5 hover:shadow-xl">
                   {booking === "loading"
@@ -338,7 +343,7 @@ export default function FavorisClient({ favoris: init, userId }: { favoris: Favo
       )}
 
       <style>{`
-        @keyframes fadeIn { from { opacity:0 } to { opacity:1 } }
+        @keyframes fadeIn  { from { opacity:0 }               to { opacity:1 } }
         @keyframes slideUp { from { opacity:0; transform:translateY(24px) } to { opacity:1; transform:translateY(0) } }
       `}</style>
     </>
