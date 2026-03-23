@@ -55,12 +55,13 @@ interface SidebarProps {
 }
 
 export default function Sidebar({ role, userName, userEmail }: SidebarProps) {
-  const supabase = createClient();
-  const pathname = usePathname();
-  const router   = useRouter();
-  const items    = NAV[role];
+  const supabase   = createClient();
+  const pathname   = usePathname();
+  const router     = useRouter();
+  const items      = NAV[role];
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const [isMobile, setIsMobile]     = useState(false);
+  const [isMobile,   setIsMobile]   = useState(false);
+  const [avatarUrl,  setAvatarUrl]  = useState<string | null>(null);
 
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 768);
@@ -73,27 +74,63 @@ export default function Sidebar({ role, userName, userEmail }: SidebarProps) {
     if (!isMobile) setDrawerOpen(false);
   }, [isMobile]);
 
+  // Charger l'avatar depuis profiles
+  useEffect(() => {
+    supabase.auth.getUser().then(async ({ data: { user } }) => {
+      if (!user) return;
+      const { data } = await supabase
+        .from("profiles")
+        .select("avatar_url")
+        .eq("user_id", user.id)
+        .single();
+      if (data?.avatar_url) setAvatarUrl(data.avatar_url);
+    });
+  }, []);
+
   const handleSignOut = async () => {
     await supabase.auth.signOut();
     router.push("/auth");
   };
 
+  const initial = (userName || "U").charAt(0).toUpperCase();
+
   function SidebarContent({ onLinkClick }: { onLinkClick?: () => void }) {
     return (
       <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
-        <div style={{ padding: "20px 16px 16px", borderBottom: "1px solid #E5E7EB" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
+
+        {/* ── Logo ── */}
+        <div style={{ padding: "18px 16px 0", borderBottom: "none" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
             <svg width="28" height="28" viewBox="0 0 32 32" fill="none">
               <path d="M16 28C16 28 4 19.5 4 11.5C4 7.91 6.91 5 10.5 5C12.5 5 14.3 5.97 16 7.5C17.7 5.97 19.5 5 21.5 5C25.09 5 28 7.91 28 11.5C28 19.5 16 28 16 28Z" fill="#2B96A8"/>
               <path d="M16 13L14.5 10H12L15 14.5L11 14V16L15.5 15.5L16 19L16.5 15.5L21 16V14L17 14.5L20 10H17.5L16 13Z" fill="white"/>
             </svg>
             <span style={{ fontWeight: 700, fontSize: 16, color: "#111827" }}>VoyajAime</span>
           </div>
-          <span style={{ display: "inline-flex", alignItems: "center", padding: "2px 10px", borderRadius: 20, fontSize: 11, fontWeight: 600, background: "rgba(43,150,168,.1)", color: "#2B96A8" }}>
-            {ROLE_LABEL[role]}
-          </span>
+
+          {/* ── Profil utilisateur sous le logo ── */}
+          <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 4px 16px", borderBottom: "1px solid #F3F4F6" }}>
+            {/* Avatar */}
+            <div style={{ width: 48, height: 48, borderRadius: 14, overflow: "hidden", background: "linear-gradient(135deg,#2B96A8,#1e7a8a)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, boxShadow: "0 2px 8px rgba(43,150,168,.25)" }}>
+              {avatarUrl
+                ? <img src={avatarUrl} alt={userName || ""} style={{ width: "100%", height: "100%", objectFit: "cover" }} onError={e => { (e.target as HTMLImageElement).style.display = "none"; }}/>
+                : <span style={{ fontSize: 20, fontWeight: 800, color: "white" }}>{initial}</span>
+              }
+            </div>
+            {/* Nom + rôle */}
+            <div style={{ minWidth: 0 }}>
+              <p style={{ fontSize: 14, fontWeight: 700, color: "#111827", margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                {userName || "Utilisateur"}
+              </p>
+              <span style={{ display: "inline-flex", alignItems: "center", marginTop: 3, padding: "2px 8px", borderRadius: 20, fontSize: 11, fontWeight: 600, background: "rgba(43,150,168,.1)", color: "#2B96A8" }}>
+                {ROLE_LABEL[role]}
+              </span>
+            </div>
+          </div>
         </div>
-        <nav style={{ flex: 1, padding: "12px 8px", overflowY: "auto" }}>
+
+        {/* ── Navigation ── */}
+        <nav style={{ flex: 1, padding: "10px 8px", overflowY: "auto" }}>
           {items.map((item) => {
             const active = pathname === item.href || pathname.startsWith(item.href + "/");
             return (
@@ -123,20 +160,9 @@ export default function Sidebar({ role, userName, userEmail }: SidebarProps) {
             );
           })}
         </nav>
-        <div style={{ padding: "12px 8px 16px", borderTop: "1px solid #E5E7EB" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 12px", marginBottom: 6 }}>
-            <div style={{ width: 32, height: 32, borderRadius: "50%", flexShrink: 0, background: "linear-gradient(135deg,#2B96A8,#4AABB8)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <UserCircle size={18} color="white" />
-            </div>
-            <div style={{ minWidth: 0 }}>
-              <p style={{ fontSize: 13, fontWeight: 600, color: "#111827", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                {userName || "Utilisateur"}
-              </p>
-              <p style={{ fontSize: 12, color: "#9CA3AF", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                {userEmail || ""}
-              </p>
-            </div>
-          </div>
+
+        {/* ── Logout ── */}
+        <div style={{ padding: "10px 8px 16px", borderTop: "1px solid #F3F4F6" }}>
           <button
             onClick={handleSignOut}
             style={{ width: "100%", padding: "9px 12px", background: "none", border: "1px solid #E5E7EB", borderRadius: 10, fontSize: 13, color: "#6B7280", cursor: "pointer", fontFamily: "inherit", textAlign: "left", transition: "all 0.2s", display: "flex", alignItems: "center", gap: 8 }}
@@ -146,6 +172,7 @@ export default function Sidebar({ role, userName, userEmail }: SidebarProps) {
             <LogOut size={15} /> Se déconnecter
           </button>
         </div>
+
       </div>
     );
   }
