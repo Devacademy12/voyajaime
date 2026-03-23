@@ -8,7 +8,7 @@ import {
   Heart, Star, Clock, MapPin, ArrowRight,
   SlidersHorizontal, Loader, Plus, Compass,
   X, CalendarDays, Users, Minus, CheckCircle, AlertCircle,
-  Banknote, Tag,
+  Banknote, Tag, Sparkles,
 } from "lucide-react";
 
 interface Excursion {
@@ -90,18 +90,16 @@ export default function FavorisClient({ favoris: init, userId }: { favoris: Favo
     return 0;
   });
 
-  /* ── EMPTY STATE ── */
   if (!favoris.length) return (
-    <div className="flex flex-col items-center justify-center py-20 px-4 bg-white rounded-3xl border border-gray-100">
-      <div className="w-16 h-16 rounded-full bg-red-50 flex items-center justify-center mb-5">
-        <Heart size={32} className="text-rose-300" strokeWidth={1.5} />
+    <div style={{ textAlign:"center", padding:"72px 24px", background:"white", borderRadius:24, border:"1px solid #EEF2FF", boxShadow:"0 4px 24px rgba(5,51,102,0.04)" }}>
+      <div style={{ width:80, height:80, borderRadius:"50%", background:"linear-gradient(135deg,#FEF2F2,#FFF0F3)", display:"flex", alignItems:"center", justifyContent:"center", margin:"0 auto 20px", boxShadow:"0 8px 24px rgba(244,63,94,0.15)" }}>
+        <Heart size={36} color="#FDA4AF" strokeWidth={1.5} />
       </div>
-      <h3 className="text-xl font-bold text-gray-900 mb-2">Aucun favori pour l&apos;instant</h3>
-      <p className="text-sm text-gray-500 mb-6 text-center max-w-sm leading-relaxed">
+      <h3 style={{ fontSize:20, fontWeight:800, color:"#053366", marginBottom:8, letterSpacing:"-0.3px" }}>Aucun favori pour l&apos;instant</h3>
+      <p style={{ fontSize:14, color:"#6B7280", marginBottom:28, lineHeight:1.7, maxWidth:340, margin:"0 auto 28px" }}>
         Parcourez les excursions et cliquez sur l&apos;icône cœur pour sauvegarder vos préférées
       </p>
-      <Link href="/excursions"
-        className="inline-flex items-center gap-2 px-6 py-3 bg-[#02AFCF] hover:bg-[#0299b5] text-white rounded-xl text-sm font-bold transition-colors shadow-lg shadow-cyan-200">
+      <Link href="/excursions" style={{ display:"inline-flex", alignItems:"center", gap:8, padding:"13px 26px", background:"linear-gradient(135deg,#02AFCF,#259FFC)", color:"white", borderRadius:14, textDecoration:"none", fontSize:14, fontWeight:700, boxShadow:"0 8px 24px rgba(2,175,207,0.35)" }}>
         <Compass size={16} /> Découvrir les excursions <ArrowRight size={16} />
       </Link>
     </div>
@@ -109,17 +107,115 @@ export default function FavorisClient({ favoris: init, userId }: { favoris: Favo
 
   return (
     <>
+      <style>{`
+        @keyframes fadeIn  { from{opacity:0} to{opacity:1} }
+        @keyframes slideUp { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
+        @keyframes cardIn  { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
+        @keyframes spin    { to{transform:rotate(360deg)} }
+
+        .fav-card {
+          background:white; border-radius:20px; overflow:hidden;
+          border:1px solid #EEF2FF;
+          box-shadow:0 2px 12px rgba(5,51,102,0.05);
+          transition:all 0.28s cubic-bezier(0.34,1.56,0.64,1);
+          animation:cardIn 0.4s ease both;
+        }
+        .fav-card:hover { transform:translateY(-6px) scale(1.01); box-shadow:0 20px 48px rgba(5,51,102,0.13); border-color:#DCE5FF; }
+        .fav-card:hover .card-img { transform:scale(1.07); }
+        .card-img { width:100%; height:100%; object-fit:cover; transition:transform 0.5s ease; display:block; }
+
+        .remove-btn {
+          position:absolute; top:12px; right:12px;
+          width:36px; height:36px; border-radius:50%;
+          background:rgba(255,255,255,0.95); border:none; cursor:pointer;
+          display:flex; align-items:center; justify-content:center;
+          box-shadow:0 2px 12px rgba(0,0,0,0.15); transition:all 0.2s;
+        }
+        .remove-btn:hover { transform:scale(1.15); box-shadow:0 4px 16px rgba(239,68,68,0.25); }
+
+        .plan-btn {
+          flex:1; display:flex; align-items:center; justify-content:center; gap:6px;
+          padding:10px 0; background:#F8FAFF; color:#053366;
+          border-radius:12px; text-decoration:none; font-size:12px; font-weight:600;
+          border:1px solid #DCE5FF; transition:all 0.18s;
+        }
+        .plan-btn:hover { background:#EEF2FF; border-color:#02AFCF; color:#02AFCF; }
+
+        .reserve-btn {
+          flex:1; padding:10px 0;
+          background:linear-gradient(135deg,#02AFCF,#259FFC);
+          color:white; border-radius:12px; border:none;
+          font-size:12px; font-weight:700; cursor:pointer; font-family:inherit;
+          display:flex; align-items:center; justify-content:center; gap:6px;
+          transition:all 0.18s; box-shadow:0 4px 12px rgba(2,175,207,0.3);
+        }
+        .reserve-btn:hover { box-shadow:0 6px 20px rgba(2,175,207,0.45); transform:translateY(-1px); }
+
+        .sort-select {
+          padding:9px 14px 9px 32px; border:1.5px solid #DCE5FF; border-radius:12px;
+          font-size:13px; font-family:inherit; color:#053366;
+          background:white; cursor:pointer; outline:none; appearance:none; transition:border 0.18s;
+        }
+        .sort-select:focus { border-color:#02AFCF; }
+
+        .modal-overlay {
+          position:fixed; inset:0; background:rgba(5,51,102,0.5);
+          backdrop-filter:blur(6px); z-index:1000;
+          display:flex; align-items:flex-end; justify-content:center; padding:0;
+          animation:fadeIn 0.2s ease;
+        }
+        @media(min-width:640px) { .modal-overlay { align-items:center; padding:20px; } }
+
+        .modal-box {
+          background:white; width:100%; max-width:480px;
+          border-radius:28px 28px 0 0;
+          box-shadow:0 -8px 40px rgba(5,51,102,0.15);
+          overflow:hidden; max-height:92vh; overflow-y:auto;
+          animation:slideUp 0.28s cubic-bezier(0.34,1.56,0.64,1);
+        }
+        @media(min-width:640px) { .modal-box { border-radius:28px; } }
+
+        .modal-drag { width:40px; height:4px; background:#E5E7EB; border-radius:2px; margin:12px auto 0; }
+        @media(min-width:640px) { .modal-drag { display:none; } }
+
+        .date-input {
+          width:100%; padding:12px 14px; border:1.5px solid #DCE5FF; border-radius:12px;
+          font-size:14px; font-family:inherit; color:#053366;
+          background:#F8FAFF; outline:none; transition:all 0.2s; box-sizing:border-box;
+        }
+        .date-input:focus { border-color:#02AFCF; background:white; box-shadow:0 0 0 3px rgba(2,175,207,0.1); }
+
+        .counter-wrap { display:flex; align-items:center; border:1.5px solid #DCE5FF; border-radius:12px; overflow:hidden; background:#F8FAFF; }
+        .counter-btn { width:48px; height:48px; border:none; background:none; cursor:pointer; display:flex; align-items:center; justify-content:center; color:#053366; transition:background 0.15s; }
+        .counter-btn:hover:not(:disabled) { background:#DCE5FF; }
+        .counter-btn:disabled { opacity:0.3; cursor:not-allowed; }
+
+        .confirm-btn {
+          width:100%; padding:15px;
+          background:linear-gradient(135deg,#053366,#02AFCF);
+          color:white; border:none; border-radius:14px;
+          font-size:15px; font-weight:800; cursor:pointer; font-family:inherit;
+          transition:all 0.2s; display:flex; align-items:center; justify-content:center; gap:8px;
+          box-shadow:0 8px 24px rgba(2,175,207,0.35);
+        }
+        .confirm-btn:hover:not(:disabled) { transform:translateY(-1px); box-shadow:0 12px 32px rgba(2,175,207,0.45); }
+        .confirm-btn:disabled { opacity:0.55; cursor:not-allowed; transform:none; background:#E5E7EB; box-shadow:none; color:#9CA3AF; }
+      `}</style>
+
       {/* ── TOOLBAR ── */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
-        <p className="text-sm text-gray-500 flex items-center gap-2">
-          <Heart size={14} className="text-rose-500 fill-rose-500" />
-          <span className="font-bold text-gray-900">{favoris.length}</span>
-          excursion{favoris.length > 1 ? "s" : ""} sauvegardée{favoris.length > 1 ? "s" : ""}
-        </p>
-        <div className="relative flex items-center">
-          <SlidersHorizontal size={13} className="absolute left-3 text-gray-400 pointer-events-none" />
-          <select value={sort} onChange={e => setSort(e.target.value as typeof sort)}
-            className="pl-8 pr-4 py-2 border border-gray-200 rounded-xl text-sm text-gray-700 bg-white cursor-pointer outline-none appearance-none focus:border-[#02AFCF]">
+      <div style={{ display:"flex", flexWrap:"wrap", alignItems:"center", justifyContent:"space-between", gap:12, marginBottom:24 }}>
+        <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+          <div style={{ width:32, height:32, borderRadius:10, background:"linear-gradient(135deg,#FEF2F2,#FFF0F3)", display:"flex", alignItems:"center", justifyContent:"center" }}>
+            <Heart size={15} color="#F43F5E" fill="#F43F5E" />
+          </div>
+          <p style={{ fontSize:14, color:"#6B7280" }}>
+            <span style={{ fontWeight:800, color:"#053366" }}>{favoris.length}</span>
+            {" "}excursion{favoris.length > 1 ? "s" : ""} sauvegardée{favoris.length > 1 ? "s" : ""}
+          </p>
+        </div>
+        <div style={{ position:"relative", display:"flex", alignItems:"center" }}>
+          <SlidersHorizontal size={13} color="#9CA3AF" style={{ position:"absolute", left:11, pointerEvents:"none" }} />
+          <select value={sort} onChange={e => setSort(e.target.value as typeof sort)} className="sort-select">
             <option value="default">Ordre d&apos;ajout</option>
             <option value="rating">Meilleures notes</option>
             <option value="price_asc">Prix croissant</option>
@@ -129,73 +225,55 @@ export default function FavorisClient({ favoris: init, userId }: { favoris: Favo
       </div>
 
       {/* ── GRID ── */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-        {sorted.map(f => {
+      <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill, minmax(290px, 1fr))", gap:20 }}>
+        {sorted.map((f, i) => {
           const exc = f.excursion;
           if (!exc) return null;
           return (
-            <div key={f.id}
-              className="bg-white rounded-2xl overflow-hidden border border-gray-100 shadow-sm hover:-translate-y-1 hover:shadow-xl transition-all duration-250">
-
-              {/* Image */}
-              <div className="relative h-48 overflow-hidden">
-                <img
-                  src={exc.photos?.[0] || "https://images.unsplash.com/photo-1568515387631-8b650bbcdb90?w=600&q=80"}
-                  alt={sanitizeText(exc.title)}
-                  className="w-full h-full object-cover"
-                />
-                {/* Remove btn */}
-                <button onClick={() => handleRemove(f.id)} disabled={removing === f.id}
-                  className="absolute top-3 right-3 w-9 h-9 rounded-full bg-white shadow-md flex items-center justify-center hover:scale-110 transition-transform disabled:opacity-50">
+            <div key={f.id} className="fav-card" style={{ animationDelay:`${i * 0.06}s` }}>
+              <div style={{ position:"relative", height:210, overflow:"hidden", background:"#EEF2FF" }}>
+                <img src={exc.photos?.[0] || "https://images.unsplash.com/photo-1568515387631-8b650bbcdb90?w=600&q=80"}
+                  alt={sanitizeText(exc.title)} className="card-img" />
+                <div style={{ position:"absolute", inset:0, background:"linear-gradient(to top, rgba(5,51,102,0.4) 0%, transparent 55%)" }} />
+                <button className="remove-btn" onClick={() => handleRemove(f.id)} disabled={removing === f.id}>
                   {removing === f.id
-                    ? <Loader size={15} className="text-gray-400 animate-spin" />
-                    : <Heart size={15} className="text-rose-500 fill-rose-500" />
-                  }
+                    ? <Loader size={15} color="#9CA3AF" style={{ animation:"spin 1s linear infinite" }} />
+                    : <Heart size={15} color="#F43F5E" fill="#F43F5E" />}
                 </button>
-                {/* Category badge */}
                 {exc.categories?.[0] && (
-                  <div className="absolute top-3 left-3 px-3 py-1 bg-black/50 backdrop-blur-sm rounded-full text-xs font-semibold text-white">
+                  <div style={{ position:"absolute", top:12, left:12, padding:"4px 11px", background:"rgba(5,51,102,0.7)", backdropFilter:"blur(8px)", borderRadius:20, fontSize:11, fontWeight:700, color:"white" }}>
                     {sanitizeText(exc.categories[0])}
                   </div>
                 )}
+                <div style={{ position:"absolute", bottom:12, left:12, padding:"5px 12px", background:"linear-gradient(135deg,#02AFCF,#259FFC)", borderRadius:20, fontSize:14, fontWeight:800, color:"white", boxShadow:"0 4px 12px rgba(2,175,207,0.4)" }}>
+                  {exc.price_per_person} <span style={{ fontSize:11, fontWeight:500 }}>TND</span>
+                </div>
               </div>
 
-              {/* Content */}
-              <div className="p-4">
-                <div className="flex justify-between items-start mb-3">
-                  <div className="flex-1 min-w-0 pr-2">
-                    <h3 className="text-sm font-bold text-gray-900 mb-1 truncate">{sanitizeText(exc.title)}</h3>
-                    <p className="text-xs text-gray-400 flex items-center gap-1">
-                      <MapPin size={10} strokeWidth={1.5} />{sanitizeText(exc.city)}
-                    </p>
-                  </div>
-                  <div className="text-right flex-shrink-0">
-                    <p className="text-lg font-extrabold text-gray-900">{exc.price_per_person} <span className="text-xs font-medium">TND</span></p>
-                    <p className="text-xs text-gray-400">/ pers.</p>
-                  </div>
+              <div style={{ padding:"16px 18px 18px" }}>
+                <div style={{ marginBottom:12 }}>
+                  <h3 style={{ fontSize:15, fontWeight:800, color:"#053366", marginBottom:4, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", letterSpacing:"-0.2px" }}>
+                    {sanitizeText(exc.title)}
+                  </h3>
+                  <p style={{ fontSize:12, color:"#9CA3AF", display:"flex", alignItems:"center", gap:4 }}>
+                    <MapPin size={11} color="#02AFCF" strokeWidth={2} />{sanitizeText(exc.city)}
+                  </p>
                 </div>
-
-                <div className="flex gap-3 mb-4">
-                  <span className="text-xs text-gray-500 flex items-center gap-1">
-                    <Clock size={10} strokeWidth={1.5} className="text-gray-400" />{exc.duration_hours}h
+                <div style={{ display:"flex", gap:14, marginBottom:14, paddingBottom:14, borderBottom:"1px solid #EEF2FF" }}>
+                  <span style={{ fontSize:12, color:"#6B7280", display:"flex", alignItems:"center", gap:4 }}>
+                    <Clock size={11} color="#9CA3AF" strokeWidth={2} />{exc.duration_hours}h
                   </span>
                   {exc.rating > 0 && (
-                    <span className="text-xs text-gray-500 flex items-center gap-1">
-                      <Star size={10} className="fill-amber-400 text-amber-400" />
-                      {exc.rating} <span className="text-gray-400">({exc.reviews_count})</span>
+                    <span style={{ fontSize:12, color:"#6B7280", display:"flex", alignItems:"center", gap:4 }}>
+                      <Star size={11} fill="#F59E0B" color="#F59E0B" strokeWidth={0} />
+                      <span style={{ fontWeight:700, color:"#374151" }}>{exc.rating}</span>
+                      <span style={{ color:"#D1D5DB" }}>({exc.reviews_count})</span>
                     </span>
                   )}
                 </div>
-
-                <div className="flex gap-2">
-                  <Link href="/touriste/itineraire"
-                    className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-gray-50 hover:bg-gray-100 text-gray-700 rounded-xl text-xs font-semibold border border-gray-200 transition-colors">
-                    <Plus size={12} /> Ajouter au plan
-                  </Link>
-                  <button onClick={() => openModal(exc)}
-                    className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-[#02AFCF] hover:bg-[#0299b5] text-white rounded-xl text-xs font-bold transition-colors">
-                    Réserver <ArrowRight size={12} />
-                  </button>
+                <div style={{ display:"flex", gap:8 }}>
+                  <Link href="/touriste/itineraire" className="plan-btn"><Plus size={12} /> Ajouter au plan</Link>
+                  <button onClick={() => openModal(exc)} className="reserve-btn">Réserver <ArrowRight size={12} /></button>
                 </div>
               </div>
             </div>
@@ -203,132 +281,102 @@ export default function FavorisClient({ favoris: init, userId }: { favoris: Favo
         })}
       </div>
 
-      {/* ══════════════ MODAL ══════════════ */}
+      {/* ══ MODAL ══ */}
       {modal && (
-        <div
-          className="fixed inset-0 bg-black/55 backdrop-blur-sm z-[1000] flex items-end sm:items-center justify-center p-0 sm:p-5 animate-[fadeIn_.2s_ease]"
-          onClick={e => { if (e.target === e.currentTarget) closeModal(); }}
-        >
-          <div className="bg-white w-full sm:max-w-md rounded-t-3xl sm:rounded-3xl shadow-2xl overflow-hidden max-h-[92vh] overflow-y-auto animate-[slideUp_.25s_ease]">
-
-            {/* Header */}
-            <div className="flex items-center justify-between p-5 pb-0">
-              <h2 className="text-xl font-black text-gray-900">Réserver</h2>
+        <div className="modal-overlay" onClick={e => { if (e.target === e.currentTarget) closeModal(); }}>
+          <div className="modal-box">
+            <div className="modal-drag" />
+            <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"20px 24px 0" }}>
+              <div>
+                <h2 style={{ fontSize:22, fontWeight:900, color:"#053366", letterSpacing:"-0.4px" }}>Réserver</h2>
+                <p style={{ fontSize:12, color:"#9CA3AF", marginTop:2 }}>Confirmez votre réservation</p>
+              </div>
               <button onClick={closeModal} disabled={booking === "loading"}
-                className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200 transition-colors disabled:opacity-50">
-                <X size={15} className="text-gray-500" />
+                style={{ width:34, height:34, borderRadius:"50%", background:"#F3F4F6", border:"none", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}>
+                <X size={15} color="#6B7280" />
               </button>
             </div>
 
             {booking === "success" ? (
-              /* ── SUCCESS ── */
-              <div className="p-6 text-center">
-                <div className="w-16 h-16 rounded-full bg-green-50 flex items-center justify-center mx-auto mb-4">
-                  <CheckCircle size={34} className="text-green-500" strokeWidth={1.5} />
+              <div style={{ padding:"32px 24px", textAlign:"center" }}>
+                <div style={{ width:72, height:72, borderRadius:"50%", background:"linear-gradient(135deg,#F0FDF4,#DCFCE7)", display:"flex", alignItems:"center", justifyContent:"center", margin:"0 auto 16px", boxShadow:"0 8px 24px rgba(34,197,94,0.2)" }}>
+                  <CheckCircle size={36} color="#22C55E" strokeWidth={1.5} />
                 </div>
-                <h3 className="text-lg font-extrabold text-gray-900 mb-2">Réservation confirmée !</h3>
-                <p className="text-sm text-gray-500 leading-relaxed mb-1">
-                  Votre réservation pour <strong className="text-gray-900">{sanitizeText(modal.title)}</strong> a bien été enregistrée.
+                <h3 style={{ fontSize:20, fontWeight:800, color:"#053366", marginBottom:8 }}>Réservation confirmée !</h3>
+                <p style={{ fontSize:14, color:"#6B7280", lineHeight:1.7, marginBottom:4 }}>
+                  Votre réservation pour <strong style={{ color:"#053366" }}>{sanitizeText(modal.title)}</strong> a bien été enregistrée.
                 </p>
-                <p className="text-xs text-gray-400 mb-6">
-                  Elle apparaît dans vos réservations, en attente de confirmation.
-                </p>
-                <div className="flex gap-3">
-                  <button onClick={closeModal}
-                    className="flex-1 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl text-sm font-bold transition-colors">
-                    Fermer
-                  </button>
-                  <Link href="/touriste/reservations"
-                    className="flex-[2] py-3 bg-[#02AFCF] hover:bg-[#0299b5] text-white rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-colors shadow-lg shadow-cyan-200">
+                <p style={{ fontSize:12, color:"#9CA3AF", marginBottom:28 }}>En attente de confirmation par le prestataire.</p>
+                <div style={{ display:"flex", gap:10 }}>
+                  <button onClick={closeModal} style={{ flex:1, padding:"12px", background:"#F3F4F6", color:"#374151", border:"none", borderRadius:12, fontSize:14, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>Fermer</button>
+                  <Link href="/touriste/reservations" style={{ flex:2, padding:"12px", background:"linear-gradient(135deg,#053366,#02AFCF)", color:"white", borderRadius:12, textDecoration:"none", fontSize:14, fontWeight:700, display:"flex", alignItems:"center", justifyContent:"center", gap:8, boxShadow:"0 6px 20px rgba(2,175,207,0.35)" }}>
                     <CalendarDays size={14} /> Voir mes réservations
                   </Link>
                 </div>
               </div>
             ) : (
-              /* ── FORM ── */
-              <div className="p-5 space-y-4">
-
-                {/* Mini card excursion */}
-                <div className="flex items-center gap-3 bg-gray-50 border border-gray-200 rounded-2xl p-3">
-                  <div className="w-12 h-12 rounded-xl overflow-hidden flex-shrink-0 bg-gray-200">
-                    <img src={modal.photos?.[0] || "https://images.unsplash.com/photo-1568515387631-8b650bbcdb90?w=200&q=80"}
-                      alt="" className="w-full h-full object-cover" />
+              <div style={{ padding:"20px 24px 28px", display:"flex", flexDirection:"column", gap:16 }}>
+                <div style={{ display:"flex", alignItems:"center", gap:12, background:"#F8FAFF", border:"1px solid #DCE5FF", borderRadius:16, padding:"12px 14px" }}>
+                  <div style={{ width:52, height:52, borderRadius:12, overflow:"hidden", flexShrink:0, background:"#DCE5FF" }}>
+                    <img src={modal.photos?.[0] || "https://images.unsplash.com/photo-1568515387631-8b650bbcdb90?w=200&q=80"} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }} />
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-bold text-gray-900 truncate mb-1">{modal.title}</p>
-                    <div className="flex gap-3 text-xs text-gray-500">
-                      <span className="flex items-center gap-1"><MapPin size={9} strokeWidth={1.5} />{sanitizeText(modal.city)}</span>
-                      <span className="flex items-center gap-1"><Clock size={9} strokeWidth={1.5} />{modal.duration_hours}h</span>
-                      <span className="flex items-center gap-1"><Tag size={9} strokeWidth={1.5} />{modal.price_per_person} TND</span>
+                  <div style={{ flex:1, minWidth:0 }}>
+                    <p style={{ fontSize:14, fontWeight:700, color:"#053366", marginBottom:4, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{sanitizeText(modal.title)}</p>
+                    <div style={{ display:"flex", gap:10, flexWrap:"wrap" }}>
+                      <span style={{ fontSize:11, color:"#6B7280", display:"flex", alignItems:"center", gap:3 }}><MapPin size={9} color="#02AFCF" strokeWidth={2}/>{sanitizeText(modal.city)}</span>
+                      <span style={{ fontSize:11, color:"#6B7280", display:"flex", alignItems:"center", gap:3 }}><Clock size={9} color="#9CA3AF" strokeWidth={2}/>{modal.duration_hours}h</span>
+                      <span style={{ fontSize:11, color:"#6B7280", display:"flex", alignItems:"center", gap:3 }}><Tag size={9} color="#9CA3AF" strokeWidth={2}/>{modal.price_per_person} TND</span>
                     </div>
                   </div>
                 </div>
 
-                {/* Date */}
                 <div>
-                  <label className="flex items-center gap-2 text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">
-                    <CalendarDays size={12} className="text-[#02AFCF]" strokeWidth={2} /> Date
+                  <label style={{ display:"flex", alignItems:"center", gap:6, fontSize:11, fontWeight:700, color:"#374151", textTransform:"uppercase", letterSpacing:1, marginBottom:8 }}>
+                    <CalendarDays size={12} color="#02AFCF" strokeWidth={2} /> Date
                   </label>
-                  <input type="date" value={date} min={todayISO()} onChange={e => setDate(e.target.value)}
-                    className="w-full px-4 py-3 border-[1.5px] border-gray-200 rounded-xl text-sm text-gray-900 bg-gray-50 outline-none focus:border-[#02AFCF] focus:bg-white transition-colors" />
+                  <input type="date" className="date-input" value={date} min={todayISO()} onChange={e => setDate(e.target.value)} />
                 </div>
 
-                {/* Personnes */}
                 <div>
-                  <label className="flex items-center gap-2 text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">
-                    <Users size={12} className="text-[#02AFCF]" strokeWidth={2} /> Personnes
+                  <label style={{ display:"flex", alignItems:"center", gap:6, fontSize:11, fontWeight:700, color:"#374151", textTransform:"uppercase", letterSpacing:1, marginBottom:8 }}>
+                    <Users size={12} color="#02AFCF" strokeWidth={2} /> Personnes
                   </label>
-                  <div className="flex items-center border-[1.5px] border-gray-200 rounded-xl overflow-hidden bg-gray-50">
-                    <button onClick={() => setPeople(p => Math.max(1, p - 1))} disabled={people <= 1}
-                      className="w-12 h-12 flex items-center justify-center hover:bg-gray-100 disabled:opacity-30 transition-colors border-r border-gray-200">
-                      <Minus size={15} className="text-gray-600" />
-                    </button>
-                    <p className="flex-1 text-center text-xl font-extrabold text-gray-900">{people}</p>
-                    <button onClick={() => setPeople(p => Math.min(modal.max_people || 99, p + 1))}
-                      disabled={modal.max_people ? people >= modal.max_people : false}
-                      className="w-12 h-12 flex items-center justify-center hover:bg-gray-100 disabled:opacity-30 transition-colors border-l border-gray-200">
-                      <Plus size={15} className="text-gray-600" />
-                    </button>
+                  <div className="counter-wrap">
+                    <button className="counter-btn" onClick={() => setPeople(p => Math.max(1, p - 1))} disabled={people <= 1}><Minus size={16} /></button>
+                    <p style={{ flex:1, textAlign:"center", fontSize:22, fontWeight:900, color:"#053366", margin:0 }}>{people}</p>
+                    <button className="counter-btn" onClick={() => setPeople(p => Math.min(modal.max_people || 99, p + 1))} disabled={modal.max_people ? people >= modal.max_people : false}><Plus size={16} /></button>
                   </div>
                   {modal.max_people > 0 && (
-                    <p className="text-xs text-gray-400 mt-1.5 flex items-center gap-1">
-                      <Users size={10} strokeWidth={1.5} /> Max {modal.max_people} personnes
-                    </p>
+                    <p style={{ fontSize:11, color:"#9CA3AF", marginTop:6, display:"flex", alignItems:"center", gap:4 }}><Users size={10} strokeWidth={1.5} /> Max {modal.max_people} personnes</p>
                   )}
                 </div>
 
-                {/* Prix */}
-                <div className="bg-gray-50 border border-gray-200 rounded-2xl p-4 space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-500">{modal.price_per_person} TND × {people} pers.</span>
-                    <span className="font-semibold text-gray-900">{basePrice} TND</span>
+                <div style={{ background:"#F8FAFF", border:"1px solid #DCE5FF", borderRadius:16, padding:"14px 16px" }}>
+                  <div style={{ display:"flex", justifyContent:"space-between", marginBottom:8 }}>
+                    <span style={{ fontSize:13, color:"#6B7280" }}>{modal.price_per_person} TND × {people} pers.</span>
+                    <span style={{ fontSize:13, fontWeight:600, color:"#374151" }}>{basePrice} TND</span>
                   </div>
-                  <div className="flex justify-between text-sm pb-3 border-b border-dashed border-gray-300">
-                    <span className="text-gray-500 flex items-center gap-1.5">
-                      <Banknote size={12} strokeWidth={1.5} /> Frais de service (10%)
-                    </span>
-                    <span className="font-semibold text-gray-900">{serviceFee} TND</span>
+                  <div style={{ display:"flex", justifyContent:"space-between", marginBottom:12, paddingBottom:12, borderBottom:"1px dashed #DCE5FF" }}>
+                    <span style={{ fontSize:13, color:"#6B7280", display:"flex", alignItems:"center", gap:5 }}><Banknote size={12} color="#9CA3AF" strokeWidth={1.5} /> Frais de service (10%)</span>
+                    <span style={{ fontSize:13, fontWeight:600, color:"#374151" }}>{serviceFee} TND</span>
                   </div>
-                  <div className="flex justify-between items-center pt-1">
-                    <span className="font-extrabold text-gray-900">Total</span>
-                    <span className="text-xl font-black text-[#02AFCF]">{totalPrice} TND</span>
+                  <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+                    <span style={{ fontSize:15, fontWeight:800, color:"#053366" }}>Total</span>
+                    <span style={{ fontSize:22, fontWeight:900, color:"#02AFCF" }}>{totalPrice} <span style={{ fontSize:13, fontWeight:600 }}>TND</span></span>
                   </div>
                 </div>
 
-                {/* Erreur */}
                 {booking === "error" && bookingError && (
-                  <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded-xl">
-                    <AlertCircle size={14} className="text-red-500 flex-shrink-0" strokeWidth={1.5} />
-                    <span className="text-sm text-red-600 font-medium">{bookingError}</span>
+                  <div style={{ display:"flex", alignItems:"center", gap:8, padding:"10px 14px", background:"#FEF2F2", border:"1px solid #FECACA", borderRadius:12 }}>
+                    <AlertCircle size={14} color="#DC2626" strokeWidth={1.5} />
+                    <span style={{ fontSize:13, color:"#DC2626", fontWeight:500 }}>{bookingError}</span>
                   </div>
                 )}
 
-                {/* Bouton confirmer */}
-                <button onClick={handleConfirm} disabled={booking === "loading" || !date}
-                  className="w-full py-4 bg-gray-900 hover:bg-gray-800 disabled:opacity-55 disabled:cursor-not-allowed text-white rounded-xl text-sm font-extrabold flex items-center justify-center gap-2 transition-all hover:-translate-y-0.5 hover:shadow-xl">
+                <button className="confirm-btn" onClick={handleConfirm} disabled={booking === "loading" || !date}>
                   {booking === "loading"
-                    ? <><Loader size={16} className="animate-spin" /> Confirmation en cours...</>
-                    : <><CheckCircle size={16} strokeWidth={2} /> Confirmer — {totalPrice} TND</>
+                    ? <><Loader size={16} style={{ animation:"spin 1s linear infinite" }} /> Confirmation en cours...</>
+                    : <><Sparkles size={16} /> Confirmer — {totalPrice} TND</>
                   }
                 </button>
               </div>
@@ -336,11 +384,6 @@ export default function FavorisClient({ favoris: init, userId }: { favoris: Favo
           </div>
         </div>
       )}
-
-      <style>{`
-        @keyframes fadeIn { from { opacity:0 } to { opacity:1 } }
-        @keyframes slideUp { from { opacity:0; transform:translateY(24px) } to { opacity:1; transform:translateY(0) } }
-      `}</style>
     </>
   );
 }
