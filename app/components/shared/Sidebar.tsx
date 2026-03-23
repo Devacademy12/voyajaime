@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabaseClient";
 import {
   LayoutDashboard, Map, CalendarDays, Heart, MessageCircle,
@@ -57,6 +57,7 @@ interface SidebarProps {
 export default function Sidebar({ role, userName, userEmail }: SidebarProps) {
   const supabase = createClient();
   const pathname = usePathname();
+  const router   = useRouter();
   const items    = NAV[role];
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [isMobile, setIsMobile]     = useState(false);
@@ -74,7 +75,7 @@ export default function Sidebar({ role, userName, userEmail }: SidebarProps) {
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
-    window.location.href = "/auth";
+    router.push("/auth");
   };
 
   function SidebarContent({ onLinkClick }: { onLinkClick?: () => void }) {

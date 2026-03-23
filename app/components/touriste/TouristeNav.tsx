@@ -47,7 +47,7 @@ export default function TouristeNav({ userName, favCount = 0 }: { userName?: str
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
-    window.location.href = "/";
+    router.push("/");
   };
 
   const links = [
