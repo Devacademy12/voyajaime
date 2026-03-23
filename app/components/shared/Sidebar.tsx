@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { createClient } from "@/lib/supabaseClient";
 import {
@@ -30,14 +31,14 @@ const NAV: Record<Role, NavItem[]> = {
     { label: "Mon profil",     href: "/prestataire/profil",       icon: <UserCircle size={18} /> },
   ],
   admin: [
-    { label: "Dashboard",          href: "/admin/dashboard",    icon: <LayoutDashboard size={18} /> },
-    { label: "Prestataires",       href: "/admin/prestataires", icon: <Users size={18} /> },
-    { label: "Excursions",         href: "/admin/excursions",   icon: <Mountain size={18} /> },
-    { label: "Réservations",       href: "/admin/reservations", icon: <CalendarDays size={18} /> },
-    { label: "Paiements",          href: "/admin/paiements",    icon: <Wallet size={18} /> },
-    { label: "Avis & Modération",  href: "/admin/avis",         icon: <Shield size={18} /> },
-  { label: "Conversations",      href: "/admin/conversations",  icon: <MessageCircle size={18} /> },
-    { label: "Catalogue & Villes", href: "/admin/catalogue",    icon: <FolderOpen size={18} /> },
+    { label: "Dashboard",          href: "/admin/dashboard",      icon: <LayoutDashboard size={18} /> },
+    { label: "Prestataires",       href: "/admin/prestataires",   icon: <Users size={18} /> },
+    { label: "Excursions",         href: "/admin/excursions",     icon: <Mountain size={18} /> },
+    { label: "Réservations",       href: "/admin/reservations",   icon: <CalendarDays size={18} /> },
+    { label: "Paiements",          href: "/admin/paiements",      icon: <Wallet size={18} /> },
+    { label: "Avis & Modération",  href: "/admin/avis",           icon: <Shield size={18} /> },
+    { label: "Conversations",      href: "/admin/conversations",  icon: <MessageCircle size={18} /> },
+    { label: "Catalogue & Villes", href: "/admin/catalogue",      icon: <FolderOpen size={18} /> },
   ],
 };
 
@@ -60,7 +61,6 @@ export default function Sidebar({ role, userName, userEmail }: SidebarProps) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [isMobile, setIsMobile]     = useState(false);
 
-  // Detect mobile on mount + resize
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 768);
     check();
@@ -68,7 +68,6 @@ export default function Sidebar({ role, userName, userEmail }: SidebarProps) {
     return () => window.removeEventListener("resize", check);
   }, []);
 
-  // Close drawer on resize to desktop
   useEffect(() => {
     if (!isMobile) setDrawerOpen(false);
   }, [isMobile]);
@@ -78,12 +77,9 @@ export default function Sidebar({ role, userName, userEmail }: SidebarProps) {
     window.location.href = "/auth";
   };
 
-  /* ── Contenu de la sidebar ── */
   function SidebarContent({ onLinkClick }: { onLinkClick?: () => void }) {
     return (
       <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
-
-        {/* Logo */}
         <div style={{ padding: "20px 16px 16px", borderBottom: "1px solid #E5E7EB" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
             <svg width="28" height="28" viewBox="0 0 32 32" fill="none">
@@ -92,24 +88,18 @@ export default function Sidebar({ role, userName, userEmail }: SidebarProps) {
             </svg>
             <span style={{ fontWeight: 700, fontSize: 16, color: "#111827" }}>VoyajAime</span>
           </div>
-          <span style={{
-            display: "inline-flex", alignItems: "center",
-            padding: "2px 10px", borderRadius: 20,
-            fontSize: 11, fontWeight: 600,
-            background: "rgba(43,150,168,.1)", color: "#2B96A8",
-          }}>
+          <span style={{ display: "inline-flex", alignItems: "center", padding: "2px 10px", borderRadius: 20, fontSize: 11, fontWeight: 600, background: "rgba(43,150,168,.1)", color: "#2B96A8" }}>
             {ROLE_LABEL[role]}
           </span>
         </div>
-
-        {/* Navigation */}
         <nav style={{ flex: 1, padding: "12px 8px", overflowY: "auto" }}>
           {items.map((item) => {
             const active = pathname === item.href || pathname.startsWith(item.href + "/");
             return (
-              <a
+              <Link
                 key={item.href}
                 href={item.href}
+                prefetch={true}
                 onClick={onLinkClick}
                 style={{
                   display: "flex", alignItems: "center", gap: 10,
@@ -128,19 +118,13 @@ export default function Sidebar({ role, userName, userEmail }: SidebarProps) {
                   {item.icon}
                 </span>
                 <span>{item.label}</span>
-              </a>
+              </Link>
             );
           })}
         </nav>
-
-        {/* User + logout */}
         <div style={{ padding: "12px 8px 16px", borderTop: "1px solid #E5E7EB" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 12px", marginBottom: 6 }}>
-            <div style={{
-              width: 32, height: 32, borderRadius: "50%", flexShrink: 0,
-              background: "linear-gradient(135deg,#2B96A8,#4AABB8)",
-              display: "flex", alignItems: "center", justifyContent: "center",
-            }}>
+            <div style={{ width: 32, height: 32, borderRadius: "50%", flexShrink: 0, background: "linear-gradient(135deg,#2B96A8,#4AABB8)", display: "flex", alignItems: "center", justifyContent: "center" }}>
               <UserCircle size={18} color="white" />
             </div>
             <div style={{ minWidth: 0 }}>
@@ -165,7 +149,6 @@ export default function Sidebar({ role, userName, userEmail }: SidebarProps) {
     );
   }
 
-  /* ── Styles communs sidebar ── */
   const asideBase: React.CSSProperties = {
     position: "fixed", top: 0, left: 0,
     height: "100vh", width: 240,
@@ -174,51 +157,25 @@ export default function Sidebar({ role, userName, userEmail }: SidebarProps) {
     zIndex: 50,
   };
 
-  /* ── RENDU MOBILE ── */
   if (isMobile) {
     return (
       <>
-        {/* Bouton hamburger */}
         <button
           onClick={() => setDrawerOpen(true)}
-          style={{
-            position: "fixed", top: 14, left: 14, zIndex: 60,
-            width: 40, height: 40,
-            background: "white", border: "1px solid #E5E7EB",
-            borderRadius: 12, cursor: "pointer",
-            display: "flex", alignItems: "center", justifyContent: "center",
-            boxShadow: "0 2px 8px rgba(0,0,0,.08)",
-          }}
+          style={{ position: "fixed", top: 14, left: 14, zIndex: 60, width: 40, height: 40, background: "white", border: "1px solid #E5E7EB", borderRadius: 12, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 2px 8px rgba(0,0,0,.08)" }}
           aria-label="Ouvrir le menu"
         >
           <Menu size={20} color="#374151" />
         </button>
 
-        {/* Overlay */}
         {drawerOpen && (
-          <div
-            onClick={() => setDrawerOpen(false)}
-            style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.4)", zIndex: 49 }}
-          />
+          <div onClick={() => setDrawerOpen(false)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.4)", zIndex: 49 }} />
         )}
 
-        {/* Drawer */}
-        <aside style={{
-          ...asideBase,
-          transform: drawerOpen ? "translateX(0)" : "translateX(-100%)",
-          transition: "transform 0.3s ease",
-          boxShadow: drawerOpen ? "0 0 40px rgba(0,0,0,.15)" : "none",
-          zIndex: 55,
-        }}>
-          {/* Bouton fermer */}
+        <aside style={{ ...asideBase, transform: drawerOpen ? "translateX(0)" : "translateX(-100%)", transition: "transform 0.3s ease", boxShadow: drawerOpen ? "0 0 40px rgba(0,0,0,.15)" : "none", zIndex: 55 }}>
           <button
             onClick={() => setDrawerOpen(false)}
-            style={{
-              position: "absolute", top: 14, right: 14,
-              width: 28, height: 28, border: "none",
-              background: "#F3F4F6", borderRadius: 8,
-              cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
-            }}
+            style={{ position: "absolute", top: 14, right: 14, width: 28, height: 28, border: "none", background: "#F3F4F6", borderRadius: 8, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
           >
             <X size={15} color="#374151" />
           </button>
@@ -228,7 +185,6 @@ export default function Sidebar({ role, userName, userEmail }: SidebarProps) {
     );
   }
 
-  /* ── RENDU DESKTOP ── */
   return (
     <aside style={asideBase}>
       <SidebarContent />
