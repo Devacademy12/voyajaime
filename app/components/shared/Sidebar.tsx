@@ -100,12 +100,12 @@ export default function Sidebar({ role, userName, userEmail }: SidebarProps) {
 
         {/* ── Logo ── */}
         <div style={{ padding: "18px 16px 0" }}>
-          <Link href={ROUTES.home} style={{ display: "flex", alignItems: "center", gap: 10, textDecoration: "none", marginBottom: 16 }}>
-            <svg width="28" height="28" viewBox="0 0 32 32" fill="none">
-              <path d="M16 28C16 28 4 19.5 4 11.5C4 7.91 6.91 5 10.5 5C12.5 5 14.3 5.97 16 7.5C17.7 5.97 19.5 5 21.5 5C25.09 5 28 7.91 28 11.5C28 19.5 16 28 16 28Z" fill="#2B96A8"/>
-              <path d="M16 13L14.5 10H12L15 14.5L11 14V16L15.5 15.5L16 19L16.5 15.5L21 16V14L17 14.5L20 10H17.5L16 13Z" fill="white"/>
-            </svg>
-            <span style={{ fontWeight: 700, fontSize: 16, color: "#111827" }}>VoyajAime</span>
+          <Link href={ROUTES.home} style={{ display: "flex", alignItems: "center", textDecoration: "none", marginBottom: 16 }}>
+            <img
+              src="/logo.png"
+              alt="VoyajAime"
+              style={{ height: 36, width: "auto", objectFit: "contain", display: "block" }}
+            />
           </Link>
 
           {/* ── Profil utilisateur ── */}
