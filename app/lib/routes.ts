@@ -14,6 +14,7 @@ export const ROUTES = {
   // ── Touriste ────────────────────────────────
   touriste: {
     dashboard:    "/touriste/dashboard",
+    itineraires:   "/touriste/itineraires",
     itineraire:   "/touriste/itineraire",
     reservations: "/touriste/reservations",
     favoris:      "/touriste/favoris",

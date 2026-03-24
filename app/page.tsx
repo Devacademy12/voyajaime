@@ -298,15 +298,46 @@ export default function HomePage() {
           <div className="paths-grid">
             {[
               {
-                bg:"rgba(2,175,207,0.15)", bc:"rgba(2,175,207,0.4)",
-                badge:<><Sparkles size={11} color="#7EDCED"/><span style={{fontSize:10,fontWeight:800,color:"#7EDCED",letterSpacing:0.8}}>RAPIDE</span></>,
-                icon:<Bot size={36} color="#7EDCED"/>,
-                title:"Mode Assisté", sub:"Rapide & Intelligent", subColor:"#7EDCED",
-                desc:"Répondez à 3 questions, on génère votre itinéraire jour par jour automatiquement",
-                href: user ? `${ROUTES.touriste.itineraire}?mode=assiste` : `${ROUTES.auth}?redirect=itineraire`,
-                btnBg:"linear-gradient(135deg,#02AFCF,#259FFC)", btnBorder:"none", btnShadow:"0 6px 20px rgba(0,2,3,0.45)",
-                btnLabel:"Je veux qu'on me propose",
-              },
+  bg: "rgba(2,175,207,0.15)",
+  bc: "rgba(2,175,207,0.4)",
+
+  badge: (
+    <>
+      <Sparkles size={11} color="#7EDCED" />
+      <span
+        style={{
+          fontSize: 10,
+          fontWeight: 800,
+          color: "#7EDCED",
+          letterSpacing: 0.8,
+        }}
+      >
+        RAPIDE
+      </span>
+    </>
+  ),
+
+  icon: <Bot size={36} color="#7EDCED" />,
+
+  title: "Mode Assisté",
+  sub: "Rapide & Intelligent",
+  subColor: "#7EDCED",
+
+  desc:
+    "Répondez à 3 questions, on génère votre itinéraire jour par jour automatiquement",
+
+  // ✅ CORRECTION ICI
+  href: user
+    ? "/modeAssister?mode=assiste"
+    : `${ROUTES.auth}?redirect=/modeAssister`,
+
+  btnBg: "linear-gradient(135deg,#02AFCF,#259FFC)",
+  btnBorder: "none",
+  btnShadow: "0 6px 20px rgba(0,2,3,0.45)",
+
+  btnLabel: "Je veux qu'on me propose",
+}
+,
               {
                 bg:"rgba(220,229,255,0.08)", bc:"rgba(220,229,255,0.25)",
                 badge:<><Map size={11} color="#DCE5FF"/><span style={{fontSize:10,fontWeight:800,color:"#DCE5FF",letterSpacing:0.8}}>FLEXIBLE</span></>,
@@ -451,7 +482,7 @@ export default function HomePage() {
       </section>
 
       {/* ── FOOTER ── */}
-      <footer style={{ background:"#010e2a" }}>
+      <footer style={{ background:"#010611" }}>
         <div className="footer-inner">
           <div style={{ display:"flex", alignItems:"center", gap:10 }}>
             <Logo size={26}/>
