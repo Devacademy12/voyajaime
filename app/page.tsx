@@ -2,7 +2,9 @@
 
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabaseClient";
+import { ROUTES } from "@/app/lib/routes";
 import {
   Heart, Lock, MapPin, Clock, Star, ChevronDown,
   ArrowRight, Sparkles, Map, Search, Bot, ClipboardList,
@@ -10,11 +12,11 @@ import {
 } from "lucide-react";
 
 const SLIDES = [
-  { url: "https://images.pexels.com/photos/27599624/pexels-photo-27599624.jpeg?auto=compress&cs=tinysrgb&w=1800", city: "Sidi Bou Saïd",  region: "Gouvernorat de Tunis",   desc: "Le village aux maisons bleues et blanches suspendu sur la Méditerranée", color: "#02AFCF" },
-  { url: "/images/sahara.webp",                                                                                    city: "Désert du Sahara",region: "Gouvernorat de Kébili",  desc: "Dunes infinies, nuits étoilées et silence absolu à Douz",               color: "#259FFC" },
-  { url: "https://images.pexels.com/photos/27631749/pexels-photo-27631749.jpeg?auto=compress&cs=tinysrgb&w=1800", city: "Médina de Tunis", region: "Patrimoine UNESCO",      desc: "Labyrinthe millénaire de ruelles, souks et palais ottomans",            color: "#053366" },
-  { url: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=1800&q=90&fit=crop",                    city: "Île de Djerba",   region: "Gouvernorat de Médenine", desc: "Plages de sable blanc et eaux turquoise de la Méditerranée",            color: "#02AFCF" },
-  { url: "/images/Tozeur.jpg",                                                                                    city: "Tozeur & Oasis",  region: "Sud-Ouest tunisien",      desc: "Palmiers, sources d'eau fraîche et architecture en briques de sable",  color: "#259FFC" },
+  { url: "https://images.pexels.com/photos/27599624/pexels-photo-27599624.jpeg?auto=compress&cs=tinysrgb&w=1800", city: "Sidi Bou Saïd",   region: "Gouvernorat de Tunis",   desc: "Le village aux maisons bleues et blanches suspendu sur la Méditerranée", color: "#02AFCF" },
+  { url: "/images/sahara.webp",                                                                                    city: "Désert du Sahara", region: "Gouvernorat de Kébili",  desc: "Dunes infinies, nuits étoilées et silence absolu à Douz",               color: "#259FFC" },
+  { url: "https://images.pexels.com/photos/27631749/pexels-photo-27631749.jpeg?auto=compress&cs=tinysrgb&w=1800", city: "Médina de Tunis",  region: "Patrimoine UNESCO",      desc: "Labyrinthe millénaire de ruelles, souks et palais ottomans",            color: "#053366" },
+  { url: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=1800&q=90&fit=crop",                    city: "Île de Djerba",    region: "Gouvernorat de Médenine", desc: "Plages de sable blanc et eaux turquoise de la Méditerranée",            color: "#02AFCF" },
+  { url: "/images/Tozeur.jpg",                                                                                    city: "Tozeur & Oasis",   region: "Sud-Ouest tunisien",      desc: "Palmiers, sources d'eau fraîche et architecture en briques de sable",   color: "#259FFC" },
 ];
 
 const FALLBACK_IMG = "https://images.unsplash.com/photo-1568515387631-8b650bbcdb90?w=600&q=80&fit=crop";
@@ -45,16 +47,17 @@ const SkeletonCard = () => (
 );
 
 export default function HomePage() {
-  const [current, setCurrent]   = useState(0);
-  const [fading,  setFading]    = useState(false);
-  const [scrolled, setScrolled] = useState(false);
-  const [progress, setProgress] = useState(0);
-  const [user, setUser]         = useState<{ email?: string; id?: string } | null>(null);
-  const [favCount, setFavCount] = useState(0);
+  const [current,    setCurrent]    = useState(0);
+  const [fading,     setFading]     = useState(false);
+  const [scrolled,   setScrolled]   = useState(false);
+  const [progress,   setProgress]   = useState(0);
+  const [user,       setUser]       = useState<{ email?: string; id?: string } | null>(null);
+  const [favCount,   setFavCount]   = useState(0);
   const [excursions, setExcursions] = useState<Excursion[]>([]);
   const [excLoading, setExcLoading] = useState(true);
-  const [navOpen, setNavOpen]   = useState(false);
+  const [navOpen,    setNavOpen]    = useState(false);
   const supabase = createClient();
+  const router   = useRouter();
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
@@ -99,6 +102,13 @@ export default function HomePage() {
     return () => clearInterval(timer);
   }, [current]);
 
+  const handleFavClick = (excId: string) => {
+    if (!user) {
+      sessionStorage.setItem("redirect_after_login", ROUTES.excursion(excId));
+      router.push(ROUTES.auth);
+    }
+  };
+
   const slide = SLIDES[current];
 
   return (
@@ -107,34 +117,22 @@ export default function HomePage() {
         @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@400;500;600;700;800&display=swap');
         *{margin:0;padding:0;box-sizing:border-box}
         body{font-family:'DM Sans',sans-serif;background:#F8FAFF;overflow-x:hidden}
-
-        /* Nav */
         .nav-a{text-decoration:none;font-size:14px;font-weight:500;transition:color 0.2s}
         .nav-a:hover{color:#02AFCF!important}
-
-        /* Slider */
         .slide-bg{position:absolute;inset:0;background-size:cover;background-position:center;transition:opacity 0.6s ease,transform 0.6s ease}
-
-        /* Cards */
         .exc-card{border-radius:18px;overflow:hidden;background:white;border:1px solid #EEF2FF;transition:all 0.25s ease;cursor:pointer;text-decoration:none;display:block;color:inherit;box-shadow:0 2px 10px rgba(5,51,102,.05)}
         .exc-card:hover{transform:translateY(-5px);box-shadow:0 16px 48px rgba(5,51,102,.12)}
         .exc-card img{transition:transform 0.4s ease;display:block}
         .exc-card:hover img{transform:scale(1.05)}
         .heart-btn{position:absolute;top:12px;right:12px;width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,0.92);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:transform 0.2s;box-shadow:0 2px 8px rgba(0,0,0,.15);z-index:2}
         .heart-btn:hover{transform:scale(1.15)}
-
-        /* Path cards */
         .path-card{padding:28px 22px;border-radius:20px;border:1.5px solid;cursor:pointer;transition:all 0.3s;backdrop-filter:blur(16px);display:flex;flex-direction:column;gap:10px}
         .path-card:hover{transform:translateY(-4px);filter:brightness(1.12)}
-
-        /* Animations */
         @keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
         .fu{animation:fadeUp 0.7s ease forwards;opacity:0}
         .fu1{animation-delay:0.1s}.fu2{animation-delay:0.25s}.fu3{animation-delay:0.4s}.fu4{animation-delay:0.55s}
         @keyframes bounce{0%,100%{transform:translateX(-50%) translateY(0)}50%{transform:translateX(-50%) translateY(8px)}}
         @keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
-
-        /* ── Layout classes ── */
         .exc-grid          { display:grid; grid-template-columns:repeat(3,1fr); gap:20px; }
         .paths-grid        { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; }
         .section-wrap      { padding-left:72px; padding-right:72px; }
@@ -150,7 +148,6 @@ export default function HomePage() {
         .nav-hamburger     { display:none; background:none; border:none; cursor:pointer; padding:6px; border-radius:10px; }
         .nav-mobile        { display:none; }
         .exc-section-header{ display:flex; justify-content:space-between; align-items:flex-end; margin-bottom:44px; }
-
         @media(max-width:900px){
           .exc-grid    { grid-template-columns:repeat(2,1fr); gap:14px; }
           .paths-grid  { grid-template-columns:1fr; }
@@ -191,30 +188,30 @@ export default function HomePage() {
         boxShadow: scrolled ? "0 2px 16px rgba(5,51,102,.07)" : "none",
         transition:"all 0.35s",
       }}>
-        <Link href="/" style={{ display:"flex", alignItems:"center", gap:10, textDecoration:"none" }}>
+        <Link href={ROUTES.home} style={{ display:"flex", alignItems:"center", gap:10, textDecoration:"none" }}>
           <Logo size={32} />
           <span style={{ fontFamily:"'Playfair Display',serif", fontSize:20, fontWeight:900, color:scrolled?"#053366":"white", transition:"color 0.3s", letterSpacing:"-0.3px" }}>voyajaime</span>
         </Link>
 
-        {/* Desktop */}
+        {/* Desktop nav */}
         <nav className="nav-links">
-          <Link href="/excursions" className="nav-a" style={{ color:scrolled?"#374151":"rgba(255,255,255,0.88)" }}>Excursions</Link>
+          <Link href={ROUTES.excursions} className="nav-a" style={{ color:scrolled?"#374151":"rgba(255,255,255,0.88)" }}>Excursions</Link>
           <a href="#chemins" className="nav-a" style={{ color:scrolled?"#374151":"rgba(255,255,255,0.88)" }}>Comment ça marche</a>
           {user ? (
-            <Link href="/touriste/favoris" style={{ position:"relative", textDecoration:"none", color:scrolled?"#374151":"rgba(255,255,255,0.88)", fontSize:14, fontWeight:500, display:"flex", alignItems:"center", gap:5 }}>
+            <Link href={ROUTES.touriste.favoris} style={{ position:"relative", textDecoration:"none", color:scrolled?"#374151":"rgba(255,255,255,0.88)", fontSize:14, fontWeight:500, display:"flex", alignItems:"center", gap:5 }}>
               <Heart size={15}/> Favoris
               {favCount > 0 && <span style={{ position:"absolute", top:-6, right:-10, background:"#EF4444", color:"white", borderRadius:"50%", width:16, height:16, fontSize:10, fontWeight:700, display:"flex", alignItems:"center", justifyContent:"center" }}>{favCount}</span>}
             </Link>
           ) : (
-            <button onClick={() => { window.location.href = "/auth"; }} style={{ background:"none", border:"none", cursor:"pointer", color:scrolled?"#374151":"rgba(255,255,255,0.88)", fontSize:14, fontWeight:500, fontFamily:"'DM Sans',sans-serif", display:"flex", alignItems:"center", gap:5 }}>
+            <Link href={ROUTES.auth} style={{ background:"none", textDecoration:"none", color:scrolled?"#374151":"rgba(255,255,255,0.88)", fontSize:14, fontWeight:500, display:"flex", alignItems:"center", gap:5 }}>
               <Heart size={15}/> Favoris
-            </button>
+            </Link>
           )}
           {user
-            ? <Link href="/touriste/reservations" style={{ padding:"10px 20px", background:scrolled?"linear-gradient(135deg,#02AFCF,#259FFC)":"rgba(255,255,255,0.18)", border:scrolled?"none":"1.5px solid rgba(255,255,255,0.45)", color:"white", borderRadius:30, textDecoration:"none", fontSize:14, fontWeight:700, backdropFilter:"blur(8px)", display:"inline-flex", alignItems:"center", gap:6, boxShadow:scrolled?"0 4px 14px rgba(2,175,207,.35)":"none" }}>
+            ? <Link href={ROUTES.touriste.reservations} style={{ padding:"10px 20px", background:scrolled?"linear-gradient(135deg,#02AFCF,#259FFC)":"rgba(255,255,255,0.18)", border:scrolled?"none":"1.5px solid rgba(255,255,255,0.45)", color:"white", borderRadius:30, textDecoration:"none", fontSize:14, fontWeight:700, backdropFilter:"blur(8px)", display:"inline-flex", alignItems:"center", gap:6, boxShadow:scrolled?"0 4px 14px rgba(2,175,207,.35)":"none" }}>
                 <User size={14}/> Mon espace
               </Link>
-            : <Link href="/auth" style={{ padding:"10px 22px", background:scrolled?"linear-gradient(135deg,#02AFCF,#259FFC)":"rgba(255,255,255,0.18)", border:scrolled?"none":"1.5px solid rgba(255,255,255,0.45)", color:"white", borderRadius:30, textDecoration:"none", fontSize:14, fontWeight:700, backdropFilter:"blur(8px)", display:"inline-flex", alignItems:"center", gap:6, boxShadow:scrolled?"0 4px 14px rgba(2,175,207,.35)":"none" }}>
+            : <Link href={ROUTES.auth} style={{ padding:"10px 22px", background:scrolled?"linear-gradient(135deg,#02AFCF,#259FFC)":"rgba(255,255,255,0.18)", border:scrolled?"none":"1.5px solid rgba(255,255,255,0.45)", color:"white", borderRadius:30, textDecoration:"none", fontSize:14, fontWeight:700, backdropFilter:"blur(8px)", display:"inline-flex", alignItems:"center", gap:6, boxShadow:scrolled?"0 4px 14px rgba(2,175,207,.35)":"none" }}>
                 <LogIn size={14}/> Connexion
               </Link>
           }
@@ -228,16 +225,16 @@ export default function HomePage() {
 
       {/* Mobile menu */}
       <div className={`nav-mobile ${navOpen ? "" : "closed"}`}>
-        <Link href="/excursions" onClick={() => setNavOpen(false)} style={{ fontSize:15, fontWeight:500, color:"#053366", textDecoration:"none", display:"flex", alignItems:"center", gap:8 }}>
+        <Link href={ROUTES.excursions} onClick={() => setNavOpen(false)} style={{ fontSize:15, fontWeight:500, color:"#053366", textDecoration:"none", display:"flex", alignItems:"center", gap:8 }}>
           <Mountain size={16} color="#02AFCF"/> Excursions
         </Link>
         <a href="#chemins" onClick={() => setNavOpen(false)} style={{ fontSize:15, fontWeight:500, color:"#053366", textDecoration:"none", display:"flex", alignItems:"center", gap:8 }}>
           <Sparkles size={16} color="#02AFCF"/> Comment ça marche
         </a>
-        <Link href={user ? "/touriste/favoris" : "/auth"} onClick={() => setNavOpen(false)} style={{ fontSize:15, fontWeight:500, color:"#053366", textDecoration:"none", display:"flex", alignItems:"center", gap:8 }}>
+        <Link href={user ? ROUTES.touriste.favoris : ROUTES.auth} onClick={() => setNavOpen(false)} style={{ fontSize:15, fontWeight:500, color:"#053366", textDecoration:"none", display:"flex", alignItems:"center", gap:8 }}>
           <Heart size={16} color="#02AFCF"/> Favoris {favCount > 0 && `(${favCount})`}
         </Link>
-        <Link href={user ? "/touriste/reservations" : "/auth"} onClick={() => setNavOpen(false)}
+        <Link href={user ? ROUTES.touriste.reservations : ROUTES.auth} onClick={() => setNavOpen(false)}
           style={{ padding:"12px 20px", background:"linear-gradient(135deg,#02AFCF,#259FFC)", color:"white", borderRadius:12, textDecoration:"none", fontSize:14, fontWeight:700, display:"flex", alignItems:"center", justifyContent:"center", gap:7, boxShadow:"0 4px 14px rgba(2,175,207,.35)" }}>
           {user ? <><User size={15}/> Mon espace</> : <><LogIn size={15}/> Connexion</>}
         </Link>
@@ -246,11 +243,11 @@ export default function HomePage() {
       {/* ── HERO ── */}
       <section style={{ position:"relative", height:"100vh", overflow:"hidden" }}>
         <div className="slide-bg" style={{ backgroundImage:`url(${slide.url})`, opacity:fading?0:1, transform:fading?"scale(1.03)":"scale(1)" }}/>
-        <div style={{ position:"absolute", inset:0, background:"linear-gradient(to right,rgba(0, 3, 7, 0.82) 0%,rgba(0, 7, 13, 0.35) 55%,rgba(1, 6, 12, 0.05) 100%)" }}/>
-        <div style={{ position:"absolute", inset:0, background:"linear-gradient(to top,rgba(0, 3, 6, 0.55) 0%,transparent 50%)" }}/>
+        <div style={{ position:"absolute", inset:0, background:"linear-gradient(to right,rgba(0,3,7,0.82) 0%,rgba(0,7,13,0.35) 55%,rgba(1,6,12,0.05) 100%)" }}/>
+        <div style={{ position:"absolute", inset:0, background:"linear-gradient(to top,rgba(0,3,6,0.55) 0%,transparent 50%)" }}/>
 
         <div key={current} className="hero-content">
-          <div className="fu fu1" style={{ display:"inline-flex", alignItems:"center", gap:6, padding:"6px 14px", borderRadius:30, background:"rgba(2, 27, 55, 0.22)", border:"1px solid rgba(2,175,207,0.5)", backdropFilter:"blur(10px)", marginBottom:18 }}>
+          <div className="fu fu1" style={{ display:"inline-flex", alignItems:"center", gap:6, padding:"6px 14px", borderRadius:30, background:"rgba(2,27,55,0.22)", border:"1px solid rgba(2,175,207,0.5)", backdropFilter:"blur(10px)", marginBottom:18 }}>
             <MapPin size={13} color="#7EDCED"/>
             <span style={{ fontSize:11, fontWeight:700, color:"#7EDCED", letterSpacing:1, textTransform:"uppercase" }}>{slide.region}</span>
           </div>
@@ -262,7 +259,7 @@ export default function HomePage() {
             <a href="#chemins" style={{ padding:"13px 24px", background:"linear-gradient(135deg,#02AFCF,#259FFC)", color:"white", borderRadius:12, textDecoration:"none", fontSize:14, fontWeight:700, boxShadow:"0 8px 28px rgba(2,175,207,0.5)", display:"inline-flex", alignItems:"center", gap:8 }}>
               <Sparkles size={16}/> Planifier mon voyage
             </a>
-            <Link href="/excursions" style={{ padding:"13px 22px", background:"rgba(255,255,255,0.13)", backdropFilter:"blur(12px)", border:"1.5px solid rgba(255,255,255,0.35)", color:"white", borderRadius:12, textDecoration:"none", fontSize:14, fontWeight:600, display:"inline-flex", alignItems:"center", gap:8 }}>
+            <Link href={ROUTES.excursions} style={{ padding:"13px 22px", background:"rgba(255,255,255,0.13)", backdropFilter:"blur(12px)", border:"1.5px solid rgba(255,255,255,0.35)", color:"white", borderRadius:12, textDecoration:"none", fontSize:14, fontWeight:600, display:"inline-flex", alignItems:"center", gap:8 }}>
               <Map size={15}/> Voir les excursions
             </Link>
           </div>
@@ -287,7 +284,7 @@ export default function HomePage() {
       {/* ── CHEMINS ── */}
       <section id="chemins" style={{ position:"relative", overflow:"hidden" }}>
         <div style={{ position:"absolute", inset:0, backgroundImage:`url(${SLIDES[0].url})`, backgroundSize:"cover", backgroundPosition:"center", filter:"blur(3px) brightness(0.35)", transform:"scale(1.05)" }}/>
-        <div style={{ position:"absolute", inset:0, background:"rgba(0, 3, 5, 0.72)" }}/>
+        <div style={{ position:"absolute", inset:0, background:"rgba(0,3,5,0.72)" }}/>
 
         <div className="chemins-wrap" style={{ position:"relative", zIndex:1 }}>
           <div style={{ textAlign:"center", marginBottom:52 }}>
@@ -306,8 +303,8 @@ export default function HomePage() {
                 icon:<Bot size={36} color="#7EDCED"/>,
                 title:"Mode Assisté", sub:"Rapide & Intelligent", subColor:"#7EDCED",
                 desc:"Répondez à 3 questions, on génère votre itinéraire jour par jour automatiquement",
-                href:user?"/touriste/itineraire?mode=assiste":"/auth?redirect=itineraire",
-                btnBg:"linear-gradient(135deg,#02AFCF,#259FFC)", btnBorder:"none", btnShadow:"0 6px 20px rgba(0, 2, 3, 0.45)",
+                href: user ? `${ROUTES.touriste.itineraire}?mode=assiste` : `${ROUTES.auth}?redirect=itineraire`,
+                btnBg:"linear-gradient(135deg,#02AFCF,#259FFC)", btnBorder:"none", btnShadow:"0 6px 20px rgba(0,2,3,0.45)",
                 btnLabel:"Je veux qu'on me propose",
               },
               {
@@ -316,7 +313,7 @@ export default function HomePage() {
                 icon:<ClipboardList size={36} color="#DCE5FF"/>,
                 title:"Mode Libre", sub:"Totalement personnalisé", subColor:"rgba(220,229,255,0.7)",
                 desc:"Construisez votre voyage de A à Z — choisissez chaque excursion, chaque jour",
-                href:user?"/touriste/itineraire?mode=libre":"/auth?redirect=itineraire",
+                href: user ? `${ROUTES.touriste.itineraire}?mode=libre` : `${ROUTES.auth}?redirect=itineraire`,
                 btnBg:"rgba(255,255,255,0.13)", btnBorder:"1.5px solid rgba(255,255,255,0.35)", btnShadow:"none",
                 btnLabel:"Je veux décider moi-même",
               },
@@ -326,7 +323,7 @@ export default function HomePage() {
                 icon:<Mountain size={36} color="rgba(220,229,255,0.8)"/>,
                 title:"Juste Explorer", sub:"Naviguez librement", subColor:"rgba(220,229,255,0.5)",
                 desc:"Parcourez toutes les excursions disponibles — pas besoin de compte pour regarder",
-                href:"/excursions",
+                href: ROUTES.excursions,
                 btnBg:"transparent", btnBorder:"1.5px solid rgba(220,229,255,0.3)", btnShadow:"none",
                 btnLabel:"Voir toutes les excursions",
               },
@@ -349,7 +346,7 @@ export default function HomePage() {
           </div>
 
           <div style={{ textAlign:"center", marginTop:40 }}>
-            <Link href="/auth?type=prestataire" style={{ fontSize:14, color:"rgba(220,229,255,0.5)", textDecoration:"none", borderBottom:"1px solid rgba(220,229,255,0.25)", paddingBottom:2 }}>
+            <Link href={`${ROUTES.auth}?type=prestataire`} style={{ fontSize:14, color:"rgba(220,229,255,0.5)", textDecoration:"none", borderBottom:"1px solid rgba(220,229,255,0.25)", paddingBottom:2 }}>
               Vous êtes prestataire ? Inscrivez votre activité →
             </Link>
           </div>
@@ -364,7 +361,7 @@ export default function HomePage() {
               <p style={{ fontSize:11, fontWeight:800, letterSpacing:3, color:"#02AFCF", textTransform:"uppercase", marginBottom:10 }}>EXCURSIONS</p>
               <h2 style={{ fontFamily:"'Playfair Display',serif", fontSize:"clamp(24px,3.5vw,36px)", fontWeight:900, color:"#000509", letterSpacing:"-0.5px" }}>Les plus populaires</h2>
             </div>
-            <Link href="/excursions" style={{ fontSize:14, color:"#259FFC", fontWeight:700, textDecoration:"none", display:"inline-flex", alignItems:"center", gap:5, whiteSpace:"nowrap" }}>
+            <Link href={ROUTES.excursions} style={{ fontSize:14, color:"#259FFC", fontWeight:700, textDecoration:"none", display:"inline-flex", alignItems:"center", gap:5, whiteSpace:"nowrap" }}>
               Voir toutes <ArrowRight size={14}/>
             </Link>
           </div>
@@ -385,7 +382,7 @@ export default function HomePage() {
                 const photo    = exc.photos?.find(Boolean) || FALLBACK_IMG;
                 const category = exc.categories?.[0] || null;
                 return (
-                  <Link key={exc.id} href={`/excursions/${exc.id}`} className="exc-card">
+                  <Link key={exc.id} href={ROUTES.excursion(exc.id)} className="exc-card">
                     <div style={{ position:"relative", height:200, overflow:"hidden" }}>
                       <img src={photo} alt={exc.title} style={{ width:"100%", height:"100%", objectFit:"cover" }}
                         onError={e => { (e.target as HTMLImageElement).src = FALLBACK_IMG; }}/>
@@ -395,7 +392,7 @@ export default function HomePage() {
                         </div>
                       )}
                       <button className="heart-btn"
-                        onClick={e => { e.preventDefault(); if (!user) { sessionStorage.setItem("redirect_after_login", `/excursions/${exc.id}`); window.location.href = "/auth"; } }}
+                        onClick={e => { e.preventDefault(); handleFavClick(exc.id); }}
                         title={user ? "Ajouter aux favoris" : "Connectez-vous"}>
                         {user ? <Heart size={16} color="#E11D48"/> : <Lock size={14} color="#6B7280"/>}
                       </button>
@@ -440,10 +437,10 @@ export default function HomePage() {
                   <p style={{ fontSize:14, color:"#6B7280" }}>Créez un compte gratuit pour accéder aux favoris, réservations et paiements</p>
                 </div>
                 <div className="guest-cta-btns">
-                  <Link href="/auth" style={{ padding:"12px 24px", background:"linear-gradient(135deg,#02AFCF,#259FFC)", color:"white", borderRadius:12, textDecoration:"none", fontSize:14, fontWeight:700, boxShadow:"0 4px 14px rgba(2,175,207,.4)", display:"inline-flex", alignItems:"center", gap:7, whiteSpace:"nowrap" }}>
+                  <Link href={ROUTES.auth} style={{ padding:"12px 24px", background:"linear-gradient(135deg,#02AFCF,#259FFC)", color:"white", borderRadius:12, textDecoration:"none", fontSize:14, fontWeight:700, boxShadow:"0 4px 14px rgba(2,175,207,.4)", display:"inline-flex", alignItems:"center", gap:7, whiteSpace:"nowrap" }}>
                     <UserPlus size={15}/> Créer un compte
                   </Link>
-                  <Link href="/auth" style={{ padding:"12px 20px", background:"white", border:"1.5px solid #DCE5FF", color:"#053366", borderRadius:12, textDecoration:"none", fontSize:14, fontWeight:600, display:"inline-flex", alignItems:"center", gap:7, whiteSpace:"nowrap" }}>
+                  <Link href={ROUTES.auth} style={{ padding:"12px 20px", background:"white", border:"1.5px solid #DCE5FF", color:"#053366", borderRadius:12, textDecoration:"none", fontSize:14, fontWeight:600, display:"inline-flex", alignItems:"center", gap:7, whiteSpace:"nowrap" }}>
                     <LogIn size={15}/> Se connecter
                   </Link>
                 </div>
@@ -454,7 +451,7 @@ export default function HomePage() {
       </section>
 
       {/* ── FOOTER ── */}
-      <footer style={{ background:"#000103" }}>
+      <footer style={{ background:"#010e2a" }}>
         <div className="footer-inner">
           <div style={{ display:"flex", alignItems:"center", gap:10 }}>
             <Logo size={26}/>
@@ -462,12 +459,12 @@ export default function HomePage() {
           </div>
           <p style={{ color:"rgba(220,229,255,0.45)", fontSize:13 }}>© 2026 VoyajAime — Tourisme en Tunisie</p>
           <div style={{ display:"flex", gap:16, alignItems:"center" }}>
-            <Link href="/excursions" style={{ color:"rgba(220,229,255,0.55)", fontSize:13, textDecoration:"none" }}>Excursions</Link>
+            <Link href={ROUTES.excursions} style={{ color:"rgba(220,229,255,0.55)", fontSize:13, textDecoration:"none" }}>Excursions</Link>
             {user
-              ? <Link href="/touriste/reservations" style={{ padding:"9px 18px", background:"linear-gradient(135deg,#02AFCF,#259FFC)", color:"white", borderRadius:30, textDecoration:"none", fontSize:13, fontWeight:700, display:"inline-flex", alignItems:"center", gap:6, boxShadow:"0 3px 10px rgba(2,175,207,.4)" }}>
+              ? <Link href={ROUTES.touriste.reservations} style={{ padding:"9px 18px", background:"linear-gradient(135deg,#02AFCF,#259FFC)", color:"white", borderRadius:30, textDecoration:"none", fontSize:13, fontWeight:700, display:"inline-flex", alignItems:"center", gap:6, boxShadow:"0 3px 10px rgba(2,175,207,.4)" }}>
                   <User size={13}/> Mon espace
                 </Link>
-              : <Link href="/auth" style={{ padding:"9px 18px", background:"linear-gradient(135deg,#02AFCF,#259FFC)", color:"white", borderRadius:30, textDecoration:"none", fontSize:13, fontWeight:700, display:"inline-flex", alignItems:"center", gap:6, boxShadow:"0 3px 10px rgba(2,175,207,.4)" }}>
+              : <Link href={ROUTES.auth} style={{ padding:"9px 18px", background:"linear-gradient(135deg,#02AFCF,#259FFC)", color:"white", borderRadius:30, textDecoration:"none", fontSize:13, fontWeight:700, display:"inline-flex", alignItems:"center", gap:6, boxShadow:"0 3px 10px rgba(2,175,207,.4)" }}>
                   <LogIn size={13}/> Connexion
                 </Link>
             }

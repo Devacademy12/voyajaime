@@ -4,14 +4,15 @@ import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabaseClient";
+import { ROUTES } from "@/app/lib/routes";
 import {
   LayoutDashboard, Mountain, MessageCircle, Map, Heart,
   CalendarDays, User, LogOut, Plane, Menu, X,
 } from "lucide-react";
 
 export default function TouristeNav({ userName, favCount = 0 }: { userName?: string; favCount?: number }) {
-  const [unreadMsg, setUnreadMsg] = useState(0);
-  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [unreadMsg,  setUnreadMsg]  = useState(0);
+  const [avatarUrl,  setAvatarUrl]  = useState<string | null>(null);
   const [menuOpen,   setMenuOpen]   = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [scrolled,   setScrolled]   = useState(false);
@@ -28,7 +29,6 @@ export default function TouristeNav({ userName, favCount = 0 }: { userName?: str
   useEffect(() => {
     supabase.auth.getUser().then(async ({ data: { user } }) => {
       if (!user) return;
-
       const { data: profile } = await supabase
         .from("profiles").select("avatar_url").eq("user_id", user.id).single();
       if (profile?.avatar_url) setAvatarUrl(profile.avatar_url);
@@ -47,16 +47,16 @@ export default function TouristeNav({ userName, favCount = 0 }: { userName?: str
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
-    router.push("/");
+    router.push(ROUTES.home);
   };
 
   const links = [
-    { href: "/touriste/dashboard",    icon: <LayoutDashboard size={16}/>, label: "Accueil" },
-    { href: "/excursions",            icon: <Mountain size={16}/>,        label: "Excursions" },
-    { href: "/touriste/itineraires",  icon: <Map size={16}/>,             label: "Mon itinéraire" },
-    { href: "/touriste/reservations", icon: <CalendarDays size={16}/>,    label: "Mes réservations" },
-    { href: "/touriste/favoris",      icon: <Heart size={16}/>,           label: favCount > 0 ? `Mes favoris (${favCount})` : "Mes favoris", isFavoris: true },
-    { href: "/touriste/messages",     icon: <MessageCircle size={16}/>,   label: "Messages", badge: unreadMsg },
+    { href: ROUTES.touriste.dashboard,    icon: <LayoutDashboard size={16}/>, label: "Accueil" },
+    { href: ROUTES.excursions,            icon: <Mountain size={16}/>,        label: "Excursions" },
+    { href: ROUTES.touriste.itineraire,   icon: <Map size={16}/>,             label: "Mon itinéraire" },
+    { href: ROUTES.touriste.reservations, icon: <CalendarDays size={16}/>,    label: "Mes réservations" },
+    { href: ROUTES.touriste.favoris,      icon: <Heart size={16}/>,           label: favCount > 0 ? `Mes favoris (${favCount})` : "Mes favoris", isFavoris: true },
+    { href: ROUTES.touriste.messages,     icon: <MessageCircle size={16}/>,   label: "Messages", badge: unreadMsg },
   ];
 
   const isActive = (href: string) => pathname === href || pathname.startsWith(href + "/");
@@ -100,27 +100,24 @@ export default function TouristeNav({ userName, favCount = 0 }: { userName?: str
         }
         .ddi:hover{background:#DCE5FF;color:#259FFC}
         .ddi.red{color:#DC2626}.ddi.red:hover{background:#FEF2F2;color:#DC2626}
-
-        /* ── Responsive ── */
-        .tnav-links { display:flex; align-items:center; gap:2px; flex:1; justify-content:center; }
-        .tnav-hamburger {
-          display:none; background:none; border:1px solid #E8EFFE;
-          cursor:pointer; padding:7px; border-radius:10px; color:#053366;
-          align-items:center; justify-content:center;
+        .tnav-links{display:flex;align-items:center;gap:2px;flex:1;justify-content:center}
+        .tnav-hamburger{
+          display:none;background:none;border:1px solid #E8EFFE;
+          cursor:pointer;padding:7px;border-radius:10px;color:#053366;
+          align-items:center;justify-content:center;
         }
-        .tnav-mobile {
-          position:fixed; top:64px; left:0; right:0; background:white;
-          border-bottom:1px solid #DCE5FF; padding:12px 16px 16px; z-index:199;
+        .tnav-mobile{
+          position:fixed;top:64px;left:0;right:0;background:white;
+          border-bottom:1px solid #DCE5FF;padding:12px 16px 16px;z-index:199;
           box-shadow:0 8px 24px rgba(5,51,102,0.08);
-          display:flex; flex-direction:column; gap:4px;
-          max-height:calc(100vh - 64px); overflow-y:auto;
+          display:flex;flex-direction:column;gap:4px;
+          max-height:calc(100vh - 64px);overflow-y:auto;
         }
-        .tnav-mobile.closed { display:none; }
-        .tnav-mobile .tlink { font-size:14px; padding:10px 14px; border-radius:12px; white-space:normal; }
-
-        @media (max-width: 1024px) {
-          .tnav-links     { display:none; }
-          .tnav-hamburger { display:flex; }
+        .tnav-mobile.closed{display:none}
+        .tnav-mobile .tlink{font-size:14px;padding:10px 14px;border-radius:12px;white-space:normal}
+        @media(max-width:1024px){
+          .tnav-links{display:none}
+          .tnav-hamburger{display:flex}
         }
       `}</style>
 
@@ -135,9 +132,8 @@ export default function TouristeNav({ userName, favCount = 0 }: { userName?: str
       }}>
 
         {/* Logo */}
-        <Link href="/touriste/dashboard" style={{ display:"flex", alignItems:"center", textDecoration:"none", flexShrink:0 }}>
-          <img src="/logo.png" alt="Voyaj'aime"
-            style={{ height:36, width:"auto", objectFit:"contain", display:"block" }}/>
+        <Link href={ROUTES.touriste.dashboard} style={{ display:"flex", alignItems:"center", textDecoration:"none", flexShrink:0 }}>
+          <img src="/logo.png" alt="Voyaj'aime" style={{ height:36, width:"auto", objectFit:"contain", display:"block" }}/>
         </Link>
 
         {/* Desktop links */}
@@ -167,16 +163,14 @@ export default function TouristeNav({ userName, favCount = 0 }: { userName?: str
 
           <div style={{ position:"relative" }}>
             <button className="av" onClick={() => setMenuOpen(!menuOpen)}>
-              {avatarUrl
-                ? <img src={avatarUrl} alt={initial}/>
-                : initial
-              }
+              {avatarUrl ? <img src={avatarUrl} alt={initial}/> : initial}
             </button>
 
             {menuOpen && (
               <>
                 <div style={{ position:"fixed", inset:0, zIndex:399 }} onClick={() => setMenuOpen(false)}/>
                 <div className="drop">
+                  {/* Header dropdown */}
                   <div style={{ padding:"10px 14px 12px", borderBottom:"1px solid #E8EFFE", marginBottom:4 }}>
                     <div style={{ display:"flex", alignItems:"center", gap:10 }}>
                       <div style={{ width:34, height:34, borderRadius:"50%", background:"linear-gradient(135deg,#02AFCF,#053366)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:14, fontWeight:800, color:"white", flexShrink:0, overflow:"hidden" }}>
@@ -190,14 +184,15 @@ export default function TouristeNav({ userName, favCount = 0 }: { userName?: str
                       </div>
                     </div>
                   </div>
-                  <Link href="/touriste/profil"       className="ddi" onClick={() => setMenuOpen(false)}><User size={14}/> Mon profil</Link>
-                  <Link href="/touriste/favoris"      className="ddi" onClick={() => setMenuOpen(false)}>
+                  {/* Liens dropdown */}
+                  <Link href={ROUTES.touriste.profil}       className="ddi" onClick={() => setMenuOpen(false)}><User size={14}/> Mon profil</Link>
+                  <Link href={ROUTES.touriste.favoris}      className="ddi" onClick={() => setMenuOpen(false)}>
                     <Heart size={14}/> Mes favoris
                     {favCount > 0 && <span style={{ marginLeft:"auto", background:"#DCE5FF", color:"#259FFC", padding:"1px 7px", borderRadius:10, fontSize:11, fontWeight:700 }}>{favCount}</span>}
                   </Link>
-                  <Link href="/touriste/reservations" className="ddi" onClick={() => setMenuOpen(false)}><CalendarDays size={14}/> Mes réservations</Link>
-                  <Link href="/touriste/itineraires"  className="ddi" onClick={() => setMenuOpen(false)}><Map size={14}/> Mes itinéraires</Link>
-                  <Link href="/touriste/messages"     className="ddi" onClick={() => setMenuOpen(false)}>
+                  <Link href={ROUTES.touriste.reservations} className="ddi" onClick={() => setMenuOpen(false)}><CalendarDays size={14}/> Mes réservations</Link>
+                  <Link href={ROUTES.touriste.itineraire}   className="ddi" onClick={() => setMenuOpen(false)}><Map size={14}/> Mon itinéraire</Link>
+                  <Link href={ROUTES.touriste.messages}     className="ddi" onClick={() => setMenuOpen(false)}>
                     <MessageCircle size={14}/> Messages
                     {unreadMsg > 0 && <span style={{ marginLeft:"auto", background:"#FEF2F2", color:"#EF4444", padding:"1px 7px", borderRadius:10, fontSize:11, fontWeight:700 }}>{unreadMsg}</span>}
                   </Link>

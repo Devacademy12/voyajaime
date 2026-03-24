@@ -72,11 +72,7 @@ export default function DashboardClient({ profile, excursions, reservations, pai
       {/* ── Header ── */}
       <div className="dp-card" style={{ marginBottom: 32, animationDelay: "0s" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 6 }}>
-          <div style={{ width: 46, height: 46, borderRadius: 14, background: "linear-gradient(135deg,#02AFCF,#053366)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, boxShadow: "0 4px 14px rgba(2,175,207,.35)" }}>
-            <span style={{ fontSize: 20, fontWeight: 900, color: "white" }}>
-              {name.charAt(0).toUpperCase()}
-            </span>
-          </div>
+          
           <div>
             <h1 style={{ fontSize: 24, fontWeight: 800, color: "#053366", margin: 0, letterSpacing: "-0.5px" }}>
               Bonjour, {name} 

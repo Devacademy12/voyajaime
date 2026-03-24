@@ -73,9 +73,7 @@ export default async function AdminDashboard() {
       {/* ── Header ── */}
       <div className="dp-card" style={{ marginBottom: 28, animationDelay: "0s" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 6 }}>
-          <div style={{ width: 46, height: 46, borderRadius: 14, background: "linear-gradient(135deg,#02AFCF,#053366)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, boxShadow: "0 4px 14px rgba(2,175,207,.35)" }}>
-            <Mountain size={22} color="white" strokeWidth={1.8} />
-          </div>
+          
           <div>
             <h1 style={{ fontSize: 24, fontWeight: 800, color: "#053366", margin: 0, letterSpacing: "-0.5px" }}>Dashboard Admin</h1>
             <p style={{ color: "#6B7280", fontSize: 14, margin: 0 }}>Vue globale de la plateforme VoyajAime</p>

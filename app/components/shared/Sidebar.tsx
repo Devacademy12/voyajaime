@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabaseClient";
+import { ROUTES } from "@/app/lib/routes";
 import {
   LayoutDashboard, Map, CalendarDays, Heart, MessageCircle,
   Mountain, Wallet, Star, UserCircle, Users, Shield,
@@ -15,30 +16,30 @@ interface NavItem { label: string; href: string; icon: React.ReactNode; }
 
 const NAV: Record<Role, NavItem[]> = {
   touriste: [
-    { label: "Accueil",          href: "/touriste/dashboard",    icon: <LayoutDashboard size={18} /> },
-    { label: "Mon itinéraire",   href: "/touriste/itineraire",   icon: <Map size={18} /> },
-    { label: "Mes réservations", href: "/touriste/reservations", icon: <CalendarDays size={18} /> },
-    { label: "Mes favoris",      href: "/touriste/favoris",      icon: <Heart size={18} /> },
-    { label: "Messages",         href: "/touriste/messages",     icon: <MessageCircle size={18} /> },
+    { label: "Accueil",          href: ROUTES.touriste.dashboard,    icon: <LayoutDashboard size={18} /> },
+    { label: "Mon itinéraire",   href: ROUTES.touriste.itineraire,   icon: <Map size={18} /> },
+    { label: "Mes réservations", href: ROUTES.touriste.reservations, icon: <CalendarDays size={18} /> },
+    { label: "Mes favoris",      href: ROUTES.touriste.favoris,      icon: <Heart size={18} /> },
+    { label: "Messages",         href: ROUTES.touriste.messages,     icon: <MessageCircle size={18} /> },
   ],
   prestataire: [
-    { label: "Dashboard",      href: "/prestataire/dashboard",    icon: <LayoutDashboard size={18} /> },
-    { label: "Mes excursions", href: "/prestataire/excursions",   icon: <Mountain size={18} /> },
-    { label: "Réservations",   href: "/prestataire/reservations", icon: <CalendarDays size={18} /> },
-    { label: "Paiements",      href: "/prestataire/paiements",    icon: <Wallet size={18} /> },
-    { label: "Avis clients",   href: "/prestataire/avis",         icon: <Star size={18} /> },
-    { label: "Messages",       href: "/prestataire/messages",     icon: <MessageCircle size={18} /> },
-    { label: "Mon profil",     href: "/prestataire/profil",       icon: <UserCircle size={18} /> },
+    { label: "Dashboard",      href: ROUTES.prestataire.dashboard,    icon: <LayoutDashboard size={18} /> },
+    { label: "Mes excursions", href: ROUTES.prestataire.excursions,   icon: <Mountain size={18} /> },
+    { label: "Réservations",   href: ROUTES.prestataire.reservations, icon: <CalendarDays size={18} /> },
+    { label: "Paiements",      href: ROUTES.prestataire.paiements,    icon: <Wallet size={18} /> },
+    { label: "Avis clients",   href: ROUTES.prestataire.avis,         icon: <Star size={18} /> },
+    { label: "Messages",       href: ROUTES.prestataire.messages,     icon: <MessageCircle size={18} /> },
+    { label: "Mon profil",     href: ROUTES.prestataire.profil,       icon: <UserCircle size={18} /> },
   ],
   admin: [
-    { label: "Dashboard",          href: "/admin/dashboard",      icon: <LayoutDashboard size={18} /> },
-    { label: "Prestataires",       href: "/admin/prestataires",   icon: <Users size={18} /> },
-    { label: "Excursions",         href: "/admin/excursions",     icon: <Mountain size={18} /> },
-    { label: "Réservations",       href: "/admin/reservations",   icon: <CalendarDays size={18} /> },
-    { label: "Paiements",          href: "/admin/paiements",      icon: <Wallet size={18} /> },
-    { label: "Avis & Modération",  href: "/admin/avis",           icon: <Shield size={18} /> },
-    { label: "Conversations",      href: "/admin/conversations",  icon: <MessageCircle size={18} /> },
-    { label: "Catalogue & Villes", href: "/admin/catalogue",      icon: <FolderOpen size={18} /> },
+    { label: "Dashboard",          href: ROUTES.admin.dashboard,     icon: <LayoutDashboard size={18} /> },
+    { label: "Prestataires",       href: ROUTES.admin.prestataires,  icon: <Users size={18} /> },
+    { label: "Excursions",         href: ROUTES.admin.excursions,    icon: <Mountain size={18} /> },
+    { label: "Réservations",       href: ROUTES.admin.reservations,  icon: <CalendarDays size={18} /> },
+    { label: "Paiements",          href: ROUTES.admin.paiements,     icon: <Wallet size={18} /> },
+    { label: "Avis & Modération",  href: ROUTES.admin.avis,          icon: <Shield size={18} /> },
+    { label: "Conversations",      href: ROUTES.admin.conversations, icon: <MessageCircle size={18} /> },
+    { label: "Catalogue & Villes", href: ROUTES.admin.catalogue,     icon: <FolderOpen size={18} /> },
   ],
 };
 
@@ -74,7 +75,6 @@ export default function Sidebar({ role, userName, userEmail }: SidebarProps) {
     if (!isMobile) setDrawerOpen(false);
   }, [isMobile]);
 
-  // Charger l'avatar depuis profiles
   useEffect(() => {
     supabase.auth.getUser().then(async ({ data: { user } }) => {
       if (!user) return;
@@ -89,7 +89,7 @@ export default function Sidebar({ role, userName, userEmail }: SidebarProps) {
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
-    router.push("/auth");
+    router.push(ROUTES.auth);
   };
 
   const initial = (userName || "U").charAt(0).toUpperCase();
@@ -99,25 +99,29 @@ export default function Sidebar({ role, userName, userEmail }: SidebarProps) {
       <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
 
         {/* ── Logo ── */}
-        <div style={{ padding: "18px 16px 0", borderBottom: "none" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
+        <div style={{ padding: "18px 16px 0" }}>
+          <Link href={ROUTES.home} style={{ display: "flex", alignItems: "center", gap: 10, textDecoration: "none", marginBottom: 16 }}>
             <svg width="28" height="28" viewBox="0 0 32 32" fill="none">
               <path d="M16 28C16 28 4 19.5 4 11.5C4 7.91 6.91 5 10.5 5C12.5 5 14.3 5.97 16 7.5C17.7 5.97 19.5 5 21.5 5C25.09 5 28 7.91 28 11.5C28 19.5 16 28 16 28Z" fill="#2B96A8"/>
               <path d="M16 13L14.5 10H12L15 14.5L11 14V16L15.5 15.5L16 19L16.5 15.5L21 16V14L17 14.5L20 10H17.5L16 13Z" fill="white"/>
             </svg>
             <span style={{ fontWeight: 700, fontSize: 16, color: "#111827" }}>VoyajAime</span>
-          </div>
+          </Link>
 
-          {/* ── Profil utilisateur sous le logo ── */}
+          {/* ── Profil utilisateur ── */}
           <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 4px 16px", borderBottom: "1px solid #F3F4F6" }}>
-            {/* Avatar */}
-            <div style={{ width: 48, height: 48, borderRadius: 14, overflow: "hidden", background: "linear-gradient(135deg,#2B96A8,#1e7a8a)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, boxShadow: "0 2px 8px rgba(43,150,168,.25)" }}>
+            <div style={{
+              width: 48, height: 48, borderRadius: "50%", overflow: "hidden",
+              background: "linear-gradient(135deg,#2B96A8,#1e7a8a)",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              flexShrink: 0, boxShadow: "0 2px 8px rgba(43,150,168,.3)",
+              border: "2px solid rgba(43,150,168,.2)",
+            }}>
               {avatarUrl
                 ? <img src={avatarUrl} alt={userName || ""} style={{ width: "100%", height: "100%", objectFit: "cover" }} onError={e => { (e.target as HTMLImageElement).style.display = "none"; }}/>
                 : <span style={{ fontSize: 20, fontWeight: 800, color: "white" }}>{initial}</span>
               }
             </div>
-            {/* Nom + rôle */}
             <div style={{ minWidth: 0 }}>
               <p style={{ fontSize: 14, fontWeight: 700, color: "#111827", margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                 {userName || "Utilisateur"}
