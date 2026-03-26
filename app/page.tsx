@@ -277,7 +277,7 @@ export default function HomePage() {
               <p style={{ fontSize:13.5, color:"rgba(255,255,255,0.72)", lineHeight:1.6 }}>
                 Répondez à 3 questions, on génère votre itinéraire jour par jour automatiquement
               </p>
-              <Link href={user ? "/touriste/itineraire?mode=assiste" : "/auth?redirect=itineraire"} style={{ display:"inline-flex", alignItems:"center", gap:7, padding:"11px 20px", background:"#2B96A8", color:"white", borderRadius:12, textDecoration:"none", fontSize:13, fontWeight:700, marginTop:"auto", boxShadow:"0 6px 20px rgba(43,150,168,0.45)" }}>
+              <Link href={user ? "/modeAssister" : "/auth?redirect=itineraire"} style={{ display:"inline-flex", alignItems:"center", gap:7, padding:"11px 20px", background:"#2B96A8", color:"white", borderRadius:12, textDecoration:"none", fontSize:13, fontWeight:700, marginTop:"auto", boxShadow:"0 6px 20px rgba(43,150,168,0.45)" }}>
                 Je veux qu&apos;on me propose <ArrowRight size={14} />
               </Link>
             </div>
