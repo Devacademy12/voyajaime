@@ -4,10 +4,11 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabaseClient";
 import { sanitizeText } from "@/app/lib/sanitize";
+import CheckoutModal from "@/app/components/excursions/CheckoutModal";
 import {
   Heart, MapPin, Clock, Users, Star, MessageCircle,
   ChevronLeft, ChevronRight, Check, Globe, Send, X,
-  Minus, Plus, Lock, ShieldCheck, RefreshCcw, HeadphonesIcon,
+  Lock, ShieldCheck, RefreshCcw, HeadphonesIcon,
   ThumbsUp, CalendarDays, Tag, Camera, ChevronDown, ChevronUp, Loader2,
 } from "lucide-react";
 import TouristeNav from "@/app/components/touriste/TouristeNav";
@@ -105,8 +106,6 @@ export default function ExcursionClient({
   const [msgSending,      setMsgSending]      = useState(false);
   const [msgSent,         setMsgSent]         = useState(false);
   const [showCheckout,    setShowCheckout]    = useState(false);
-  const [people,          setPeople]          = useState(1);
-  const [date,            setDate]            = useState("");
 
   useEffect(() => {
     supabase.auth.getUser().then(async ({ data }) => {
@@ -125,10 +124,8 @@ export default function ExcursionClient({
   const avgRating = avis.length
     ? (avis.reduce((s, a) => s + a.rating, 0) / avis.length).toFixed(1)
     : exc.rating ? exc.rating.toFixed(1) : null;
-  const totalPrice = exc.price_per_person * people;
-  const commission = Math.round(totalPrice * 0.1);
-  const prestName  = prestataire?.agency_name || prestataire?.full_name || "Prestataire";
-  const catColor   = (cat: string) => CAT_COLORS[cat] || "#2B96A8";
+  const prestName = prestataire?.agency_name || prestataire?.full_name || "Prestataire";
+  const catColor  = (cat: string) => CAT_COLORS[cat] || "#2B96A8";
 
   const toggleFav = async () => {
     if (!user) { sessionStorage.setItem("redirect_after_login", `/excursions/${exc.id}`); window.location.href = "/auth"; return; }
@@ -159,7 +156,6 @@ export default function ExcursionClient({
     e.preventDefault();
     if (!user) { window.location.href = "/auth"; return; }
     if (myRating === 0) { setAvisError("Choisissez une note."); return; }
-    // ✅ XSS : nettoie le commentaire avant envoi
     const cleanComment = sanitizeText(myComment.trim());
     if (!cleanComment) { setAvisError("Écrivez un commentaire."); return; }
     setAvisLoading(true); setAvisError(null);
@@ -175,7 +171,6 @@ export default function ExcursionClient({
 
   const sendMessage = async () => {
     if (!user) { sessionStorage.setItem("redirect_after_login", `/excursions/${exc.id}`); window.location.href = "/auth"; return; }
-    // ✅ XSS : nettoie le message avant envoi
     const cleanMsg = sanitizeText(msgText.trim());
     if (!cleanMsg || !prestataire || msgSending) return;
     setMsgSending(true);
@@ -212,18 +207,15 @@ export default function ExcursionClient({
           <div style={{ display:"flex", gap:7, flexWrap:"wrap", marginBottom:10 }}>
             {exc.categories?.map(c => (
               <span key={c} style={{ padding:"4px 12px", background:`${catColor(c)}15`, color:catColor(c), borderRadius:20, fontSize:11, fontWeight:700, border:`1px solid ${catColor(c)}30` }}>
-                {/* ✅ XSS : sanitize les catégories */}
                 {sanitizeText(c)}
               </span>
             ))}
           </div>
-          {/* ✅ XSS : sanitize le titre principal */}
           <h1 style={{ fontFamily:"'Playfair Display',serif", fontSize:"clamp(24px,3vw,38px)", fontWeight:900, color:"#111827", letterSpacing:"-0.5px", lineHeight:1.12, marginBottom:10 }}>
             {sanitizeText(exc.title)}
           </h1>
           <div style={{ display:"flex", alignItems:"center", gap:18, flexWrap:"wrap" }}>
             <span style={{ display:"flex", alignItems:"center", gap:5, fontSize:13, color:"#6B7280", fontWeight:600 }}>
-              {/* ✅ XSS : sanitize la ville */}
               <MapPin size={13} color="#2B96A8"/>{sanitizeText(exc.city)}
             </span>
             {avgRating && (
@@ -306,7 +298,6 @@ export default function ExcursionClient({
                 <span style={{ width:3, height:18, background:"#2B96A8", borderRadius:2, display:"inline-block" }}/>
                 À propos de cette excursion
               </h2>
-              {/* ✅ XSS : sanitize la description */}
               <p style={{ fontSize:14.5, color:"#374151", lineHeight:1.9 }}>
                 {LONG_DESC && !descExpanded
                   ? <>{sanitizeText(exc.description.slice(0, 380))}<span style={{ color:"#9CA3AF" }}>…</span></>
@@ -334,7 +325,6 @@ export default function ExcursionClient({
                       <div style={{ width:22, height:22, borderRadius:"50%", background:"#059669", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
                         <Check size={12} color="white" strokeWidth={3}/>
                       </div>
-                      {/* ✅ XSS : sanitize les inclusions */}
                       {sanitizeText(inc)}
                     </div>
                   ))}
@@ -352,7 +342,6 @@ export default function ExcursionClient({
                 <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
                   {exc.languages.map(l => (
                     <span key={l} style={{ padding:"8px 16px", background:"#F5F3FF", borderRadius:20, fontSize:13, fontWeight:700, color:"#6D28D9", border:"1px solid #EDE9FE", display:"flex", alignItems:"center", gap:6 }}>
-                      {/* ✅ XSS : sanitize les langues */}
                       <Globe size={13}/>{sanitizeText(l)}
                     </span>
                   ))}
@@ -450,7 +439,6 @@ export default function ExcursionClient({
                             }
                           </div>
                           <div>
-                            {/* ✅ XSS : sanitize le nom du touriste */}
                             <p style={{ fontSize:14, fontWeight:700, color:"#111827" }}>{sanitizeText(a.touriste_name||"Voyageur")}</p>
                             <p style={{ fontSize:11, color:"#9CA3AF", display:"flex", alignItems:"center", gap:4 }}>
                               <CalendarDays size={10}/>{new Date(a.created_at).toLocaleDateString("fr-FR",{ day:"numeric",month:"long",year:"numeric" })}
@@ -463,7 +451,6 @@ export default function ExcursionClient({
                       </div>
                       {a.comment && (
                         <p style={{ fontSize:14, color:"#374151", lineHeight:1.75, paddingLeft:52, marginBottom:12 }}>
-                          {/* ✅ XSS : sanitize le commentaire affiché */}
                           &ldquo;{sanitizeText(a.comment)}&rdquo;
                         </p>
                       )}
@@ -475,7 +462,6 @@ export default function ExcursionClient({
                             </div>
                             <p style={{ fontSize:12, fontWeight:800, color:"#2B96A8" }}>{sanitizeText(prestName)}</p>
                           </div>
-                          {/* ✅ XSS : sanitize la réponse du prestataire */}
                           <p style={{ fontSize:13, color:"#374151", lineHeight:1.65 }}>{sanitizeText(a.prestataire_response)}</p>
                         </div>
                       )}
@@ -525,12 +511,20 @@ export default function ExcursionClient({
                 ))}
               </div>
 
-              <button className="cta-primary" onClick={() => { if(!user){sessionStorage.setItem("redirect_after_login",`/excursions/${exc.id}`);window.location.href="/auth";return;} setShowCheckout(true); }}>
+              <button className="cta-primary"
+                onClick={() => {
+                  if (!user) { sessionStorage.setItem("redirect_after_login", `/excursions/${exc.id}`); window.location.href = "/auth"; return; }
+                  setShowCheckout(true);
+                }}>
                 {user ? <><CalendarDays size={16}/>Réserver maintenant</> : <><Lock size={15}/>Connexion pour réserver</>}
               </button>
               <div style={{ height:9 }}/>
               {prestataire && (
-                <button className="cta-sec" onClick={() => { if(!user){sessionStorage.setItem("redirect_after_login",`/excursions/${exc.id}`);window.location.href="/auth";return;} setShowMsgModal(true); }}>
+                <button className="cta-sec"
+                  onClick={() => {
+                    if (!user) { sessionStorage.setItem("redirect_after_login", `/excursions/${exc.id}`); window.location.href = "/auth"; return; }
+                    setShowMsgModal(true);
+                  }}>
                   <MessageCircle size={15}/>Envoyer un message
                 </button>
               )}
@@ -552,7 +546,6 @@ export default function ExcursionClient({
                         }
                       </div>
                       <div style={{ flex:1, minWidth:0 }}>
-                        {/* ✅ XSS : sanitize le nom du prestataire */}
                         <p style={{ fontSize:13, fontWeight:800, color:"#111827", whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{sanitizeText(prestName)}</p>
                         {prestataire.city && <p style={{ fontSize:11, color:"#9CA3AF", marginTop:1, display:"flex", alignItems:"center", gap:3 }}><MapPin size={9}/>{sanitizeText(prestataire.city)}</p>}
                         <p style={{ fontSize:11, color:"#059669", fontWeight:700, marginTop:2, display:"flex", alignItems:"center", gap:4 }}><ShieldCheck size={11}/>Vérifié</p>
@@ -593,7 +586,6 @@ export default function ExcursionClient({
                 <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:18 }}>
                   <div>
                     <h3 style={{ fontFamily:"'Playfair Display',serif", fontSize:20, fontWeight:900, color:"#111827", marginBottom:4 }}>Contacter le guide</h3>
-                    {/* ✅ XSS : sanitize le titre dans la modal */}
                     <p style={{ fontSize:13, color:"#9CA3AF" }}>À propos de : {sanitizeText(exc.title)}</p>
                   </div>
                   <button onClick={() => { setShowMsgModal(false); setMsgText(""); }}
@@ -632,66 +624,12 @@ export default function ExcursionClient({
         </div>
       )}
 
-      {/* ═══ MODAL RÉSERVATION ═══ */}
+      {/* ═══ MODAL RÉSERVATION — composant séparé ═══ */}
       {showCheckout && (
-        <div className="overlay" onClick={e => { if(e.target===e.currentTarget) setShowCheckout(false); }}>
-          <div className="modal fu">
-            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:22 }}>
-              <h2 style={{ fontFamily:"'Playfair Display',serif", fontSize:22, fontWeight:900, color:"#111827" }}>Réserver</h2>
-              <button onClick={() => setShowCheckout(false)}
-                style={{ background:"#F3F4F6", border:"none", cursor:"pointer", color:"#9CA3AF", width:32, height:32, borderRadius:"50%", display:"flex", alignItems:"center", justifyContent:"center" }}>
-                <X size={16}/>
-              </button>
-            </div>
-            <div style={{ background:"#F9FAFB", borderRadius:14, padding:"14px 16px", marginBottom:22 }}>
-              {/* ✅ XSS : sanitize dans la modal réservation */}
-              <p style={{ fontSize:15, fontWeight:700, color:"#111827", marginBottom:4 }}>{sanitizeText(exc.title)}</p>
-              <p style={{ fontSize:12, color:"#6B7280", display:"flex", alignItems:"center", gap:10, flexWrap:"wrap" }}>
-                <span style={{ display:"flex", alignItems:"center", gap:4 }}><MapPin size={11}/>{sanitizeText(exc.city)}</span>
-                <span style={{ display:"flex", alignItems:"center", gap:4 }}><Clock size={11}/>{exc.duration_hours}h</span>
-                <span style={{ display:"flex", alignItems:"center", gap:4 }}><Tag size={11}/>{exc.price_per_person} TND/pers.</span>
-              </p>
-            </div>
-            <div style={{ display:"flex", flexDirection:"column", gap:16, marginBottom:22 }}>
-              <div>
-                <label style={{ display:"block", fontSize:11, fontWeight:700, color:"#374151", letterSpacing:.5, textTransform:"uppercase", marginBottom:7 }}>
-                  <CalendarDays size={12}/> Date
-                </label>
-                <input type="date" value={date} onChange={e => setDate(e.target.value)}
-                  min={new Date().toISOString().split("T")[0]}
-                  style={{ width:"100%", padding:"12px 14px", border:"1.5px solid #E5E7EB", borderRadius:12, fontSize:14, fontFamily:"'DM Sans',sans-serif", color:"#111827", transition:"all .2s", background:"#FAFAFA" }}
-                />
-              </div>
-              <div>
-                <label style={{ display:"block", fontSize:11, fontWeight:700, color:"#374151", letterSpacing:.5, textTransform:"uppercase", marginBottom:7 }}>
-                  <Users size={12}/> Personnes
-                </label>
-                <div style={{ display:"flex", alignItems:"center", gap:14, padding:"8px 16px", border:"1.5px solid #E5E7EB", borderRadius:12, background:"#FAFAFA" }}>
-                  <button className="counter-btn" type="button" onClick={() => setPeople(p => Math.max(1,p-1))} disabled={people<=1}><Minus size={15}/></button>
-                  <span style={{ flex:1, textAlign:"center", fontSize:18, fontWeight:800, color:"#111827" }}>{people}</span>
-                  <button className="counter-btn" type="button" onClick={() => setPeople(p => Math.min(exc.max_people,p+1))} disabled={people>=exc.max_people}><Plus size={15}/></button>
-                </div>
-                <p style={{ fontSize:11, color:"#9CA3AF", marginTop:5, display:"flex", alignItems:"center", gap:4 }}><Users size={10}/>Max {exc.max_people} personnes</p>
-              </div>
-            </div>
-            <div style={{ background:"#F9FAFB", borderRadius:14, padding:"14px 16px", marginBottom:20 }}>
-              <div style={{ display:"flex", justifyContent:"space-between", fontSize:13, color:"#6B7280", marginBottom:6 }}>
-                <span>{exc.price_per_person} TND × {people} pers.</span><span>{totalPrice} TND</span>
-              </div>
-              <div style={{ display:"flex", justifyContent:"space-between", fontSize:13, color:"#6B7280", marginBottom:10 }}>
-                <span>Frais de service (10%)</span><span>{commission} TND</span>
-              </div>
-              <div style={{ display:"flex", justifyContent:"space-between", fontSize:16, fontWeight:900, color:"#111827", borderTop:"1px solid #E5E7EB", paddingTop:10 }}>
-                <span>Total</span><span style={{ color:"#2B96A8" }}>{totalPrice+commission} TND</span>
-              </div>
-            </div>
-            <button className="cta-primary" disabled={!date}
-              style={{ background:date?"#111827":"#E5E7EB", color:date?"white":"#9CA3AF", cursor:date?"pointer":"not-allowed" }}
-              onClick={() => { alert("Paiement en cours d'intégration !"); setShowCheckout(false); }}>
-              {date ? <><Check size={16}/>{`Confirmer — ${totalPrice+commission} TND`}</> : <><CalendarDays size={15}/>Choisissez d&apos;abord une date</>}
-            </button>
-          </div>
-        </div>
+        <CheckoutModal
+          exc={exc}
+          onClose={() => setShowCheckout(false)}
+        />
       )}
 
       {/* ═══ MODAL PRESTATAIRE ═══ */}
@@ -732,7 +670,6 @@ export default function ExcursionClient({
             {prestataire.description && (
               <div style={{ background:"#F9FAFB", borderRadius:12, padding:"14px 16px", marginBottom:18 }}>
                 <p style={{ fontSize:11, fontWeight:700, color:"#9CA3AF", textTransform:"uppercase", letterSpacing:.5, marginBottom:7 }}>À propos</p>
-                {/* ✅ XSS : sanitize la description du prestataire */}
                 <p style={{ fontSize:14, color:"#374151", lineHeight:1.75 }}>{sanitizeText(prestataire.description)}</p>
               </div>
             )}

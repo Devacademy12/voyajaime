@@ -296,7 +296,7 @@ export default function HomePage() {
               <p style={{ fontSize:13.5, color:"rgba(255,255,255,0.72)", lineHeight:1.6 }}>
                 Construisez votre voyage de A à Z — choisissez chaque excursion, chaque jour
               </p>
-              <Link href={user ? "/touriste/itineraire?mode=libre" : "/auth?redirect=itineraire"} style={{ display:"inline-flex", alignItems:"center", gap:7, padding:"11px 20px", background:"rgba(255,255,255,0.15)", border:"1.5px solid rgba(255,255,255,0.35)", color:"white", borderRadius:12, textDecoration:"none", fontSize:13, fontWeight:700, marginTop:"auto" }}>
+              <Link href={user ? "/touriste/modeLibre?mode=libre" : "/auth?redirect=itineraire"} style={{ display:"inline-flex", alignItems:"center", gap:7, padding:"11px 20px", background:"rgba(255,255,255,0.15)", border:"1.5px solid rgba(255,255,255,0.35)", color:"white", borderRadius:12, textDecoration:"none", fontSize:13, fontWeight:700, marginTop:"auto" }}>
                 Je veux décider moi-même <ArrowRight size={14} />
               </Link>
             </div>
