@@ -1,9 +1,10 @@
 "use client";
 import React, { useState, useEffect, useRef } from "react";
 import { createClient } from "@/lib/supabaseClient";
+import CheckoutModal from "@/app/components/excursions/CheckoutModal";
 import {
   MapPin, Clock, Sparkles, ChevronRight, ChevronLeft,
-  RotateCcw, CheckCircle, Calendar, Wallet, Bot,
+  RotateCcw, CheckCircle, Calendar, Bot,
   Mountain, RefreshCw, X, Loader2,
 } from "lucide-react";
 
@@ -58,7 +59,9 @@ function extractItinerary(raw: unknown): Itinerary {
 
 export default function ModeAssiste() {
   const supabase = createClient();
-  const [step, setStep] = useState<"accueil"|"questions"|"generation"|"itineraire"|"checkout">("accueil");
+
+  // step : plus de "checkout" — le modal prend le relais
+  const [step, setStep] = useState<"accueil"|"questions"|"generation"|"itineraire">("accueil");
   const [days, setDays] = useState(5);
   const [selectedCities, setSelectedCities] = useState<string[]>([]);
   const [selectedCats, setSelectedCats]     = useState<string[]>([]);
@@ -77,12 +80,28 @@ export default function ModeAssiste() {
 
   const [editing,     setEditing]     = useState<{dayIdx:number;actIdx:number}|null>(null);
   const [altOptions,  setAltOptions]  = useState<Activity[]>([]);
-  const [bookingDone, setBookingDone] = useState(false);
-  const [bookingCode] = useState(() => "TN-" + Math.random().toString(36).substring(2,8).toUpperCase());
+
+  // ── CheckoutModal ──
+  const [showCheckout, setShowCheckout] = useState(false);
+
+  // ── Sauvegarde itinéraire ──
+  const [saving,     setSaving]     = useState(false);
+  const [saveStatus, setSaveStatus] = useState<"idle"|"ok"|"error"|"login">("idle");
 
   const totalPrice = itinerary?.days.reduce(
     (acc, d) => acc + d.activities.reduce((a, act) => a + (Number(act.price) || 0), 0), 0
   ) ?? 0;
+
+  // Objet synthétique représentant l'itinéraire complet
+  // passé à CheckoutModal qui attend une "Excursion"
+  const itineraryAsExc = itinerary ? {
+    id:               "itinerary-" + Date.now(),
+    title:            itinerary.title,
+    city:             selectedCities.join(", "),
+    duration_hours:   itinerary.days.length * 8,   // estimation 8h/jour
+    price_per_person: totalPrice,
+    max_people:       20,
+  } : null;
 
   /* ── Charger Supabase ── */
   useEffect(() => {
@@ -178,7 +197,7 @@ Format:
   /* ── Alternatives locales ── */
   const openEdit = (dayIdx: number, actIdx: number) => {
     setEditing({ dayIdx, actIdx });
-    const city = itinerary!.days[dayIdx].city;
+    const city  = itinerary!.days[dayIdx].city;
     const curId = itinerary!.days[dayIdx].activities[actIdx].id;
     const used  = new Set(itinerary!.days.flatMap(d => d.activities.map(a => a.id)));
     const alts: Activity[] = excursions
@@ -200,10 +219,40 @@ Format:
     setItinerary(upd); setEditing(null); setAltOptions([]);
   };
 
+  /* ── Sauvegarder dans Supabase ── */
+  const saveItinerary = async () => {
+    if (!itinerary) return;
+    setSaving(true); setSaveStatus("idle");
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) { setSaveStatus("login"); setSaving(false); return; }
+
+      const catNames = selectedCats
+        .map(id => categories.find(c => c.id === id)?.nom)
+        .filter(Boolean) as string[];
+
+      const { error } = await supabase.from("itineraires").insert({
+        user_id:                  user.id,
+        nb_jours:                 days,
+        villes_selectionnees:     selectedCities,
+        categories_selectionnees: catNames,
+        plan:                     itinerary,
+      });
+
+      setSaveStatus(error ? "error" : "ok");
+    } catch {
+      setSaveStatus("error");
+    } finally {
+      setSaving(false);
+      // reset le statut après 4s
+      setTimeout(() => setSaveStatus("idle"), 4000);
+    }
+  };
+
   const resetAll = () => {
     setStep("accueil"); setItinerary(null); setSelectedCities([]);
-    setSelectedCats([]); setDays(5); setActiveDay(0);
-    setBookingDone(false); setGenError("");
+    setSelectedCats([]); setDays(5); setActiveDay(0); setGenError("");
+    setShowCheckout(false); setSaveStatus("idle");
   };
 
   /* ── Render ── */
@@ -275,13 +324,11 @@ Format:
         {/* ══ ACCUEIL ══ */}
         {step === "accueil" && (
           <div className="ma-fadein" style={{ textAlign:"center", paddingTop:24 }}>
-
             {dbError && (
               <div style={{ background:"#FEF2F2", border:"1px solid #FCA5A5", borderRadius:12, padding:"14px 18px", marginBottom:24, fontSize:13, color:"#DC2626", textAlign:"left" }}>
                 <strong>Erreur base de données :</strong> {dbError}
               </div>
             )}
-
             {!N8N_WEBHOOK_URL && (
               <div style={{ background:"#FEF9C3", border:"1px solid #FDE68A", borderRadius:12, padding:"14px 18px", marginBottom:24, fontSize:13, color:"#A16207", textAlign:"left" }}>
                 <strong>Configuration requise</strong> — Ajoute dans <code>.env.local</code> :<br/>
@@ -290,7 +337,6 @@ Format:
                 </code>
               </div>
             )}
-
             <div style={{ width:72, height:72, borderRadius:22, background:"linear-gradient(135deg,#02AFCF,#053366)", display:"flex", alignItems:"center", justifyContent:"center", margin:"0 auto 20px", boxShadow:"0 8px 24px rgba(2,175,207,.4)" }}>
               <Sparkles size={34} color="white" strokeWidth={1.5}/>
             </div>
@@ -301,7 +347,6 @@ Format:
               Répondez à 3 questions et notre agent IA compose votre voyage<br/>
               jour par jour depuis les excursions disponibles.
             </p>
-
             {dbLoading ? (
               <div style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:8, color:"#02AFCF", fontSize:13, fontWeight:600, marginBottom:28 }}>
                 <Loader2 size={16} style={{ animation:"spin .7s linear infinite" }}/> Chargement de la base de données...
@@ -324,7 +369,6 @@ Format:
                 </div>
               </div>
             )}
-
             <div>
               <button className="ma-btn-primary" onClick={() => setStep("questions")}
                 disabled={!N8N_WEBHOOK_URL || dbLoading || !!dbError}
@@ -343,7 +387,6 @@ Format:
                 <strong>Erreur agent IA :</strong> {genError}
               </div>
             )}
-
             {/* Progress */}
             <div style={{ display:"flex", alignItems:"center", gap:0, marginBottom:32 }}>
               {["Durée","Villes","Intérêts"].map((label, i) => (
@@ -399,9 +442,9 @@ Format:
               ) : (
                 <div style={{ display:"flex", flexWrap:"wrap", gap:8 }}>
                   {villes.map(v => (
-                    <button key={v.id} className={`ma-chip ${selectedCities.includes(v.nom) ? "on" : ""}`}
+                    <button key={v.id} className={`ma-chip ${selectedCities.includes(String(v.nom || v.name || '')) ? "on" : ""}`}
                       onClick={() => toggleCity(String(v.nom || v.name || ''))}>
-                      {(v.emoji || v.icon) || cityEmoji(String(v.nom || v.name || ''))} {String(v.nom || v.name || '')}
+                      {String(v.emoji || v.icon || cityEmoji(String(v.nom || v.name || '')))} {String(v.nom || v.name || '')}
                     </button>
                   ))}
                 </div>
@@ -442,7 +485,7 @@ Format:
               </button>
               <button className="ma-btn-primary" onClick={generate}
                 disabled={!selectedCities.length || !selectedCats.length || !N8N_WEBHOOK_URL}>
-                <Bot size={16}/> Générer l'itinéraire
+                <Bot size={16}/> Générer l&apos;itinéraire
               </button>
             </div>
           </div>
@@ -454,7 +497,7 @@ Format:
             <div style={{ width:80, height:80, borderRadius:24, background:"linear-gradient(135deg,#02AFCF,#053366)", display:"flex", alignItems:"center", justifyContent:"center", margin:"0 auto 24px", boxShadow:"0 8px 28px rgba(2,175,207,.45)", animation:"pulse 2s ease-in-out infinite" }}>
               <Bot size={38} color="white" strokeWidth={1.5}/>
             </div>
-            <h2 style={{ fontSize:22, fontWeight:800, color:"#053366", marginBottom:10 }}>L'agent IA prépare votre voyage...</h2>
+            <h2 style={{ fontSize:22, fontWeight:800, color:"#053366", marginBottom:10 }}>L&apos;agent IA prépare votre voyage...</h2>
             <p style={{ fontSize:14, color:"#6B7280", minHeight:22, marginBottom:32 }}>{loadingMsg}</p>
             <div style={{ display:"flex", justifyContent:"center", gap:8 }}>
               {[0,1,2].map(i => (
@@ -467,7 +510,6 @@ Format:
         {/* ══ ITINÉRAIRE ══ */}
         {step === "itineraire" && itinerary && (
           <div className="ma-fadein">
-            {/* Header itinéraire */}
             <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:20 }}>
               <div>
                 <h1 style={{ fontSize:22, fontWeight:800, color:"#053366", margin:"0 0 4px", letterSpacing:"-0.4px" }}>{itinerary.title}</h1>
@@ -505,7 +547,6 @@ Format:
                   {day.activities.map((act, ai) => (
                     <div key={act.id || ai}>
                       {editing?.dayIdx === activeDay && editing?.actIdx === ai ? (
-                        /* Panel alternatives */
                         <div style={{ border:"2px solid #02AFCF", borderRadius:14, padding:18, background:"rgba(2,175,207,.04)", marginBottom:10 }}>
                           <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:14 }}>
                             <p style={{ fontSize:13, fontWeight:700, color:"#02AFCF", textTransform:"uppercase", letterSpacing:"0.5px", margin:0 }}>
@@ -534,7 +575,6 @@ Format:
                           ))}
                         </div>
                       ) : (
-                        /* Carte activité */
                         <div className="ma-acard">
                           <div style={{ width:42, height:42, borderRadius:12, background:"rgba(2,175,207,.1)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:22, flexShrink:0 }}>
                             {act.icon || "🗺️"}
@@ -576,7 +616,8 @@ Format:
                         Jour {activeDay+2} <ChevronRight size={16}/>
                       </button>
                     ) : (
-                      <button className="ma-btn-primary" onClick={() => setStep("checkout")}>
+                      // ← Ouvre le CheckoutModal au lieu d'un step "checkout"
+                      <button className="ma-btn-primary" onClick={() => setShowCheckout(true)}>
                         <CheckCircle size={16}/> Réserver
                       </button>
                     )}
@@ -585,102 +626,88 @@ Format:
               );
             })()}
 
-            {/* Récap prix */}
-            <div style={{ marginTop:24, padding:"16px 20px", background:"white", border:"1px solid #EEF2FF", borderRadius:16, display:"flex", justifyContent:"space-between", alignItems:"center", flexWrap:"wrap", gap:12, boxShadow:"0 2px 8px rgba(5,51,102,.05)" }}>
-              <div>
-                <p style={{ fontSize:11, color:"#9CA3AF", fontWeight:600, textTransform:"uppercase", letterSpacing:"0.5px", margin:"0 0 3px" }}>Total estimé</p>
-                <p style={{ fontSize:24, fontWeight:900, color:"#053366", margin:0 }}>
-                  {totalPrice} <span style={{ fontSize:13, fontWeight:500, color:"#9CA3AF" }}>TND</span>
-                </p>
+            {/* Récap prix + bouton Finaliser */}
+            <div style={{ marginTop:24, padding:"16px 20px", background:"white", border:"1px solid #EEF2FF", borderRadius:16, boxShadow:"0 2px 8px rgba(5,51,102,.05)" }}>
+
+              {/* Feedback sauvegarde */}
+              {saveStatus === "ok" && (
+                <div style={{ display:"flex", alignItems:"center", gap:8, padding:"10px 14px", background:"#F0FDF4", border:"1px solid #BBF7D0", borderRadius:10, marginBottom:14, fontSize:13, color:"#15803D", fontWeight:600 }}>
+                  <CheckCircle size={15} strokeWidth={2.5}/> Itinéraire sauvegardé dans votre compte !
+                </div>
+              )}
+              {saveStatus === "error" && (
+                <div style={{ display:"flex", alignItems:"center", gap:8, padding:"10px 14px", background:"#FEF2F2", border:"1px solid #FCA5A5", borderRadius:10, marginBottom:14, fontSize:13, color:"#DC2626", fontWeight:600 }}>
+                  ✕ Erreur lors de la sauvegarde. Réessayez.
+                </div>
+              )}
+              {saveStatus === "login" && (
+                <div style={{ display:"flex", alignItems:"center", gap:8, padding:"10px 14px", background:"#FEF9C3", border:"1px solid #FDE68A", borderRadius:10, marginBottom:14, fontSize:13, color:"#A16207", fontWeight:600 }}>
+                  🔒 Connectez-vous pour sauvegarder votre itinéraire.
+                </div>
+              )}
+
+              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", flexWrap:"wrap", gap:12 }}>
+                <div>
+                  <p style={{ fontSize:11, color:"#9CA3AF", fontWeight:600, textTransform:"uppercase", letterSpacing:"0.5px", margin:"0 0 3px" }}>Total estimé</p>
+                  <p style={{ fontSize:24, fontWeight:900, color:"#053366", margin:0 }}>
+                    {totalPrice} <span style={{ fontSize:13, fontWeight:500, color:"#9CA3AF" }}>TND</span>
+                  </p>
+                </div>
+                <p style={{ fontSize:13, color:"#6B7280", margin:0 }}>{itinerary.days.length} jours · {selectedCities.join(", ")}</p>
+                <div style={{ display:"flex", gap:10, flexWrap:"wrap" }}>
+                  {/* Bouton Sauvegarder */}
+                  <button
+                    onClick={saveItinerary}
+                    disabled={saving || saveStatus === "ok"}
+                    style={{
+                      display:"inline-flex", alignItems:"center", gap:7,
+                      padding:"11px 20px",
+                      background: saveStatus === "ok" ? "#F0FDF4" : "white",
+                      color:      saveStatus === "ok" ? "#15803D"  : "#053366",
+                      border:`1.5px solid ${saveStatus === "ok" ? "#BBF7D0" : "#DCE5FF"}`,
+                      borderRadius:12, fontSize:14, fontWeight:700,
+                      cursor: saving || saveStatus === "ok" ? "not-allowed" : "pointer",
+                      fontFamily:"inherit", transition:"all .2s", opacity: saving ? 0.7 : 1,
+                    }}
+                    onMouseEnter={e => { if (saveStatus !== "ok" && !saving) (e.currentTarget as HTMLElement).style.borderColor="#02AFCF"; }}
+                    onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = saveStatus === "ok" ? "#BBF7D0" : "#DCE5FF"; }}
+                  >
+                    {saving ? (
+                      <><Loader2 size={15} style={{ animation:"spin .7s linear infinite" }}/> Sauvegarde...</>
+                    ) : saveStatus === "ok" ? (
+                      <><CheckCircle size={15}/> Sauvegardé !</>
+                    ) : (
+                      <>💾 Sauvegarder</>
+                    )}
+                  </button>
+                  {/* Bouton Finaliser */}
+                  <button className="ma-btn-primary" onClick={() => setShowCheckout(true)}>
+                    Finaliser <ChevronRight size={16}/>
+                  </button>
+                </div>
               </div>
-              <p style={{ fontSize:13, color:"#6B7280", margin:0 }}>{itinerary.days.length} jours · {selectedCities.join(", ")}</p>
-              <button className="ma-btn-primary" onClick={() => setStep("checkout")}>
-                Finaliser <ChevronRight size={16}/>
+            </div>
+
+            {/* Bouton reset discret */}
+            <div style={{ textAlign:"center", marginTop:16 }}>
+              <button onClick={resetAll}
+                style={{ background:"none", border:"none", cursor:"pointer", fontSize:12, color:"#9CA3AF", fontFamily:"inherit", display:"inline-flex", alignItems:"center", gap:5 }}>
+                <RotateCcw size={12}/> Recommencer depuis le début
               </button>
             </div>
           </div>
         )}
 
-        {/* ══ CHECKOUT ══ */}
-        {step === "checkout" && (
-          <div className="ma-fadein">
-            {!bookingDone ? (
-              <>
-                <div style={{ display:"flex", alignItems:"center", gap:12, marginBottom:24 }}>
-                  <div style={{ width:42, height:42, borderRadius:12, background:"linear-gradient(135deg,#02AFCF,#053366)", display:"flex", alignItems:"center", justifyContent:"center" }}>
-                    <Wallet size={20} color="white" strokeWidth={1.8}/>
-                  </div>
-                  <h1 style={{ fontSize:22, fontWeight:800, color:"#053366", margin:0 }}>Confirmer la réservation</h1>
-                </div>
-
-                {/* Récapitulatif */}
-                <div style={{ background:"white", border:"1px solid #EEF2FF", borderRadius:16, padding:"20px 22px", marginBottom:16, boxShadow:"0 2px 8px rgba(5,51,102,.05)" }}>
-                  <p style={{ fontSize:15, fontWeight:800, color:"#053366", margin:"0 0 16px" }}>Récapitulatif</p>
-                  {itinerary?.days.map((d, di) => (
-                    <div key={di} style={{ padding:"12px 0", borderBottom:"1px solid #EEF2FF" }}>
-                      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
-                        <p style={{ fontSize:14, fontWeight:700, color:"#053366", margin:0 }}>
-                          {d.emoji || cityEmoji(d.city)} Jour {d.day} — {d.city}
-                        </p>
-                        <span className="ma-badge-price">{d.activities.reduce((s,a)=>s+(Number(a.price)||0),0)} TND</span>
-                      </div>
-                      <p style={{ fontSize:12, color:"#9CA3AF", margin:"4px 0 0" }}>{d.activities.map(a=>a.name).join(" · ")}</p>
-                    </div>
-                  ))}
-                  <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginTop:16, paddingTop:16, borderTop:"2px solid #EEF2FF" }}>
-                    <p style={{ fontSize:15, fontWeight:700, color:"#053366", margin:0 }}>Total</p>
-                    <p style={{ fontSize:22, fontWeight:900, color:"#02AFCF", margin:0 }}>{totalPrice} TND</p>
-                  </div>
-                </div>
-
-                {/* Infos voyageur */}
-                <div style={{ background:"white", border:"1px solid #EEF2FF", borderRadius:16, padding:"20px 22px", marginBottom:24, boxShadow:"0 2px 8px rgba(5,51,102,.05)" }}>
-                  <p style={{ fontSize:15, fontWeight:800, color:"#053366", margin:"0 0 16px" }}>Vos informations</p>
-                  <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
-                    {[["Prénom","text"],["Nom","text"],["Email","email"],["Téléphone","tel"]].map(([f, t]) => (
-                      <div key={f}>
-                        <label style={{ fontSize:11, fontWeight:700, color:"#9CA3AF", textTransform:"uppercase", letterSpacing:"0.5px", display:"block", marginBottom:5 }}>{f}</label>
-                        <input type={t} placeholder={f} className="ma-input"/>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="ma-nav-footer">
-                  <button className="ma-btn-secondary" onClick={() => setStep("itineraire")}>
-                    <ChevronLeft size={16}/> Modifier
-                  </button>
-                  <button className="ma-btn-primary" onClick={() => setBookingDone(true)} style={{ padding:"13px 32px" }}>
-                    <CheckCircle size={16}/> Confirmer & Réserver
-                  </button>
-                </div>
-              </>
-            ) : (
-              /* Confirmation */
-              <div style={{ textAlign:"center", paddingTop:48 }}>
-                <div style={{ width:80, height:80, borderRadius:24, background:"linear-gradient(135deg,#02AFCF,#053366)", display:"flex", alignItems:"center", justifyContent:"center", margin:"0 auto 20px", boxShadow:"0 8px 28px rgba(2,175,207,.4)" }}>
-                  <CheckCircle size={38} color="white" strokeWidth={1.5}/>
-                </div>
-                <h1 style={{ fontSize:26, fontWeight:800, color:"#053366", marginBottom:10 }}>Voyage confirmé ! 🎉</h1>
-                <p style={{ fontSize:15, color:"#6B7280", marginBottom:28, lineHeight:1.6 }}>
-                  Votre itinéraire de {itinerary?.days.length} jours est réservé.<br/>
-                  Une confirmation a été envoyée par email.
-                </p>
-                <div style={{ background:"rgba(2,175,207,.07)", border:"1px solid rgba(2,175,207,.3)", borderRadius:14, padding:"18px 28px", marginBottom:28, display:"inline-block" }}>
-                  <p style={{ fontSize:11, fontWeight:700, color:"#02AFCF", textTransform:"uppercase", letterSpacing:"1px", margin:"0 0 6px" }}>N° de réservation</p>
-                  <p style={{ fontSize:24, fontWeight:900, color:"#053366", margin:0, letterSpacing:"2px" }}>{bookingCode}</p>
-                </div>
-                <div>
-                  <button className="ma-btn-secondary" onClick={resetAll}>
-                    <RotateCcw size={15}/> Planifier un nouveau voyage
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-
       </div>
+
+      {/* ══ CHECKOUT MODAL ══ */}
+      {showCheckout && itineraryAsExc && (
+        <CheckoutModal
+          exc={itineraryAsExc}
+          onClose={() => setShowCheckout(false)}
+        />
+      )}
+
     </div>
   );
 }
