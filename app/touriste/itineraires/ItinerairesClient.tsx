@@ -1,12 +1,14 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { createClient } from "@/lib/supabaseClient";
 import {
   Map, Plus, Trash2, Pencil, ChevronDown, ChevronUp,
   MapPin, Clock, CalendarDays, Coins, Sunrise, Sun,
-  Moon, Loader2, AlertCircle, FileText,
+  Moon, Loader2, AlertCircle, FileText, ShoppingCart,
 } from "lucide-react";
+import { useEffect } from "react";
+import CheckoutModal from "@/app/components/excursions/CheckoutModal";
 
 type ActivityItem = {
   id: string;
@@ -16,10 +18,6 @@ type ActivityItem = {
 };
 type DayPlan = { city: string; activities: ActivityItem[] };
 
-// plan stocké en jsonb — peut être :
-//   • DayPlan[]                          (Mode Libre)
-//   • { title: string; days: DayPlan[] } (Mode Assisté)
-//   • null / undefined / autre
 type RawPlan = DayPlan[] | { title?: string; days?: unknown[] } | null | undefined;
 
 type Itineraire = {
@@ -32,6 +30,16 @@ type Itineraire = {
   updated_at: string;
 };
 
+/* ── Type minimal pour CheckoutModal ── */
+type ExcursionForCheckout = {
+  id: string;
+  title: string;
+  city: string;
+  duration_hours: number;
+  price_per_person: number;
+  max_people: number;
+};
+
 const CITY_EMOJI: Record<string, string> = {
   Tunis:"🏛️", Sousse:"🏖️", Hammamet:"🌺", Djerba:"🏝️",
   Tozeur:"🌴", Douz:"🐪", Kairouan:"🕌", Sfax:"🫒",
@@ -40,26 +48,20 @@ const CITY_EMOJI: Record<string, string> = {
 const TIME_ICON  = { matin:<Sunrise size={11}/>, aprem:<Sun size={11}/>, soir:<Moon size={11}/> };
 const TIME_LABEL = { matin:"Matin", aprem:"Après-midi", soir:"Soir" };
 
-// ─── Normalise n'importe quel format de plan en DayPlan[] ────────────────────
 function normalizePlan(raw: RawPlan): DayPlan[] {
   if (!raw) return [];
-
-  // Tableau direct → Mode Libre
   if (Array.isArray(raw)) return raw as DayPlan[];
-
-  // Objet avec "days" → Mode Assisté { title, days:[{day,city,activities}] }
   if (typeof raw === "object" && Array.isArray((raw as { days?: unknown[] }).days)) {
     const days = (raw as { days: unknown[] }).days;
     return days.map((d: unknown) => {
       const dd = d as Record<string, unknown>;
-      // activities du Mode Assisté : { id, name, price, ... } → on adapte
       const acts: ActivityItem[] = Array.isArray(dd.activities)
         ? (dd.activities as Record<string, unknown>[]).map((a) => ({
-            id: String(a.id || ""),
+            id:   String(a.id || ""),
             note: String(a.description || ""),
             time: "matin" as const,
             excursion: {
-              title:            String(a.name || ""),
+              title:            String(a.name  || ""),
               city:             String(dd.city || ""),
               price_per_person: Number(a.price) || 0,
               duration_hours:   parseFloat(String(a.duration || "2")) || 2,
@@ -70,7 +72,6 @@ function normalizePlan(raw: RawPlan): DayPlan[] {
       return { city: String(dd.city || ""), activities: acts };
     });
   }
-
   return [];
 }
 
@@ -82,18 +83,17 @@ export default function ItinerairesClient() {
   const [deleting, setDeleting] = useState<string | null>(null);
   const [expanded, setExpanded] = useState<string | null>(null);
 
+  /* ── Modal réservation ── */
+  const [checkoutExc, setCheckoutExc] = useState<ExcursionForCheckout | null>(null);
+
   useEffect(() => {
     (async () => {
       setLoading(true); setError(null);
       const { data: { user }, error: uErr } = await sb.auth.getUser();
       if (uErr || !user) { setError("Non connecté — " + (uErr?.message || "")); setLoading(false); return; }
-
       const { data, error: fErr } = await sb
-        .from("itineraires")
-        .select("*")
-        .eq("user_id", user.id)
+        .from("itineraires").select("*").eq("user_id", user.id)
         .order("updated_at", { ascending: false });
-
       if (fErr) setError(fErr.message + " (code: " + fErr.code + ")");
       else      setItems(data || []);
       setLoading(false);
@@ -108,18 +108,26 @@ export default function ItinerairesClient() {
     setDeleting(null);
   };
 
-  // Utilise normalizePlan pour éviter le crash si plan n'est pas un tableau
   const totAct    = (raw: RawPlan) => normalizePlan(raw).reduce((s, d) => s + (d.activities?.length || 0), 0);
   const totBudget = (raw: RawPlan) => normalizePlan(raw).reduce(
     (s, d) => s + (d.activities || []).reduce((ss, a) => ss + (a.excursion?.price_per_person || 0), 0), 0
   );
-  const fmt = (iso: string) => new Date(iso).toLocaleDateString("fr-FR", { day:"2-digit", month:"short", year:"numeric" });
+  const fmt        = (iso: string) => new Date(iso).toLocaleDateString("fr-FR", { day:"2-digit", month:"short", year:"numeric" });
+  const isAssisted = (raw: RawPlan) => !!raw && !Array.isArray(raw) && typeof raw === "object" && "days" in raw;
 
-  // Détecte si l'itinéraire vient du Mode Assisté
-  const isAssisted = (raw: RawPlan) =>
-    !!raw && !Array.isArray(raw) && typeof raw === "object" && "days" in raw;
+  /* ── Ouvrir le checkout depuis une activité ── */
+  const openCheckout = (act: ActivityItem) => {
+    if (!act.excursion || !act.excursion.price_per_person) return;
+    setCheckoutExc({
+      id:               act.id,
+      title:            act.excursion.title,
+      city:             act.excursion.city,
+      duration_hours:   act.excursion.duration_hours,
+      price_per_person: act.excursion.price_per_person,
+      max_people:       20, // valeur par défaut
+    });
+  };
 
-  /* ── Loading ── */
   if (loading) return (
     <div style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:12, padding:"100px 0", color:"#9CA3AF", fontSize:14, fontFamily:"'DM Sans',system-ui" }}>
       <Loader2 size={22} color="#2B96A8" style={{ animation:"spin .8s linear infinite" }}/>
@@ -128,7 +136,6 @@ export default function ItinerairesClient() {
     </div>
   );
 
-  /* ── Error ── */
   if (error) return (
     <div style={{ margin:"40px 48px", padding:"18px 22px", background:"#FEF2F2", borderRadius:14, border:"1px solid #FCA5A5", display:"flex", alignItems:"center", gap:12, fontFamily:"'DM Sans',system-ui" }}>
       <AlertCircle size={18} color="#DC2626"/>
@@ -148,6 +155,9 @@ export default function ItinerairesClient() {
         .it-card{animation:fadeUp .22s ease both;transition:box-shadow .2s,transform .18s}
         .it-card:hover{box-shadow:0 8px 28px -8px rgba(43,150,168,.2)!important;transform:translateY(-2px)}
         .it-btn{transition:all .15s;cursor:pointer;font-family:inherit;border:none;outline:none}
+        .it-reserve-btn{display:inline-flex;align-items:center;gap:5px;padding:6px 12px;background:linear-gradient(135deg,#2B96A8,#1e7a8a);color:white;border:none;border-radius:20px;font-size:11px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .18s;flex-shrink:0}
+        .it-reserve-btn:hover{transform:translateY(-1px);box-shadow:0 4px 12px rgba(43,150,168,.4)}
+        .it-reserve-btn:disabled{background:#E5E7EB;color:#9CA3AF;cursor:not-allowed;transform:none;box-shadow:none}
       `}</style>
 
       {/* ── Header ── */}
@@ -192,10 +202,10 @@ export default function ItinerairesClient() {
       ) : (
         <div style={{ display:"flex", flexDirection:"column", gap:14 }}>
           {items.map((it, idx) => {
-            const plan   = normalizePlan(it.plan);  // ← toujours un tableau safe
-            const acts   = totAct(it.plan);
-            const budget = totBudget(it.plan);
-            const isOpen = expanded === it.id;
+            const plan     = normalizePlan(it.plan);
+            const acts     = totAct(it.plan);
+            const budget   = totBudget(it.plan);
+            const isOpen   = expanded === it.id;
             const assisted = isAssisted(it.plan);
 
             return (
@@ -215,7 +225,6 @@ export default function ItinerairesClient() {
                       <h3 style={{ fontSize:15, fontWeight:800, color:"#111827", margin:0 }}>
                         {it.nb_jours} jour{it.nb_jours > 1 ? "s" : ""} en Tunisie
                       </h3>
-                      {/* Badge Mode Assisté vs Libre */}
                       <span style={{ fontSize:10, fontWeight:700, padding:"2px 8px", borderRadius:20, background: assisted ? "rgba(139,92,246,.1)" : "rgba(43,150,168,.08)", color: assisted ? "#7C3AED" : "#2B96A8" }}>
                         {assisted ? "✨ IA" : "✏️ Libre"}
                       </span>
@@ -273,23 +282,31 @@ export default function ItinerairesClient() {
                       {plan.length === 0 ? (
                         <p style={{ fontSize:13, color:"#C4C9D0", fontStyle:"italic" }}>Aucune activité planifiée</p>
                       ) : plan.map((day, di) => (
-                        <div key={di} style={{ borderLeft:"3px solid #EFF9FB", paddingLeft:14, marginBottom:14 }}>
-                          <p style={{ fontSize:12, fontWeight:700, color:"#2B96A8", marginBottom:8, display:"flex", alignItems:"center", gap:6 }}>
+                        <div key={di} style={{ borderLeft:"3px solid #EFF9FB", paddingLeft:14, marginBottom:18 }}>
+                          <p style={{ fontSize:12, fontWeight:700, color:"#2B96A8", marginBottom:10, display:"flex", alignItems:"center", gap:6 }}>
                             <MapPin size={12}/>
                             Jour {di + 1} — {CITY_EMOJI[day.city] || "📍"} {day.city}
                           </p>
+
                           {(day.activities || []).length === 0 ? (
                             <p style={{ fontSize:12, color:"#D1D5DB", fontStyle:"italic" }}>Journée libre</p>
                           ) : (day.activities || []).map((act, ai) => (
-                            <div key={act.id || ai} style={{ display:"flex", alignItems:"center", gap:10, padding:"8px 12px", background:"#F9FAFB", borderRadius:12, marginBottom:6, border:"1px solid #F3F4F6" }}>
+                            <div key={act.id || ai}
+                              style={{ display:"flex", alignItems:"center", gap:10, padding:"10px 14px", background:"#F9FAFB", borderRadius:14, marginBottom:8, border:"1px solid #F3F4F6", transition:"border .15s" }}
+                              onMouseEnter={e => (e.currentTarget as HTMLElement).style.borderColor="#E0F0F5"}
+                              onMouseLeave={e => (e.currentTarget as HTMLElement).style.borderColor="#F3F4F6"}>
+
+                              {/* Photo */}
                               {act.excursion?.photos?.[0] && (
-                                <img src={act.excursion.photos[0]} alt="" style={{ width:34, height:34, borderRadius:8, objectFit:"cover", flexShrink:0 }}/>
+                                <img src={act.excursion.photos[0]} alt="" style={{ width:40, height:40, borderRadius:10, objectFit:"cover", flexShrink:0 }}/>
                               )}
+
+                              {/* Infos activité */}
                               <div style={{ flex:1, minWidth:0 }}>
-                                <p style={{ fontSize:13, fontWeight:600, color:"#111827", margin:0, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
+                                <p style={{ fontSize:13, fontWeight:700, color:"#111827", margin:"0 0 3px", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
                                   {act.excursion?.title || "—"}
                                 </p>
-                                <p style={{ fontSize:11, color:"#9CA3AF", margin:0, display:"flex", alignItems:"center", gap:6 }}>
+                                <p style={{ fontSize:11, color:"#9CA3AF", margin:0, display:"flex", alignItems:"center", gap:8, flexWrap:"wrap" }}>
                                   {act.time && (
                                     <span style={{ display:"flex", alignItems:"center", gap:3 }}>
                                       {TIME_ICON[act.time]} {TIME_LABEL[act.time]}
@@ -307,16 +324,29 @@ export default function ItinerairesClient() {
                                   )}
                                 </p>
                                 {act.note && (
-                                  <p style={{ fontSize:10, color:"#9CA3AF", margin:"2px 0 0", fontStyle:"italic", display:"flex", alignItems:"center", gap:3 }}>
+                                  <p style={{ fontSize:10, color:"#9CA3AF", margin:"3px 0 0", fontStyle:"italic", display:"flex", alignItems:"center", gap:3 }}>
                                     <FileText size={9}/> {act.note}
                                   </p>
                                 )}
                               </div>
+
+                              {/* Prix */}
                               {(act.excursion?.price_per_person ?? 0) > 0 && (
-                                <span style={{ fontSize:13, fontWeight:700, color:"#2B96A8", flexShrink:0, display:"flex", alignItems:"center", gap:4 }}>
+                                <span style={{ fontSize:13, fontWeight:700, color:"#2B96A8", display:"flex", alignItems:"center", gap:4, flexShrink:0 }}>
                                   <Coins size={12}/> {act.excursion.price_per_person} TND
                                 </span>
                               )}
+
+                              {/* ── Bouton Réserver ── */}
+                              <button
+                                className="it-reserve-btn"
+                                disabled={!act.excursion?.price_per_person}
+                                onClick={e => { e.stopPropagation(); openCheckout(act); }}
+                                title={act.excursion?.price_per_person ? "Réserver cette activité" : "Prix non disponible"}
+                              >
+                                <ShoppingCart size={11}/> Réserver
+                              </button>
+
                             </div>
                           ))}
                         </div>
@@ -328,6 +358,14 @@ export default function ItinerairesClient() {
             );
           })}
         </div>
+      )}
+
+      {/* ── Modal Réservation ── */}
+      {checkoutExc && (
+        <CheckoutModal
+          exc={checkoutExc}
+          onClose={() => setCheckoutExc(null)}
+        />
       )}
     </div>
   );
