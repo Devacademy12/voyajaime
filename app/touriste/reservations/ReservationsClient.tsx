@@ -8,7 +8,7 @@ import {
   CheckCircle, CreditCard, Wallet, Building2,
   ChevronRight, ChevronLeft, MessageSquare, X, Loader,
   ShieldCheck, ArrowRight, Ticket, Phone, Navigation,
-  AlertCircle,
+  AlertCircle, Trash2, AlertTriangle,
 } from "lucide-react";
 
 interface Excursion {
@@ -37,6 +37,129 @@ function fmtDate(d: string, short = false) {
   const dt = new Date(d + "T00:00:00");
   if (short) return dt.toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
   return dt.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+}
+
+/* ── Cancel Confirmation Modal ── */
+function CancelConfirmModal({ 
+  reservation, 
+  onClose, 
+  onConfirm 
+}: { 
+  reservation: Reservation; 
+  onClose: () => void; 
+  onConfirm: (id: string) => void;
+}) {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const supabase = createClient();
+
+  const handleCancel = async () => {
+    setLoading(true);
+    setError("");
+    
+    try {
+      // Check if cancellation is allowed (24h before)
+      const reservationDate = new Date(reservation.date + "T" + (reservation.time || "00:00:00"));
+      const now = new Date();
+      const hoursDiff = (reservationDate.getTime() - now.getTime()) / (1000 * 3600);
+      
+      if (hoursDiff < 24 && reservation.status !== "pending") {
+        setError("Annulation impossible : moins de 24h avant l'excursion");
+        setLoading(false);
+        return;
+      }
+      
+      const { error: updateErr } = await supabase
+        .from("reservations")
+        .update({ status: "cancelled" })
+        .eq("id", reservation.id);
+      
+      if (updateErr) throw updateErr;
+      
+      onConfirm(reservation.id);
+      onClose();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Erreur lors de l'annulation");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div style={{
+      position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)",
+      zIndex: 2100, display: "flex", alignItems: "center", justifyContent: "center", padding: "16px"
+    }} onClick={e => { if (e.target === e.currentTarget && !loading) onClose(); }}>
+      <div style={{
+        background: "white", borderRadius: 24, width: "100%", maxWidth: 400,
+        padding: "28px 24px", textAlign: "center"
+      }}>
+        <div style={{
+          width: 56, height: 56, borderRadius: "50%", background: "#FEE2E2",
+          display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px"
+        }}>
+          <AlertTriangle size={28} color="#DC2626" strokeWidth={1.5} />
+        </div>
+        
+        <h3 style={{ fontSize: 20, fontWeight: 800, color: "#111827", marginBottom: 8 }}>
+          Annuler la réservation
+        </h3>
+        <p style={{ fontSize: 14, color: "#6B7280", marginBottom: 16, lineHeight: 1.5 }}>
+          Êtes-vous sûr de vouloir annuler cette réservation pour<br/>
+          <strong>{reservation.excursion?.title}</strong> du {fmtDate(reservation.date)} ?
+        </p>
+        
+        {reservation.status === "pending" && (
+          <div style={{
+            background: "#FEF3C7", border: "1px solid #FDE68A", borderRadius: 12,
+            padding: "10px 12px", marginBottom: 20, fontSize: 12, color: "#92400E"
+          }}>
+            <ShieldCheck size={14} style={{ display: "inline", marginRight: 6, verticalAlign: "middle" }} />
+            Annulation gratuite (réservation en attente)
+          </div>
+        )}
+        
+        {error && (
+          <div style={{
+            display: "flex", gap: 8, padding: "10px 12px", background: "#FEF2F2",
+            border: "1px solid #FCA5A5", borderRadius: 10, marginBottom: 16, fontSize: 13, color: "#DC2626"
+          }}>
+            <AlertCircle size={14} style={{ flexShrink: 0 }} />
+            <span>{error}</span>
+          </div>
+        )}
+        
+        <div style={{ display: "flex", gap: 12 }}>
+          <button
+            onClick={onClose}
+            disabled={loading}
+            style={{
+              flex: 1, padding: "12px", background: "#F3F4F6", color: "#374151",
+              border: "none", borderRadius: 12, fontSize: 14, fontWeight: 600,
+              cursor: loading ? "not-allowed" : "pointer", fontFamily: "inherit"
+            }}
+          >
+            Retour
+          </button>
+          <button
+            onClick={handleCancel}
+            disabled={loading}
+            style={{
+              flex: 1, padding: "12px", background: "#DC2626", color: "white",
+              border: "none", borderRadius: 12, fontSize: 14, fontWeight: 700,
+              cursor: loading ? "not-allowed" : "pointer", fontFamily: "inherit",
+              display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+              opacity: loading ? 0.7 : 1
+            }}
+          >
+            {loading ? <Loader size={16} style={{ animation: "spin 1s linear infinite" }} /> : <Trash2 size={14} />}
+            {loading ? "Annulation..." : "Confirmer l'annulation"}
+          </button>
+        </div>
+      </div>
+      <style>{`@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}`}</style>
+    </div>
+  );
 }
 
 /* ── Checkout Modal (inchangé) ── */
@@ -263,16 +386,22 @@ function CheckoutModal({ reservation, onClose, onPaid }: {
 /* ─────────────────────────────────────────────
    RESERVATION CARD — layout VERTICAL pour grille 3 col
 ───────────────────────────────────────────── */
-function ReservationCard({ r, onPay }: { r: Reservation; onPay: () => void }) {
+function ReservationCard({ r, onPay, onCancel }: { r: Reservation; onPay: () => void; onCancel: () => void }) {
   const exc   = r.excursion;
   const s     = STATUS_CONFIG[r.status] ?? STATUS_CONFIG.pending;
   const photo = exc?.photos?.[0];
   const paid  = r.payment_status === "paid" || r.status === "completed";
+  const isCancelled = r.status === "cancelled";
+  const canCancel = !isCancelled && (r.status === "pending" || r.status === "confirmed");
 
   return (
-    <div style={{ background:"white", borderRadius:20, border:"1px solid #E5E7EB", overflow:"hidden", display:"flex", flexDirection:"column", boxShadow:"0 1px 4px rgba(0,0,0,.05)", transition:"box-shadow .2s, transform .2s" }}
-      onMouseEnter={e=>{ const el=e.currentTarget as HTMLElement; el.style.boxShadow="0 10px 32px rgba(0,0,0,.1)"; el.style.transform="translateY(-2px)"; }}
-      onMouseLeave={e=>{ const el=e.currentTarget as HTMLElement; el.style.boxShadow="0 1px 4px rgba(0,0,0,.05)"; el.style.transform="none"; }}
+    <div style={{ 
+      background:"white", borderRadius:20, border:"1px solid #E5E7EB", overflow:"hidden", 
+      display:"flex", flexDirection:"column", boxShadow:"0 1px 4px rgba(0,0,0,.05)", 
+      transition:"box-shadow .2s, transform .2s", opacity: isCancelled ? 0.7 : 1
+    }}
+      onMouseEnter={e=>{ const el=e.currentTarget as HTMLElement; if(!isCancelled){ el.style.boxShadow="0 10px 32px rgba(0,0,0,.1)"; el.style.transform="translateY(-2px)"; } }}
+      onMouseLeave={e=>{ const el=e.currentTarget as HTMLElement; if(!isCancelled){ el.style.boxShadow="0 1px 4px rgba(0,0,0,.05)"; el.style.transform="none"; } }}
     >
       {/* ── Photo (haut) ── */}
       <div style={{ position:"relative", height:220, flexShrink:0, overflow:"hidden", background:"linear-gradient(135deg,#2B96A8,#0e7490)" }}>
@@ -290,7 +419,7 @@ function ReservationCard({ r, onPay }: { r: Reservation; onPay: () => void }) {
         </span>
 
         {/* Paid badge — haut droit */}
-        {paid && (
+        {paid && !isCancelled && (
           <span style={{ position:"absolute", top:12, right:12, display:"inline-flex", alignItems:"center", gap:5, padding:"4px 10px", background:"#D1FAE5", border:"1px solid #6EE7B7", borderRadius:99, fontSize:11, fontWeight:700, color:"#065F46" }}>
             <CreditCard size={10} strokeWidth={2.5} /> Payée
           </span>
@@ -338,18 +467,39 @@ function ReservationCard({ r, onPay }: { r: Reservation; onPay: () => void }) {
         </div>
       </div>
 
-      {/* ── Pay CTA ── */}
-      {!paid && (
-        <div style={{ borderTop:"1px solid #F3F4F6", padding:"12px 16px" }}>
-          <button onClick={onPay}
-            style={{ width:"100%", padding:"11px 16px", background:"#111827", color:"white", border:"none", borderRadius:12, fontSize:13, fontWeight:800, cursor:"pointer", fontFamily:"inherit", display:"flex", alignItems:"center", justifyContent:"center", gap:7, transition:"background .2s" }}
-            onMouseEnter={e=>(e.currentTarget as HTMLElement).style.background="#1f2937"}
-            onMouseLeave={e=>(e.currentTarget as HTMLElement).style.background="#111827"}
-          >
-            <CreditCard size={13} strokeWidth={2} />
-            Payer maintenant · {r.total_price} TND
-            <ArrowRight size={13} />
-          </button>
+      {/* ── Buttons (Pay & Cancel) ── */}
+      {!isCancelled && (
+        <div style={{ borderTop:"1px solid #F3F4F6", padding:"12px 16px", display:"flex", gap:8 }}>
+          {!paid && (
+            <button onClick={onPay}
+              style={{ flex: 2, padding:"11px 16px", background:"#111827", color:"white", border:"none", borderRadius:12, fontSize:13, fontWeight:800, cursor:"pointer", fontFamily:"inherit", display:"flex", alignItems:"center", justifyContent:"center", gap:7, transition:"background .2s" }}
+              onMouseEnter={e=>(e.currentTarget as HTMLElement).style.background="#1f2937"}
+              onMouseLeave={e=>(e.currentTarget as HTMLElement).style.background="#111827"}
+            >
+              <CreditCard size={13} strokeWidth={2} />
+              Payer · {r.total_price} TND
+              <ArrowRight size={13} />
+            </button>
+          )}
+          {canCancel && (
+            <button onClick={onCancel}
+              style={{ flex: 1, padding:"11px 16px", background:"#FEE2E2", color:"#DC2626", border:"1px solid #FCA5A5", borderRadius:12, fontSize:13, fontWeight:700, cursor:"pointer", fontFamily:"inherit", display:"flex", alignItems:"center", justifyContent:"center", gap:7, transition:"all .2s" }}
+              onMouseEnter={e=>{ const btn=e.currentTarget as HTMLElement; btn.style.background="#FECACA"; btn.style.borderColor="#F87171"; }}
+              onMouseLeave={e=>{ const btn=e.currentTarget as HTMLElement; btn.style.background="#FEE2E2"; btn.style.borderColor="#FCA5A5"; }}
+            >
+              <Trash2 size={13} strokeWidth={1.5} />
+              Annuler
+            </button>
+          )}
+        </div>
+      )}
+      
+      {/* Annulé badge if cancelled */}
+      {isCancelled && (
+        <div style={{ borderTop:"1px solid #F3F4F6", padding:"12px 16px", background:"#F9FAFB", textAlign:"center" }}>
+          <span style={{ fontSize:12, color:"#9CA3AF", display:"flex", alignItems:"center", justifyContent:"center", gap:6 }}>
+            <AlertCircle size={12} /> Réservation annulée
+          </span>
         </div>
       )}
     </div>
@@ -368,13 +518,18 @@ export default function ReservationsClient({
 }) {
   const [reservations, setReservations] = useState(init);
   const [checkout, setCheckout] = useState<Reservation | null>(null);
+  const [cancelReservation, setCancelReservation] = useState<Reservation | null>(null);
 
   const total     = reservations.length;
   const pending   = reservations.filter(r => r.status === "pending").length;
   const confirmed = reservations.filter(r => r.status === "confirmed").length;
 
   function handlePaid(id: string) {
-    setReservations(prev => prev.map(r => r.id === id ? { ...r, payment_status: "paid" } : r));
+    setReservations(prev => prev.map(r => r.id === id ? { ...r, payment_status: "paid", status: "confirmed" } : r));
+  }
+
+  function handleCancelled(id: string) {
+    setReservations(prev => prev.map(r => r.id === id ? { ...r, status: "cancelled" } : r));
   }
 
   return (
@@ -417,13 +572,26 @@ export default function ReservationsClient({
         /* ── GRILLE 3 COLONNES ── */
         <div style={{ display:"grid", gridTemplateColumns:"repeat(3, 1fr)", gap:20 }}>
           {reservations.map(r => (
-            <ReservationCard key={r.id} r={r} onPay={() => setCheckout(r)} />
+            <ReservationCard 
+              key={r.id} 
+              r={r} 
+              onPay={() => setCheckout(r)} 
+              onCancel={() => setCancelReservation(r)}
+            />
           ))}
         </div>
       )}
 
       {checkout && (
         <CheckoutModal reservation={checkout} onClose={() => setCheckout(null)} onPaid={handlePaid} />
+      )}
+      
+      {cancelReservation && (
+        <CancelConfirmModal 
+          reservation={cancelReservation} 
+          onClose={() => setCancelReservation(null)} 
+          onConfirm={handleCancelled}
+        />
       )}
     </div>
   );
