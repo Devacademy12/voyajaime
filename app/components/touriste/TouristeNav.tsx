@@ -53,7 +53,7 @@ export default function TouristeNav({ userName, favCount = 0 }: { userName?: str
   const links = [
     { href: ROUTES.touriste.dashboard,    icon: <LayoutDashboard size={16}/>, label: "Accueil" },
     { href: ROUTES.excursions,            icon: <Mountain size={16}/>,        label: "Excursions" },
-    { href: ROUTES.touriste.itineraires,   icon: <Map size={16}/>,             label: "Mon itinéraire" },
+    { href: ROUTES.touriste.itineraires,  icon: <Map size={16}/>,             label: "Mon itinéraire" },
     { href: ROUTES.touriste.reservations, icon: <CalendarDays size={16}/>,    label: "Mes réservations" },
     { href: ROUTES.touriste.favoris,      icon: <Heart size={16}/>,           label: favCount > 0 ? `Mes favoris (${favCount})` : "Mes favoris", isFavoris: true },
     { href: ROUTES.touriste.messages,     icon: <MessageCircle size={16}/>,   label: "Messages", badge: unreadMsg },
@@ -62,6 +62,8 @@ export default function TouristeNav({ userName, favCount = 0 }: { userName?: str
   const isActive = (href: string) => pathname === href || pathname.startsWith(href + "/");
   const initial  = userName ? userName.charAt(0).toUpperCase() : "T";
 
+  const NAV_HEIGHT = 76;
+
   return (
     <>
       <style>{`
@@ -69,7 +71,7 @@ export default function TouristeNav({ userName, favCount = 0 }: { userName?: str
         .tnav *{box-sizing:border-box;margin:0;padding:0}
         .tnav{font-family:'DM Sans',sans-serif}
         .tlink{
-          display:flex;align-items:center;gap:6px;padding:7px 13px;border-radius:20px;
+          display:flex;align-items:center;gap:6px;padding:8px 14px;border-radius:22px;
           text-decoration:none;font-size:13px;font-weight:500;color:#053366;
           transition:all 0.18s;white-space:nowrap;border:1px solid transparent;position:relative;
         }
@@ -77,10 +79,10 @@ export default function TouristeNav({ userName, favCount = 0 }: { userName?: str
         .tlink.on{background:#DCE5FF;color:#02AFCF!important;font-weight:700;border-color:rgba(2,175,207,0.25)}
         .tlink.on-fav{background:#DCE5FF;color:#259FFC!important;font-weight:700;border-color:rgba(37,159,252,0.3)}
         .av{
-          width:38px;height:38px;border-radius:50%;
+          width:42px;height:42px;border-radius:50%;
           background:linear-gradient(135deg,#02AFCF,#053366);
           color:white;border:2px solid rgba(2,175,207,0.3);cursor:pointer;
-          font-size:15px;font-weight:800;font-family:'DM Sans',sans-serif;
+          font-size:16px;font-weight:800;font-family:'DM Sans',sans-serif;
           display:flex;align-items:center;justify-content:center;
           transition:transform 0.15s,box-shadow 0.15s;flex-shrink:0;
           box-shadow:0 3px 10px rgba(2,175,207,0.35);overflow:hidden;padding:0;
@@ -103,37 +105,41 @@ export default function TouristeNav({ userName, favCount = 0 }: { userName?: str
         .tnav-links{display:flex;align-items:center;gap:2px;flex:1;justify-content:center}
         .tnav-hamburger{
           display:none;background:none;border:1px solid #E8EFFE;
-          cursor:pointer;padding:7px;border-radius:10px;color:#053366;
+          cursor:pointer;padding:8px;border-radius:10px;color:#053366;
           align-items:center;justify-content:center;
         }
         .tnav-mobile{
-          position:fixed;top:64px;left:0;right:0;background:white;
+          position:fixed;top:${NAV_HEIGHT}px;left:0;right:0;background:white;
           border-bottom:1px solid #DCE5FF;padding:12px 16px 16px;z-index:199;
           box-shadow:0 8px 24px rgba(5,51,102,0.08);
           display:flex;flex-direction:column;gap:4px;
-          max-height:calc(100vh - 64px);overflow-y:auto;
+          max-height:calc(100vh - ${NAV_HEIGHT}px);overflow-y:auto;
         }
         .tnav-mobile.closed{display:none}
-        .tnav-mobile .tlink{font-size:14px;padding:10px 14px;border-radius:12px;white-space:normal}
+        .tnav-mobile .tlink{font-size:14px;padding:11px 14px;border-radius:12px;white-space:normal}
         @media(max-width:1024px){
           .tnav-links{display:none}
           .tnav-hamburger{display:flex}
         }
+        @media(max-width:480px){
+          .tnav-header{padding:0 16px!important}
+        }
       `}</style>
 
-      <header className="tnav" style={{
-        position:"sticky", top:0, zIndex:200, height:64,
+      <header className="tnav tnav-header" style={{
+        position:"sticky", top:0, zIndex:200,
+        height:NAV_HEIGHT,
         background:"rgba(255,255,255,0.98)", backdropFilter:"blur(20px)",
         borderBottom: scrolled ? "1px solid #E8EFFE" : "1px solid #F0F4FF",
         boxShadow: scrolled ? "0 2px 16px rgba(5,51,102,0.07)" : "none",
         transition:"box-shadow 0.25s, border-color 0.25s",
         display:"flex", alignItems:"center", justifyContent:"space-between",
-        padding:"0 24px", gap:16,
+        padding:"0 32px", gap:16,
       }}>
 
         {/* Logo */}
         <Link href={ROUTES.touriste.dashboard} style={{ display:"flex", alignItems:"center", textDecoration:"none", flexShrink:0 }}>
-          <img src="/logo.png" alt="Voyaj'aime" style={{ height:36, width:"auto", objectFit:"contain", display:"block" }}/>
+          <img src="/logo.png" alt="Voyaj'aime" style={{ height:44, width:"auto", objectFit:"contain", display:"block" }}/>
         </Link>
 
         {/* Desktop links */}
@@ -170,10 +176,9 @@ export default function TouristeNav({ userName, favCount = 0 }: { userName?: str
               <>
                 <div style={{ position:"fixed", inset:0, zIndex:399 }} onClick={() => setMenuOpen(false)}/>
                 <div className="drop">
-                  {/* Header dropdown */}
                   <div style={{ padding:"10px 14px 12px", borderBottom:"1px solid #E8EFFE", marginBottom:4 }}>
                     <div style={{ display:"flex", alignItems:"center", gap:10 }}>
-                      <div style={{ width:34, height:34, borderRadius:"50%", background:"linear-gradient(135deg,#02AFCF,#053366)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:14, fontWeight:800, color:"white", flexShrink:0, overflow:"hidden" }}>
+                      <div style={{ width:36, height:36, borderRadius:"50%", background:"linear-gradient(135deg,#02AFCF,#053366)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:14, fontWeight:800, color:"white", flexShrink:0, overflow:"hidden" }}>
                         {avatarUrl ? <img src={avatarUrl} alt={initial} style={{ width:"100%", height:"100%", objectFit:"cover" }}/> : initial}
                       </div>
                       <div>
@@ -184,7 +189,6 @@ export default function TouristeNav({ userName, favCount = 0 }: { userName?: str
                       </div>
                     </div>
                   </div>
-                  {/* Liens dropdown */}
                   <Link href={ROUTES.touriste.profil}       className="ddi" onClick={() => setMenuOpen(false)}><User size={14}/> Mon profil</Link>
                   <Link href={ROUTES.touriste.favoris}      className="ddi" onClick={() => setMenuOpen(false)}>
                     <Heart size={14}/> Mes favoris

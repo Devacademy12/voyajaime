@@ -29,55 +29,39 @@ export default function TouristeDashboardClient({ profile, reservations, favoris
   ];
 
   return (
-    <div style={{ fontFamily: "'DM Sans',system-ui,sans-serif" }}>
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@400;500;600;700;800&display=swap');
-        @keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
-        .dash-card{animation:fadeUp .3s ease both;transition:transform .2s,box-shadow .2s}
-        .dash-card:hover{transform:translateY(-3px);box-shadow:0 10px 28px -8px rgba(0,0,0,.12)!important}
-        .qa-card{animation:fadeUp .3s ease both;transition:all .2s;text-decoration:none;display:block}
-        .qa-card:hover .qa-inner{transform:translateY(-3px);box-shadow:0 12px 30px -8px rgba(0,0,0,.15)!important}
-
-        .dash-wrap { padding: 40px 48px 80px; max-width: 1160px; margin: 0 auto; width: 100%; }
-        .qa-grid   { display: grid; grid-template-columns: repeat(3,1fr); gap: 16px; margin-bottom: 40px; }
-        .stats-grid{ display: grid; grid-template-columns: repeat(2,1fr); gap: 16px; max-width: 520px; margin-bottom: 40px; }
-        .resa-row  { display: flex; justify-content: space-between; align-items: center; padding: 14px 16px; background: #F9FAFB; border-radius: 14px; border: 1px solid #F3F4F6; }
-
-        @media (max-width: 900px) {
-          .qa-grid { grid-template-columns: repeat(3,1fr); gap: 12px; }
-          .dash-wrap { padding: 28px 24px 60px; }
-        }
-        @media (max-width: 600px) {
-          .qa-grid   { grid-template-columns: 1fr; gap: 10px; }
-          .stats-grid{ grid-template-columns: repeat(2,1fr); max-width:100%; }
-          .dash-wrap { padding: 20px 16px 60px; }
-          .resa-row  { flex-direction: column; align-items: flex-start; gap: 10px; }
-          .resa-right{ align-self: flex-end; }
-        }
-      `}</style>
-
-      <div className="dash-wrap">
+    <div className="font-sans">
+      {/* Police + animations déjà dans ton CSS global */}
+      <div className="page-wrapper" style={{ padding: "40px 48px 80px", maxWidth: 1160 }}>
         {/* Header */}
-        <div style={{ marginBottom: 36, animation: "fadeUp .3s ease" }}>
-          <h1 style={{ fontFamily: "'Playfair Display',serif", fontSize: "clamp(26px,4vw,36px)", fontWeight: 900, color: "#111827", margin: 0, letterSpacing: "-1px" }}>
+        <div className="mb-9" style={{ animation: "fadeUp .3s ease" }}>
+          <h1 className="font-serif text-4xl font-black tracking-tight text-gray-900 m-0" style={{ fontFamily: "'Playfair Display',serif", fontSize: "clamp(26px,4vw,36px)" }}>
             Bonjour, {firstName} 👋
           </h1>
-          <p style={{ color: "#9CA3AF", marginTop: 8, fontSize: 15 }}>
+          <p className="text-gray-400 mt-2 text-base">
             Prêt pour votre prochaine aventure en Tunisie ?
           </p>
         </div>
 
-        {/* Quick Actions */}
-        <div className="qa-grid">
+        {/* Quick Actions - Grid 3 colonnes */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-10">
           {quickActions.map((a, i) => (
-            <a key={a.title} href={a.href} className="qa-card">
-              <div className="qa-inner" style={{ background: "white", borderRadius: 20, border: "1px solid #E5E7EB", padding: "24px 20px", boxShadow: "0 2px 8px rgba(0,0,0,.04)", animationDelay: `${i * .08}s`, transition: "all .2s" }}>
-                <div style={{ width: 48, height: 48, borderRadius: 14, background: `${a.accent}12`, border: `1.5px solid ${a.accent}22`, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 14 }}>
+            <a key={a.title} href={a.href} className="block no-underline group">
+              <div 
+                className="card-hover bg-white rounded-2xl p-6 shadow-sm" 
+                style={{ animationDelay: `${i * .08}s`, animation: "fadeUp .3s ease both" }}
+              >
+                <div 
+                  className="w-12 h-12 rounded-xl flex items-center justify-center mb-3.5"
+                  style={{ background: `${a.accent}12`, border: `1.5px solid ${a.accent}22` }}
+                >
                   {a.icon}
                 </div>
-                <h3 style={{ fontSize: 15, fontWeight: 800, color: "#111827", margin: "0 0 4px" }}>{a.title}</h3>
-                <p style={{ fontSize: 13, color: "#9CA3AF", margin: "0 0 16px" }}>{a.desc}</p>
-                <span style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "5px 12px", borderRadius: 20, background: `${a.accent}12`, color: a.accent, fontSize: 12, fontWeight: 700 }}>
+                <h3 className="text-base font-extrabold text-gray-900 m-0 mb-1">{a.title}</h3>
+                <p className="text-sm text-gray-400 m-0 mb-4">{a.desc}</p>
+                <span 
+                  className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-bold"
+                  style={{ background: `${a.accent}12`, color: a.accent }}
+                >
                   Commencer <ChevronRight size={12}/>
                 </span>
               </div>
@@ -85,20 +69,26 @@ export default function TouristeDashboardClient({ profile, reservations, favoris
           ))}
         </div>
 
-        {/* Stats */}
-        <div className="stats-grid">
+        {/* Stats - Grid 2 colonnes */}
+        <div className="grid grid-cols-2 gap-4 max-w-md mb-10">
           {[
             { label: "Mes réservations", href: "/touriste/reservations", icon: <CalendarDays size={20} color="#2B96A8"/>, count: reservations.length, accent: "#2B96A8" },
             { label: "Mes favoris",      href: "/touriste/favoris",      icon: <Heart size={20} color="#EF4444"/>,        count: favorisCount,         accent: "#EF4444" },
           ].map((s, i) => (
-            <a key={s.label} href={s.href} style={{ textDecoration: "none" }}>
-              <div className="dash-card" style={{ background: "white", borderRadius: 18, border: "1px solid #E5E7EB", padding: "18px 20px", display: "flex", alignItems: "center", gap: 14, boxShadow: "0 2px 8px rgba(0,0,0,.04)", animationDelay: `${.25 + i * .08}s` }}>
-                <div style={{ width: 44, height: 44, borderRadius: 12, background: `${s.accent}10`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+            <a key={s.label} href={s.href} className="no-underline">
+              <div 
+                className="card-hover bg-white rounded-xl p-5 flex items-center gap-3.5 shadow-sm"
+                style={{ animationDelay: `${.25 + i * .08}s`, animation: "fadeUp .3s ease both" }}
+              >
+                <div 
+                  className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0"
+                  style={{ background: `${s.accent}10` }}
+                >
                   {s.icon}
                 </div>
                 <div>
-                  <p style={{ fontSize: 22, fontWeight: 900, color: "#111827", margin: 0, lineHeight: 1 }}>{s.count}</p>
-                  <p style={{ fontSize: 12, color: "#9CA3AF", margin: "3px 0 0", fontWeight: 500 }}>{s.label}</p>
+                  <p className="text-2xl font-black text-gray-900 m-0 leading-none">{s.count}</p>
+                  <p className="text-xs text-gray-400 mt-0.5 font-medium m-0">{s.label}</p>
                 </div>
               </div>
             </a>
@@ -107,35 +97,35 @@ export default function TouristeDashboardClient({ profile, reservations, favoris
 
         {/* Réservations récentes */}
         {reservations.length > 0 && (
-          <div style={{ background: "white", borderRadius: 24, border: "1px solid #E5E7EB", padding: "24px 28px", boxShadow: "0 2px 10px rgba(0,0,0,.04)", animation: "fadeUp .3s .35s ease both" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
-              <h2 style={{ fontSize: 16, fontWeight: 800, color: "#111827", margin: 0, display: "flex", alignItems: "center", gap: 8 }}>
+          <div className="card rounded-2xl p-6 sm:p-7 shadow-sm" style={{ animation: "fadeUp .3s .35s ease both" }}>
+            <div className="flex justify-between items-center mb-5">
+              <h2 className="text-base font-extrabold text-gray-900 m-0 flex items-center gap-2">
                 <CalendarDays size={16} color="#2B96A8"/> Réservations récentes
               </h2>
-              <a href="/touriste/reservations" style={{ fontSize: 13, color: "#2B96A8", textDecoration: "none", fontWeight: 600, display: "flex", alignItems: "center", gap: 4, whiteSpace: "nowrap" }}>
+              <a href="/touriste/reservations" className="text-sm text-teal no-underline font-semibold flex items-center gap-1 whitespace-nowrap">
                 Tout voir <ChevronRight size={13}/>
               </a>
             </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            <div className="flex flex-col gap-2.5">
               {reservations.map((r) => {
                 const exc    = r.excursion as Record<string, unknown> | null;
                 const status = String(r.status);
                 const sc     = STATUS_COLOR[status] || { bg: "#F3F4F6", color: "#6B7280" };
                 return (
-                  <div key={String(r.id)} className="resa-row">
-                    <div style={{ minWidth: 0, flex: 1 }}>
-                      <p style={{ fontSize: 14, fontWeight: 700, color: "#111827", margin: "0 0 4px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  <div key={String(r.id)} className="table-row !p-3.5 flex-col sm:flex-row items-start sm:items-center gap-2.5 sm:gap-0">
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-bold text-gray-900 m-0 mb-1 truncate">
                         {exc?.title as string || "Excursion"}
                       </p>
-                      <p style={{ fontSize: 12, color: "#9CA3AF", margin: 0, display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-                        <span style={{ display: "flex", alignItems: "center", gap: 3 }}><MapPin size={10}/>{exc?.city as string}</span>
-                        <span style={{ display: "flex", alignItems: "center", gap: 3 }}><CalendarDays size={10}/>{String(r.date)}</span>
-                        <span style={{ fontFamily: "monospace" }}>#{String(r.booking_code)}</span>
+                      <p className="text-xs text-gray-400 m-0 flex items-center gap-2 flex-wrap">
+                        <span className="flex items-center gap-0.5"><MapPin size={10}/>{exc?.city as string}</span>
+                        <span className="flex items-center gap-0.5"><CalendarDays size={10}/>{String(r.date)}</span>
+                        <span className="font-mono">#{String(r.booking_code)}</span>
                       </p>
                     </div>
-                    <div className="resa-right" style={{ display: "flex", alignItems: "center", gap: 12, flexShrink: 0, marginLeft: 12 }}>
-                      <span style={{ fontWeight: 800, color: "#111827", fontSize: 15 }}>{Number(r.total_price)} <span style={{ fontSize: 11, fontWeight: 500, color: "#9CA3AF" }}>TND</span></span>
-                      <span style={{ padding: "4px 10px", borderRadius: 20, background: sc.bg, color: sc.color, fontSize: 11, fontWeight: 700, whiteSpace: "nowrap" }}>
+                    <div className="flex items-center gap-3 shrink-0 sm:ml-3 self-end sm:self-auto">
+                      <span className="font-extrabold text-gray-900 text-base">{Number(r.total_price)} <span className="text-xs font-medium text-gray-400">TND</span></span>
+                      <span className="badge !rounded-full px-2.5 py-1 text-xs font-bold whitespace-nowrap" style={{ background: sc.bg, color: sc.color }}>
                         {STATUS_LABEL[status] || status}
                       </span>
                     </div>
@@ -148,11 +138,13 @@ export default function TouristeDashboardClient({ profile, reservations, favoris
 
         {/* Empty state */}
         {reservations.length === 0 && (
-          <div style={{ textAlign: "center", padding: "48px 20px", background: "white", borderRadius: 24, border: "1px solid #E5E7EB" }}>
-            <Mountain size={48} style={{ color: "#E5E7EB", margin: "0 auto 16px" }} />
-            <p style={{ fontSize: 16, fontWeight: 700, color: "#374151", marginBottom: 8 }}>Aucune réservation pour l&apos;instant</p>
-            <p style={{ fontSize: 14, color: "#9CA3AF", marginBottom: 24 }}>Explorez nos excursions et planifiez votre premier voyage !</p>
-            <a href="/excursions" style={{ padding: "11px 24px", background: "#2B96A8", color: "white", borderRadius: 12, textDecoration: "none", fontSize: 14, fontWeight: 700, display: "inline-flex", alignItems: "center", gap: 8 }}>
+          <div className="empty-state !py-12">
+            <div className="empty-state-icon w-16 h-16 !bg-gray-100">
+              <Mountain size={48} className="text-gray-300" />
+            </div>
+            <p className="empty-state-title text-lg">Aucune réservation pour l&apos;instant</p>
+            <p className="empty-state-text text-sm">Explorez nos excursions et planifiez votre premier voyage !</p>
+            <a href="/excursions" className="btn btn-primary !px-6 !py-3 text-base inline-flex items-center gap-2">
               <Mountain size={16}/> Découvrir les excursions
             </a>
           </div>

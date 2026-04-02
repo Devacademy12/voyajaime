@@ -39,7 +39,7 @@ function fmtDate(d: string, short = false) {
   return dt.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
 }
 
-/* ── Checkout Modal (inchangé) ── */
+/* ── Checkout Modal ── */
 function CheckoutModal({ reservation, onClose, onPaid }: {
   reservation: Reservation; onClose: () => void; onPaid: (id: string) => void;
 }) {
@@ -64,14 +64,47 @@ function CheckoutModal({ reservation, onClose, onPaid }: {
   async function handlePay() {
     setLoading(true); setError("");
     try {
+      // 1. Mettre à jour la réservation dans Supabase
       const { error: e1 } = await supabase.from("reservations")
         .update({ payment_status: "paid", payment_method: payMethod, special_notes: specialNote || null })
         .eq("id", reservation.id);
+
       if (e1) {
-        const { error: e2 } = await supabase.from("reservations").update({ status: "confirmed" }).eq("id", reservation.id);
+        // fallback : juste confirmer le statut
+        const { error: e2 } = await supabase.from("reservations")
+          .update({ status: "confirmed" })
+          .eq("id", reservation.id);
         if (e2) throw e2;
       }
-      setStep(4); onPaid(reservation.id);
+
+      // 2. Récupérer les infos du touriste connecté
+      const { data: { user } } = await supabase.auth.getUser();
+      const touriste_name  = user?.user_metadata?.full_name || user?.email || "Touriste";
+      const touriste_email = user?.email || "";
+
+      // 3. Déclencher l'agent n8n — email de confirmation paiement
+      fetch("/api/n8n-trigger", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          event:             "payment_confirmed",
+          touriste_name,
+          touriste_email,
+          excursion_title:   exc?.title        || "Excursion",
+          excursion_city:    exc?.city         || "",
+          prestataire_name:  "Prestataire",
+          prestataire_email: process.env.NEXT_PUBLIC_PRESTATAIRE_NOTIFY_EMAIL || "",
+          booking_code:      reservation.booking_code,
+          date:              reservation.date,
+          people_count:      reservation.people_count,
+          total_price:       total,
+          payment_method:    payMethod,
+          special_notes:     specialNote || "",
+        }),
+      }).catch(err => console.warn("[n8n] Agent non disponible:", err));
+
+      setStep(4);
+      onPaid(reservation.id);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Erreur lors du paiement.");
     } finally { setLoading(false); }
@@ -203,7 +236,7 @@ function CheckoutModal({ reservation, onClose, onPaid }: {
               </div>
               {error&&<div style={{ display:"flex",gap:8,padding:"11px 14px",background:"#FEF2F2",border:"1px solid #FCA5A5",borderRadius:12 }}><AlertCircle size={15} color="#DC2626" strokeWidth={1.5} style={{ flexShrink:0,marginTop:1 }} /><span style={{ fontSize:13,color:"#DC2626" }}>{error}</span></div>}
               <button onClick={handlePay} disabled={loading}
-                style={{ width:"100%",padding:"16px",background:"#2B96A8",color:"white",border:"none",borderRadius:14,fontSize:15,fontWeight:800,cursor:loading?"not-allowed":"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",justifyContent:"center",gap:10,opacity:loading?.7:1,boxShadow:"0 4px 16px rgba(43,150,168,.4)",transition:"all .2s" }}>
+                style={{ width:"100%",padding:"16px",background:"#2B96A8",color:"white",border:"none",borderRadius:14,fontSize:15,fontWeight:800,cursor:loading?"not-allowed":"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",justifyContent:"center",gap:10,opacity:loading?0.7:1,boxShadow:"0 4px 16px rgba(43,150,168,.4)",transition:"all .2s" }}>
                 {loading?<><Loader size={17} style={{ animation:"rspin 1s linear infinite" }} /> Traitement en cours…</>:<><CheckCircle size={17} strokeWidth={2.5} /> Confirmer le paiement · {total} TND</>}
               </button>
               <p style={{ textAlign:"center",fontSize:12,color:"#9CA3AF",display:"flex",alignItems:"center",justifyContent:"center",gap:5 }}>
@@ -212,7 +245,7 @@ function CheckoutModal({ reservation, onClose, onPaid }: {
             </div>
           )}
 
-          {/* Step 4 */}
+          {/* Step 4 — Succès */}
           {step===4&&(
             <div style={{ display:"flex",flexDirection:"column",gap:20,paddingTop:8 }}>
               <div style={{ textAlign:"center",padding:"20px 0 10px" }}>
@@ -220,7 +253,7 @@ function CheckoutModal({ reservation, onClose, onPaid }: {
                   <CheckCircle size={36} color="#10B981" strokeWidth={2} />
                 </div>
                 <h3 style={{ fontSize:20,fontWeight:900,color:"#111827",marginBottom:6 }}>Paiement enregistré !</h3>
-                <p style={{ fontSize:14,color:"#6B7280",lineHeight:1.7 }}>Votre réservation est confirmée. Retrouvez tous les détails ci-dessous.</p>
+                <p style={{ fontSize:14,color:"#6B7280",lineHeight:1.7 }}>Votre réservation est confirmée. Un email de confirmation vous a été envoyé. 📧</p>
               </div>
               <div style={{ border:"2px solid #E5E7EB",borderRadius:20,overflow:"hidden" }}>
                 <div style={{ background:"linear-gradient(135deg,#0e7490,#2B96A8)",padding:"20px 22px" }}>
@@ -260,9 +293,7 @@ function CheckoutModal({ reservation, onClose, onPaid }: {
   );
 }
 
-/* ─────────────────────────────────────────────
-   RESERVATION CARD — layout VERTICAL pour grille 3 col
-───────────────────────────────────────────── */
+/* ── Reservation Card ── */
 function ReservationCard({ r, onPay }: { r: Reservation; onPay: () => void }) {
   const exc   = r.excursion;
   const s     = STATUS_CONFIG[r.status] ?? STATUS_CONFIG.pending;
@@ -270,85 +301,56 @@ function ReservationCard({ r, onPay }: { r: Reservation; onPay: () => void }) {
   const paid  = r.payment_status === "paid" || r.status === "completed";
 
   return (
-    <div style={{ background:"white", borderRadius:20, border:"1px solid #E5E7EB", overflow:"hidden", display:"flex", flexDirection:"column", boxShadow:"0 1px 4px rgba(0,0,0,.05)", transition:"box-shadow .2s, transform .2s" }}
+    <div style={{ background:"white",borderRadius:20,border:"1px solid #E5E7EB",overflow:"hidden",display:"flex",flexDirection:"column",boxShadow:"0 1px 4px rgba(0,0,0,.05)",transition:"box-shadow .2s, transform .2s" }}
       onMouseEnter={e=>{ const el=e.currentTarget as HTMLElement; el.style.boxShadow="0 10px 32px rgba(0,0,0,.1)"; el.style.transform="translateY(-2px)"; }}
       onMouseLeave={e=>{ const el=e.currentTarget as HTMLElement; el.style.boxShadow="0 1px 4px rgba(0,0,0,.05)"; el.style.transform="none"; }}
     >
-      {/* ── Photo (haut) ── */}
-      <div style={{ position:"relative", height:220, flexShrink:0, overflow:"hidden", background:"linear-gradient(135deg,#2B96A8,#0e7490)" }}>
+      <div style={{ position:"relative",height:220,flexShrink:0,overflow:"hidden",background:"linear-gradient(135deg,#2B96A8,#0e7490)" }}>
         {photo
-          ? <img src={photo} alt="" style={{ width:"100%", height:"100%", objectFit:"cover", display:"block" }} />
-          : <div style={{ width:"100%", height:"100%", display:"flex", alignItems:"center", justifyContent:"center" }}>
-              <CalendarDays size={32} color="rgba(255,255,255,.35)" />
-            </div>
+          ? <img src={photo} alt="" style={{ width:"100%",height:"100%",objectFit:"cover",display:"block" }} />
+          : <div style={{ width:"100%",height:"100%",display:"flex",alignItems:"center",justifyContent:"center" }}><CalendarDays size={32} color="rgba(255,255,255,.35)" /></div>
         }
-        <div style={{ position:"absolute", inset:0, background:"linear-gradient(to top, rgba(0,0,0,.5) 0%, transparent 55%)" }} />
-
-        {/* Status badge — haut gauche */}
-        <span style={{ position:"absolute", top:12, left:12, display:"inline-flex", alignItems:"center", gap:5, padding:"4px 10px", background:s.bg, border:`1px solid ${s.border}`, borderRadius:99, fontSize:11, fontWeight:700, color:s.color }}>
-          <span style={{ width:6, height:6, borderRadius:"50%", background:s.dot, flexShrink:0 }} />{s.label}
+        <div style={{ position:"absolute",inset:0,background:"linear-gradient(to top,rgba(0,0,0,.5) 0%,transparent 55%)" }} />
+        <span style={{ position:"absolute",top:12,left:12,display:"inline-flex",alignItems:"center",gap:5,padding:"4px 10px",background:s.bg,border:`1px solid ${s.border}`,borderRadius:99,fontSize:11,fontWeight:700,color:s.color }}>
+          <span style={{ width:6,height:6,borderRadius:"50%",background:s.dot,flexShrink:0 }} />{s.label}
         </span>
-
-        {/* Paid badge — haut droit */}
-        {paid && (
-          <span style={{ position:"absolute", top:12, right:12, display:"inline-flex", alignItems:"center", gap:5, padding:"4px 10px", background:"#D1FAE5", border:"1px solid #6EE7B7", borderRadius:99, fontSize:11, fontWeight:700, color:"#065F46" }}>
+        {paid&&(
+          <span style={{ position:"absolute",top:12,right:12,display:"inline-flex",alignItems:"center",gap:5,padding:"4px 10px",background:"#D1FAE5",border:"1px solid #6EE7B7",borderRadius:99,fontSize:11,fontWeight:700,color:"#065F46" }}>
             <CreditCard size={10} strokeWidth={2.5} /> Payée
           </span>
         )}
-
-        {/* Titre + ville — bas */}
-        <div style={{ position:"absolute", bottom:12, left:14, right:14 }}>
-          <h3 style={{ fontSize:14, fontWeight:800, color:"white", marginBottom:3, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
-            {exc?.title ?? "Excursion"}
-          </h3>
-          <span style={{ fontSize:12, color:"rgba(255,255,255,.85)", display:"flex", alignItems:"center", gap:4 }}>
-            <MapPin size={11} strokeWidth={1.5} /> {exc?.city}
-          </span>
+        <div style={{ position:"absolute",bottom:12,left:14,right:14 }}>
+          <h3 style={{ fontSize:14,fontWeight:800,color:"white",marginBottom:3,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{exc?.title??"Excursion"}</h3>
+          <span style={{ fontSize:12,color:"rgba(255,255,255,.85)",display:"flex",alignItems:"center",gap:4 }}><MapPin size={11} strokeWidth={1.5} />{exc?.city}</span>
         </div>
       </div>
 
-      {/* ── Body ── */}
-      <div style={{ padding:"14px 16px", flex:1, display:"flex", flexDirection:"column", gap:8 }}>
-        {/* Meta */}
-        <div style={{ display:"flex", flexDirection:"column", gap:5 }}>
-          <span style={{ fontSize:12, color:"#6B7280", display:"flex", alignItems:"center", gap:5 }}>
-            <CalendarDays size={11} color="#9CA3AF" strokeWidth={1.5} style={{ flexShrink:0 }} />
-            {fmtDate(r.date, true)} · {r.time}
+      <div style={{ padding:"14px 16px",flex:1,display:"flex",flexDirection:"column",gap:8 }}>
+        <div style={{ display:"flex",flexDirection:"column",gap:5 }}>
+          <span style={{ fontSize:12,color:"#6B7280",display:"flex",alignItems:"center",gap:5 }}>
+            <CalendarDays size={11} color="#9CA3AF" strokeWidth={1.5} style={{ flexShrink:0 }} />{fmtDate(r.date,true)} · {r.time}
           </span>
-          <span style={{ fontSize:12, color:"#6B7280", display:"flex", alignItems:"center", gap:5 }}>
-            <Users size={11} color="#9CA3AF" strokeWidth={1.5} style={{ flexShrink:0 }} />
-            {r.people_count} pers.
-            {exc?.duration_hours && <>
-              <span style={{ color:"#E5E7EB", margin:"0 2px" }}>·</span>
-              <Clock size={11} color="#9CA3AF" strokeWidth={1.5} style={{ flexShrink:0 }} />
-              {exc.duration_hours}h
-            </>}
+          <span style={{ fontSize:12,color:"#6B7280",display:"flex",alignItems:"center",gap:5 }}>
+            <Users size={11} color="#9CA3AF" strokeWidth={1.5} style={{ flexShrink:0 }} />{r.people_count} pers.
+            {exc?.duration_hours&&<><span style={{ color:"#E5E7EB",margin:"0 2px" }}>·</span><Clock size={11} color="#9CA3AF" strokeWidth={1.5} style={{ flexShrink:0 }} />{exc.duration_hours}h</>}
           </span>
         </div>
-
-        {/* Prix + code */}
-        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginTop:"auto", paddingTop:6 }}>
-          <span style={{ fontSize:11, color:"#9CA3AF", fontFamily:"monospace", background:"#F9FAFB", padding:"3px 8px", borderRadius:6, border:"1px solid #E5E7EB" }}>
-            #{r.booking_code}
-          </span>
+        <div style={{ display:"flex",justifyContent:"space-between",alignItems:"center",marginTop:"auto",paddingTop:6 }}>
+          <span style={{ fontSize:11,color:"#9CA3AF",fontFamily:"monospace",background:"#F9FAFB",padding:"3px 8px",borderRadius:6,border:"1px solid #E5E7EB" }}>#{r.booking_code}</span>
           <div style={{ textAlign:"right" }}>
-            <span style={{ fontSize:20, fontWeight:900, color:"#111827" }}>{r.total_price}</span>
-            <span style={{ fontSize:11, color:"#9CA3AF", marginLeft:3 }}>TND</span>
+            <span style={{ fontSize:20,fontWeight:900,color:"#111827" }}>{r.total_price}</span>
+            <span style={{ fontSize:11,color:"#9CA3AF",marginLeft:3 }}>TND</span>
           </div>
         </div>
       </div>
 
-      {/* ── Pay CTA ── */}
-      {!paid && (
-        <div style={{ borderTop:"1px solid #F3F4F6", padding:"12px 16px" }}>
+      {!paid&&(
+        <div style={{ borderTop:"1px solid #F3F4F6",padding:"12px 16px" }}>
           <button onClick={onPay}
-            style={{ width:"100%", padding:"11px 16px", background:"#111827", color:"white", border:"none", borderRadius:12, fontSize:13, fontWeight:800, cursor:"pointer", fontFamily:"inherit", display:"flex", alignItems:"center", justifyContent:"center", gap:7, transition:"background .2s" }}
+            style={{ width:"100%",padding:"11px 16px",background:"#111827",color:"white",border:"none",borderRadius:12,fontSize:13,fontWeight:800,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",justifyContent:"center",gap:7,transition:"background .2s" }}
             onMouseEnter={e=>(e.currentTarget as HTMLElement).style.background="#1f2937"}
-            onMouseLeave={e=>(e.currentTarget as HTMLElement).style.background="#111827"}
-          >
-            <CreditCard size={13} strokeWidth={2} />
-            Payer maintenant · {r.total_price} TND
-            <ArrowRight size={13} />
+            onMouseLeave={e=>(e.currentTarget as HTMLElement).style.background="#111827"}>
+            <CreditCard size={13} strokeWidth={2} />Payer maintenant · {r.total_price} TND<ArrowRight size={13} />
           </button>
         </div>
       )}
@@ -356,9 +358,7 @@ function ReservationCard({ r, onPay }: { r: Reservation; onPay: () => void }) {
   );
 }
 
-/* ─────────────────────────────────────────────
-   MAIN EXPORT
-───────────────────────────────────────────── */
+/* ── Main Export ── */
 export default function ReservationsClient({
   reservations: init,
   total: _t0, pending: _p0, confirmed: _c0,
@@ -379,43 +379,38 @@ export default function ReservationsClient({
 
   return (
     <div>
-      {/* Stats — ligne compacte */}
       {total > 0 && (
-        <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:24, flexWrap:"wrap" }}>
-          <span style={{ display:"inline-flex", alignItems:"center", gap:5, fontSize:13, color:"#6B7280", fontWeight:500 }}>
-            <span style={{ width:7, height:7, borderRadius:"50%", background:"#2B96A8", flexShrink:0 }} />
-            <span style={{ fontSize:14, fontWeight:800, color:"#2B96A8" }}>{total}</span>
-            réservations
+        <div style={{ display:"flex",alignItems:"center",gap:10,marginBottom:24,flexWrap:"wrap" }}>
+          <span style={{ display:"inline-flex",alignItems:"center",gap:5,fontSize:13,color:"#6B7280",fontWeight:500 }}>
+            <span style={{ width:7,height:7,borderRadius:"50%",background:"#2B96A8",flexShrink:0 }} />
+            <span style={{ fontSize:14,fontWeight:800,color:"#2B96A8" }}>{total}</span> réservations
           </span>
           <span style={{ color:"#D1D5DB" }}>·</span>
-          <span style={{ display:"inline-flex", alignItems:"center", gap:5, fontSize:13, color:"#6B7280", fontWeight:500 }}>
-            <span style={{ width:7, height:7, borderRadius:"50%", background:"#F59E0B", flexShrink:0 }} />
-            <span style={{ fontSize:14, fontWeight:800, color:"#D97706" }}>{pending}</span>
-            en attente
+          <span style={{ display:"inline-flex",alignItems:"center",gap:5,fontSize:13,color:"#6B7280",fontWeight:500 }}>
+            <span style={{ width:7,height:7,borderRadius:"50%",background:"#F59E0B",flexShrink:0 }} />
+            <span style={{ fontSize:14,fontWeight:800,color:"#D97706" }}>{pending}</span> en attente
           </span>
           <span style={{ color:"#D1D5DB" }}>·</span>
-          <span style={{ display:"inline-flex", alignItems:"center", gap:5, fontSize:13, color:"#6B7280", fontWeight:500 }}>
-            <span style={{ width:7, height:7, borderRadius:"50%", background:"#10B981", flexShrink:0 }} />
-            <span style={{ fontSize:14, fontWeight:800, color:"#059669" }}>{confirmed}</span>
-            confirmées
+          <span style={{ display:"inline-flex",alignItems:"center",gap:5,fontSize:13,color:"#6B7280",fontWeight:500 }}>
+            <span style={{ width:7,height:7,borderRadius:"50%",background:"#10B981",flexShrink:0 }} />
+            <span style={{ fontSize:14,fontWeight:800,color:"#059669" }}>{confirmed}</span> confirmées
           </span>
         </div>
       )}
 
       {total === 0 ? (
-        <div style={{ textAlign:"center", padding:"80px 20px", background:"white", borderRadius:24, border:"1px solid #E5E7EB" }}>
-          <div style={{ width:72, height:72, borderRadius:"50%", background:"#EFF9FB", display:"flex", alignItems:"center", justifyContent:"center", margin:"0 auto 20px" }}>
+        <div style={{ textAlign:"center",padding:"80px 20px",background:"white",borderRadius:24,border:"1px solid #E5E7EB" }}>
+          <div style={{ width:72,height:72,borderRadius:"50%",background:"#EFF9FB",display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 20px" }}>
             <CalendarDays size={32} color="#2B96A8" strokeWidth={1.5} />
           </div>
-          <h3 style={{ fontSize:20, fontWeight:800, color:"#111827", marginBottom:8 }}>Aucune réservation</h3>
-          <p style={{ fontSize:14, color:"#6B7280", marginBottom:24, lineHeight:1.6 }}>Découvrez les excursions et planifiez votre prochain voyage en Tunisie</p>
-          <Link href="/excursions" style={{ display:"inline-flex", alignItems:"center", gap:8, padding:"13px 26px", background:"#2B96A8", color:"white", borderRadius:14, textDecoration:"none", fontSize:14, fontWeight:700, boxShadow:"0 4px 14px rgba(43,150,168,.35)" }}>
+          <h3 style={{ fontSize:20,fontWeight:800,color:"#111827",marginBottom:8 }}>Aucune réservation</h3>
+          <p style={{ fontSize:14,color:"#6B7280",marginBottom:24,lineHeight:1.6 }}>Découvrez les excursions et planifiez votre prochain voyage en Tunisie</p>
+          <Link href="/excursions" style={{ display:"inline-flex",alignItems:"center",gap:8,padding:"13px 26px",background:"#2B96A8",color:"white",borderRadius:14,textDecoration:"none",fontSize:14,fontWeight:700,boxShadow:"0 4px 14px rgba(43,150,168,.35)" }}>
             <Sparkles size={16} /> Explorer les excursions <ArrowRight size={15} />
           </Link>
         </div>
       ) : (
-        /* ── GRILLE 3 COLONNES ── */
-        <div style={{ display:"grid", gridTemplateColumns:"repeat(3, 1fr)", gap:20 }}>
+        <div style={{ display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:20 }}>
           {reservations.map(r => (
             <ReservationCard key={r.id} r={r} onPay={() => setCheckout(r)} />
           ))}

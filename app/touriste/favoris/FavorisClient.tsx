@@ -78,13 +78,41 @@ export default function FavorisClient({ favoris: init, userId }: { favoris: Favo
     }
     setBooking("loading"); setBookingError("");
     try {
+      const code = genBookingCode();
+
+      // Infos touriste depuis la session (sans requête Supabase supplémentaire)
+      const { data: { user } } = await supabase.auth.getUser();
+      const touriste_name  = user?.user_metadata?.full_name || user?.email || "Touriste";
+      const touriste_email = user?.email || "";
+      const prestataire_email = process.env.NEXT_PUBLIC_PRESTATAIRE_NOTIFY_EMAIL || "";
+
+      // 3. Insérer la réservation dans Supabase
       const { error } = await supabase.from("reservations").insert({
         touriste_id: userId, excursion_id: modal.id,
-        booking_code: genBookingCode(), date, time: "09:00",
+        booking_code: code, date, time: "09:00",
         people_count: people, total_price: totalPrice,
         platform_fee: serviceFee, status: "pending",
       });
       if (error) throw error;
+
+      // 4. Déclencher l'agent n8n via API route (évite les problèmes CORS)
+      fetch("/api/n8n-trigger", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          touriste_name,
+          touriste_email,
+          excursion_title:   modal.title,
+          excursion_city:    modal.city,
+          prestataire_name:  modal.title || "Prestataire",
+          prestataire_email,
+          booking_code:      code,
+          date,
+          people_count:      people,
+          total_price:       totalPrice,
+        }),
+      }).catch(err => console.warn("[n8n] Agent non disponible:", err));
+
       setBooking("success");
     } catch (e) {
       setBookingError(e instanceof Error ? e.message : "Une erreur est survenue.");
