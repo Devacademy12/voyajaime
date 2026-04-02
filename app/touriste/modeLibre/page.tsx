@@ -10,7 +10,8 @@ import {
   ChevronLeft, ChevronRight, Loader2, Sunrise, Sun, Moon,
   AlertCircle, RotateCw, RefreshCw, Database,
 } from "lucide-react";
-
+// app/layout.tsx
+import '@/public/itineraire-libre.css'  // ou le chemin relatif correct
 /* ─────────────── TYPES ─────────────── */
 type Excursion = {
   id: string; title: string; city: string; price_per_person: number;
@@ -35,15 +36,11 @@ function tog<T>(arr: T[], item: T): T[] {
   return arr.includes(item) ? arr.filter(x => x !== item) : [...arr, item];
 }
 
-/* ─────────────── CSS ─────────────── */
-const CSS = `
+/* ── CSS inline conservé uniquement pour builder & result ── */
+const CSS_BUILDER = `
 @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@400;500;600;700;800&display=swap');
 *{box-sizing:border-box}
 .vj-btn{transition:all .2s;cursor:pointer;font-family:inherit}
-.city-c{transition:all .18s;cursor:pointer}
-.city-c:hover{transform:translateY(-2px);box-shadow:0 8px 18px -6px rgba(43,150,168,.25)!important}
-.cat-c{transition:all .15s;cursor:pointer}
-.cat-c:hover{transform:translateY(-1px)}
 .exc-c{transition:all .2s;cursor:grab}
 .exc-c:hover{transform:translateY(-2px);box-shadow:0 12px 24px -8px rgba(43,150,168,.2)!important}
 .exc-c:active{cursor:grabbing;transform:scale(.98)}
@@ -58,14 +55,8 @@ const CSS = `
 .ib:hover{background:rgba(43,150,168,.1)!important}
 .nvb{transition:all .18s}
 .nvb:hover:not(:disabled){background:#1e7a8a!important}
-.cta-btn{transition:all .22s}
-.cta-btn:hover:not(:disabled){transform:translateY(-1px);box-shadow:0 14px 28px -8px rgba(43,150,168,.5)!important}
-.day-quick{transition:all .15s;cursor:pointer}
-.day-quick:hover{border-color:#2B96A8!important;color:#2B96A8!important}
 @keyframes lp{0%,100%{opacity:1}50%{opacity:.4}}
 .lp{animation:lp 1.5s ease infinite}
-@keyframes fu{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
-.fu{animation:fu .28s ease forwards}
 @keyframes spin{to{transform:rotate(360deg)}}
 input[type=range]{accent-color:#2B96A8;cursor:pointer}
 ::-webkit-scrollbar{width:4px;height:4px}
@@ -75,11 +66,11 @@ input[type=range]{accent-color:#2B96A8;cursor:pointer}
 `;
 
 /* ── Composants réutilisables ── */
-function LoadingGrid({ count = 6, height = 90 }: { count?: number; height?: number }) {
+function LoadingGrid({ count = 6, height = 80 }: { count?: number; height?: number }) {
   return (
-    <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill, minmax(130px,1fr))", gap:10 }}>
+    <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill, minmax(95px,1fr))", gap:8 }}>
       {Array.from({ length: count }).map((_, i) => (
-        <div key={i} className="lp" style={{ height, borderRadius:16, background:"#F3F4F6" }}/>
+        <div key={i} className="skeleton" style={{ height }}/>
       ))}
     </div>
   );
@@ -87,13 +78,12 @@ function LoadingGrid({ count = 6, height = 90 }: { count?: number; height?: numb
 
 function DbError({ message, onRetry }: { message: string; onRetry?: () => void }) {
   return (
-    <div style={{ textAlign:"center", padding:"32px 20px" }}>
-      <AlertCircle size={32} color="#DC2626" style={{ margin:"0 auto 10px" }}/>
-      <p style={{ fontSize:13, fontWeight:700, color:"#DC2626", marginBottom:4 }}>Erreur de chargement</p>
-      <p style={{ fontSize:12, color:"#9CA3AF", marginBottom:14 }}>{message}</p>
+    <div className="db-error">
+      <AlertCircle size={32} color="#DC2626" style={{ margin:"0 auto 10px", display:"block" }}/>
+      <p className="title">Erreur de chargement</p>
+      <p className="msg">{message}</p>
       {onRetry && (
-        <button onClick={onRetry}
-          style={{ padding:"7px 18px", background:"#2B96A8", color:"white", border:"none", borderRadius:20, fontSize:12, fontWeight:700, cursor:"pointer", display:"inline-flex", alignItems:"center", gap:6 }}>
+        <button onClick={onRetry} className="retry-btn">
           <RotateCw size={12}/> Réessayer
         </button>
       )}
@@ -103,10 +93,10 @@ function DbError({ message, onRetry }: { message: string; onRetry?: () => void }
 
 function EmptyState({ icon, title, sub }: { icon: React.ReactNode; title: string; sub: string }) {
   return (
-    <div style={{ textAlign:"center", padding:"32px 20px" }}>
-      <div style={{ color:"#D1D5DB", display:"flex", justifyContent:"center", marginBottom:10 }}>{icon}</div>
-      <p style={{ fontSize:13, fontWeight:700, color:"#374151", marginBottom:4 }}>{title}</p>
-      <p style={{ fontSize:12, color:"#9CA3AF" }}>{sub}</p>
+    <div className="empty-state">
+      <div style={{ display:"flex", justifyContent:"center", marginBottom:10, color:"#D1D5DB" }}>{icon}</div>
+      <p className="title">{title}</p>
+      <p className="sub">{sub}</p>
     </div>
   );
 }
@@ -273,92 +263,90 @@ function ItineraireInner() {
   };
 
   /* ══════════════════════════════════════
-     STEP : CONFIG
+     STEP : CONFIG — MODE LIBRE, NO SCROLL, 3 CARTES ÉGALES
   ══════════════════════════════════════ */
   if (step === "config") return (
-    <div style={{ minHeight:"calc(100vh - 64px)", display:"flex", flexDirection:"column", background:"#F9FAFB", fontFamily:"'DM Sans',system-ui,sans-serif" }}>
-      <style>{CSS}</style>
+    <div className="itineraire-config-page">
 
       {/* Topbar */}
-      <div style={{ flexShrink:0, display:"flex", alignItems:"center", justifyContent:"space-between", padding:"12px 24px", borderBottom:"1px solid #F3F4F6", background:"white", boxShadow:"0 1px 4px rgba(0,0,0,.04)" }}>
-        <button className="vj-btn" onClick={() => router.push("/")}
-          style={{ background:"none", border:"1px solid #E5E7EB", color:"#374151", fontSize:13, display:"inline-flex", alignItems:"center", gap:6, padding:"6px 14px", borderRadius:24, fontWeight:600 }}>
+      <div className="itineraire-topbar">
+        <button className="back-btn" onClick={() => router.push("/")}>
           <ArrowLeft size={14}/> Retour
         </button>
-        <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-          <div style={{ display:"flex", alignItems:"center", gap:6, padding:"4px 12px", background:"rgba(43,150,168,.08)", borderRadius:24 }}>
-            <SlidersHorizontal size={13} color="#2B96A8"/>
-            <span style={{ fontSize:12, fontWeight:700, color:"#2B96A8", letterSpacing:".04em" }}>Planificateur</span>
-          </div>
-          <h1 style={{ fontFamily:"'Playfair Display',serif", fontSize:18, fontWeight:900, color:"#111827" }}>
-            Créez votre itinéraire <span style={{ color:"#2B96A8" }}>sur mesure</span>
-          </h1>
+        <div className="badge">
+          <SlidersHorizontal size={13}/> Planificateur
         </div>
-        <div style={{ width:120 }}/>
+        <h1>Créez votre itinéraire <span>sur mesure</span></h1>
       </div>
 
-      <div style={{ maxWidth:1200, margin:"0 auto", width:"100%", padding:"24px 24px 40px", flex:1 }}>
-        <div style={{ display:"grid", gridTemplateColumns:"320px 1fr", gap:20, alignItems:"start" }}>
+      {/* Corps */}
+      <div className="itineraire-config-body">
 
-          {/* LEFT : Durée + Catégories */}
-          <div style={{ background:"white", borderRadius:20, border:"1px solid #F3F4F6", boxShadow:"0 2px 8px rgba(0,0,0,.04)", overflow:"hidden", position:"sticky", top:20 }}>
+        {/* ── 3 cartes égales ── */}
+        <div className="config-cards-row">
 
-            {/* Durée */}
-            <div style={{ padding:"20px 22px", borderBottom:"1px solid #F3F4F6" }}>
-              <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:14 }}>
-                <div style={{ width:28, height:28, borderRadius:8, background:"rgba(43,150,168,.1)", display:"flex", alignItems:"center", justifyContent:"center" }}>
-                  <Calendar size={14} color="#2B96A8"/>
-                </div>
-                <h2 style={{ fontSize:14, fontWeight:800, color:"#111827" }}>Durée du voyage</h2>
-              </div>
-              <div style={{ display:"flex", alignItems:"center", gap:14, marginBottom:14 }}>
-                <div style={{ flex:1 }}>
-                  <input type="range" min={1} max={14} value={days} onChange={e => setDays(Number(e.target.value))} style={{ width:"100%", height:4 }}/>
-                  <div style={{ display:"flex", justifyContent:"space-between", marginTop:4 }}>
-                    <span style={{ fontSize:10, color:"#C4C9D0" }}>1 jour</span>
-                    <span style={{ fontSize:10, color:"#C4C9D0" }}>14 jours</span>
+          {/* Carte 1 — Durée */}
+          <div className="config-card card-duree">
+            <div className="card-header">
+              <div className="card-header-icon"><Calendar size={14} color="#2B96A8"/></div>
+              <h2>Durée du voyage</h2>
+            </div>
+            <div className="card-body">
+              <div className="duree-slider-row">
+                <div className="duree-slider-wrap">
+                  <input type="range" min={1} max={14} value={days} onChange={e => setDays(Number(e.target.value))}/>
+                  <div className="duree-slider-labels">
+                    <span>1 jour</span>
+                    <span>14 jours</span>
                   </div>
                 </div>
-                <div style={{ textAlign:"center", background:"rgba(43,150,168,.07)", border:"1.5px solid rgba(43,150,168,.2)", borderRadius:14, padding:"8px 16px", flexShrink:0 }}>
-                  <span style={{ fontFamily:"'Playfair Display',serif", fontSize:30, fontWeight:900, color:"#2B96A8", lineHeight:1, display:"block" }}>{days}</span>
-                  <span style={{ fontSize:10, color:"#6B7280", textTransform:"uppercase", letterSpacing:".05em", fontWeight:600 }}>{days > 1 ? "jours" : "jour"}</span>
+                <div className="duree-display">
+                  <span className="num">{days}</span>
+                  <span className="unit">{days > 1 ? "jours" : "jour"}</span>
                 </div>
               </div>
-              <div style={{ display:"flex", gap:4 }}>
+              <div className="duree-quick-row">
                 {[1,2,3,5,7,10,14].map(n => (
-                  <button key={n} className="day-quick vj-btn" onClick={() => setDays(n)}
-                    style={{ flex:1, padding:"5px 0", borderRadius:20, border:`1.5px solid ${days===n?"#2B96A8":"#E5E7EB"}`, background:days===n?"#2B96A8":"transparent", color:days===n?"white":"#9CA3AF", fontSize:11, fontWeight:days===n?700:500 }}>
+                  <button key={n} className={`duree-quick-btn${days === n ? " active" : ""}`} onClick={() => setDays(n)}>
                     {n}j
                   </button>
                 ))}
               </div>
             </div>
+          </div>
 
-            {/* Catégories depuis Supabase */}
-            <div style={{ padding:"16px 22px" }}>
-              <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:12 }}>
-                <div style={{ width:28, height:28, borderRadius:8, background:"rgba(43,150,168,.1)", display:"flex", alignItems:"center", justifyContent:"center" }}>
-                  <Layers size={14} color="#2B96A8"/>
-                </div>
-                <h2 style={{ fontSize:14, fontWeight:800, color:"#111827" }}>Centres d&apos;intérêt</h2>
-                <span style={{ fontSize:11, color:"#9CA3AF" }}>(optionnel)</span>
-              </div>
-
+          {/* Carte 2 — Centres d'intérêt */}
+          <div className="config-card card-cats">
+            <div className="card-header">
+              <div className="card-header-icon"><Layers size={14} color="#2B96A8"/></div>
+              <h2>Centres d&apos;intérêt</h2>
+              <span style={{ fontSize:11, color:"#9CA3AF", marginLeft:4 }}>(optionnel)</span>
+            </div>
+            <div className="card-body">
               {ldCats ? (
-                <div style={{ display:"flex", flexWrap:"wrap", gap:7 }}>
-                  {Array.from({ length: 6 }).map((_, i) => <div key={i} className="lp" style={{ height:32, width:90, borderRadius:22, background:"#F3F4F6" }}/>)}
+                <div className="cats-wrap">
+                  {Array.from({ length: 6 }).map((_, i) => (
+                    <div key={i} className="skeleton" style={{ height:34, width:90, borderRadius:22 }}/>
+                  ))}
                 </div>
               ) : errCats ? (
                 <DbError message={errCats} onRetry={loadCategories}/>
               ) : categories.length === 0 ? (
                 <EmptyState icon={<Database size={28}/>} title="Aucune catégorie" sub="Ajoutez des catégories dans Supabase"/>
               ) : (
-                <div style={{ display:"flex", flexWrap:"wrap", gap:7 }}>
+                <div className="cats-wrap">
                   {categories.map(cat => {
                     const sel = selCats.includes(cat.nom);
                     return (
-                      <button key={cat.id} className="cat-c vj-btn" onClick={() => setSelCats(tog(selCats, cat.nom))}
-                        style={{ padding:"6px 13px", borderRadius:22, border:`1.5px solid ${sel?cat.couleur:"#E5E7EB"}`, background:sel?`${cat.couleur}12`:"white", color:sel?cat.couleur:"#6B7280", fontSize:12, fontWeight:sel?700:500, display:"flex", alignItems:"center", gap:5, boxShadow:sel?`0 3px 10px -3px ${cat.couleur}40`:"none" }}>
+                      <button key={cat.id}
+                        className={`cat-chip${sel ? " active" : ""}`}
+                        onClick={() => setSelCats(tog(selCats, cat.nom))}
+                        style={{
+                          borderColor: sel ? cat.couleur : undefined,
+                          background:  sel ? `${cat.couleur}12` : undefined,
+                          color:       sel ? cat.couleur : undefined,
+                          boxShadow:   sel ? `0 3px 10px -3px ${cat.couleur}40` : undefined,
+                        }}>
                         <span>{cat.emoji}</span>{cat.nom}
                       </button>
                     );
@@ -366,65 +354,46 @@ function ItineraireInner() {
                 </div>
               )}
             </div>
-
-            {/* CTA */}
-            <div style={{ padding:"16px 22px 22px", borderTop:"1px solid #F3F4F6", background:"#FAFAF9" }}>
-              {selCities.length > 0 && (
-                <div style={{ marginBottom:10, padding:"9px 12px", background:"white", borderRadius:12, border:"1px solid #E5E7EB", fontSize:12, color:"#374151" }}>
-                  <span style={{ color:"#9CA3AF", fontSize:11, textTransform:"uppercase", letterSpacing:".04em", fontWeight:700 }}>Sélection · </span>
-                  <span style={{ color:"#2B96A8", fontWeight:700 }}>{days} j</span>
-                  {" · "}{selCities.slice(0, 3).join(", ")}
-                  {selCities.length > 3 && <span style={{ color:"#2B96A8" }}> +{selCities.length - 3}</span>}
-                </div>
-              )}
-              <button className="cta-btn vj-btn" onClick={startBuilder} disabled={selCities.length === 0}
-                style={{ width:"100%", padding:"13px", background:selCities.length===0?"#E5E7EB":"#2B96A8", color:selCities.length===0?"#9CA3AF":"white", border:"none", borderRadius:14, fontSize:14, fontWeight:700, display:"flex", alignItems:"center", justifyContent:"center", gap:8, cursor:selCities.length===0?"not-allowed":"pointer", boxShadow:selCities.length>0?"0 8px 20px -6px rgba(43,150,168,.5)":"none" }}>
-                Composer mon itinéraire <ArrowRight size={16}/>
-              </button>
-            </div>
           </div>
 
-          {/* RIGHT : Villes depuis Supabase */}
-          <div style={{ background:"white", borderRadius:20, border:"1px solid #F3F4F6", boxShadow:"0 2px 8px rgba(0,0,0,.04)", overflow:"hidden" }}>
-            <div style={{ padding:"16px 22px 12px", borderBottom:"1px solid #F3F4F6", display:"flex", alignItems:"center", gap:8 }}>
-              <div style={{ width:28, height:28, borderRadius:8, background:"rgba(43,150,168,.1)", display:"flex", alignItems:"center", justifyContent:"center" }}>
-                <MapPin size={14} color="#2B96A8"/>
-              </div>
-              <h2 style={{ fontSize:14, fontWeight:800, color:"#111827" }}>Villes à explorer</h2>
+          {/* Carte 3 — Villes (SANS emoji) */}
+          <div className="config-card card-villes">
+            <div className="card-header">
+              <div className="card-header-icon"><MapPin size={14} color="#2B96A8"/></div>
+              <h2>Villes à explorer</h2>
               {selCities.length > 0 && (
-                <span style={{ fontSize:12, fontWeight:700, color:"#2B96A8", background:"rgba(43,150,168,.08)", padding:"2px 10px", borderRadius:20 }}>
+                <span className="badge-count">
                   {selCities.length} sélectionnée{selCities.length > 1 ? "s" : ""}
                 </span>
               )}
               {!ldVilles && !errVilles && (
-                <button onClick={loadVilles} style={{ marginLeft:"auto", background:"none", border:"none", cursor:"pointer", color:"#9CA3AF" }}>
-                  <RefreshCw size={13}/>
-                </button>
+                <button className="refresh-btn" onClick={loadVilles}><RefreshCw size={13}/></button>
               )}
             </div>
-
-            <div style={{ padding:"16px 22px" }}>
+            <div className="card-body">
               {ldVilles ? (
-                <LoadingGrid count={12} height={90}/>
+                <LoadingGrid count={12} height={70}/>
               ) : errVilles ? (
                 <DbError message={errVilles} onRetry={loadVilles}/>
               ) : villes.length === 0 ? (
-                <EmptyState icon={<MapPin size={36}/>} title="Aucune ville disponible" sub="Ajoutez des villes actives dans la table 'villes' de Supabase"/>
+                <EmptyState icon={<MapPin size={36}/>} title="Aucune ville disponible" sub="Ajoutez des villes actives dans Supabase"/>
               ) : (
-                <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill, minmax(130px,1fr))", gap:10 }}>
+                <div className="villes-grid">
                   {villes.map(c => {
                     const sel = selCities.includes(c.nom);
                     return (
-                      <button key={c.id} className="city-c vj-btn" onClick={() => setSelCities(tog(selCities, c.nom))}
-                        style={{ padding:"14px 10px", borderRadius:16, border:`2px solid ${sel?"#2B96A8":"#F3F4F6"}`, background:sel?"rgba(43,150,168,.05)":"white", textAlign:"center", boxShadow:sel?"0 6px 16px -6px rgba(43,150,168,.28)":"0 1px 4px rgba(0,0,0,.04)", position:"relative" }}>
+                      <button key={c.id}
+                        className={`ville-btn${sel ? " selected" : ""}`}
+                        onClick={() => setSelCities(tog(selCities, c.nom))}>
                         {sel && (
-                          <div style={{ position:"absolute", top:8, right:8, width:16, height:16, background:"#2B96A8", borderRadius:"50%", display:"flex", alignItems:"center", justifyContent:"center" }}>
+                          <div className="check-dot">
                             <CheckCircle2 size={10} color="white"/>
                           </div>
                         )}
-                        <div style={{ fontSize:26, marginBottom:6 }}>{c.emoji || "🏙️"}</div>
-                        <div style={{ fontSize:12, fontWeight:sel?700:600, color:sel?"#2B96A8":"#374151", marginBottom:2 }}>{c.nom}</div>
-                        <div style={{ fontSize:10, color:sel?"#2B96A8":"#9CA3AF" }}>{c.description}</div>
+                        {/* emoji masqué via CSS (.ville-btn .emoji { display: none }) */}
+                        <span className="emoji">{c.emoji}</span>
+                        <div className="name">{c.nom}</div>
+                        <div className="desc">{c.description}</div>
                       </button>
                     );
                   })}
@@ -433,7 +402,23 @@ function ItineraireInner() {
             </div>
           </div>
 
+        </div>{/* /config-cards-row */}
+
+        {/* ── CTA ── */}
+        <div className="config-cta-bar">
+          {selCities.length > 0 && (
+            <div className="config-selection-pill">
+              <span className="hl">{days} j</span>
+              {" · "}
+              {selCities.slice(0, 3).join(", ")}
+              {selCities.length > 3 && <span className="hl"> +{selCities.length - 3}</span>}
+            </div>
+          )}
+          <button className="cta-compose-btn" onClick={startBuilder} disabled={selCities.length === 0}>
+            Composer mon itinéraire <ArrowRight size={18}/>
+          </button>
         </div>
+
       </div>
     </div>
   );
@@ -443,9 +428,8 @@ function ItineraireInner() {
   ══════════════════════════════════════ */
   if (step === "builder") return (
     <div style={{ height:"calc(100vh - 64px)", display:"flex", flexDirection:"column", background:"#F9FAFB", fontFamily:"'DM Sans',system-ui,sans-serif", overflow:"hidden" }}>
-      <style>{CSS}</style>
+      <style>{CSS_BUILDER}</style>
 
-      {/* Topbar */}
       <div style={{ height:52, flexShrink:0, background:"white", borderBottom:"1px solid #F3F4F6", padding:"0 24px", display:"flex", alignItems:"center", justifyContent:"space-between", boxShadow:"0 1px 6px rgba(0,0,0,.04)" }}>
         <div style={{ display:"flex", alignItems:"center", gap:10 }}>
           <button className="vj-btn" onClick={() => setStep("config")}
@@ -475,8 +459,6 @@ function ItineraireInner() {
       </div>
 
       <div style={{ flex:1, display:"flex", minHeight:0 }}>
-
-        {/* ── Palette excursions ── */}
         <div style={{ width:272, flexShrink:0, borderRight:"1px solid #F3F4F6", background:"white", display:"flex", flexDirection:"column", overflow:"hidden" }}>
           <div style={{ padding:"12px 14px 8px", flexShrink:0 }}>
             <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:10 }}>
@@ -486,8 +468,6 @@ function ItineraireInner() {
                 <span style={{ fontSize:10, color:"#9CA3AF", marginLeft:"auto" }}>{palette.length} résultats</span>
               )}
             </div>
-
-            {/* Search */}
             <div style={{ position:"relative", marginBottom:9 }}>
               <Search size={12} color="#9CA3AF" style={{ position:"absolute", left:10, top:"50%", transform:"translateY(-50%)", pointerEvents:"none" }}/>
               <input type="text" placeholder="Rechercher..." value={search} onChange={e => setSearch(e.target.value)}
@@ -495,21 +475,17 @@ function ItineraireInner() {
                 onFocus={e => e.currentTarget.style.borderColor="#2B96A8"}
                 onBlur={e => e.currentTarget.style.borderColor="#E5E7EB"}/>
             </div>
-
-            {/* Filtre villes */}
             <div style={{ marginBottom:7 }}>
               <p style={{ fontSize:10, fontWeight:700, color:"#9CA3AF", textTransform:"uppercase", letterSpacing:".06em", marginBottom:4 }}>Villes</p>
               <div style={{ display:"flex", gap:3, flexWrap:"wrap" }}>
                 {["Toutes", ...selCities].map(c => (
                   <button key={c} className="vj-btn" onClick={() => setPalCity(c)}
                     style={{ padding:"3px 8px", borderRadius:18, border:`1px solid ${palCity===c?"#2B96A8":"#E5E7EB"}`, background:palCity===c?"#2B96A8":"white", color:palCity===c?"white":"#6B7280", fontSize:10, fontWeight:palCity===c?700:500 }}>
-                    {c === "Toutes" ? "Toutes" : c}
+                    {c}
                   </button>
                 ))}
               </div>
             </div>
-
-            {/* Filtre catégories */}
             <div style={{ paddingBottom:8, borderBottom:"1px solid #F3F4F6" }}>
               <p style={{ fontSize:10, fontWeight:700, color:"#9CA3AF", textTransform:"uppercase", letterSpacing:".06em", marginBottom:4 }}>Catégories</p>
               <div style={{ display:"flex", gap:3, flexWrap:"wrap" }}>
@@ -523,7 +499,6 @@ function ItineraireInner() {
             </div>
           </div>
 
-          {/* Liste excursions */}
           <div style={{ flex:1, overflowY:"auto", padding:"8px 10px 12px" }}>
             {ldExc ? (
               Array.from({ length: 3 }).map((_, i) => <div key={i} className="lp" style={{ height:120, borderRadius:12, background:"#F3F4F6", marginBottom:8 }}/>)
@@ -568,7 +543,6 @@ function ItineraireInner() {
             })}
           </div>
 
-          {/* Footer stats */}
           <div style={{ padding:"8px 14px", borderTop:"1px solid #F3F4F6", background:"#FAFAF9", flexShrink:0 }}>
             <div style={{ display:"flex", justifyContent:"space-between", marginBottom:4 }}>
               <span style={{ fontSize:11, color:"#9CA3AF", display:"flex", alignItems:"center", gap:4 }}><Layers size={11}/>Activités</span>
@@ -584,10 +558,7 @@ function ItineraireInner() {
           </div>
         </div>
 
-        {/* ── Calendrier ── */}
         <div style={{ flex:1, display:"flex", flexDirection:"column", overflow:"hidden" }}>
-
-          {/* Tabs jours */}
           <div style={{ flexShrink:0, padding:"10px 16px", borderBottom:"1px solid #F3F4F6", background:"white", display:"flex", gap:5, flexWrap:"wrap" }}>
             {itin.map((day, i) => {
               const act = activeDay === i;
@@ -606,8 +577,6 @@ function ItineraireInner() {
           <div style={{ flex:1, overflowY:"auto", padding:"14px 16px" }}>
             {itin[activeDay] && (
               <div style={{ background:"white", borderRadius:18, border:"1px solid #F3F4F6", overflow:"hidden", boxShadow:"0 3px 14px rgba(0,0,0,.05)" }}>
-
-                {/* Header du jour */}
                 <div style={{ padding:"13px 18px", background:"#FAFAF9", borderBottom:"1px solid #F3F4F6", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
                   <div style={{ display:"flex", alignItems:"center", gap:10 }}>
                     <div style={{ width:38, height:38, borderRadius:12, background:"#2B96A8", display:"flex", alignItems:"center", justifyContent:"center", fontSize:18, boxShadow:"0 4px 10px rgba(43,150,168,.35)" }}>
@@ -626,12 +595,11 @@ function ItineraireInner() {
                     <select value={itin[activeDay].city}
                       onChange={e => setItin(prev => { const u=[...prev]; u[activeDay]={...u[activeDay],city:e.target.value}; return u; })}
                       style={{ border:"1.5px solid #E5E7EB", borderRadius:16, padding:"5px 10px", fontSize:12, fontFamily:"inherit", color:"#111827", background:"white", cursor:"pointer", outline:"none", fontWeight:600 }}>
-                      {villes.map(c => <option key={c.id} value={c.nom}>{c.emoji||"🏙️"} {c.nom}</option>)}
+                      {villes.map(c => <option key={c.id} value={c.nom}>{c.nom}</option>)}
                     </select>
                   </div>
                 </div>
 
-                {/* Slots */}
                 <div style={{ padding:"14px 18px" }}>
                   {SLOTS.map(slot => {
                     const acts   = itin[activeDay].activities.filter(a => a.time === slot.key);
@@ -694,7 +662,6 @@ function ItineraireInner() {
                   })}
                 </div>
 
-                {/* Footer nav */}
                 <div style={{ padding:"8px 18px 14px", display:"flex", justifyContent:"space-between", alignItems:"center", borderTop:"1px solid #F3F4F6" }}>
                   <p style={{ fontSize:11, color:"#C4C9D0", fontStyle:"italic", display:"flex", alignItems:"center", gap:5 }}>
                     <Grip size={12} color="#C4C9D0"/>Glissez-déposez entre créneaux
@@ -716,7 +683,6 @@ function ItineraireInner() {
         </div>
       </div>
 
-      {/* Modal note */}
       {editNote && (
         <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,.45)", backdropFilter:"blur(6px)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:1000 }}
           onClick={e => { if (e.target === e.currentTarget) setEditNote(null); }}>
@@ -752,7 +718,7 @@ function ItineraireInner() {
   ══════════════════════════════════════ */
   return (
     <div style={{ height:"calc(100vh - 64px)", display:"flex", flexDirection:"column", background:"#F9FAFB", fontFamily:"'DM Sans',system-ui,sans-serif", overflow:"hidden" }}>
-      <style>{CSS}</style>
+      <style>{CSS_BUILDER}</style>
 
       <div style={{ height:52, flexShrink:0, display:"flex", alignItems:"center", justifyContent:"space-between", padding:"0 24px", borderBottom:"1px solid #F3F4F6", background:"white", boxShadow:"0 1px 4px rgba(0,0,0,.04)" }}>
         <button className="vj-btn" onClick={() => setStep("builder")}
@@ -773,8 +739,6 @@ function ItineraireInner() {
       </div>
 
       <div style={{ flex:1, display:"grid", gridTemplateColumns:"260px 1fr", minHeight:0, overflow:"hidden" }}>
-
-        {/* LEFT stats */}
         <div style={{ borderRight:"1px solid #F3F4F6", background:"white", display:"flex", flexDirection:"column", padding:"22px 20px", gap:12, overflowY:"auto" }}>
           <div>
             <p style={{ fontSize:10, fontWeight:700, color:"#2B96A8", textTransform:"uppercase", letterSpacing:".08em", marginBottom:6, display:"flex", alignItems:"center", gap:5 }}>
@@ -785,11 +749,10 @@ function ItineraireInner() {
             </h2>
             <p style={{ fontSize:13, color:"#6B7280" }}>{selCities.join(" · ")}</p>
           </div>
-
           {[
-            { icon:<Layers size={16} color="#2B96A8"/>,    label:"Activités",   value:`${totAct}`,        color:"#2B96A8", bg:"rgba(43,150,168,.1)"  },
-            { icon:<PiggyBank size={16} color="#059669"/>, label:"Budget total", value:`${totBudget} TND`, color:"#059669", bg:"rgba(5,150,105,.1)"   },
-            { icon:<Calendar size={16} color="#8B5CF6"/>,  label:"Durée",        value:`${days} jours`,   color:"#8B5CF6", bg:"rgba(139,92,246,.1)"  },
+            { icon:<Layers size={16} color="#2B96A8"/>,    label:"Activités",    value:`${totAct}`,        color:"#2B96A8", bg:"rgba(43,150,168,.1)"  },
+            { icon:<PiggyBank size={16} color="#059669"/>, label:"Budget total",  value:`${totBudget} TND`, color:"#059669", bg:"rgba(5,150,105,.1)"   },
+            { icon:<Calendar size={16} color="#8B5CF6"/>,  label:"Durée",         value:`${days} jours`,   color:"#8B5CF6", bg:"rgba(139,92,246,.1)"  },
           ].map(({ icon, label, value, color, bg }) => (
             <div key={label} style={{ padding:"12px 14px", background:"#F9FAFB", borderRadius:14, border:"1px solid #F3F4F6", display:"flex", alignItems:"center", gap:10 }}>
               <div style={{ width:34, height:34, borderRadius:10, background:bg, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>{icon}</div>
@@ -799,7 +762,6 @@ function ItineraireInner() {
               </div>
             </div>
           ))}
-
           <div style={{ flex:1 }}/>
           <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
             <button className="vj-btn" onClick={() => setStep("builder")}
@@ -815,7 +777,6 @@ function ItineraireInner() {
           </div>
         </div>
 
-        {/* RIGHT jours */}
         <div style={{ overflowY:"auto", padding:"16px 20px" }}>
           <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
             {itin.map((day, i) => (
