@@ -28,7 +28,7 @@ interface Excursion {
 }
 
 const Logo = ({ size = 32 }: { size?: number }) => (
-  <img src="/brandmark.png" alt="VoyajAime" width={size} height={size} style={{ objectFit:"contain", display:"block" }} />
+  <img src="/logo.png" alt="VoyajAime"style={{ height:35, width:"auto", objectFit:"contain", display:"block" }}/>
 );
 
 const SkeletonCard = () => (
@@ -181,7 +181,6 @@ export default function HomePage() {
       <header className="navbar" style={{ position:"fixed", top:0, left:0, right:0, zIndex:200, height:68, display:"flex", alignItems:"center", justifyContent:"space-between", padding:"0 52px", background:scrolled?"rgba(255,255,255,0.97)":"transparent", backdropFilter:scrolled?"blur(20px)":"none", borderBottom:scrolled?"1px solid rgba(0,0,0,0.07)":"none", transition:"all 0.35s" }}>
         <Link href={ROUTES.home} style={{ display:"flex", alignItems:"center", gap:10, textDecoration:"none" }}>
           <Logo size={32} />
-          <span style={{ fontFamily:"'Playfair Display',serif", fontSize:20, fontWeight:900, color:scrolled?"#111":"white", transition:"color 0.3s", letterSpacing:"-0.3px" }}>voyajaime</span>
         </Link>
 
         <nav className="nav-links" style={{ display:"flex", alignItems:"center", gap:28 }}>

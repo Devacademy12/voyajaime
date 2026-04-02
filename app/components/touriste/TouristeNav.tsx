@@ -139,7 +139,7 @@ export default function TouristeNav({ userName, favCount = 0 }: { userName?: str
 
         {/* Logo */}
         <Link href={ROUTES.touriste.dashboard} style={{ display:"flex", alignItems:"center", textDecoration:"none", flexShrink:0 }}>
-          <img src="/logo.png" alt="Voyaj'aime" style={{ height:44, width:"auto", objectFit:"contain", display:"block" }}/>
+          <img src="/logo.png" alt="Voyaj'aime" style={{ height:35, width:"auto", objectFit:"contain", display:"block" }}/>
         </Link>
 
         {/* Desktop links */}
