@@ -8,8 +8,7 @@ import {
   Pencil, Trash2, FileText, Send, Grip, Search, CheckCircle2,
   PiggyBank, Layers, SlidersHorizontal, BookMarked,
   ChevronLeft, ChevronRight, Loader2, Sunrise, Sun, Moon,
-  Mountain, Landmark, Umbrella, Waves, Building2, Tent,
-  Church, Sparkles, Castle, AlertCircle, RotateCw,
+  AlertCircle, RotateCw, RefreshCw, Database,
 } from "lucide-react";
 
 /* ─────────────── TYPES ─────────────── */
@@ -18,75 +17,19 @@ type Excursion = {
   duration_hours: number; rating: number; reviews_count: number;
   categories: string[]; photos: string[];
 };
-type Categorie = { id: string; nom: string; emoji: string; couleur: string; };
-type Ville     = { id: string; nom: string; emoji: string; region: string; description: string; active: boolean; latitude?: number; longitude?: number; image_url?: string; };
-type DragPayload = { kind: "excursion"; excursion: Excursion } | { kind: "activity"; activityId: string; fromDay: number; fromTime: TimeKey };
+type Categorie  = { id: string; nom: string; emoji: string; couleur: string; };
+type Ville      = { id: string; nom: string; emoji: string; region: string; description: string; active: boolean; };
+type TimeKey    = "matin" | "aprem" | "soir";
 type ActivityItem = { id: string; excursion: Excursion; note: string; time: TimeKey; };
-type DayPlan  = { city: string; activities: ActivityItem[] };
-type TimeKey  = "matin" | "aprem" | "soir";
-type Step     = "config" | "builder" | "result";
-
-/* ─────────────── FALLBACKS ─────────────── */
-const FALLBACK_CITIES: Ville[] = [
-  { id:"1",  nom:"Tunis",     emoji:"🏛️", region:"Nord",   description:"Capitale vibrante",    active:true },
-  { id:"2",  nom:"Sousse",    emoji:"🏖️", region:"Sahel",  description:"Perle du Sahel",       active:true },
-  { id:"3",  nom:"Hammamet",  emoji:"🌺", region:"Sahel",  description:"Station balnéaire",    active:true },
-  { id:"4",  nom:"Djerba",    emoji:"🏝️", region:"Sud",    description:"Île aux rêves",        active:true },
-  { id:"5",  nom:"Tozeur",    emoji:"🌴", region:"Sud",    description:"Porte du désert",      active:true },
-  { id:"6",  nom:"Douz",      emoji:"🐪", region:"Sud",    description:"Sahara infini",        active:true },
-  { id:"7",  nom:"Kairouan",  emoji:"🕌", region:"Centre", description:"Ville sainte",         active:true },
-  { id:"8",  nom:"Sfax",      emoji:"🫒", region:"Centre", description:"Capitale du Sud",      active:true },
-  { id:"9",  nom:"Tataouine", emoji:"⭐", region:"Sud",    description:"Terre de Star Wars",   active:true },
-  { id:"10", nom:"Tabarka",   emoji:"🌊", region:"Nord",   description:"Corail et nature",     active:true },
-  { id:"11", nom:"Nabeul",    emoji:"🏺", region:"Nord",   description:"Poterie & art",        active:true },
-  { id:"12", nom:"Gafsa",     emoji:"⛏️", region:"Sud",    description:"Oasis millénaire",     active:true },
-];
-
-const FALLBACK_CATS: Categorie[] = [
-  { id:"1", nom:"Culture",      emoji:"🏛️", couleur:"#2B96A8" },
-  { id:"2", nom:"Archéologie",  emoji:"🏺", couleur:"#8B5CF6" },
-  { id:"3", nom:"Nature",       emoji:"🌿", couleur:"#059669" },
-  { id:"4", nom:"Gastronomie",  emoji:"🍽️", couleur:"#D97706" },
-  { id:"5", nom:"Aventure",     emoji:"⚡", couleur:"#DC2626" },
-  { id:"6", nom:"Relaxation",   emoji:"🧘", couleur:"#2563EB" },
-];
-
-const MOCK_EXC: Excursion[] = [
-  { id:"1", title:"Médina de Tunis",      city:"Tunis",  price_per_person:45, duration_hours:3,   rating:4.9, reviews_count:128, categories:["Culture","Archéologie"],  photos:["https://images.unsplash.com/photo-1568515387631-8b650bbcdb90?w=400&q=80"] },
-  { id:"2", title:"Sidi Bou Saïd",        city:"Tunis",  price_per_person:35, duration_hours:2.5, rating:4.8, reviews_count:94,  categories:["Culture"],               photos:["https://images.unsplash.com/photo-1539020140153-e479b8c22e70?w=400&q=80"] },
-  { id:"3", title:"Sahara à Douz",        city:"Douz",   price_per_person:95, duration_hours:8,   rating:5.0, reviews_count:67,  categories:["Aventure","Nature"],      photos:["https://images.unsplash.com/photo-1509316785289-025f5b846b35?w=400&q=80"] },
-  { id:"4", title:"Île de Djerba",        city:"Djerba", price_per_person:55, duration_hours:4,   rating:4.7, reviews_count:203, categories:["Relaxation","Nature"],    photos:["https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=400&q=80"] },
-  { id:"5", title:"Oasis de Tozeur",      city:"Tozeur", price_per_person:75, duration_hours:5,   rating:4.9, reviews_count:45,  categories:["Nature","Aventure"],      photos:["https://images.unsplash.com/photo-1548013146-72479768bada?w=400&q=80"] },
-  { id:"6", title:"Amphithéâtre El Jem",  city:"Sfax",   price_per_person:40, duration_hours:4,   rating:4.8, reviews_count:112, categories:["Archéologie","Culture"],  photos:["https://images.unsplash.com/photo-1568515387631-8b650bbcdb90?w=400&q=80"] },
-];
+type DayPlan    = { city: string; activities: ActivityItem[] };
+type DragPayload = { kind: "excursion"; excursion: Excursion } | { kind: "activity"; activityId: string; fromDay: number; fromTime: TimeKey };
+type Step       = "config" | "builder" | "result";
 
 const SLOTS: { key: TimeKey; label: string; icon: React.ReactNode; color: string; hint: string }[] = [
-  { key:"matin", label:"Matin",       icon:<Sunrise size={14} color="#F59E0B"/>, color:"#F59E0B", hint:"8h — 12h"  },
-  { key:"aprem", label:"Après-midi",  icon:<Sun     size={14} color="#2B96A8"/>, color:"#2B96A8", hint:"13h — 17h" },
-  { key:"soir",  label:"Soir",        icon:<Moon    size={14} color="#8B5CF6"/>, color:"#8B5CF6", hint:"18h — 22h" },
+  { key:"matin", label:"Matin",      icon:<Sunrise size={14} color="#F59E0B"/>, color:"#F59E0B", hint:"8h — 12h"  },
+  { key:"aprem", label:"Après-midi", icon:<Sun     size={14} color="#2B96A8"/>, color:"#2B96A8", hint:"13h — 17h" },
+  { key:"soir",  label:"Soir",       icon:<Moon    size={14} color="#8B5CF6"/>, color:"#8B5CF6", hint:"18h — 22h" },
 ];
-
-const CITY_EMOJI: Record<string, string> = {
-  Tunis:"🏛️", Sousse:"🏖️", Hammamet:"🌺", Djerba:"🏝️", Tozeur:"🌴", Douz:"🐪",
-  Kairouan:"🕌", Sfax:"🫒", Tataouine:"⭐", Tabarka:"🌊", Nabeul:"🏺", Gafsa:"⛏️",
-};
-
-function getCityIcon(city: string, region?: string): React.ReactNode {
-  const c = city.toLowerCase();
-  if (c.includes("tunis"))     return <Landmark  size={16} color="#2B96A8" />;
-  if (c.includes("sousse") || c.includes("hammamet")) return <Umbrella size={16} color="#F59E0B" />;
-  if (c.includes("djerba"))    return <Waves     size={16} color="#2563EB"/>;
-  if (c.includes("tozeur") || c.includes("douz") || c.includes("gafsa")) return <Tent size={16} color="#DC2626"/>;
-  if (c.includes("kairouan")) return <Church    size={16} color="#8B5CF6"/>;
-  if (c.includes("sfax"))     return <Building2 size={16} color="#374151"/>;
-  if (c.includes("tabarka"))  return <Mountain  size={16} color="#059669"/>;
-  if (c.includes("nabeul"))   return <Sparkles  size={16} color="#D97706"/>;
-  if (c.includes("tataouine"))return <Castle    size={16} color="#6B7280"/>;
-  if (region === "Nord")  return <Mountain  size={16} color="#059669"/>;
-  if (region === "Sahel") return <Umbrella  size={16} color="#F59E0B"/>;
-  if (region === "Sud")   return <Tent      size={16} color="#DC2626"/>;
-  return <MapPin size={16} color="#2B96A8"/>;
-}
 
 function tog<T>(arr: T[], item: T): T[] {
   return arr.includes(item) ? arr.filter(x => x !== item) : [...arr, item];
@@ -131,82 +74,137 @@ input[type=range]{accent-color:#2B96A8;cursor:pointer}
 ::-webkit-scrollbar-thumb:hover{background:#D1D5DB}
 `;
 
+/* ── Composants réutilisables ── */
+function LoadingGrid({ count = 6, height = 90 }: { count?: number; height?: number }) {
+  return (
+    <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill, minmax(130px,1fr))", gap:10 }}>
+      {Array.from({ length: count }).map((_, i) => (
+        <div key={i} className="lp" style={{ height, borderRadius:16, background:"#F3F4F6" }}/>
+      ))}
+    </div>
+  );
+}
+
+function DbError({ message, onRetry }: { message: string; onRetry?: () => void }) {
+  return (
+    <div style={{ textAlign:"center", padding:"32px 20px" }}>
+      <AlertCircle size={32} color="#DC2626" style={{ margin:"0 auto 10px" }}/>
+      <p style={{ fontSize:13, fontWeight:700, color:"#DC2626", marginBottom:4 }}>Erreur de chargement</p>
+      <p style={{ fontSize:12, color:"#9CA3AF", marginBottom:14 }}>{message}</p>
+      {onRetry && (
+        <button onClick={onRetry}
+          style={{ padding:"7px 18px", background:"#2B96A8", color:"white", border:"none", borderRadius:20, fontSize:12, fontWeight:700, cursor:"pointer", display:"inline-flex", alignItems:"center", gap:6 }}>
+          <RotateCw size={12}/> Réessayer
+        </button>
+      )}
+    </div>
+  );
+}
+
+function EmptyState({ icon, title, sub }: { icon: React.ReactNode; title: string; sub: string }) {
+  return (
+    <div style={{ textAlign:"center", padding:"32px 20px" }}>
+      <div style={{ color:"#D1D5DB", display:"flex", justifyContent:"center", marginBottom:10 }}>{icon}</div>
+      <p style={{ fontSize:13, fontWeight:700, color:"#374151", marginBottom:4 }}>{title}</p>
+      <p style={{ fontSize:12, color:"#9CA3AF" }}>{sub}</p>
+    </div>
+  );
+}
+
 /* ════════════════════════════════════
-   MAIN COMPONENT
+   MAIN
 ════════════════════════════════════ */
 function ItineraireInner() {
   const router = useRouter();
   const sb = useMemo(() => createClient(), []);
 
-  const [userId, setUserId]       = useState<string | null>(null);
-  const [savedItId, setSavedItId] = useState<string | null>(null);
-  const [saving, setSaving]       = useState(false);
-  const [saveOk, setSaveOk]       = useState(false);
-  const [step, setStep]           = useState<Step>("config");
-  const [days, setDays]           = useState(3);
-  const [selCities, setSelCities] = useState<string[]>([]);
-  const [selCats, setSelCats]     = useState<string[]>([]);
+  /* ── Auth ── */
+  const [userId,     setUserId]     = useState<string | null>(null);
+  const [savedItId,  setSavedItId]  = useState<string | null>(null);
+  const [saving,     setSaving]     = useState(false);
+  const [saveOk,     setSaveOk]     = useState(false);
+
+  /* ── Steps & config ── */
+  const [step,       setStep]       = useState<Step>("config");
+  const [days,       setDays]       = useState(3);
+  const [selCities,  setSelCities]  = useState<string[]>([]);
+  const [selCats,    setSelCats]    = useState<string[]>([]);
+
+  /* ── DB: villes ── */
+  const [villes,     setVilles]     = useState<Ville[]>([]);
+  const [ldVilles,   setLdVilles]   = useState(true);
+  const [errVilles,  setErrVilles]  = useState<string | null>(null);
+
+  /* ── DB: catégories ── */
   const [categories, setCategories] = useState<Categorie[]>([]);
-  const [allVilles, setAllVilles] = useState<Ville[]>([]);
-  const [ldVilles, setLdVilles]   = useState(true);
-  const [villesError, setVillesError] = useState<string | null>(null);
-  const [allExc, setAllExc]       = useState<Excursion[]>([]);
-  const [ldCats, setLdCats]       = useState(true);
-  const [ldExc, setLdExc]         = useState(true);
-  const [search, setSearch]       = useState("");
-  const [palCat, setPalCat]       = useState("Toutes");
-  const [palCity, setPalCity]     = useState("Toutes");
-  const [itin, setItin]           = useState<DayPlan[]>([]);
-  const [activeDay, setActiveDay] = useState(0);
-  const [editNote, setEditNote]   = useState<string | null>(null);
-  const [noteText, setNoteText]   = useState("");
-  const [dragOver, setDragOver]   = useState<{ day: number; time: TimeKey } | null>(null);
+  const [ldCats,     setLdCats]     = useState(true);
+  const [errCats,    setErrCats]    = useState<string | null>(null);
+
+  /* ── DB: excursions ── */
+  const [allExc,     setAllExc]     = useState<Excursion[]>([]);
+  const [ldExc,      setLdExc]      = useState(true);
+  const [errExc,     setErrExc]     = useState<string | null>(null);
+
+  /* ── Builder ── */
+  const [search,     setSearch]     = useState("");
+  const [palCat,     setPalCat]     = useState("Toutes");
+  const [palCity,    setPalCity]    = useState("Toutes");
+  const [itin,       setItin]       = useState<DayPlan[]>([]);
+  const [activeDay,  setActiveDay]  = useState(0);
+  const [editNote,   setEditNote]   = useState<string | null>(null);
+  const [noteText,   setNoteText]   = useState("");
+  const [dragOver,   setDragOver]   = useState<{ day: number; time: TimeKey } | null>(null);
   const dragRef = useRef<DragPayload | null>(null);
 
-  useEffect(() => {
-    sb.from("categories").select("*").order("nom").then(({ data, error }) => {
-      setCategories(error || !data?.length ? FALLBACK_CATS : data as Categorie[]);
-      setLdCats(false);
-    });
-  }, [sb]);
+  /* ── Loaders ── */
+  const loadVilles = async () => {
+    setLdVilles(true); setErrVilles(null);
+    const { data, error } = await sb.from("villes").select("*").eq("active", true).order("nom");
+    if (error) setErrVilles(error.message);
+    else       setVilles((data || []) as Ville[]);
+    setLdVilles(false);
+  };
 
-  useEffect(() => {
-    const load = async () => {
-      setLdVilles(true); setVillesError(null);
-      try {
-        const { data, error } = await sb.from("villes").select("*").eq("active", true).order("nom");
-        if (error) { setVillesError(error.message); setAllVilles(FALLBACK_CITIES); }
-        else setAllVilles(data?.length ? data as Ville[] : FALLBACK_CITIES);
-      } catch { setVillesError("Erreur de connexion"); setAllVilles(FALLBACK_CITIES); }
-      finally { setLdVilles(false); }
-    };
-    load();
-  }, [sb]);
+  const loadCategories = async () => {
+    setLdCats(true); setErrCats(null);
+    const { data, error } = await sb.from("categories").select("*").order("nom");
+    if (error) setErrCats(error.message);
+    else       setCategories((data || []) as Categorie[]);
+    setLdCats(false);
+  };
 
-  useEffect(() => {
-    sb.from("excursions").select("*").or("is_active.eq.true,is_active.is.null").then(({ data, error }) => {
-      setAllExc(error || !data?.length ? MOCK_EXC : data as Excursion[]);
-      setLdExc(false);
-    });
-  }, [sb]);
+  const loadExcursions = async () => {
+    setLdExc(true); setErrExc(null);
+    const { data, error } = await sb.from("excursions").select("*").eq("is_active", true).order("rating", { ascending: false });
+    if (error) setErrExc(error.message);
+    else       setAllExc((data || []) as Excursion[]);
+    setLdExc(false);
+  };
 
+  useEffect(() => { loadVilles(); },     []);
+  useEffect(() => { loadCategories(); }, []);
+  useEffect(() => { loadExcursions(); }, []);
+
+  /* ── Auth + itinéraire sauvegardé ── */
   useEffect(() => {
     sb.auth.getUser().then(async ({ data: { user } }) => {
       if (!user) return;
       setUserId(user.id);
-      const { data } = await sb.from("itineraires").select("*").eq("user_id", user.id).order("updated_at", { ascending: false }).limit(1).maybeSingle();
+      const { data } = await sb.from("itineraires").select("*")
+        .eq("user_id", user.id).order("updated_at", { ascending: false }).limit(1).maybeSingle();
       if (data) {
         setSavedItId(data.id);
         setDays(data.nb_jours || 3);
         setSelCities(data.villes_selectionnees || []);
         setSelCats(data.categories_selectionnees || []);
-        setItin(data.plan || []);
+        setItin(Array.isArray(data.plan) ? data.plan : []);
       }
     });
   }, [sb]);
 
-  const cc = (n: string) => categories.find(c => c.nom === n)?.couleur || "#2B96A8";
-  const ce = (n: string) => categories.find(c => c.nom === n)?.emoji   || "🏔️";
+  /* ── Helpers ── */
+  const cc = (n?: string) => categories.find(c => c.nom === n)?.couleur || "#2B96A8";
+  const ce = (n?: string) => categories.find(c => c.nom === n)?.emoji   || "🏔️";
 
   const palette = allExc.filter(e => {
     const q = search.toLowerCase();
@@ -215,6 +213,48 @@ function ItineraireInner() {
       && (palCity === "Toutes" || e.city === palCity)
       && (selCities.length === 0 || selCities.includes(e.city));
   });
+
+  const totAct    = Array.isArray(itin) ? itin.reduce((s, d) => s + (d.activities?.length || 0), 0) : 0;
+  const totBudget = Array.isArray(itin) ? itin.reduce((s, d) => s + (d.activities?.reduce((ss, a) => ss + (a.excursion?.price_per_person || 0), 0) || 0), 0) : 0;
+
+  /* ── Actions ── */
+  const startBuilder = () => {
+    setItin(Array.from({ length: days }, (_, i) => ({ city: selCities[i % selCities.length] || selCities[0], activities: [] })));
+    setActiveDay(0);
+    setPalCity(selCities.length === 1 ? selCities[0] : "Toutes");
+    setStep("builder");
+  };
+
+  const drop = (dayIdx: number, time: TimeKey) => {
+    const p = dragRef.current; if (!p) return;
+    if (p.kind === "excursion") {
+      setItin(prev => {
+        const u = [...prev];
+        u[dayIdx] = { ...u[dayIdx], activities: [...u[dayIdx].activities, { id:`${Date.now()}-${Math.random()}`, excursion:p.excursion, note:"", time }] };
+        return u;
+      });
+    } else {
+      const { activityId, fromDay, fromTime } = p;
+      if (fromDay === dayIdx && fromTime === time) return;
+      setItin(prev => {
+        const u = prev.map(d => ({ ...d, activities: [...d.activities] }));
+        const idx = u[fromDay].activities.findIndex(a => a.id === activityId);
+        if (idx === -1) return prev;
+        const [act] = u[fromDay].activities.splice(idx, 1);
+        u[dayIdx].activities.push({ ...act, time });
+        return u;
+      });
+    }
+    dragRef.current = null; setDragOver(null);
+  };
+
+  const rmAct = (dayIdx: number, id: string) =>
+    setItin(prev => { const u = [...prev]; u[dayIdx] = { ...u[dayIdx], activities: u[dayIdx].activities.filter(a => a.id !== id) }; return u; });
+
+  const saveNote = (dayIdx: number, id: string) => {
+    setItin(prev => { const u = [...prev]; u[dayIdx] = { ...u[dayIdx], activities: u[dayIdx].activities.map(a => a.id === id ? { ...a, note: noteText } : a) }; return u; });
+    setEditNote(null); setNoteText("");
+  };
 
   const saveItinerary = async () => {
     if (!userId) { alert("Vous devez être connecté pour sauvegarder"); return; }
@@ -232,49 +272,14 @@ function ItineraireInner() {
     finally { setSaving(false); }
   };
 
-  const startBuilder = () => {
-    setItin(Array.from({ length: days }, (_, i) => ({ city: selCities[i % selCities.length] || "Tunis", activities: [] })));
-    setActiveDay(0);
-    setPalCity(selCities.length === 1 ? selCities[0] : "Toutes");
-    setStep("builder");
-  };
-
-  const drop = (dayIdx: number, time: TimeKey) => {
-    const p = dragRef.current; if (!p) return;
-    if (p.kind === "excursion") {
-      setItin(prev => { const u = [...prev]; u[dayIdx] = { ...u[dayIdx], activities: [...u[dayIdx].activities, { id:`${Date.now()}-${Math.random()}`, excursion:p.excursion, note:"", time }] }; return u; });
-    } else {
-      const { activityId, fromDay, fromTime } = p;
-      if (fromDay === dayIdx && fromTime === time) return;
-      setItin(prev => {
-        const u = prev.map(d => ({ ...d, activities: [...d.activities] }));
-        const idx = u[fromDay].activities.findIndex(a => a.id === activityId);
-        if (idx === -1) return prev;
-        const [act] = u[fromDay].activities.splice(idx, 1);
-        u[dayIdx].activities.push({ ...act, time });
-        return u;
-      });
-    }
-    dragRef.current = null; setDragOver(null);
-  };
-
-  const rmAct = (dayIdx: number, id: string) =>
-    setItin(prev => { const u=[...prev]; u[dayIdx]={...u[dayIdx],activities:u[dayIdx].activities.filter(a=>a.id!==id)}; return u; });
-
-  const saveNote = (dayIdx: number, id: string) => {
-    setItin(prev => { const u=[...prev]; u[dayIdx]={...u[dayIdx],activities:u[dayIdx].activities.map(a=>a.id===id?{...a,note:noteText}:a)}; return u; });
-    setEditNote(null); setNoteText("");
-  };
-
-  const totAct    = itin.reduce((s, d) => s + d.activities.length, 0);
-  const totBudget = itin.reduce((s, d) => s + d.activities.reduce((ss, a) => ss + a.excursion.price_per_person, 0), 0);
-
-  /* ════ CONFIG ════ */
+  /* ══════════════════════════════════════
+     STEP : CONFIG
+  ══════════════════════════════════════ */
   if (step === "config") return (
     <div style={{ minHeight:"calc(100vh - 64px)", display:"flex", flexDirection:"column", background:"#F9FAFB", fontFamily:"'DM Sans',system-ui,sans-serif" }}>
       <style>{CSS}</style>
 
-      {/* ── Top bar ── */}
+      {/* Topbar */}
       <div style={{ flexShrink:0, display:"flex", alignItems:"center", justifyContent:"space-between", padding:"12px 24px", borderBottom:"1px solid #F3F4F6", background:"white", boxShadow:"0 1px 4px rgba(0,0,0,.04)" }}>
         <button className="vj-btn" onClick={() => router.push("/")}
           style={{ background:"none", border:"1px solid #E5E7EB", color:"#374151", fontSize:13, display:"inline-flex", alignItems:"center", gap:6, padding:"6px 14px", borderRadius:24, fontWeight:600 }}>
@@ -292,11 +297,10 @@ function ItineraireInner() {
         <div style={{ width:120 }}/>
       </div>
 
-      {/* ── Content with margins ── */}
       <div style={{ maxWidth:1200, margin:"0 auto", width:"100%", padding:"24px 24px 40px", flex:1 }}>
         <div style={{ display:"grid", gridTemplateColumns:"320px 1fr", gap:20, alignItems:"start" }}>
 
-          {/* LEFT: Durée + Catégories */}
+          {/* LEFT : Durée + Catégories */}
           <div style={{ background:"white", borderRadius:20, border:"1px solid #F3F4F6", boxShadow:"0 2px 8px rgba(0,0,0,.04)", overflow:"hidden", position:"sticky", top:20 }}>
 
             {/* Durée */}
@@ -330,7 +334,7 @@ function ItineraireInner() {
               </div>
             </div>
 
-            {/* Catégories */}
+            {/* Catégories depuis Supabase */}
             <div style={{ padding:"16px 22px" }}>
               <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:12 }}>
                 <div style={{ width:28, height:28, borderRadius:8, background:"rgba(43,150,168,.1)", display:"flex", alignItems:"center", justifyContent:"center" }}>
@@ -339,10 +343,15 @@ function ItineraireInner() {
                 <h2 style={{ fontSize:14, fontWeight:800, color:"#111827" }}>Centres d&apos;intérêt</h2>
                 <span style={{ fontSize:11, color:"#9CA3AF" }}>(optionnel)</span>
               </div>
+
               {ldCats ? (
                 <div style={{ display:"flex", flexWrap:"wrap", gap:7 }}>
-                  {[1,2,3,4,5,6].map(i => <div key={i} className="lp" style={{ height:32, width:90, borderRadius:22, background:"#F3F4F6" }}/>)}
+                  {Array.from({ length: 6 }).map((_, i) => <div key={i} className="lp" style={{ height:32, width:90, borderRadius:22, background:"#F3F4F6" }}/>)}
                 </div>
+              ) : errCats ? (
+                <DbError message={errCats} onRetry={loadCategories}/>
+              ) : categories.length === 0 ? (
+                <EmptyState icon={<Database size={28}/>} title="Aucune catégorie" sub="Ajoutez des catégories dans Supabase"/>
               ) : (
                 <div style={{ display:"flex", flexWrap:"wrap", gap:7 }}>
                   {categories.map(cat => {
@@ -364,7 +373,7 @@ function ItineraireInner() {
                 <div style={{ marginBottom:10, padding:"9px 12px", background:"white", borderRadius:12, border:"1px solid #E5E7EB", fontSize:12, color:"#374151" }}>
                   <span style={{ color:"#9CA3AF", fontSize:11, textTransform:"uppercase", letterSpacing:".04em", fontWeight:700 }}>Sélection · </span>
                   <span style={{ color:"#2B96A8", fontWeight:700 }}>{days} j</span>
-                  {" · "}{selCities.slice(0, 3).map(c => `${CITY_EMOJI[c]||""} ${c}`).join(", ")}
+                  {" · "}{selCities.slice(0, 3).join(", ")}
                   {selCities.length > 3 && <span style={{ color:"#2B96A8" }}> +{selCities.length - 3}</span>}
                 </div>
               )}
@@ -375,7 +384,7 @@ function ItineraireInner() {
             </div>
           </div>
 
-          {/* RIGHT: Villes */}
+          {/* RIGHT : Villes depuis Supabase */}
           <div style={{ background:"white", borderRadius:20, border:"1px solid #F3F4F6", boxShadow:"0 2px 8px rgba(0,0,0,.04)", overflow:"hidden" }}>
             <div style={{ padding:"16px 22px 12px", borderBottom:"1px solid #F3F4F6", display:"flex", alignItems:"center", gap:8 }}>
               <div style={{ width:28, height:28, borderRadius:8, background:"rgba(43,150,168,.1)", display:"flex", alignItems:"center", justifyContent:"center" }}>
@@ -387,30 +396,32 @@ function ItineraireInner() {
                   {selCities.length} sélectionnée{selCities.length > 1 ? "s" : ""}
                 </span>
               )}
+              {!ldVilles && !errVilles && (
+                <button onClick={loadVilles} style={{ marginLeft:"auto", background:"none", border:"none", cursor:"pointer", color:"#9CA3AF" }}>
+                  <RefreshCw size={13}/>
+                </button>
+              )}
             </div>
+
             <div style={{ padding:"16px 22px" }}>
               {ldVilles ? (
-                <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill, minmax(130px,1fr))", gap:10 }}>
-                  {[1,2,3,4,5,6,7,8,9,10,11,12].map(i => <div key={i} className="lp" style={{ height:90, borderRadius:16, background:"#F3F4F6" }}/>)}
-                </div>
-              ) : villesError ? (
-                <div style={{ textAlign:"center", padding:"32px 0" }}>
-                  <AlertCircle size={28} color="#DC2626" style={{ margin:"0 auto 8px" }}/>
-                  <p style={{ fontSize:12, color:"#DC2626" }}>Erreur de chargement</p>
-                  <p style={{ fontSize:11, color:"#9CA3AF", marginTop:4 }}>{villesError}</p>
-                  <button className="vj-btn" onClick={() => window.location.reload()}
-                    style={{ marginTop:12, padding:"6px 14px", background:"#2B96A8", color:"white", border:"none", borderRadius:20, fontSize:11, fontWeight:600, display:"inline-flex", alignItems:"center", gap:5 }}>
-                    <RotateCw size={11}/> Réessayer
-                  </button>
-                </div>
+                <LoadingGrid count={12} height={90}/>
+              ) : errVilles ? (
+                <DbError message={errVilles} onRetry={loadVilles}/>
+              ) : villes.length === 0 ? (
+                <EmptyState icon={<MapPin size={36}/>} title="Aucune ville disponible" sub="Ajoutez des villes actives dans la table 'villes' de Supabase"/>
               ) : (
                 <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill, minmax(130px,1fr))", gap:10 }}>
-                  {allVilles.map(c => {
+                  {villes.map(c => {
                     const sel = selCities.includes(c.nom);
                     return (
                       <button key={c.id} className="city-c vj-btn" onClick={() => setSelCities(tog(selCities, c.nom))}
                         style={{ padding:"14px 10px", borderRadius:16, border:`2px solid ${sel?"#2B96A8":"#F3F4F6"}`, background:sel?"rgba(43,150,168,.05)":"white", textAlign:"center", boxShadow:sel?"0 6px 16px -6px rgba(43,150,168,.28)":"0 1px 4px rgba(0,0,0,.04)", position:"relative" }}>
-                        {sel && <div style={{ position:"absolute", top:8, right:8, width:16, height:16, background:"#2B96A8", borderRadius:"50%", display:"flex", alignItems:"center", justifyContent:"center" }}><CheckCircle2 size={10} color="white"/></div>}
+                        {sel && (
+                          <div style={{ position:"absolute", top:8, right:8, width:16, height:16, background:"#2B96A8", borderRadius:"50%", display:"flex", alignItems:"center", justifyContent:"center" }}>
+                            <CheckCircle2 size={10} color="white"/>
+                          </div>
+                        )}
                         <div style={{ fontSize:26, marginBottom:6 }}>{c.emoji || "🏙️"}</div>
                         <div style={{ fontSize:12, fontWeight:sel?700:600, color:sel?"#2B96A8":"#374151", marginBottom:2 }}>{c.nom}</div>
                         <div style={{ fontSize:10, color:sel?"#2B96A8":"#9CA3AF" }}>{c.description}</div>
@@ -421,12 +432,15 @@ function ItineraireInner() {
               )}
             </div>
           </div>
+
         </div>
       </div>
     </div>
   );
 
-  /* ════ BUILDER ════ */
+  /* ══════════════════════════════════════
+     STEP : BUILDER
+  ══════════════════════════════════════ */
   if (step === "builder") return (
     <div style={{ height:"calc(100vh - 64px)", display:"flex", flexDirection:"column", background:"#F9FAFB", fontFamily:"'DM Sans',system-ui,sans-serif", overflow:"hidden" }}>
       <style>{CSS}</style>
@@ -443,14 +457,16 @@ function ItineraireInner() {
           </span>
         </div>
         <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-          {totAct > 0 && <>
-            <span style={{ fontSize:11, color:"#374151", background:"#F9FAFB", padding:"4px 12px", borderRadius:22, border:"1px solid #E5E7EB", fontWeight:600, display:"flex", alignItems:"center", gap:5 }}>
-              <Layers size={12}/>{totAct} excursion{totAct > 1 ? "s" : ""}
-            </span>
-            <span style={{ fontSize:11, fontWeight:700, color:"#059669", background:"rgba(5,150,105,.1)", padding:"4px 12px", borderRadius:22, display:"flex", alignItems:"center", gap:5 }}>
-              <PiggyBank size={12}/>{totBudget} TND
-            </span>
-          </>}
+          {totAct > 0 && (
+            <>
+              <span style={{ fontSize:11, color:"#374151", background:"#F9FAFB", padding:"4px 12px", borderRadius:22, border:"1px solid #E5E7EB", fontWeight:600, display:"flex", alignItems:"center", gap:5 }}>
+                <Layers size={12}/>{totAct} excursion{totAct>1?"s":""}
+              </span>
+              <span style={{ fontSize:11, fontWeight:700, color:"#059669", background:"rgba(5,150,105,.1)", padding:"4px 12px", borderRadius:22, display:"flex", alignItems:"center", gap:5 }}>
+                <PiggyBank size={12}/>{totBudget} TND
+              </span>
+            </>
+          )}
           <button className="vj-btn" onClick={() => setStep("result")}
             style={{ padding:"7px 20px", background:"#111827", color:"white", border:"none", borderRadius:22, fontSize:12, fontWeight:700, boxShadow:"0 4px 12px rgba(0,0,0,.15)", display:"flex", alignItems:"center", gap:6 }}>
             Résumé <ArrowRight size={13}/>
@@ -460,13 +476,18 @@ function ItineraireInner() {
 
       <div style={{ flex:1, display:"flex", minHeight:0 }}>
 
-        {/* ── Palette ── */}
+        {/* ── Palette excursions ── */}
         <div style={{ width:272, flexShrink:0, borderRight:"1px solid #F3F4F6", background:"white", display:"flex", flexDirection:"column", overflow:"hidden" }}>
           <div style={{ padding:"12px 14px 8px", flexShrink:0 }}>
             <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:10 }}>
               <BookMarked size={13} color="#2B96A8"/>
               <h2 style={{ fontSize:13, fontWeight:800, color:"#111827" }}>Excursions</h2>
+              {!ldExc && !errExc && (
+                <span style={{ fontSize:10, color:"#9CA3AF", marginLeft:"auto" }}>{palette.length} résultats</span>
+              )}
             </div>
+
+            {/* Search */}
             <div style={{ position:"relative", marginBottom:9 }}>
               <Search size={12} color="#9CA3AF" style={{ position:"absolute", left:10, top:"50%", transform:"translateY(-50%)", pointerEvents:"none" }}/>
               <input type="text" placeholder="Rechercher..." value={search} onChange={e => setSearch(e.target.value)}
@@ -474,23 +495,27 @@ function ItineraireInner() {
                 onFocus={e => e.currentTarget.style.borderColor="#2B96A8"}
                 onBlur={e => e.currentTarget.style.borderColor="#E5E7EB"}/>
             </div>
+
+            {/* Filtre villes */}
             <div style={{ marginBottom:7 }}>
               <p style={{ fontSize:10, fontWeight:700, color:"#9CA3AF", textTransform:"uppercase", letterSpacing:".06em", marginBottom:4 }}>Villes</p>
               <div style={{ display:"flex", gap:3, flexWrap:"wrap" }}>
                 {["Toutes", ...selCities].map(c => (
                   <button key={c} className="vj-btn" onClick={() => setPalCity(c)}
                     style={{ padding:"3px 8px", borderRadius:18, border:`1px solid ${palCity===c?"#2B96A8":"#E5E7EB"}`, background:palCity===c?"#2B96A8":"white", color:palCity===c?"white":"#6B7280", fontSize:10, fontWeight:palCity===c?700:500 }}>
-                    {c === "Toutes" ? "Toutes" : `${CITY_EMOJI[c]||""} ${c}`}
+                    {c === "Toutes" ? "Toutes" : c}
                   </button>
                 ))}
               </div>
             </div>
+
+            {/* Filtre catégories */}
             <div style={{ paddingBottom:8, borderBottom:"1px solid #F3F4F6" }}>
               <p style={{ fontSize:10, fontWeight:700, color:"#9CA3AF", textTransform:"uppercase", letterSpacing:".06em", marginBottom:4 }}>Catégories</p>
               <div style={{ display:"flex", gap:3, flexWrap:"wrap" }}>
                 {["Toutes", ...categories.map(c => c.nom)].map(cat => (
                   <button key={cat} className="vj-btn" onClick={() => setPalCat(cat)}
-                    style={{ padding:"3px 8px", borderRadius:18, border:`1px solid ${palCat===cat?(cc(cat)||"#2B96A8"):"#E5E7EB"}`, background:palCat===cat?`${cc(cat)||"#2B96A8"}12`:"white", color:palCat===cat?cc(cat)||"#2B96A8":"#6B7280", fontSize:10, fontWeight:palCat===cat?700:500 }}>
+                    style={{ padding:"3px 8px", borderRadius:18, border:`1px solid ${palCat===cat?cc(cat):"#E5E7EB"}`, background:palCat===cat?`${cc(cat)}12`:"white", color:palCat===cat?cc(cat):"#6B7280", fontSize:10, fontWeight:palCat===cat?700:500 }}>
                     {cat === "Toutes" ? "Toutes" : `${ce(cat)} ${cat}`}
                   </button>
                 ))}
@@ -498,13 +523,14 @@ function ItineraireInner() {
             </div>
           </div>
 
+          {/* Liste excursions */}
           <div style={{ flex:1, overflowY:"auto", padding:"8px 10px 12px" }}>
-            {ldExc ? Array.from({length:3}).map((_,i) => <div key={i} className="lp" style={{ height:120, borderRadius:12, background:"#F3F4F6", marginBottom:8 }}/>)
-            : palette.length === 0 ? (
-              <div style={{ textAlign:"center", padding:"32px 0" }}>
-                <Search size={28} color="#D1D5DB" style={{ margin:"0 auto 8px" }}/>
-                <p style={{ fontSize:12, color:"#9CA3AF" }}>Aucune excursion</p>
-              </div>
+            {ldExc ? (
+              Array.from({ length: 3 }).map((_, i) => <div key={i} className="lp" style={{ height:120, borderRadius:12, background:"#F3F4F6", marginBottom:8 }}/>)
+            ) : errExc ? (
+              <DbError message={errExc} onRetry={loadExcursions}/>
+            ) : palette.length === 0 ? (
+              <EmptyState icon={<Search size={28}/>} title="Aucune excursion" sub="Modifiez les filtres ou ajoutez des excursions dans Supabase"/>
             ) : palette.map(exc => {
               const col = cc(exc.categories?.[0]);
               return (
@@ -531,15 +557,18 @@ function ItineraireInner() {
                       </div>
                       <span style={{ fontSize:11, fontWeight:700, color:col }}>{exc.price_per_person} TND</span>
                     </div>
-                    {exc.rating > 0 && <div style={{ fontSize:9, color:"#9CA3AF", marginTop:2, display:"flex", alignItems:"center", gap:3 }}>
-                      <Star size={9} color="#F59E0B" fill="#F59E0B"/>{exc.rating} ({exc.reviews_count})
-                    </div>}
+                    {exc.rating > 0 && (
+                      <div style={{ fontSize:9, color:"#9CA3AF", marginTop:2, display:"flex", alignItems:"center", gap:3 }}>
+                        <Star size={9} color="#F59E0B" fill="#F59E0B"/>{exc.rating} ({exc.reviews_count})
+                      </div>
+                    )}
                   </div>
                 </div>
               );
             })}
           </div>
 
+          {/* Footer stats */}
           <div style={{ padding:"8px 14px", borderTop:"1px solid #F3F4F6", background:"#FAFAF9", flexShrink:0 }}>
             <div style={{ display:"flex", justifyContent:"space-between", marginBottom:4 }}>
               <span style={{ fontSize:11, color:"#9CA3AF", display:"flex", alignItems:"center", gap:4 }}><Layers size={11}/>Activités</span>
@@ -555,8 +584,10 @@ function ItineraireInner() {
           </div>
         </div>
 
-        {/* ── Calendar ── */}
+        {/* ── Calendrier ── */}
         <div style={{ flex:1, display:"flex", flexDirection:"column", overflow:"hidden" }}>
+
+          {/* Tabs jours */}
           <div style={{ flexShrink:0, padding:"10px 16px", borderBottom:"1px solid #F3F4F6", background:"white", display:"flex", gap:5, flexWrap:"wrap" }}>
             {itin.map((day, i) => {
               const act = activeDay === i;
@@ -564,7 +595,7 @@ function ItineraireInner() {
               return (
                 <button key={i} className="dtab vj-btn" onClick={() => setActiveDay(i)}
                   style={{ padding:"6px 14px", borderRadius:20, border:`2px solid ${act?"#2B96A8":"#E5E7EB"}`, background:act?"#2B96A8":"white", fontSize:12, fontWeight:act?700:500, color:act?"white":"#6B7280", display:"flex", alignItems:"center", gap:5, boxShadow:act?"0 4px 12px -4px rgba(43,150,168,.45)":"none" }}>
-                  <span>{CITY_EMOJI[day.city]||"📍"}</span>
+                  <span>{day.city ? (villes.find(v => v.nom === day.city)?.emoji || "📍") : "📍"}</span>
                   Jour {i+1}
                   {cnt > 0 && <span style={{ fontSize:9, background:act?"rgba(255,255,255,.25)":"#2B96A8", color:"white", borderRadius:12, padding:"1px 6px", fontWeight:800 }}>{cnt}</span>}
                 </button>
@@ -575,16 +606,18 @@ function ItineraireInner() {
           <div style={{ flex:1, overflowY:"auto", padding:"14px 16px" }}>
             {itin[activeDay] && (
               <div style={{ background:"white", borderRadius:18, border:"1px solid #F3F4F6", overflow:"hidden", boxShadow:"0 3px 14px rgba(0,0,0,.05)" }}>
+
+                {/* Header du jour */}
                 <div style={{ padding:"13px 18px", background:"#FAFAF9", borderBottom:"1px solid #F3F4F6", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
                   <div style={{ display:"flex", alignItems:"center", gap:10 }}>
                     <div style={{ width:38, height:38, borderRadius:12, background:"#2B96A8", display:"flex", alignItems:"center", justifyContent:"center", fontSize:18, boxShadow:"0 4px 10px rgba(43,150,168,.35)" }}>
-                      {CITY_EMOJI[itin[activeDay].city]||"📍"}
+                      {villes.find(v => v.nom === itin[activeDay].city)?.emoji || "📍"}
                     </div>
                     <div>
                       <h2 style={{ fontSize:14, fontWeight:800, color:"#111827" }}>Jour {activeDay+1} — {itin[activeDay].city}</h2>
                       <p style={{ fontSize:11, color:"#9CA3AF" }}>
                         {itin[activeDay].activities.length} activité{itin[activeDay].activities.length!==1?"s":""}
-                        {itin[activeDay].activities.length>0&&` · ${itin[activeDay].activities.reduce((s,a)=>s+a.excursion.price_per_person,0)} TND`}
+                        {itin[activeDay].activities.length>0 && ` · ${itin[activeDay].activities.reduce((s,a)=>s+a.excursion.price_per_person,0)} TND`}
                       </p>
                     </div>
                   </div>
@@ -593,15 +626,16 @@ function ItineraireInner() {
                     <select value={itin[activeDay].city}
                       onChange={e => setItin(prev => { const u=[...prev]; u[activeDay]={...u[activeDay],city:e.target.value}; return u; })}
                       style={{ border:"1.5px solid #E5E7EB", borderRadius:16, padding:"5px 10px", fontSize:12, fontFamily:"inherit", color:"#111827", background:"white", cursor:"pointer", outline:"none", fontWeight:600 }}>
-                      {allVilles.map(c => <option key={c.id} value={c.nom}>{c.emoji||"🏙️"} {c.nom}</option>)}
+                      {villes.map(c => <option key={c.id} value={c.nom}>{c.emoji||"🏙️"} {c.nom}</option>)}
                     </select>
                   </div>
                 </div>
 
+                {/* Slots */}
                 <div style={{ padding:"14px 18px" }}>
                   {SLOTS.map(slot => {
                     const acts   = itin[activeDay].activities.filter(a => a.time === slot.key);
-                    const isOver = dragOver?.day===activeDay && dragOver?.time===slot.key;
+                    const isOver = dragOver?.day === activeDay && dragOver?.time === slot.key;
                     return (
                       <div key={slot.key} style={{ marginBottom:12 }}>
                         <div style={{ display:"flex", alignItems:"center", gap:7, marginBottom:6 }}>
@@ -615,7 +649,7 @@ function ItineraireInner() {
                           )}
                         </div>
                         <div className={`dz${isOver?" ov":""}`}
-                          onDragOver={e => { e.preventDefault(); setDragOver({day:activeDay,time:slot.key}); }}
+                          onDragOver={e => { e.preventDefault(); setDragOver({ day:activeDay, time:slot.key }); }}
                           onDragLeave={() => setDragOver(null)}
                           onDrop={() => drop(activeDay, slot.key)}
                           style={{ minHeight:60, borderRadius:12, border:`2px dashed ${isOver?"#2B96A8":"#E5E7EB"}`, background:isOver?"rgba(43,150,168,.04)":"#FAFAF9", padding:8, display:"flex", flexWrap:"wrap", gap:7, alignItems:"flex-start" }}>
@@ -660,6 +694,7 @@ function ItineraireInner() {
                   })}
                 </div>
 
+                {/* Footer nav */}
                 <div style={{ padding:"8px 18px 14px", display:"flex", justifyContent:"space-between", alignItems:"center", borderTop:"1px solid #F3F4F6" }}>
                   <p style={{ fontSize:11, color:"#C4C9D0", fontStyle:"italic", display:"flex", alignItems:"center", gap:5 }}>
                     <Grip size={12} color="#C4C9D0"/>Glissez-déposez entre créneaux
@@ -681,10 +716,10 @@ function ItineraireInner() {
         </div>
       </div>
 
-      {/* Note modal */}
+      {/* Modal note */}
       {editNote && (
         <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,.45)", backdropFilter:"blur(6px)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:1000 }}
-          onClick={e => { if (e.target===e.currentTarget) setEditNote(null); }}>
+          onClick={e => { if (e.target === e.currentTarget) setEditNote(null); }}>
           <div style={{ background:"white", borderRadius:20, padding:24, width:370, boxShadow:"0 28px 56px -14px rgba(0,0,0,.28)" }}>
             <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:5 }}>
               <FileText size={18} color="#2B96A8"/>
@@ -712,7 +747,9 @@ function ItineraireInner() {
     </div>
   );
 
-  /* ════ RÉSUMÉ ════ */
+  /* ══════════════════════════════════════
+     STEP : RÉSUMÉ
+  ══════════════════════════════════════ */
   return (
     <div style={{ height:"calc(100vh - 64px)", display:"flex", flexDirection:"column", background:"#F9FAFB", fontFamily:"'DM Sans',system-ui,sans-serif", overflow:"hidden" }}>
       <style>{CSS}</style>
@@ -730,14 +767,14 @@ function ItineraireInner() {
           </button>
           <button className="vj-btn" onClick={saveItinerary} disabled={saving}
             style={{ padding:"7px 18px", border:"none", borderRadius:20, background:saving?"#6B7280":saveOk?"#059669":"#111827", fontSize:13, color:"white", fontWeight:700, display:"flex", alignItems:"center", gap:6, boxShadow:"0 4px 12px rgba(0,0,0,.15)", transition:"background .3s" }}>
-            <Send size={13}/>{saving?"Sauvegarde...":saveOk?"✅ Sauvegardé !":"Sauvegarder"}
+            <Send size={13}/>{saving ? "Sauvegarde..." : saveOk ? "✅ Sauvegardé !" : "Sauvegarder"}
           </button>
         </div>
       </div>
 
       <div style={{ flex:1, display:"grid", gridTemplateColumns:"260px 1fr", minHeight:0, overflow:"hidden" }}>
 
-        {/* LEFT: Stats */}
+        {/* LEFT stats */}
         <div style={{ borderRight:"1px solid #F3F4F6", background:"white", display:"flex", flexDirection:"column", padding:"22px 20px", gap:12, overflowY:"auto" }}>
           <div>
             <p style={{ fontSize:10, fontWeight:700, color:"#2B96A8", textTransform:"uppercase", letterSpacing:".08em", marginBottom:6, display:"flex", alignItems:"center", gap:5 }}>
@@ -750,14 +787,12 @@ function ItineraireInner() {
           </div>
 
           {[
-            { Icon:Layers,   label:"Activités",    value:`${totAct}`,          color:"#2B96A8", bg:"rgba(43,150,168,.1)"  },
-            { Icon:PiggyBank,label:"Budget total",  value:`${totBudget} TND`,   color:"#059669", bg:"rgba(5,150,105,.1)"   },
-            { Icon:Calendar, label:"Durée",         value:`${days} jours`,      color:"#8B5CF6", bg:"rgba(139,92,246,.1)"  },
-          ].map(({ Icon, label, value, color, bg }) => (
+            { icon:<Layers size={16} color="#2B96A8"/>,    label:"Activités",   value:`${totAct}`,        color:"#2B96A8", bg:"rgba(43,150,168,.1)"  },
+            { icon:<PiggyBank size={16} color="#059669"/>, label:"Budget total", value:`${totBudget} TND`, color:"#059669", bg:"rgba(5,150,105,.1)"   },
+            { icon:<Calendar size={16} color="#8B5CF6"/>,  label:"Durée",        value:`${days} jours`,   color:"#8B5CF6", bg:"rgba(139,92,246,.1)"  },
+          ].map(({ icon, label, value, color, bg }) => (
             <div key={label} style={{ padding:"12px 14px", background:"#F9FAFB", borderRadius:14, border:"1px solid #F3F4F6", display:"flex", alignItems:"center", gap:10 }}>
-              <div style={{ width:34, height:34, borderRadius:10, background:bg, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
-                <Icon size={16} color={color}/>
-              </div>
+              <div style={{ width:34, height:34, borderRadius:10, background:bg, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>{icon}</div>
               <div>
                 <p style={{ fontSize:10, color:"#9CA3AF", fontWeight:600, textTransform:"uppercase", letterSpacing:".04em" }}>{label}</p>
                 <p style={{ fontSize:18, fontWeight:800, color, lineHeight:1 }}>{value}</p>
@@ -766,7 +801,6 @@ function ItineraireInner() {
           ))}
 
           <div style={{ flex:1 }}/>
-
           <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
             <button className="vj-btn" onClick={() => setStep("builder")}
               style={{ width:"100%", padding:"11px", border:"1.5px solid #2B96A8", borderRadius:14, background:"transparent", fontSize:13, color:"#2B96A8", fontWeight:700, display:"flex", alignItems:"center", justifyContent:"center", gap:7 }}
@@ -776,12 +810,12 @@ function ItineraireInner() {
             </button>
             <button className="vj-btn" onClick={saveItinerary} disabled={saving}
               style={{ width:"100%", padding:"11px", border:"none", borderRadius:14, background:saving?"#6B7280":saveOk?"#059669":"#111827", fontSize:13, color:"white", fontWeight:700, display:"flex", alignItems:"center", justifyContent:"center", gap:7, boxShadow:"0 6px 16px -6px rgba(0,0,0,.35)", transition:"background .3s" }}>
-              <Send size={14}/>{saving?"Sauvegarde...":saveOk?"✅ Sauvegardé !":savedItId?"Mettre à jour":"Sauvegarder ce voyage"}
+              <Send size={14}/>{saving ? "Sauvegarde..." : saveOk ? "✅ Sauvegardé !" : savedItId ? "Mettre à jour" : "Sauvegarder ce voyage"}
             </button>
           </div>
         </div>
 
-        {/* RIGHT: Days */}
+        {/* RIGHT jours */}
         <div style={{ overflowY:"auto", padding:"16px 20px" }}>
           <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
             {itin.map((day, i) => (
@@ -789,7 +823,7 @@ function ItineraireInner() {
                 <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:day.activities.length>0?10:0 }}>
                   <h3 style={{ fontSize:13, fontWeight:800, color:"#111827", display:"flex", alignItems:"center", gap:8 }}>
                     <span style={{ width:28, height:28, borderRadius:8, background:"#2B96A8", display:"inline-flex", alignItems:"center", justifyContent:"center", fontSize:14, boxShadow:"0 3px 8px rgba(43,150,168,.3)" }}>
-                      {CITY_EMOJI[day.city]||"📍"}
+                      {villes.find(v => v.nom === day.city)?.emoji || "📍"}
                     </span>
                     Jour {i+1} — {day.city}
                   </h3>
@@ -804,7 +838,7 @@ function ItineraireInner() {
                 </div>
                 {day.activities.length > 0 ? (
                   <div style={{ display:"flex", flexDirection:"column", gap:5 }}>
-                    {SLOTS.map(slot => day.activities.filter(a => a.time===slot.key).map(act => {
+                    {SLOTS.map(slot => day.activities.filter(a => a.time === slot.key).map(act => {
                       const col = cc(act.excursion.categories?.[0]);
                       return (
                         <div key={act.id} style={{ display:"flex", alignItems:"center", gap:9, padding:"8px 10px", background:"#FAFAF9", borderRadius:10, border:`1px solid ${col}15` }}>

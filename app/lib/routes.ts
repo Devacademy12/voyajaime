@@ -3,6 +3,8 @@
 //  Emplacement : /lib/routes.ts
 // ─────────────────────────────────────────────
 
+import ModeAssiste from "../modeAssister/page";
+
 export const ROUTES = {
 
   // ── Public ──────────────────────────────────
@@ -10,12 +12,13 @@ export const ROUTES = {
   auth:       "/auth",
   excursions: "/excursions",
   excursion:  (id: string) => `/excursions/${id}`,
+  ModeAssiste : "/modeAssister",
 
   // ── Touriste ────────────────────────────────
   touriste: {
     dashboard:    "/touriste/dashboard",
     itineraires:   "/touriste/itineraires",
-    itineraire:   "/touriste/itineraire",
+    itineraire:   "/touriste/modeLibre",
     reservations: "/touriste/reservations",
     favoris:      "/touriste/favoris",
     messages:     "/touriste/messages",
