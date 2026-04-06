@@ -350,9 +350,7 @@ export default function TouristeNav({
                 <User size={18} /> Connexion
               </Link>
 
-              <Link href={ROUTES.auth} className="g-btn g-manage">
-                <CalendarDays size={18} /> Gérer ma réservation
-              </Link>
+              
             </>
           )}
         </div>

@@ -255,7 +255,9 @@ Format:
   return (
     <div className={styles.root}>
 
-      <TouristeNav />
+       <TouristeNav />
+            <div style={{ paddingTop: 64 }}>   </div>
+           
 
       {step === "questions" && (
         <div className={styles.heading}>

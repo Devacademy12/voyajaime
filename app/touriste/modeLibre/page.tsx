@@ -270,9 +270,6 @@ function ItineraireInner() {
 
       {/* Topbar */}
       <div className="itineraire-topbar">
-        <button className="back-btn" onClick={() => router.push("/")}>
-          <ArrowLeft size={14}/> Retour
-        </button>
         <div className="badge">
           <SlidersHorizontal size={13}/> Planificateur
         </div>
