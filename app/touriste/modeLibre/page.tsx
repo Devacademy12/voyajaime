@@ -11,7 +11,7 @@ import {
   AlertCircle, RotateCw, RefreshCw, Database,
 } from "lucide-react";
 // app/layout.tsx
-import '@/public/style/itineraire-libre.css'  // ou le chemin relatif correct
+import '@/public/style/itineraireLibre.css'  // ou le chemin relatif correct
 /* ─────────────── TYPES ─────────────── */
 type Excursion = {
   id: string; title: string; city: string; price_per_person: number;

@@ -6,7 +6,7 @@ import {
   X, User, Building2, CalendarDays, CheckCheck,
   AlertTriangle, ShieldAlert, Phone, Mail, Wifi,
 } from "lucide-react";
-import "./conversations.css";
+import "@/public/style/conversations.css";
 
 interface Conv {
   id: string; touriste_id: string; prestataire_id: string;

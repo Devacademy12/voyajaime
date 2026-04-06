@@ -21,10 +21,10 @@ export default async function TouristeLayout({ children }: { children: React.Rea
       <TouristeNav
         userName={profile.full_name || user.email || "Touriste"}
         favCount={favCount || 0}
-      />
+      /><div style={{ paddingTop: 64 }}>   </div>
       <main style={{ flex: 1, display: "flex", flexDirection: "column" }}>
         {children}
       </main>
     </div>
   );
-}
+} 

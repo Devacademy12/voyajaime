@@ -104,13 +104,13 @@ export default function ExcursionsPage() {
         @keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
         @keyframes fadeUp { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
         @keyframes spin { to{transform:rotate(360deg)} }
-        .exc-card { border-radius:18px; overflow:hidden; background:white; border:1px solid #EEF2FF; transition:all 0.25s; cursor:pointer; box-shadow:0 2px 8px rgba(5,51,102,.05); animation:fadeUp .35s ease both; }
+        .exc-card { border-radius:18px; overflow:hidden; background:white; border:1px solid #dfe0e2; transition:all 0.25s; cursor:pointer; box-shadow:0 2px 8px rgba(5,51,102,.05); animation:fadeUp .35s ease both; }
         .exc-card:hover { transform:translateY(-4px); box-shadow:0 14px 40px rgba(5,51,102,.12); border-color:#DCE5FF; }
         .exc-card img { transition:transform .4s ease; display:block; width:100%; height:100%; object-fit:cover; }
         .exc-card:hover img { transform:scale(1.05); }
         .heart-btn { position:absolute; top:12px; right:12px; width:34px; height:34px; border-radius:50%; background:rgba(255,255,255,0.92); border:none; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:transform .2s; box-shadow:0 2px 8px rgba(0,0,0,.15); z-index:2; }
         .heart-btn:hover { transform:scale(1.15); }
-        .filter-pill { padding:7px 14px; border-radius:20px; border:1.5px solid #DCE5FF; background:white; font-size:12px; font-weight:600; cursor:pointer; transition:all .18s; color:#053366; font-family:inherit; white-space:nowrap; }
+        .filter-pill { padding:7px 14px; border-radius:20px; border:1.5px solid #d2d3d5; background:white; font-size:12px; font-weight:600; cursor:pointer; transition:all .18s; color:#053366; font-family:inherit; white-space:nowrap; }
         .filter-pill.on { background:linear-gradient(135deg,#02AFCF,#259FFC); color:white; border-color:transparent; box-shadow:0 3px 10px rgba(2,175,207,.3); }
         .filter-pill:not(.on):hover { border-color:#02AFCF; color:#02AFCF; }
         .exc-search { width:100%; padding:12px 18px 12px 44px; border:1.5px solid #DCE5FF; border-radius:14px; font-size:14px; background:white; outline:none; color:#053366; font-family:inherit; transition:border .2s; box-shadow:0 2px 8px rgba(5,51,102,.05); }
@@ -132,7 +132,11 @@ export default function ExcursionsPage() {
         }
       `}</style>
 
-      <TouristeNav favCount={favorites.size} />
+       <TouristeNav />
+      <div style={{ paddingTop: 64 }}>   </div>
+     
+     
+   
 
       <div style={{ background:"#F8FAFF", minHeight:"100vh", padding:"36px 28px", fontFamily:"'DM Sans',system-ui,sans-serif" }}>
         <div style={{ maxWidth:1160, margin:"0 auto" }}>
