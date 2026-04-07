@@ -139,18 +139,18 @@ export default function TouristeNav({
         .g-btn{
           display:inline-flex;align-items:center;gap:6px;
           padding:7px 14px;border-radius:8px;
-          border:0.5px solid rgba(255,255,255,0.2);background:rgba(255,255,255,0.08);
+          border:0.5px solid rgba(186, 216, 252, 0.2);background:rgba(184, 219, 248, 0.08);
           font-size:13px;font-weight:600;color:rgba(255,255,255,0.85);
           cursor:pointer;font-family:'DM Sans',sans-serif;
           white-space:nowrap;text-decoration:none;transition:background 0.15s;
         }
-        .g-btn:hover{background:rgba(255,255,255,0.15)}
+        .g-btn:hover{background:hsla(210, 80%, 82%, 0.15)}
         .g-btn.prime{border:1.5px solid #2B96A8;color:#2B96A8;border-radius:20px;padding:6px 16px;font-size:12px;font-weight:700}
-        .g-btn.prime:hover{background:rgba(43,150,168,0.12)}
+        .g-btn.prime:hover{background:rgba(173, 232, 243, 0.12)}
 
         .g-fav{
           width:36px;height:36px;border-radius:50%;
-          border:0.5px solid rgba(255,255,255,0.2);background:rgba(255,255,255,0.08);
+          border:0.5px solid rgba(168, 209, 248, 0.2);background:rgba(165, 224, 244, 0.08);
           display:flex;align-items:center;justify-content:center;
           cursor:pointer;position:relative;transition:background 0.15s;
           text-decoration:none;
@@ -201,7 +201,7 @@ export default function TouristeNav({
         .g-drawer{
           position:fixed;top:64px;left:0;right:0;
           background:rgba(0,0,0,0.92);backdrop-filter:blur(20px);
-          border-bottom:1px solid rgba(255,255,255,0.08);z-index:199;
+          border-bottom:1px solid rgba(154, 200, 249, 0.08);z-index:199;
           box-shadow:0 8px 24px rgba(0,0,0,0.4);
           display:flex;flex-direction:column;gap:4px;padding:12px 16px 16px;
         }
@@ -211,7 +211,7 @@ export default function TouristeNav({
           font-size:15px;font-weight:600;color:rgba(255,255,255,0.85);text-decoration:none;
           transition:background 0.15s;
         }
-        .g-mlink:hover,.g-mlink.on{background:rgba(43,150,168,0.15);color:#2B96A8;font-weight:700}
+        .g-mlink:hover,.g-mlink.on{background:rgba(138, 228, 244, 0.15);color:#2B96A8;font-weight:700}
 
         @media(max-width:1000px){
           .g-center{display:none!important}
@@ -232,8 +232,8 @@ export default function TouristeNav({
         zIndex: 200,
         height: 64,
         background: scrolled
-          ? "rgba(41, 41, 41, 0.85)"
-          : "rgba(62, 62, 62, 0.25)",
+          ? "rgba(14, 89, 147, 0.85)"
+          : "rgba(15, 116, 184, 0.25)",
         backdropFilter: "blur(18px)",
         WebkitBackdropFilter: "blur(18px)",
         borderBottom: scrolled
