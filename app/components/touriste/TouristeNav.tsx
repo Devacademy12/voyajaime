@@ -9,11 +9,12 @@ import {
   Mountain, Map, Heart, CalendarDays, User,
   LogOut, Plane, Menu, X, MessageCircle,
   Compass, LogIn, UserPlus, HelpCircle,
+  Wand2, Navigation, ChevronDown,
 } from "lucide-react";
 
 const Logo = () => (
   <img src="/logo.png" alt="VoyajAime"
-    style={{ height: 35, width: "auto", objectFit: "contain", display: "block" }} />
+    style={{ height: 42, width: "auto", objectFit: "contain", display: "block" }} />
 );
 
 export default function TouristeNav({
@@ -28,6 +29,7 @@ export default function TouristeNav({
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [planOpen, setPlanOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [isUserLoggedIn, setIsUserLoggedIn] = useState(isLoggedIn);
 
@@ -35,35 +37,24 @@ export default function TouristeNav({
   const router = useRouter();
   const supabase = useMemo(() => createClient(), []);
 
-  // Vérifier l'état de connexion au chargement et quand les props changent
   useEffect(() => {
     const checkAuth = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       setIsUserLoggedIn(!!session);
-      
-      // Si l'utilisateur est connecté mais que userName n'est pas fourni, essayer de le récupérer
       if (session && !userName) {
         const { data: profile } = await supabase
           .from("profiles")
           .select("full_name, avatar_url")
           .eq("user_id", session.user.id)
           .single();
-        
         if (profile?.avatar_url) setAvatarUrl(profile.avatar_url);
       }
     };
-    
     checkAuth();
-    
-    // Écouter les changements d'authentification
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setIsUserLoggedIn(!!session);
-      if (!session) {
-        setMenuOpen(false);
-        setMobileOpen(false);
-      }
+      if (!session) { setMenuOpen(false); setMobileOpen(false); setPlanOpen(false); }
     });
-    
     return () => subscription.unsubscribe();
   }, [supabase, userName]);
 
@@ -75,20 +66,16 @@ export default function TouristeNav({
 
   useEffect(() => {
     if (!isUserLoggedIn) return;
-    
     const fetchAvatar = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
-      
       const { data } = await supabase
         .from("profiles")
         .select("avatar_url")
         .eq("user_id", user.id)
         .single();
-      
       if (data?.avatar_url) setAvatarUrl(data.avatar_url);
     };
-    
     fetchAvatar();
   }, [supabase, isUserLoggedIn]);
 
@@ -97,6 +84,7 @@ export default function TouristeNav({
     setIsUserLoggedIn(false);
     setMenuOpen(false);
     setMobileOpen(false);
+    setPlanOpen(false);
     router.push(ROUTES.home);
   };
 
@@ -115,7 +103,13 @@ export default function TouristeNav({
     if (href === "#chemins") return false;
     return pathname === href || pathname.startsWith(href + "/");
   };
-  
+
+  const isPlanActive =
+    pathname === ROUTES.ModeAssiste ||
+    pathname === ROUTES.touriste.itineraire ||
+    pathname.startsWith("/modeAssister") ||
+    pathname.startsWith("/touriste/modeLibre");
+
   const initial = userName
     ? userName.charAt(0).toUpperCase()
     : isUserLoggedIn ? "T" : "";
@@ -128,19 +122,75 @@ export default function TouristeNav({
         .gnav{font-family:'DM Sans',sans-serif}
 
         .glink{
-          display:flex;align-items:center;gap:6px;padding:8px 14px;
-          font-size:14px;font-weight:700;color:rgba(255,255,255,0.85);text-decoration:none;
+          display:flex;align-items:center;gap:7px;padding:10px 16px;
+          font-size:15px;font-weight:700;color:rgba(255,255,255,0.85);text-decoration:none;
           border-bottom:2px solid transparent;white-space:nowrap;
           transition:color 0.15s,border-color 0.15s;
         }
         .glink:hover{color:rgba(255,255,255,1)}
         .glink.on{color:#2B96A8;border-bottom-color:#2B96A8;font-weight:800}
 
+        /* ── Planning dropdown trigger ── */
+        .glink-plan{
+          display:flex;align-items:center;gap:7px;padding:10px 16px;
+          font-size:15px;font-weight:700;color:rgba(255,255,255,0.85);
+          border-bottom:2px solid transparent;white-space:nowrap;
+          transition:color 0.15s,border-color 0.15s;
+          cursor:pointer;background:none;border-top:none;border-left:none;border-right:none;
+          font-family:'DM Sans',sans-serif;
+        }
+        .glink-plan:hover{color:rgba(255,255,255,1)}
+        .glink-plan.on{color:#2B96A8;border-bottom-color:#2B96A8;font-weight:800}
+        .glink-plan .chevron{
+          transition:transform 0.2s ease;
+          opacity:0.7;
+        }
+        .glink-plan.open .chevron{transform:rotate(180deg);opacity:1}
+
+        /* ── Planning dropdown panel ── */
+        .plan-drop{
+          position:absolute;top:calc(100% + 8px);left:50%;transform:translateX(-50%);
+          background:rgba(5,20,50,0.97);backdrop-filter:blur(24px);
+          border:1px solid rgba(43,150,168,0.25);border-radius:18px;
+          padding:10px;min-width:340px;
+          box-shadow:0 16px 48px rgba(0,0,0,0.5),0 0 0 1px rgba(43,150,168,0.08);
+          z-index:400;animation:dropIn 0.2s ease;
+        }
+        @keyframes dropIn{from{opacity:0;transform:translateX(-50%) translateY(-8px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
+
+        .plan-card{
+          display:flex;align-items:flex-start;gap:12px;padding:14px 16px;border-radius:12px;
+          text-decoration:none;transition:background 0.15s;cursor:pointer;
+          border:1px solid transparent;
+        }
+        .plan-card:hover{background:rgba(43,150,168,0.12);border-color:rgba(43,150,168,0.2)}
+        .plan-card.active-mode{background:rgba(43,150,168,0.15);border-color:rgba(43,150,168,0.3)}
+
+        .plan-icon{
+          width:38px;height:38px;border-radius:10px;
+          display:flex;align-items:center;justify-content:center;
+          flex-shrink:0;margin-top:1px;
+        }
+        .plan-icon.assiste{background:linear-gradient(135deg,#02AFCF22,#053366);border:1px solid rgba(2,175,207,0.3)}
+        .plan-icon.libre{background:linear-gradient(135deg,#2B96A822,#053366);border:1px solid rgba(43,150,168,0.3)}
+
+        .plan-title{font-size:13px;font-weight:800;color:white;margin-bottom:3px;font-family:'DM Sans',sans-serif}
+        .plan-desc{font-size:11.5px;color:rgba(255,255,255,0.55);font-weight:500;line-height:1.5;font-family:'DM Sans',sans-serif}
+        .plan-badge{
+          display:inline-flex;align-items:center;gap:4px;margin-top:5px;
+          padding:2px 8px;border-radius:20px;font-size:10px;font-weight:700;
+          font-family:'DM Sans',sans-serif;
+        }
+        .plan-badge.ai{background:rgba(2,175,207,0.15);color:#02AFCF;border:1px solid rgba(2,175,207,0.25)}
+        .plan-badge.free{background:rgba(43,150,168,0.15);color:#2B96A8;border:1px solid rgba(43,150,168,0.25)}
+
+        .plan-divider{height:1px;background:rgba(255,255,255,0.06);margin:4px 0}
+
         .g-btn{
           display:inline-flex;align-items:center;gap:6px;
           padding:7px 14px;border-radius:8px;
           border:0.5px solid rgba(186, 216, 252, 0.2);background:rgba(184, 219, 248, 0.08);
-          font-size:13px;font-weight:600;color:rgba(255,255,255,0.85);
+          font-size:14px;font-weight:600;color:rgba(255,255,255,0.85);
           cursor:pointer;font-family:'DM Sans',sans-serif;
           white-space:nowrap;text-decoration:none;transition:background 0.15s;
         }
@@ -150,7 +200,7 @@ export default function TouristeNav({
 
         .g-fav{
           width:36px;height:36px;border-radius:50%;
-          border:0.5px solid rgba(168, 209, 248, 0.2);background:rgba(165, 224, 244, 0.08);
+          border:0.5px solid rgba(186, 216, 252, 0.2);background:rgba(184, 219, 248, 0.08);
           display:flex;align-items:center;justify-content:center;
           cursor:pointer;position:relative;transition:background 0.15s;
           text-decoration:none;
@@ -179,9 +229,9 @@ export default function TouristeNav({
           position:absolute;top:calc(100% + 10px);right:0;background:white;
           border:1px solid #E8EFFE;border-radius:16px;padding:6px;min-width:220px;
           box-shadow:0 12px 36px rgba(0,0,0,0.25);z-index:400;
-          animation:dropIn 0.18s ease;
+          animation:dropInRight 0.18s ease;
         }
-        @keyframes dropIn{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:translateY(0)}}
+        @keyframes dropInRight{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:translateY(0)}}
         .ddi{
           display:flex;align-items:center;gap:9px;padding:9px 12px;border-radius:10px;
           text-decoration:none;font-size:13px;font-weight:600;color:#053366;cursor:pointer;
@@ -199,7 +249,7 @@ export default function TouristeNav({
         .g-burger:hover{background:rgba(255,255,255,0.15)}
 
         .g-drawer{
-          position:fixed;top:64px;left:0;right:0;
+          position:fixed;top:76px;left:0;right:0;
           background:rgba(0,0,0,0.92);backdrop-filter:blur(20px);
           border-bottom:1px solid rgba(154, 200, 249, 0.08);z-index:199;
           box-shadow:0 8px 24px rgba(0,0,0,0.4);
@@ -207,11 +257,22 @@ export default function TouristeNav({
         }
         .g-drawer.closed{display:none}
         .g-mlink{
-          display:flex;align-items:center;gap:8px;padding:11px 14px;border-radius:10px;
-          font-size:15px;font-weight:600;color:rgba(255,255,255,0.85);text-decoration:none;
+          display:flex;align-items:center;gap:8px;padding:12px 16px;border-radius:10px;
+          font-size:16px;font-weight:600;color:rgba(255,255,255,0.85);text-decoration:none;
           transition:background 0.15s;
         }
         .g-mlink:hover,.g-mlink.on{background:rgba(138, 228, 244, 0.15);color:#2B96A8;font-weight:700}
+
+        /* Mobile planning section */
+        .g-plan-section{
+          border-top:1px solid rgba(255,255,255,0.06);
+          margin-top:4px;padding-top:8px;
+        }
+        .g-plan-label{
+          font-size:10px;font-weight:700;color:rgba(255,255,255,0.35);
+          text-transform:uppercase;letter-spacing:1px;padding:4px 14px 8px;
+          font-family:'DM Sans',sans-serif;
+        }
 
         @media(max-width:1000px){
           .g-center{display:none!important}
@@ -226,22 +287,14 @@ export default function TouristeNav({
 
       <header className="gnav gnav-header" style={{
         position: "fixed",
-        top: 0,
-        left: 0,
-        right: 0,
+        top: 0, left: 0, right: 0,
         zIndex: 200,
-        height: 64,
-        background: scrolled
-          ? "rgba(14, 89, 147, 0.85)"
-          : "rgba(15, 116, 184, 0.25)",
+        height: 76,
+        background: scrolled ? "rgba(14, 89, 147, 0.85)" : "rgba(15, 116, 184, 0.25)",
         backdropFilter: "blur(18px)",
         WebkitBackdropFilter: "blur(18px)",
-        borderBottom: scrolled
-          ? "1px solid rgba(47, 46, 46, 0.08)"
-          : "1px solid transparent",
-        boxShadow: scrolled
-          ? "0 6px 30px rgba(0,0,0,0.25)"
-          : "none",
+        borderBottom: scrolled ? "1px solid rgba(47, 46, 46, 0.08)" : "1px solid transparent",
+        boxShadow: scrolled ? "0 6px 30px rgba(0,0,0,0.25)" : "none",
         transition: "all 0.35s ease",
         display: "flex",
         alignItems: "center",
@@ -256,14 +309,76 @@ export default function TouristeNav({
         </Link>
 
         {/* Liens centre */}
-        <nav className="g-center" style={{ display: "flex", alignItems: "center", flex: 1, justifyContent:"right" }}>
+        <nav className="g-center" style={{ display: "flex", alignItems: "center", flex: 1, justifyContent: "right" }}>
           {isUserLoggedIn
-            ? touristeLinks.map(l => (
-                <Link key={l.href} href={l.href}
-                  className={`glink ${isActive(l.href) ? "on" : ""}`}>
-                  {l.icon} {l.label}
-                </Link>
-              ))
+            ? (
+              <>
+                {touristeLinks.map(l => (
+                  <Link key={l.href} href={l.href}
+                    className={`glink ${isActive(l.href) ? "on" : ""}`}>
+                    {l.icon} {l.label}
+                  </Link>
+                ))}
+
+                {/* ── Planifier dropdown ── */}
+                <div style={{ position: "relative" }}>
+                  <button
+                    className={`glink-plan ${isPlanActive ? "on" : ""} ${planOpen ? "open" : ""}`}
+                    onClick={() => setPlanOpen(o => !o)}
+                  >
+                    <Map size={15} />
+                    Planifier
+                    <ChevronDown size={13} className="chevron" />
+                  </button>
+
+                  {planOpen && (
+                    <>
+                      <div style={{ position: "fixed", inset: 0, zIndex: 399 }}
+                        onClick={() => setPlanOpen(false)} />
+                      <div className="plan-drop">
+                        {/* Mode Assisté */}
+                        <Link
+                          href={ROUTES.ModeAssiste}
+                          className={`plan-card ${pathname === ROUTES.ModeAssiste || pathname.startsWith("/modeAssister") ? "active-mode" : ""}`}
+                          onClick={() => setPlanOpen(false)}
+                        >
+                          <div className="plan-icon assiste">
+                            <Wand2 size={18} color="#02AFCF" />
+                          </div>
+                          <div>
+                            <p className="plan-title">Mode Assisté</p>
+                            <p className="plan-desc">Laissez notre IA concevoir votre itinéraire idéal selon vos préférences et envies.</p>
+                            <span className="plan-badge ai">
+                              <Wand2 size={8} /> Propulsé par l'IA
+                            </span>
+                          </div>
+                        </Link>
+
+                        <div className="plan-divider" />
+
+                        {/* Mode Libre */}
+                        <Link
+                          href={ROUTES.touriste.itineraire}
+                          className={`plan-card ${pathname === ROUTES.touriste.itineraire || pathname.startsWith("/touriste/modeLibre") ? "active-mode" : ""}`}
+                          onClick={() => setPlanOpen(false)}
+                        >
+                          <div className="plan-icon libre">
+                            <Navigation size={18} color="#2B96A8" />
+                          </div>
+                          <div>
+                            <p className="plan-title">Mode Libre</p>
+                            <p className="plan-desc">Construisez votre voyage à votre façon, étape par étape, selon vos propres choix.</p>
+                            <span className="plan-badge free">
+                              <Navigation size={8} /> Personnalisé
+                            </span>
+                          </div>
+                        </Link>
+                      </div>
+                    </>
+                  )}
+                </div>
+              </>
+            )
             : publicLinks.map(l =>
                 l.anchor
                   ? <a key={l.href} href={l.href} className="glink">{l.icon} {l.label}</a>
@@ -277,14 +392,12 @@ export default function TouristeNav({
 
         {/* Actions droite */}
         <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
-          {/* Hamburger mobile */}
           <button className="g-burger" onClick={() => setMobileOpen(o => !o)}>
             {mobileOpen ? <X size={20} /> : <Menu size={20} />}
           </button>
 
           {isUserLoggedIn ? (
             <>
-              {/* Favoris */}
               <Link href={ROUTES.touriste.favoris} className="g-fav">
                 <Heart size={16} color="#6B7280" />
                 {favCount > 0 && <span className="nb">{favCount > 9 ? "9+" : favCount}</span>}
@@ -292,7 +405,6 @@ export default function TouristeNav({
 
               <div className="g-sep" />
 
-              {/* Avatar + dropdown */}
               <div style={{ position: "relative" }}>
                 <button className="av" onClick={() => setMenuOpen(o => !o)}>
                   {avatarUrl ? <img src={avatarUrl} alt={initial} /> : initial}
@@ -321,7 +433,6 @@ export default function TouristeNav({
                         {favCount > 0 && <span style={{ marginLeft: "auto", background: "#DCE5FF", color: "#259FFC", padding: "1px 7px", borderRadius: 10, fontSize: 11, fontWeight: 700 }}>{favCount}</span>}
                       </Link>
                       <Link href={ROUTES.touriste.reservations} className="ddi" onClick={() => setMenuOpen(false)}><CalendarDays size={16} /> Mes réservations</Link>
-                      <Link href={ROUTES.touriste.itineraire} className="ddi" onClick={() => setMenuOpen(false)}><Map size={16} /> Mon itinéraire</Link>
                       <Link href={ROUTES.touriste.messages} className="ddi" onClick={() => setMenuOpen(false)}><MessageCircle size={16} /> Messages</Link>
                       <div style={{ borderTop: "1px solid #E8EFFE", marginTop: 4, paddingTop: 4 }}>
                         <button className="ddi red" onClick={handleSignOut}><LogOut size={16} /> Se déconnecter</button>
@@ -333,24 +444,14 @@ export default function TouristeNav({
             </>
           ) : (
             <>
-              {/* Non connecté */}
-              <button className="g-btn prime g-prime">
-                <HelpCircle size={14} /> Qu'est-ce que Prime ?
-              </button>
-
               <div className="g-sep" />
-
               <Link href={ROUTES.touriste.favoris} className="g-fav">
                 <Heart size={18} color="#6B7280" />
               </Link>
-
               <div className="g-sep" />
-
               <Link href={ROUTES.auth} className="g-btn">
                 <User size={18} /> Connexion
               </Link>
-
-              
             </>
           )}
         </div>
@@ -358,24 +459,58 @@ export default function TouristeNav({
 
       {/* Mobile drawer */}
       <div className={`g-drawer ${mobileOpen ? "" : "closed"}`}>
-        {(isUserLoggedIn ? touristeLinks : publicLinks).map(l => (
-          <Link key={l.href} href={l.href}
-            className={`g-mlink ${isActive(l.href) ? "on" : ""}`}
-            onClick={() => setMobileOpen(false)}>
-            {l.icon} {l.label}
-          </Link>
-        ))}
-        <div style={{ borderTop: "1px solid rgba(255,255,255,0.1)", marginTop: 4, paddingTop: 8 }}>
-          {isUserLoggedIn
-            ? <button className="ddi red" style={{ width: "100%", borderRadius: 10, color: "#DC2626", background: "transparent", fontWeight: 600 }} onClick={handleSignOut}>
+        {isUserLoggedIn ? (
+          <>
+            {touristeLinks.map(l => (
+              <Link key={l.href} href={l.href}
+                className={`g-mlink ${isActive(l.href) ? "on" : ""}`}
+                onClick={() => setMobileOpen(false)}>
+                {l.icon} {l.label}
+              </Link>
+            ))}
+
+            {/* Planifier section mobile */}
+            <div className="g-plan-section">
+              <p className="g-plan-label">Planifier mon voyage</p>
+              <Link
+                href={ROUTES.ModeAssiste}
+                className={`g-mlink ${pathname.startsWith("/modeAssister") ? "on" : ""}`}
+                onClick={() => setMobileOpen(false)}
+              >
+                <Wand2 size={15} /> Mode Assisté
+              </Link>
+              <Link
+                href={ROUTES.touriste.itineraire}
+                className={`g-mlink ${pathname.startsWith("/touriste/modeLibre") ? "on" : ""}`}
+                onClick={() => setMobileOpen(false)}
+              >
+                <Navigation size={15} /> Mode Libre
+              </Link>
+            </div>
+
+            <div style={{ borderTop: "1px solid rgba(255,255,255,0.1)", marginTop: 4, paddingTop: 8 }}>
+              <button className="ddi red" style={{ width: "100%", borderRadius: 10, color: "#DC2626", background: "transparent", fontWeight: 600 }} onClick={handleSignOut}>
                 <LogOut size={14} /> Se déconnecter
               </button>
-            : <Link href={ROUTES.auth} onClick={() => setMobileOpen(false)}
+            </div>
+          </>
+        ) : (
+          <>
+            {publicLinks.map(l => (
+              <Link key={l.href} href={l.href}
+                className={`g-mlink ${isActive(l.href) ? "on" : ""}`}
+                onClick={() => setMobileOpen(false)}>
+                {l.icon} {l.label}
+              </Link>
+            ))}
+            <div style={{ borderTop: "1px solid rgba(255,255,255,0.1)", marginTop: 4, paddingTop: 8 }}>
+              <Link href={ROUTES.auth} onClick={() => setMobileOpen(false)}
                 style={{ display: "flex", alignItems: "center", gap: 7, padding: "12px 14px", background: "#2B96A8", color: "white", borderRadius: 10, textDecoration: "none", fontSize: 14, fontWeight: 700 }}>
                 <LogIn size={14} /> Se connecter
               </Link>
-          }
-        </div>
+            </div>
+          </>
+        )}
       </div>
     </>
   );
