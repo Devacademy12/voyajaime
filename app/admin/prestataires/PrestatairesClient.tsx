@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { useToast } from "../../../lib/useToast";
+import { Toast } from "../../components/ui/Toast";
 import {
   Search, MapPin, Clock, CheckCircle, XCircle, AlertTriangle,
   Pencil, Trash2, Users, Map, Star, Phone, Calendar,
@@ -25,7 +27,6 @@ export default function PrestatairesClient({ prestataires: initial }: { prestata
   const [search, setSearch]     = useState("");
   const [cityFilter, setCityFilter] = useState("");
   const [loading, setLoading]   = useState<string | null>(null);
-  const [toast, setToast]       = useState<{ msg: string; ok: boolean } | null>(null);
   const [selected, setSelected] = useState<Prestataire | null>(null);
   const [mode, setMode]         = useState<"view" | "edit">("view");
   const [editFullName, setEditFullName] = useState("");
@@ -35,9 +36,7 @@ export default function PrestatairesClient({ prestataires: initial }: { prestata
   const [editDesc,     setEditDesc]     = useState("");
   const [editLoading,  setEditLoading]  = useState(false);
 
-  const showToast = (msg: string, ok = true) => {
-    setToast({ msg, ok }); setTimeout(() => setToast(null), 3500);
-  };
+  const { toast, showToast } = useToast();
 
   const openModal = (p: Prestataire, m: "view" | "edit" = "view") => {
     setSelected(p); setMode(m);
@@ -151,13 +150,7 @@ export default function PrestatairesClient({ prestataires: initial }: { prestata
         .badge-count{font-size:11px;border-radius:12px;padding:1px 7px;font-weight:800}
       `}</style>
 
-      {/* Toast */}
-      {toast && (
-        <div className="toast-w" style={{ background: toast.ok ? "#F0FDF4" : "#FEF2F2", color: toast.ok ? "#15803D" : "#DC2626", border: `1px solid ${toast.ok ? "#BBF7D0" : "#FECACA"}` }}>
-          {toast.ok ? <CheckCircle size={15} /> : <XCircle size={15} />}
-          {toast.msg}
-        </div>
-      )}
+      <Toast toast={toast} />
 
       {/* ── BARRE FILTRES ── */}
       <div style={{ background: "white", borderRadius: 16, border: "1px solid #F3F4F6", padding: "16px 20px", marginBottom: 16, boxShadow: "0 1px 4px rgba(0,0,0,.04)" }}>

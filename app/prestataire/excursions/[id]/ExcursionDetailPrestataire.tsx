@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { createClient } from "@/lib/supabaseClient";
 import Link from "next/link";
+import { useToast } from "../../../../lib/useToast";
+import { Toast } from "../../../components/ui/Toast";
 import {
   ArrowLeft,
   ChevronLeft,
@@ -56,11 +58,7 @@ export default function ExcursionDetailPrestataire({
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editText, setEditText] = useState("");
 
-  const [toast, setToast] = useState<{ msg: string; ok: boolean } | null>(null);
-
-  const showToast = (msg: string, ok = true) => {
-    setToast({ msg, ok }); setTimeout(() => setToast(null), 3000);
-  };
+  const { toast, showToast } = useToast();
 
   const photos = exc.photos?.filter(Boolean).length ? exc.photos.filter(Boolean) : [FALLBACK];
 
@@ -169,12 +167,7 @@ export default function ExcursionDetailPrestataire({
         .fu{animation:fadeUp .3s ease forwards}
       `}</style>
 
-      {toast && (
-        <div className="toast-p" style={{ background: toast.ok ? "#F0FDF4" : "#FEF2F2", color: toast.ok ? "#15803D" : "#DC2626", border: `1px solid ${toast.ok ? "#BBF7D0" : "#FECACA"}` }}>
-          {toast.ok ? <CheckCircle2 size={15} /> : <AlertTriangle size={15} />}
-          {toast.msg}
-        </div>
-      )}
+      <Toast toast={toast} />
 
       {/* Breadcrumb */}
       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 24, fontSize: 13, color: "#9CA3AF" }}>

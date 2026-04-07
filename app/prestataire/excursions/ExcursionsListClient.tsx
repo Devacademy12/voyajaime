@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { createClient } from "@/lib/supabaseClient";
+import { createClient } from "../../../lib/supabaseClient";
 import {
   MapPin,
   Clock,
@@ -19,6 +19,10 @@ import {
   AlertTriangle,
   Plus,
 } from "lucide-react";
+import { useToast } from "../../../lib/useToast";
+import { Toast, SearchBar, FilterTabs, DataList } from "../../components/ui";
+import { useCrudOperation } from "../../../lib/useCrudOperation";
+import { useListFiltering } from "../../../lib/useListFiltering";
 
 interface Excursion {
   id: string; title: string; city: string; duration_hours: number;

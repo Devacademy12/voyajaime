@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { Search, Mountain, MapPin, Clock, Users, Wallet, Star, Camera, Trash2, Play, Pause, LayoutGrid, List, CheckCircle, XCircle } from "lucide-react";
+import { useToast } from "../../../lib/useToast";
+import { Toast } from "../../components/ui";
 
 interface Excursion {
   id: string; title: string; city: string; duration_hours: number;
@@ -17,12 +19,8 @@ export default function AdminExcursionsClient({ excursions: initial }: { excursi
   const [filter, setFilter]   = useState("all");
   const [search, setSearch]   = useState("");
   const [loading, setLoading] = useState<string | null>(null);
-  const [toast, setToast]     = useState<{ msg: string; ok: boolean } | null>(null);
+  const { toast, showToast } = useToast();
   const [view, setView]       = useState<"grid" | "list">("grid");
-
-  const showToast = (msg: string, ok = true) => {
-    setToast({ msg, ok }); setTimeout(() => setToast(null), 3000);
-  };
 
   const callApi = async (id: string, action: string, value?: boolean) => {
     const res = await fetch("/api/admin/manage-excursion", {
@@ -83,12 +81,7 @@ export default function AdminExcursionsClient({ excursions: initial }: { excursi
         .badge-count{font-size:11px;border-radius:12px;padding:1px 7px;font-weight:800}
       `}</style>
 
-      {toast && (
-        <div className="toast-w" style={{ background: toast.ok ? "#F0FDF4" : "#FEF2F2", color: toast.ok ? "#15803D" : "#DC2626", border: `1px solid ${toast.ok ? "#BBF7D0" : "#FECACA"}` }}>
-          {toast.ok ? <CheckCircle size={15} /> : <XCircle size={15} />}
-          {toast.msg}
-        </div>
-      )}
+      <Toast toast={toast} />
 
       {/* Toolbar */}
       <div style={{ background: "white", borderRadius: 16, border: "1px solid #F3F4F6", padding: "14px 18px", marginBottom: 20, display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center", boxShadow: "0 1px 4px rgba(0,0,0,.04)" }}>

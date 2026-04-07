@@ -4,6 +4,8 @@ import {
   Clock, CheckCircle, FolderOpen, Trash2, ThumbsUp,
   MapPin, Star, MessageCircle, XCircle, Mountain,
 } from "lucide-react";
+import { useToast } from "../../../lib/useToast";
+import { Toast } from "../../components/ui/Toast";
 
 type Filter = "pending" | "approved" | "all";
 
@@ -17,11 +19,7 @@ export default function AvisClient({ avis: initial }: { avis: Avis[] }) {
   const [avis, setAvis]     = useState(initial);
   const [filter, setFilter] = useState<Filter>("pending");
   const [loading, setLoading] = useState<string | null>(null);
-  const [toast, setToast]   = useState<{ msg: string; ok: boolean } | null>(null);
-
-  const showToast = (msg: string, ok = true) => {
-    setToast({ msg, ok }); setTimeout(() => setToast(null), 3500);
-  };
+  const { toast, showToast } = useToast();
 
   const callApi = async (avisId: string, action: string) => {
     const res = await fetch("/api/admin/moderate-avis", {
@@ -75,17 +73,10 @@ export default function AvisClient({ avis: initial }: { avis: Avis[] }) {
         .abtn-red{background:#FEF2F2;color:#DC2626}.abtn-red:hover:not(:disabled){background:#FEE2E2}
         .avis-row{background:white;border-radius:16px;border:1px solid #F3F4F6;padding:20px 24px;display:flex;justify-content:space-between;gap:20px;transition:box-shadow .2s}
         .avis-row:hover{box-shadow:0 4px 16px rgba(0,0,0,.06)}
-        .toast-wrap{position:fixed;top:24px;right:24px;z-index:999;padding:14px 20px;border-radius:14px;font-size:14px;font-weight:600;font-family:inherit;box-shadow:0 8px 30px rgba(0,0,0,.12);animation:tin .3s ease;display:flex;align-items:center;gap:8px}
-        @keyframes tin{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}
         .badge-count{font-size:11px;border-radius:12px;padding:1px 7px;font-weight:800}
       `}</style>
 
-      {toast && (
-        <div className="toast-wrap" style={{ background: toast.ok ? "#F0FDF4" : "#FEF2F2", color: toast.ok ? "#15803D" : "#DC2626", border: `1px solid ${toast.ok ? "#BBF7D0" : "#FECACA"}` }}>
-          {toast.ok ? <CheckCircle size={15} /> : <XCircle size={15} />}
-          {toast.msg}
-        </div>
-      )}
+      <Toast toast={toast} />
 
       {/* Tabs */}
       <div style={{ display: "flex", gap: 8, marginBottom: 24 }}>

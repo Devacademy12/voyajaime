@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { useToast } from "../../../lib/useToast";
+import { Toast } from "../../components/ui/Toast";
 import {
   MapPin, Tag, Plus, Pencil, Trash2, Play, Pause,
   CheckCircle, XCircle, Save, X,
@@ -32,9 +34,8 @@ export default function CatalogueClient({
   const [categories, setCategories]     = useState(initC);
   const [catModal, setCatModal]         = useState<Partial<Categorie> | null>(null);
   const [catLoading, setCatLoading]     = useState<string|null>(null);
-  const [toast, setToast]               = useState<{ msg:string; ok:boolean }|null>(null);
-
-  const showToast = (msg:string, ok=true) => { setToast({msg,ok}); setTimeout(()=>setToast(null),3000); };
+  
+  const { toast, showToast } = useToast();
 
   // ── VILLES CRUD ──
   const callVille = async (body: object) => {
@@ -138,12 +139,7 @@ export default function CatalogueClient({
         .color-swatch.on{border-color:#111827;transform:scale(1.15)}
       `}</style>
 
-      {toast && (
-        <div className="toast-c" style={{ background:toast.ok?"#F0FDF4":"#FEF2F2", color:toast.ok?"#15803D":"#DC2626", border:`1px solid ${toast.ok?"#BBF7D0":"#FECACA"}` }}>
-          {toast.ok ? <CheckCircle size={15} /> : <XCircle size={15} />}
-          {toast.msg}
-        </div>
-      )}
+      <Toast toast={toast} />
 
       {/* ── TABS ── */}
       <div style={{ display:"flex", gap:8, marginBottom:24 }}>

@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useToast } from "../../../../lib/useToast";
+import { Toast } from "../../../components/ui/Toast";
 import {
   ArrowLeft, ChevronRight, MapPin, Calendar, Star, Clock,
   Wallet, Users, CheckCircle, AlertTriangle, MessageCircle,
@@ -38,14 +40,11 @@ export default function AdminExcursionDetail({
 }) {
   const [avis, setAvis]           = useState(initialAvis);
   const [currentPhoto, setCurrentPhoto] = useState(0);
-  const [toast, setToast]         = useState<{ msg: string; ok: boolean } | null>(null);
   const [loadingId, setLoadingId] = useState<string | null>(null);
   const [showPrestataire, setShowPrestataire] = useState(false);
   const [myLikes, setMyLikes]     = useState<Set<string>>(new Set());
 
-  const showToast = (msg: string, ok = true) => {
-    setToast({ msg, ok }); setTimeout(() => setToast(null), 3000);
-  };
+  const { toast, showToast } = useToast();
 
   const photos = exc.photos?.filter(Boolean).length ? exc.photos.filter(Boolean) : [FALLBACK];
   const approvedAvis = avis.filter(a => a.is_moderated);
@@ -113,12 +112,7 @@ export default function AdminExcursionDetail({
         .fu{animation:fadeUp .3s ease}
       `}</style>
 
-      {toast && (
-        <div className="toast-ad" style={{ background: toast.ok ? "#F0FDF4" : "#FEF2F2", color: toast.ok ? "#15803D" : "#DC2626", border: `1px solid ${toast.ok ? "#BBF7D0" : "#FECACA"}` }}>
-          {toast.ok ? <CheckCircle size={15} /> : <AlertTriangle size={15} />}
-          {toast.msg}
-        </div>
-      )}
+      <Toast toast={toast} />
 
       {/* Breadcrumb */}
       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 22, fontSize: 13, color: "#9CA3AF" }}>

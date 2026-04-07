@@ -6,6 +6,9 @@ import {
   Users, MapPin, Banknote, Search, ChevronDown,
   Waves, UserCheck, XCircle,
 } from "lucide-react";
+import { useToast } from "../../../lib/useToast";
+import { Toast } from "../../components/ui";
+import { RESERVATION_STATUS, ReservationStatus } from "../../../lib/statusConfig";
 
 interface ResRow {
   id: string;
@@ -20,18 +23,11 @@ interface ResRow {
   excursion: { title?: string; city?: string } | null;
 }
 
-const STATUS: Record<string, { label: string; color: string; bg: string; border: string; dot: string; Icon: React.ElementType }> = {
-  pending:   { label: "En attente", color: "#92400E", bg: "#FEF3C7", border: "#FDE68A", dot: "#F59E0B", Icon: Clock        },
-  confirmed: { label: "Confirmée",  color: "#065F46", bg: "#D1FAE5", border: "#6EE7B7", dot: "#10B981", Icon: CheckCircle  },
-  completed: { label: "Terminée",   color: "#1E40AF", bg: "#DBEAFE", border: "#93C5FD", dot: "#3B82F6", Icon: CheckCircle  },
-  cancelled: { label: "Annulée",    color: "#991B1B", bg: "#FEE2E2", border: "#FCA5A5", dot: "#EF4444", Icon: XCircle      },
-};
-
-type FilterKey = "all" | "pending" | "confirmed" | "completed" | "cancelled";
+type FilterKey = ReservationStatus | "all";
 
 const TABS: { key: FilterKey; label: string; Icon: React.ElementType }[] = [
-  { key: "pending",   label: "En attente", Icon: Clock       },
-  { key: "confirmed", label: "Confirmées", Icon: CheckCircle },
+  { key: "pending",   label: "En attente", Icon: RESERVATION_STATUS.pending.icon!   },
+  { key: "confirmed", label: "Confirmées", Icon: RESERVATION_STATUS.confirmed.icon! },
   { key: "all",       label: "Tous",       Icon: Users       },
 ];
 
@@ -262,7 +258,7 @@ export default function AdminReservationsClient({
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
           {filtered.map((r) => {
-            const s = STATUS[r.status] ?? STATUS.pending;
+            const s = RESERVATION_STATUS[r.status as ReservationStatus] ?? RESERVATION_STATUS.pending;
             return (
               <div key={r.id} style={{
                 background: "white", borderRadius: 16, padding: "20px",
@@ -302,7 +298,7 @@ export default function AdminReservationsClient({
                       padding: "3px 10px", borderRadius: 20, fontSize: 11, fontWeight: 600,
                       background: s.bg, color: s.color, border: `1px solid ${s.border}`,
                     }}>
-                      <s.Icon size={11} strokeWidth={2.5} />
+                      {s.icon && <s.icon size={11} strokeWidth={2.5} />}
                       {s.label}
                     </span>
                   </div>

@@ -2,6 +2,8 @@
 
 import { useState, useRef } from "react";
 import { createClient } from "@/lib/supabaseClient";
+import { useToast } from "../../../lib/useToast";
+import { Toast } from "../../components/ui/Toast";
 import {
   Camera,
   Pencil,
@@ -42,17 +44,8 @@ export default function ProfilClient({ profile, email }: Props) {
   const [avatarFile,   setAvatarFile]   = useState<File | null>(null);
   const [avatarLoading,setAvatarLoading]= useState(false);
   const [loading,      setLoading]      = useState(false);
-  const [toast,        setToast]        = useState<{ ok: boolean; text: string } | null>(null);
 
-  const userId       = String(profile?.user_id || "");
-  const displayName  = agencyName || fullName || "P";
-  const initiale     = displayName[0].toUpperCase();
-  const isValidated  = Boolean(profile?.is_validated);
-  const currentAvatar = avatarPreview || avatarUrl || null;
-
-  const showToast = (text: string, ok = true) => {
-    setToast({ ok, text }); setTimeout(() => setToast(null), 3500);
-  };
+  const { toast, showToast } = useToast();
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -128,12 +121,7 @@ export default function ProfilClient({ profile, email }: Props) {
         .img-btn:hover{opacity:.85}
       `}</style>
 
-      {toast && (
-        <div className="toast-pos" style={{ background: toast.ok ? "#F0FDF4" : "#FEF2F2", color: toast.ok ? "#15803D" : "#DC2626", border: `1px solid ${toast.ok ? "#BBF7D0" : "#FECACA"}` }}>
-          {toast.ok ? <CheckCircle2 size={15}/> : <X size={15}/>}
-          {toast.text}
-        </div>
-      )}
+      <Toast toast={toast} />
 
       <input ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/webp"
         style={{ display: "none" }} onChange={handleFileSelect} />
