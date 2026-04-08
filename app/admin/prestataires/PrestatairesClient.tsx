@@ -4,10 +4,13 @@ import { useState } from "react";
 import { useToast } from "../../../lib/useToast";
 import { Toast } from "../../components/ui/Toast";
 import {
-  Search, MapPin, Clock, CheckCircle, XCircle, AlertTriangle,
-  Pencil, Trash2, Users, Map, Star, Phone, Calendar,
-  ChevronRight, Eye, Save, X,
-} from "lucide-react";
+  SearchBar,
+  CityFilter,
+  FilterTabs,
+  EmptyPrestataires,
+  PrestastaireCard,
+  PrestastaireModal,
+} from "../../components/admin/PrestatairesUI";
 
 const CITIES = ["Tunis","Sfax","Sousse","Kairouan","Hammamet","Tozeur","Djerba","Tataouine","Gafsa","Douz"];
 
@@ -124,73 +127,15 @@ export default function PrestatairesClient({ prestataires: initial }: { prestata
 
   return (
     <>
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap');
-        *{box-sizing:border-box}
-        .ptab{padding:8px 16px;border-radius:20px;border:1px solid #E5E7EB;cursor:pointer;font-size:13px;font-weight:600;font-family:inherit;transition:all .2s;display:flex;align-items:center;gap:6px}
-        .ptab.on{background:#2B96A8;color:white;border-color:#2B96A8}
-        .ptab:not(.on){background:white;color:#6B7280}
-        .ptab:not(.on):hover{background:#F9FAFB}
-        .pcard{background:white;border-radius:14px;border:1px solid #F0F0F0;padding:15px 18px;display:flex;align-items:center;gap:14px;transition:all .2s;cursor:pointer}
-        .pcard:hover{box-shadow:0 4px 18px rgba(0,0,0,.07);border-color:#E5E7EB;transform:translateY(-1px)}
-        .pbtn{padding:7px 12px;border-radius:9px;border:none;cursor:pointer;font-size:12px;font-weight:700;font-family:inherit;transition:all .2s;white-space:nowrap;display:inline-flex;align-items:center;gap:5px}
-        .pbtn:disabled{opacity:.5;cursor:not-allowed}
-        .pbtn-green{background:#F0FDF4;color:#15803D}.pbtn-green:hover:not(:disabled){background:#DCFCE7}
-        .pbtn-gray{background:#F9FAFB;color:#374151;border:1px solid #E5E7EB}.pbtn-gray:hover:not(:disabled){background:#F3F4F6}
-        .pbtn-red{background:#FEF2F2;color:#DC2626}.pbtn-red:hover:not(:disabled){background:#FEE2E2}
-        .pbtn-teal{background:rgba(43,150,168,.1);color:#2B96A8}.pbtn-teal:hover:not(:disabled){background:rgba(43,150,168,.18)}
-        .fi{width:100%;padding:10px 14px;border:1.5px solid #E5E7EB;border-radius:11px;font-size:13px;font-family:inherit;outline:none;transition:border-color .2s;background:#FAFAFA;color:#111827}
-        .fi:focus{border-color:#2B96A8;background:white}
-        .overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:500;display:flex;align-items:center;justify-content:center;padding:20px}
-        .modal{background:white;border-radius:24px;width:100%;max-width:560px;max-height:88vh;overflow-y:auto;box-shadow:0 24px 80px rgba(0,0,0,.2)}
-        .toast-w{position:fixed;top:22px;right:22px;z-index:9999;padding:12px 20px;border-radius:14px;font-size:14px;font-weight:600;font-family:inherit;box-shadow:0 8px 28px rgba(0,0,0,.12);animation:tin .3s ease;display:flex;align-items:center;gap:8px}
-        @keyframes tin{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}
-        @keyframes fu{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
-        .fu{animation:fu .3s ease}
-        .badge-count{font-size:11px;border-radius:12px;padding:1px 7px;font-weight:800}
-      `}</style>
-
       <Toast toast={toast} />
 
       {/* ── BARRE FILTRES ── */}
       <div style={{ background: "white", borderRadius: 16, border: "1px solid #F3F4F6", padding: "16px 20px", marginBottom: 16, boxShadow: "0 1px 4px rgba(0,0,0,.04)" }}>
         <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
-
-          {/* Recherche */}
-          <div style={{ position: "relative", flex: 1, minWidth: 220 }}>
-            <Search size={14} style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "#9CA3AF", pointerEvents: "none" }} />
-            <input className="fi" placeholder="Rechercher par nom, agence, ville..." value={search}
-              onChange={e => setSearch(e.target.value)} style={{ paddingLeft: 34 }} />
-          </div>
-
-          {/* Ville */}
-          <div style={{ position: "relative", width: 175 }}>
-            <MapPin size={13} style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "#9CA3AF", pointerEvents: "none" }} />
-            <select className="fi" value={cityFilter} onChange={e => setCityFilter(e.target.value)}
-              style={{ paddingLeft: 32, cursor: "pointer", appearance: "none" }}>
-              <option value="">Toutes les villes</option>
-              {cities.map(c => <option key={c} value={c}>{c}</option>)}
-            </select>
-          </div>
-
+          <SearchBar value={search} onChange={setSearch} placeholder="Rechercher par nom, agence, ville..." />
+          <CityFilter value={cityFilter} onChange={setCityFilter} cities={cities} />
           <div style={{ width: 1, height: 32, background: "#E5E7EB", flexShrink: 0 }} />
-
-          {/* Tabs */}
-          <div style={{ display: "flex", gap: 6 }}>
-            {([
-              { k: "pending"   as const, label: "En attente", count: counts.pending,   Icon: Clock },
-              { k: "validated" as const, label: "Validés",    count: counts.validated, Icon: CheckCircle },
-              { k: "all"       as const, label: "Tous",        count: counts.all,       Icon: Users },
-            ]).map(({ k, label, count, Icon }) => (
-              <button key={k} className={`ptab ${filter === k ? "on" : ""}`} onClick={() => setFilter(k)}>
-                <Icon size={13} />
-                {label}
-                <span className="badge-count" style={{ background: filter === k ? "rgba(255,255,255,.25)" : "#F3F4F6", color: filter === k ? "white" : "#6B7280" }}>
-                  {count}
-                </span>
-              </button>
-            ))}
-          </div>
+          <FilterTabs value={filter} onChange={setFilter} counts={counts} />
         </div>
 
         {/* Résumé actif */}
@@ -198,9 +143,11 @@ export default function PrestatairesClient({ prestataires: initial }: { prestata
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 12, paddingTop: 12, borderTop: "1px solid #F3F4F6" }}>
             <span style={{ fontSize: 12, color: "#9CA3AF" }}>{filtered.length} résultat{filtered.length !== 1 ? "s" : ""}</span>
             {(search || cityFilter) && (
-              <button onClick={() => { setSearch(""); setCityFilter(""); }}
-                style={{ fontSize: 11, color: "#2B96A8", background: "none", border: "none", cursor: "pointer", fontFamily: "inherit", fontWeight: 700, padding: 0, display: "flex", alignItems: "center", gap: 4 }}>
-                <X size={11} /> Effacer les filtres
+              <button
+                onClick={() => { setSearch(""); setCityFilter(""); }}
+                style={{ fontSize: 11, color: "#2B96A8", background: "none", border: "none", cursor: "pointer", fontFamily: "inherit", fontWeight: 700, padding: 0, display: "flex", alignItems: "center", gap: 4 }}
+              >
+                ✕ Effacer les filtres
               </button>
             )}
           </div>
@@ -209,251 +156,66 @@ export default function PrestatairesClient({ prestataires: initial }: { prestata
 
       {/* ── LISTE ── */}
       {filtered.length === 0 ? (
-        <div style={{ textAlign: "center", padding: "56px 20px", background: "white", borderRadius: 16, border: "1px solid #F3F4F6" }}>
-          <div style={{ width: 52, height: 52, borderRadius: "50%", background: "#F3F4F6", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 14px" }}>
-            {filter === "pending" ? <CheckCircle size={24} color="#9CA3AF" /> : <Search size={24} color="#9CA3AF" />}
-          </div>
-          <p style={{ fontWeight: 700, color: "#111827", fontSize: 15 }}>
-            {filter === "pending" ? "Aucun prestataire en attente" : "Aucun résultat"}
-          </p>
-          {filter === "pending" && <p style={{ color: "#9CA3AF", fontSize: 13, marginTop: 5 }}>Toutes les demandes ont été traitées !</p>}
-        </div>
+        <EmptyPrestataires filter={filter} />
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          {filtered.map(p => {
-            const name = p.agency_name || p.full_name || "Sans nom";
-            const isLoading = loading === p.user_id;
-            return (
-              <div key={p.user_id} className="pcard"
-                style={{ borderLeft: `3px solid ${p.is_validated ? "#2B96A8" : "#F59E0B"}` }}
-                onClick={() => openModal(p, "view")}>
-
-                {/* Avatar */}
-                <div style={{ width: 44, height: 44, borderRadius: "50%", overflow: "hidden", flexShrink: 0, background: p.is_validated ? "linear-gradient(135deg,#2B96A8,#4AABB8)" : "linear-gradient(135deg,#F59E0B,#FBBF24)", display: "flex", alignItems: "center", justifyContent: "center", color: "white", fontWeight: 800, fontSize: 17 }}>
-                  {p.avatar_url
-                    ? <img src={p.avatar_url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                    : name[0].toUpperCase()
-                  }
-                </div>
-
-                {/* Info */}
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 3, flexWrap: "wrap" }}>
-                    <span style={{ fontSize: 14, fontWeight: 800, color: "#111827" }}>{name}</span>
-                    <span style={{ padding: "2px 8px", borderRadius: 18, fontSize: 11, fontWeight: 700, background: p.is_validated ? "#F0FDF4" : "#FFFBEB", color: p.is_validated ? "#15803D" : "#D97706", display: "inline-flex", alignItems: "center", gap: 4 }}>
-                      {p.is_validated ? <CheckCircle size={10} /> : <Clock size={10} />}
-                      {p.is_validated ? "Validé" : "En attente"}
-                    </span>
-                    {p.excursion_count > 0 && (
-                      <span style={{ padding: "2px 8px", borderRadius: 18, fontSize: 11, fontWeight: 600, background: "rgba(43,150,168,.08)", color: "#2B96A8", display: "inline-flex", alignItems: "center", gap: 4 }}>
-                        <Map size={10} /> {p.excursion_active}/{p.excursion_count}
-                      </span>
-                    )}
-                  </div>
-                  <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
-                    {p.full_name && p.agency_name && (
-                      <span style={{ fontSize: 12, color: "#6B7280", display: "flex", alignItems: "center", gap: 4 }}>
-                        <Users size={11} color="#9CA3AF" />{p.full_name}
-                      </span>
-                    )}
-                    {p.city && (
-                      <span style={{ fontSize: 12, color: "#6B7280", display: "flex", alignItems: "center", gap: 4 }}>
-                        <MapPin size={11} color="#9CA3AF" />{p.city}
-                      </span>
-                    )}
-                    {p.phone && (
-                      <span style={{ fontSize: 12, color: "#6B7280", display: "flex", alignItems: "center", gap: 4 }}>
-                        <Phone size={11} color="#9CA3AF" />{p.phone}
-                      </span>
-                    )}
-                    <span style={{ fontSize: 12, color: "#9CA3AF", display: "flex", alignItems: "center", gap: 4 }}>
-                      <Calendar size={11} color="#C4B8B0" />{new Date(p.created_at).toLocaleDateString("fr-FR")}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Actions */}
-                <div style={{ display: "flex", gap: 6, flexShrink: 0 }} onClick={e => e.stopPropagation()}>
-                  <button className="pbtn pbtn-teal" onClick={() => openModal(p, "edit")} disabled={isLoading}>
-                    <Pencil size={12} />
-                  </button>
-                  {!p.is_validated ? (
-                    <>
-                      <button className="pbtn pbtn-green" onClick={() => handleValidate(p.user_id, name)} disabled={isLoading}>
-                        <CheckCircle size={12} />{isLoading ? "..." : "Valider"}
-                      </button>
-                      <button className="pbtn pbtn-red" onClick={() => handleDelete(p.user_id, name)} disabled={isLoading}>
-                        <Trash2 size={12} />
-                      </button>
-                    </>
-                  ) : (
-                    <>
-                      <button className="pbtn pbtn-gray" onClick={() => handleRevoke(p.user_id, name)} disabled={isLoading}>
-                        <AlertTriangle size={12} />{isLoading ? "..." : "Révoquer"}
-                      </button>
-                      <button className="pbtn pbtn-red" onClick={() => handleDelete(p.user_id, name)} disabled={isLoading}>
-                        <Trash2 size={12} />
-                      </button>
-                    </>
-                  )}
-                </div>
-              </div>
-            );
-          })}
+          {filtered.map(p => (
+            <PrestastaireCard
+              key={p.user_id}
+              p={p}
+              isLoading={loading === p.user_id}
+              onViewEdit={() => openModal(p, "view")}
+              onValidate={() => {
+                const name = p.agency_name || p.full_name || "Sans nom";
+                handleValidate(p.user_id, name);
+              }}
+              onRevoke={() => {
+                const name = p.agency_name || p.full_name || "Sans nom";
+                handleRevoke(p.user_id, name);
+              }}
+              onDelete={() => {
+                const name = p.agency_name || p.full_name || "Sans nom";
+                handleDelete(p.user_id, name);
+              }}
+            />
+          ))}
         </div>
       )}
 
       {/* ── MODAL ── */}
       {selected && (
-        <div className="overlay" onClick={e => { if (e.target === e.currentTarget) setSelected(null); }}>
-          <div className="modal fu">
-            {/* Header modal */}
-            <div style={{ padding: "22px 26px 0", display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 18 }}>
-              <div style={{ display: "flex", gap: 7 }}>
-                <button onClick={() => setMode("view")}
-                  style={{ padding: "7px 16px", borderRadius: 20, border: "none", cursor: "pointer", fontSize: 13, fontWeight: 700, fontFamily: "inherit", background: mode === "view" ? "#111827" : "#F3F4F6", color: mode === "view" ? "white" : "#6B7280", transition: "all .2s", display: "flex", alignItems: "center", gap: 6 }}>
-                  <Eye size={13} /> Profil
-                </button>
-                <button onClick={() => setMode("edit")}
-                  style={{ padding: "7px 16px", borderRadius: 20, border: "none", cursor: "pointer", fontSize: 13, fontWeight: 700, fontFamily: "inherit", background: mode === "edit" ? "#2B96A8" : "#F3F4F6", color: mode === "edit" ? "white" : "#6B7280", transition: "all .2s", display: "flex", alignItems: "center", gap: 6 }}>
-                  <Pencil size={13} /> Modifier
-                </button>
-              </div>
-              <button onClick={() => setSelected(null)}
-                style={{ background: "#F3F4F6", border: "none", borderRadius: "50%", width: 30, height: 30, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                <X size={15} />
-              </button>
-            </div>
-
-            {mode === "view" ? (
-              <div style={{ padding: "0 26px 26px" }}>
-                {/* Avatar + nom */}
-                <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 20, paddingBottom: 16, borderBottom: "1px solid #F3F4F6" }}>
-                  <div style={{ width: 68, height: 68, borderRadius: "50%", overflow: "hidden", flexShrink: 0, border: "2px solid #F0F0F0" }}>
-                    {selected.avatar_url
-                      ? <img src={selected.avatar_url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                      : <div style={{ width: "100%", height: "100%", background: selected.is_validated ? "linear-gradient(135deg,#2B96A8,#4AABB8)" : "linear-gradient(135deg,#F59E0B,#FBBF24)", display: "flex", alignItems: "center", justifyContent: "center", color: "white", fontWeight: 800, fontSize: 24 }}>
-                          {(selected.agency_name || selected.full_name || "?")[0].toUpperCase()}
-                        </div>
-                    }
-                  </div>
-                  <div style={{ flex: 1 }}>
-                    <h2 style={{ fontSize: 18, fontWeight: 800, color: "#111827", marginBottom: 5 }}>
-                      {selected.agency_name || selected.full_name || "Sans nom"}
-                    </h2>
-                    {selected.full_name && selected.agency_name && (
-                      <p style={{ fontSize: 13, color: "#6B7280", marginBottom: 7, display: "flex", alignItems: "center", gap: 5 }}>
-                        <Users size={12} color="#9CA3AF" />{selected.full_name}
-                      </p>
-                    )}
-                    <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                      <span style={{ padding: "3px 9px", borderRadius: 18, fontSize: 11, fontWeight: 700, background: selected.is_validated ? "#F0FDF4" : "#FFFBEB", color: selected.is_validated ? "#15803D" : "#D97706", border: `1px solid ${selected.is_validated ? "#BBF7D0" : "#FDE68A"}`, display: "inline-flex", alignItems: "center", gap: 4 }}>
-                        {selected.is_validated ? <CheckCircle size={10} /> : <Clock size={10} />}
-                        {selected.is_validated ? "Validé" : "En attente"}
-                      </span>
-                      {selected.excursion_count > 0 && (
-                        <span style={{ padding: "3px 9px", borderRadius: 18, fontSize: 11, fontWeight: 600, background: "rgba(43,150,168,.08)", color: "#2B96A8", display: "inline-flex", alignItems: "center", gap: 4 }}>
-                          <Map size={10} />{selected.excursion_active}/{selected.excursion_count} excursions
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Détails */}
-                <div style={{ marginBottom: 16 }}>
-                  {[
-                    { Icon: MapPin,   label: "Ville",        val: selected.city || "—" },
-                    { Icon: Phone,    label: "Téléphone",    val: selected.phone || "—" },
-                    { Icon: Star,     label: "Note moyenne", val: selected.rating ? `${selected.rating}/5` : "—" },
-                    { Icon: Calendar, label: "Inscrit le",   val: new Date(selected.created_at).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" }) },
-                  ].map((row, i) => (
-                    <div key={row.label} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 0", borderBottom: i < 3 ? "1px solid #F3F4F6" : "none", fontSize: 13 }}>
-                      <span style={{ color: "#6B7280", display: "flex", alignItems: "center", gap: 7 }}>
-                        <row.Icon size={13} color="#9CA3AF" />{row.label}
-                      </span>
-                      <span style={{ fontWeight: 700, color: "#111827" }}>{row.val}</span>
-                    </div>
-                  ))}
-                </div>
-
-                {selected.description && (
-                  <div style={{ background: "#F9FAFB", borderRadius: 12, padding: "12px 14px", marginBottom: 18 }}>
-                    <p style={{ fontSize: 11, fontWeight: 700, color: "#9CA3AF", textTransform: "uppercase", letterSpacing: ".5px", marginBottom: 6 }}>Description</p>
-                    <p style={{ fontSize: 13, color: "#374151", lineHeight: 1.7 }}>{selected.description}</p>
-                  </div>
-                )}
-
-                {/* Actions */}
-                <div style={{ display: "flex", gap: 7, flexWrap: "wrap" }}>
-                  <button className="pbtn pbtn-teal" style={{ flex: 1 }} onClick={() => setMode("edit")}>
-                    <Pencil size={13} /> Modifier
-                  </button>
-                  {!selected.is_validated ? (
-                    <button className="pbtn pbtn-green" style={{ flex: 1 }}
-                      onClick={() => handleValidate(selected.user_id, selected.agency_name || selected.full_name || "—")} disabled={loading === selected.user_id}>
-                      <CheckCircle size={13} />{loading === selected.user_id ? "..." : "Valider"}
-                    </button>
-                  ) : (
-                    <button className="pbtn pbtn-gray" style={{ flex: 1 }}
-                      onClick={() => handleRevoke(selected.user_id, selected.agency_name || selected.full_name || "—")} disabled={loading === selected.user_id}>
-                      <AlertTriangle size={13} />{loading === selected.user_id ? "..." : "Révoquer"}
-                    </button>
-                  )}
-                  <button className="pbtn pbtn-red"
-                    onClick={() => handleDelete(selected.user_id, selected.agency_name || selected.full_name || "—")} disabled={loading === selected.user_id}>
-                    <Trash2 size={13} />
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <div style={{ padding: "0 26px 26px" }}>
-                <p style={{ fontSize: 13, color: "#9CA3AF", marginBottom: 18 }}>
-                  Modification de <strong style={{ color: "#111827" }}>{selected.agency_name || selected.full_name}</strong>
-                </p>
-                <div style={{ display: "flex", flexDirection: "column", gap: 13 }}>
-                  {[
-                    { label: "Nom complet",     val: editFullName, set: setEditFullName, ph: "Nom et prénom",      type: "input" },
-                    { label: "Nom de l'agence", val: editAgency,   set: setEditAgency,   ph: "Nom de l'agence",    type: "input" },
-                  ].map(f => (
-                    <div key={f.label}>
-                      <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: "#374151", textTransform: "uppercase", letterSpacing: ".5px", marginBottom: 5 }}>{f.label}</label>
-                      <input className="fi" value={f.val} onChange={e => f.set(e.target.value)} placeholder={f.ph} />
-                    </div>
-                  ))}
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-                    <div>
-                      <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: "#374151", textTransform: "uppercase", letterSpacing: ".5px", marginBottom: 5 }}>Ville</label>
-                      <select className="fi" value={editCity} onChange={e => setEditCity(e.target.value)} style={{ cursor: "pointer", appearance: "none" }}>
-                        <option value="">Sélectionnez</option>
-                        {CITIES.map(c => <option key={c} value={c}>{c}</option>)}
-                      </select>
-                    </div>
-                    <div>
-                      <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: "#374151", textTransform: "uppercase", letterSpacing: ".5px", marginBottom: 5 }}>Téléphone</label>
-                      <input className="fi" value={editPhone} onChange={e => setEditPhone(e.target.value)} placeholder="+216 XX XXX XXX" type="tel" />
-                    </div>
-                  </div>
-                  <div>
-                    <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: "#374151", textTransform: "uppercase", letterSpacing: ".5px", marginBottom: 5 }}>Description</label>
-                    <textarea className="fi" rows={3} value={editDesc} onChange={e => setEditDesc(e.target.value)}
-                      placeholder="Description de l'activité..." style={{ resize: "vertical" }} />
-                  </div>
-                </div>
-                <div style={{ display: "flex", gap: 8, marginTop: 18 }}>
-                  <button onClick={() => setMode("view")}
-                    style={{ flex: 1, padding: "11px", background: "#F3F4F6", color: "#374151", border: "none", borderRadius: 12, fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
-                    <X size={14} /> Annuler
-                  </button>
-                  <button onClick={handleSaveEdit} disabled={editLoading}
-                    style={{ flex: 2, padding: "11px", background: editLoading ? "#9CA3AF" : "#2B96A8", color: "white", border: "none", borderRadius: 12, fontSize: 13, fontWeight: 700, cursor: editLoading ? "not-allowed" : "pointer", fontFamily: "inherit", transition: "all .2s", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
-                    <Save size={14} />{editLoading ? "Sauvegarde..." : "Sauvegarder"}
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
+        <PrestastaireModal
+          p={selected}
+          mode={mode}
+          onModeChange={setMode}
+          onClose={() => setSelected(null)}
+          loading={loading === selected.user_id}
+          editFullName={editFullName}
+          setEditFullName={setEditFullName}
+          editAgency={editAgency}
+          setEditAgency={setEditAgency}
+          editCity={editCity}
+          setEditCity={setEditCity}
+          editPhone={editPhone}
+          setEditPhone={setEditPhone}
+          editDesc={editDesc}
+          setEditDesc={setEditDesc}
+          editLoading={editLoading}
+          onValidate={() => {
+            const name = selected.agency_name || selected.full_name || "—";
+            handleValidate(selected.user_id, name);
+          }}
+          onRevoke={() => {
+            const name = selected.agency_name || selected.full_name || "—";
+            handleRevoke(selected.user_id, name);
+          }}
+          onDelete={() => {
+            const name = selected.agency_name || selected.full_name || "—";
+            handleDelete(selected.user_id, name);
+          }}
+          onSave={handleSaveEdit}
+          cities={CITIES}
+        />
       )}
     </>
   );
