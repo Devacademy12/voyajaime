@@ -105,9 +105,9 @@ export default function TouristeNav({
   };
 
   const isPlanActive =
-    pathname === ROUTES.ModeAssiste ||
-    pathname === ROUTES.touriste.itineraire ||
-    pathname.startsWith("/modeAssister") ||
+    pathname === ROUTES.touriste.ModeAssiste ||
+    pathname === ROUTES.touriste.modeLibre||
+    pathname.startsWith("/touriste/modeAssister") ||
     pathname.startsWith("/touriste/modeLibre");
 
   const initial = userName
@@ -338,8 +338,8 @@ export default function TouristeNav({
                       <div className="plan-drop">
                         {/* Mode Assisté */}
                         <Link
-                          href={ROUTES.ModeAssiste}
-                          className={`plan-card ${pathname === ROUTES.ModeAssiste || pathname.startsWith("/modeAssister") ? "active-mode" : ""}`}
+                          href={ROUTES.touriste.ModeAssiste}
+                          className={`plan-card ${pathname === ROUTES.touriste.ModeAssiste || pathname.startsWith("/touriste/modeAssister") ? "active-mode" : ""}`}
                           onClick={() => setPlanOpen(false)}
                         >
                           <div className="plan-icon assiste">
@@ -358,8 +358,8 @@ export default function TouristeNav({
 
                         {/* Mode Libre */}
                         <Link
-                          href={ROUTES.touriste.itineraire}
-                          className={`plan-card ${pathname === ROUTES.touriste.itineraire || pathname.startsWith("/touriste/modeLibre") ? "active-mode" : ""}`}
+                          href={ROUTES.touriste.modeLibre}
+                          className={`plan-card ${pathname === ROUTES.touriste.modeLibre || pathname.startsWith("/touriste/modeLibre") ? "active-mode" : ""}`}
                           onClick={() => setPlanOpen(false)}
                         >
                           <div className="plan-icon libre">
@@ -473,14 +473,14 @@ export default function TouristeNav({
             <div className="g-plan-section">
               <p className="g-plan-label">Planifier mon voyage</p>
               <Link
-                href={ROUTES.ModeAssiste}
+                href={ROUTES.touriste.ModeAssiste}
                 className={`g-mlink ${pathname.startsWith("/modeAssister") ? "on" : ""}`}
                 onClick={() => setMobileOpen(false)}
               >
                 <Wand2 size={15} /> Mode Assisté
               </Link>
               <Link
-                href={ROUTES.touriste.itineraire}
+                href={ROUTES.touriste.modeLibre}
                 className={`g-mlink ${pathname.startsWith("/touriste/modeLibre") ? "on" : ""}`}
                 onClick={() => setMobileOpen(false)}
               >

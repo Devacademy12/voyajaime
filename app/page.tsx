@@ -224,7 +224,7 @@ export default function HomePage() {
               <p style={{ fontSize: 13.5, color: "rgba(255,255,255,0.72)", lineHeight: 1.6 }}>
                 Répondez à 3 questions, on génère votre itinéraire jour par jour automatiquement
               </p>
-              <Link href={user ? ROUTES.ModeAssiste : `${ROUTES.auth}?redirect=itineraire`}
+              <Link href={user ? ROUTES.touriste.ModeAssiste : `${ROUTES.auth}?redirect=itineraire`}
                 style={{ display: "inline-flex", alignItems: "center", gap: 7, padding: "11px 20px", background: "#2B96A8", color: "white", borderRadius: 12, textDecoration: "none", fontSize: 13, fontWeight: 700, marginTop: "auto", boxShadow: "0 6px 20px rgba(43,150,168,0.45)" }}>
                 Je veux qu&apos;on me propose <ArrowRight size={14} />
               </Link>
@@ -244,7 +244,7 @@ export default function HomePage() {
               <p style={{ fontSize: 13.5, color: "rgba(255,255,255,0.72)", lineHeight: 1.6 }}>
                 Construisez votre voyage de A à Z — choisissez chaque excursion, chaque jour
               </p>
-              <Link href={user ? `${ROUTES.touriste.itineraire}?mode=libre` : `${ROUTES.auth}?redirect=itineraire`}
+              <Link href={user ? `${ROUTES.touriste.modeLibre}?mode=libre` : `${ROUTES.auth}?redirect=itineraire`}
                 style={{ display: "inline-flex", alignItems: "center", gap: 7, padding: "11px 20px", background: "rgba(255,255,255,0.15)", border: "1.5px solid rgba(255,255,255,0.35)", color: "white", borderRadius: 12, textDecoration: "none", fontSize: 13, fontWeight: 700, marginTop: "auto" }}>
                 Je veux décider moi-même <ArrowRight size={14} />
               </Link>

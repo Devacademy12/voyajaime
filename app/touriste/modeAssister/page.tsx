@@ -3,29 +3,32 @@ import React, { useState, useEffect, useRef } from "react";
 import { createClient } from "@/lib/supabaseClient";
 import CheckoutModal from "@/app/components/excursions/CheckoutModal";
 import TouristeNav from "@/app/components/touriste/TouristeNav";
+import ItineraireDisplay from "@/app/components/itineraire/ItineraireDisplay";
 import {
-  MapPin, Clock, Sparkles, ChevronRight, ChevronLeft,
-  RotateCcw, CheckCircle, Calendar, Bot,
-  RefreshCw, X, Loader2,
+  MapPin, Calendar, Sparkles, Bot, Loader2,
 } from "lucide-react";
 import styles from "@/public/style/ModeAssiste.module.css";
 
 const N8N_WEBHOOK_URL = process.env.NEXT_PUBLIC_N8N_WEBHOOK_URL || "";
 
 /* ── Types ── */
-type Ville     = { id: string; nom?: string; name?: string; city?: string; description?: string; [key: string]: unknown; };
-type Categorie = { id: string; nom?: string; name?: string; label?: string; [key: string]: unknown; };
+type Ville     = { id: string; nom?: string; name?: string; city?: string; description?: string; [key: string]: unknown };
+type Categorie = { id: string; nom?: string; name?: string; label?: string; [key: string]: unknown };
 type Excursion = {
   id: string; title: string; city: string;
   price_per_person?: number; duration_hours?: number;
   description?: string; categories?: string[];
+  photos?: string[]; languages?: string[];
+  inclusions?: string[]; rating?: number; reviews_count?: number; max_people?: number;
 };
 type Activity = {
   id: string; name: string; description?: string;
-  time: string; duration: string; price: number; icon?: string;
+  time?: string; duration?: string; price?: number; icon?: string;
+  photos?: string | string[]; languages?: string | string[];
+  inclusion?: string | string[]; city?: string; rating?: number;
 };
-type DayPlan   = { day: number; city: string; theme?: string; emoji?: string; activities: Activity[]; };
-type Itinerary = { title: string; days: DayPlan[]; };
+type DayPlan   = { day: number; city: string; theme?: string; emoji?: string; activities: Activity[] };
+type Itinerary = { title: string; days: DayPlan[] };
 
 /* ── Quick-pick day options ── */
 const QUICK_DAYS = [1, 2, 3, 5, 7, 10, 14];
@@ -37,14 +40,7 @@ const LOADING_MSGS = [
   "Finalisation jour par jour…",
 ];
 
-function cityEmoji(city: string) {
-  const map: Record<string, string> = {
-    Tunis: "🏛️", Sousse: "🏖️", Sfax: "🏭", Djerba: "🌴",
-    Tozeur: "🌵", Carthage: "🏺", Hammamet: "🌊", Kairouan: "🕌",
-  };
-  return map[city] || "📍";
-}
-
+/* ── Helper ── */
 function extractItinerary(raw: unknown): Itinerary {
   const item = Array.isArray(raw) ? raw[0] : raw;
   const r = item as Record<string, unknown>;
@@ -57,14 +53,14 @@ function extractItinerary(raw: unknown): Itinerary {
       if (Array.isArray(pr?.days) && (pr.days as unknown[]).length > 0) return p as Itinerary;
       const nested = pr?.itinerary || pr?.result;
       if (nested && Array.isArray((nested as Record<string, unknown>)?.days)) return nested as Itinerary;
-    } catch { /* continue */ }
+    } catch { /* */ }
   }
   throw new Error("Impossible de trouver l'itinéraire dans la réponse n8n.");
 }
 
-/* ════════════════════════════════════════════
-   Component
-════════════════════════════════════════════ */
+/* ════════════════════════════
+   Main Component
+════════════════════════════ */
 export default function ModeAssiste() {
   const supabase = createClient();
 
@@ -81,27 +77,24 @@ export default function ModeAssiste() {
   const [itinerary,  setItinerary]  = useState<Itinerary | null>(null);
   const [genError,   setGenError]   = useState("");
   const [loadingMsg, setLoadingMsg] = useState("");
-  const [activeDay,  setActiveDay]  = useState(0);
   const msgIdxRef = useRef(0);
-
-  const [editing,    setEditing]    = useState<{ dayIdx: number; actIdx: number } | null>(null);
-  const [altOptions, setAltOptions] = useState<Activity[]>([]);
 
   const [showCheckout, setShowCheckout] = useState(false);
   const [saving,       setSaving]       = useState(false);
   const [saveStatus,   setSaveStatus]   = useState<"idle" | "ok" | "error" | "login">("idle");
 
+  /* ── Computed ── */
   const totalPrice = itinerary?.days.reduce(
     (acc, d) => acc + d.activities.reduce((a, act) => a + (Number(act.price) || 0), 0), 0
   ) ?? 0;
 
   const itineraryAsExc = itinerary ? {
-    id:               "itinerary-" + Date.now(),
-    title:            itinerary.title,
-    city:             selectedCities.join(", "),
-    duration_hours:   itinerary.days.length * 8,
+    id: "itinerary-" + Date.now(),
+    title: itinerary.title,
+    city: selectedCities.join(", "),
+    duration_hours: itinerary.days.length * 8,
     price_per_person: totalPrice,
-    max_people:       20,
+    max_people: 20,
   } : null;
 
   /* ── Load Supabase ── */
@@ -109,24 +102,15 @@ export default function ModeAssiste() {
     const load = async () => {
       setDbLoading(true);
       try {
-        const [
-          { data: v, error: ve },
-          { data: c, error: ce },
-          { data: e, error: ee },
-        ] = await Promise.all([
+        const [{ data: v }, { data: c }, { data: e }] = await Promise.all([
           supabase.from("villes").select("*").order("nom"),
           supabase.from("categories").select("*").order("nom"),
           supabase.from("excursions").select("*").eq("is_active", true),
         ]);
-        if (ve || ce || ee) throw new Error("Erreur chargement");
         setVilles((v || []) as unknown as Ville[]);
         setCategories((c || []) as unknown as Categorie[]);
         setExcursions((e || []) as Excursion[]);
-      } catch {
-        // silent
-      } finally {
-        setDbLoading(false);
-      }
+      } catch { /* silent */ } finally { setDbLoading(false); }
     };
     load();
   }, []);
@@ -141,14 +125,17 @@ export default function ModeAssiste() {
     if (!selectedCities.length || !selectedCats.length || !N8N_WEBHOOK_URL) return;
     setStep("generation"); setGenError("");
     msgIdxRef.current = 0; setLoadingMsg(LOADING_MSGS[0]);
+
     const iv = setInterval(() => {
       msgIdxRef.current = Math.min(msgIdxRef.current + 1, LOADING_MSGS.length - 1);
       setLoadingMsg(LOADING_MSGS[msgIdxRef.current]);
     }, 2200);
+
     try {
       const relExc   = excursions.filter(e => selectedCities.includes(e.city));
       const catNames = selectedCats.map(id => categories.find(c => c.id === id)?.nom).filter(Boolean);
-      const message  = `Tu es un expert en tourisme tunisien.
+
+      const message = `Tu es un expert en tourisme tunisien.
 Crée un itinéraire de ${days} jours.
 Villes: ${selectedCities.join(", ")}
 Intérêts: ${catNames.join(", ")}
@@ -158,28 +145,37 @@ ${JSON.stringify(relExc.map(e => ({
   price: e.price_per_person || 0,
   duration: e.duration_hours ? `${e.duration_hours}h` : "2h",
   description: e.description || "",
+  photos: e.photos || [],
+  languages: e.languages || [],
+  inclusions: e.inclusions || [],
+  rating: e.rating,
 })), null, 2)}
 RÈGLES: max 3 activités/jour, 1 ville/jour, IDs exacts, JSON uniquement.
 Format:
 {
   "title": "Titre",
   "days": [{
-    "day": 1, "city": "Ville", "theme": "Thème", "emoji": "🏛️",
+    "day": 1, "city": "Ville", "theme": "Thème",
     "activities": [{
-      "id": "id-exact", "name": "Nom", "description": "...",
-      "time": "09:00", "duration": "2h", "price": 45, "icon": "🏛️"
+      "id": "id-exact-depuis-supabase",
+      "name": "Nom", "description": "...", "photos": ["url..."],
+      "time": "09:00", "duration": "2h", "price": 45,
+      "languages": ["Français","Arabe"], "inclusion": ["Transport","Guide"],
+      "city": "Ville", "rating": 4.5
     }]
   }]
 }`;
+
       const res = await fetch(N8N_WEBHOOK_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action: "generate", message, days, cities: selectedCities, interests: catNames }),
       });
       clearInterval(iv);
-      if (!res.ok) throw new Error(`n8n ${res.status}: ${(await res.text()).slice(0, 300)}`);
+      if (!res.ok) throw new Error(`n8n ${res.status}`);
       const data = extractItinerary(await res.json());
-      setItinerary(data); setActiveDay(0); setStep("itineraire");
+      setItinerary(data);
+      setStep("itineraire");
     } catch (err) {
       clearInterval(iv);
       setGenError(err instanceof Error ? err.message : "Erreur inconnue");
@@ -187,29 +183,12 @@ Format:
     }
   };
 
-  /* ── Alternatives ── */
-  const openEdit = (dayIdx: number, actIdx: number) => {
-    setEditing({ dayIdx, actIdx });
-    const city  = itinerary!.days[dayIdx].city;
-    const curId = itinerary!.days[dayIdx].activities[actIdx].id;
-    const used  = new Set(itinerary!.days.flatMap(d => d.activities.map(a => a.id)));
-    const alts: Activity[] = excursions
-      .filter(e => e.city === city && e.id !== curId && !used.has(e.id))
-      .slice(0, 5)
-      .map(e => ({
-        id: e.id, name: e.title, description: e.description || "",
-        time: itinerary!.days[dayIdx].activities[actIdx].time,
-        duration: e.duration_hours ? `${e.duration_hours}h` : "2h",
-        price: e.price_per_person || 0, icon: "🗺️",
-      }));
-    setAltOptions(alts);
-  };
-
-  const applyAlt = (alt: Activity) => {
-    if (!editing || !itinerary) return;
+  /* ── Change one activity ── */
+  const handleChangeActivity = (dayIdx: number, actIdx: number, alt: Activity) => {
+    if (!itinerary) return;
     const upd: Itinerary = JSON.parse(JSON.stringify(itinerary));
-    upd.days[editing.dayIdx].activities[editing.actIdx] = alt;
-    setItinerary(upd); setEditing(null); setAltOptions([]);
+    upd.days[dayIdx].activities[actIdx] = alt;
+    setItinerary(upd);
   };
 
   /* ── Save ── */
@@ -229,24 +208,23 @@ Format:
         plan: itinerary,
       });
       setSaveStatus(error ? "error" : "ok");
-    } catch {
-      setSaveStatus("error");
-    } finally {
+    } catch { setSaveStatus("error"); }
+    finally {
       setSaving(false);
       setTimeout(() => setSaveStatus("idle"), 4000);
     }
   };
 
+  /* ── Reset ── */
   const resetAll = () => {
-    setStep("questions"); setItinerary(null); setSelectedCities([]);
-    setSelectedCats([]); setDays(5); setActiveDay(0); setGenError("");
+    setStep("questions"); setItinerary(null);
+    setSelectedCities([]); setSelectedCats([]);
+    setDays(5); setGenError("");
     setShowCheckout(false); setSaveStatus("idle");
   };
 
-  /* ── Slider percent for CSS custom property ── */
+  /* ── Slider % ── */
   const sliderPct = `${((days - 1) / 13) * 100}%`;
-
-  /* ── Selection pill text ── */
   const pillParts: string[] = [];
   if (days) pillParts.push(`${days}j`);
   if (selectedCities.length) pillParts.push(selectedCities.join(", "));
@@ -254,10 +232,8 @@ Format:
   /* ════════ RENDER ════════ */
   return (
     <div className={styles.root}>
-
-       <TouristeNav />
-            <div style={{ paddingTop: 64 }}>   </div>
-           
+      <TouristeNav />
+      <div style={{ paddingTop: 64 }} />
 
       {step === "questions" && (
         <div className={styles.heading}>
@@ -283,33 +259,26 @@ Format:
 
             <div className={styles.cardsRow}>
 
-              {/* ─── Card 1 — Durée ─── */}
+              {/* Card 1 — Durée */}
               <div className={styles.card}>
                 <div className={styles.cardHeader}>
-                  <div className={styles.cardIcon}>
-                    <Calendar size={14} color="#2B96A8" />
-                  </div>
+                  <div className={styles.cardIcon}><Calendar size={14} color="#2B96A8" /></div>
                   <div>
                     <p className={styles.cardTitle}>Durée du voyage</p>
                     <p className={styles.cardSub}>Glissez ou choisissez un raccourci</p>
                   </div>
                 </div>
-
                 <div className={styles.cardBody}>
-                  {/* Slider + big display side by side */}
                   <div className={styles.dureSliderRow}>
                     <div className={styles.dureSliderWrap}>
                       <input
-                        type="range"
-                        min="1" max="14" step="1"
-                        value={days}
+                        type="range" min="1" max="14" step="1" value={days}
                         className={styles.range}
                         style={{ "--val": sliderPct } as React.CSSProperties}
                         onChange={e => setDays(Number(e.target.value))}
                       />
                       <div className={styles.rangeLabels}>
-                        <span>1 jour</span>
-                        <span>14 jours</span>
+                        <span>1 jour</span><span>14 jours</span>
                       </div>
                     </div>
                     <div className={styles.daysDisplay}>
@@ -317,8 +286,6 @@ Format:
                       <span className={styles.daysLabel}>JOURS</span>
                     </div>
                   </div>
-
-                  {/* Quick-pick pills */}
                   <div className={styles.daysQuickRow}>
                     {QUICK_DAYS.map(n => (
                       <button
@@ -333,20 +300,19 @@ Format:
                 </div>
               </div>
 
-              {/* ─── Card 2 — Catégories ─── */}
+              {/* Card 2 — Catégories */}
               <div className={styles.card}>
                 <div className={styles.cardHeader}>
-                  <div className={styles.cardIcon}>
-                    <Sparkles size={14} color="#2B96A8" />
-                  </div>
+                  <div className={styles.cardIcon}><Sparkles size={14} color="#2B96A8" /></div>
                   <div>
                     <p className={styles.cardTitle}>Centres d&apos;intérêt</p>
                     <p className={styles.cardSub}>
-                      {selectedCats.length === 0 ? "optionnel" : `${selectedCats.length} sélectionné${selectedCats.length > 1 ? "s" : ""}`}
+                      {selectedCats.length === 0
+                        ? "optionnel"
+                        : `${selectedCats.length} sélectionné${selectedCats.length > 1 ? "s" : ""}`}
                     </p>
                   </div>
                 </div>
-
                 <div className={styles.cardBody}>
                   {dbLoading ? (
                     <div className={styles.loadingText}>
@@ -368,12 +334,10 @@ Format:
                 </div>
               </div>
 
-              {/* ─── Card 3 — Villes ─── */}
+              {/* Card 3 — Villes */}
               <div className={styles.card}>
                 <div className={styles.cardHeader}>
-                  <div className={styles.cardIcon}>
-                    <MapPin size={14} color="#2B96A8" />
-                  </div>
+                  <div className={styles.cardIcon}><MapPin size={14} color="#2B96A8" /></div>
                   <div>
                     <p className={styles.cardTitle}>Villes à explorer</p>
                     <p className={styles.cardSub}>Sélectionnez les destinations</p>
@@ -384,7 +348,6 @@ Format:
                     </span>
                   )}
                 </div>
-
                 <div className={styles.cardBody}>
                   {dbLoading ? (
                     <div className={styles.loadingText}>
@@ -455,147 +418,24 @@ Format:
           </div>
         )}
 
-        {/* ══ ITINÉRAIRE ══ */}
+        {/* ══ ITINÉRAIRE — délégué à ItineraireDisplay ══ */}
         {step === "itineraire" && itinerary && (
           <div className={styles.itiRoot}>
-
-            <div className={styles.itiHeader}>
-              <div>
-                <h1 className={styles.itiTitle}>{itinerary.title}</h1>
-                <p className={styles.itiMeta}>{itinerary.days.length} jours · {selectedCities.join(", ")}</p>
-              </div>
-              <button className={styles.btnSecondary} onClick={() => setStep("questions")}>
-                <RefreshCw size={12} /> Modifier
-              </button>
-            </div>
-
-            <div className={styles.dayTabs}>
-              {itinerary.days.map((d, i) => (
-                <button
-                  key={i}
-                  className={`${styles.dayTab} ${activeDay === i ? styles.dayTabOn : ""}`}
-                  onClick={() => setActiveDay(i)}
-                >
-                  {d.emoji || cityEmoji(d.city)} Jour {d.day}
-                </button>
-              ))}
-            </div>
-
-            {(() => {
-              const day = itinerary.days[activeDay];
-              return (
-                <div className={styles.itiBody}>
-                  <div className={styles.dayBanner}>
-                    <span className={styles.dayBannerEmoji}>{day.emoji || cityEmoji(day.city)}</span>
-                    <div>
-                      <p className={styles.dayBannerName}>Jour {day.day} — {day.city}</p>
-                      {day.theme && <p className={styles.dayBannerTheme}>{day.theme}</p>}
-                    </div>
-                  </div>
-
-                  {day.activities.map((act, ai) => (
-                    <div key={act.id || ai}>
-                      {editing?.dayIdx === activeDay && editing?.actIdx === ai ? (
-                        <div className={styles.altPanel}>
-                          <div className={styles.altHeader}>
-                            <p className={styles.altTitle}>Alternatives pour « {act.name} »</p>
-                            <button className={styles.closeBtn} onClick={() => { setEditing(null); setAltOptions([]); }}>
-                              <X size={14} />
-                            </button>
-                          </div>
-                          {altOptions.length === 0 ? (
-                            <p style={{ fontSize: 12, color: "#9CA3AF", textAlign: "center", padding: 12 }}>
-                              Aucune alternative disponible pour {day.city}.
-                            </p>
-                          ) : altOptions.map((alt, oi) => (
-                            <div key={oi} className={styles.altCard} onClick={() => applyAlt(alt)}>
-                              <div className={styles.altTop}>
-                                <p className={styles.altName}>{alt.name}</p>
-                                <span className={styles.priceBadge}>
-                                  {!alt.price || alt.price === 0 ? "Gratuit" : `${alt.price} TND`}
-                                </span>
-                              </div>
-                              {alt.description && <p style={{ fontSize: 11, color: "#6B7280", margin: "3px 0" }}>{alt.description}</p>}
-                              <p style={{ fontSize: 10, color: "#9CA3AF", margin: 0 }}>⏱ {alt.duration}</p>
-                            </div>
-                          ))}
-                        </div>
-                      ) : (
-                        <div className={styles.actCard}>
-                          <div className={styles.actEmoji}>{act.icon || "🗺️"}</div>
-                          <div className={styles.actInfo}>
-                            <div className={styles.actTop}>
-                              <div style={{ minWidth: 0 }}>
-                                <p className={styles.actName}>{act.name}</p>
-                                <p className={styles.actMeta}><Clock size={10} /> {act.time} · {act.duration}</p>
-                              </div>
-                              <span className={styles.priceBadge}>
-                                {!act.price || act.price === 0 ? "Gratuit" : `${act.price} TND`}
-                              </span>
-                            </div>
-                            {act.description && <p className={styles.actDesc}>{act.description}</p>}
-                          </div>
-                          <button className={styles.changeBtn} onClick={() => openEdit(activeDay, ai)}>
-                            <RefreshCw size={11} /> Changer
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  ))}
-
-                  <div style={{ display: "flex", justifyContent: "space-between", flexShrink: 0, marginTop: 2 }}>
-                    <button
-                      className={styles.btnSecondary}
-                      style={{ visibility: activeDay > 0 ? "visible" : "hidden" }}
-                      onClick={() => setActiveDay(activeDay - 1)}
-                    >
-                      <ChevronLeft size={13} /> Jour {activeDay}
-                    </button>
-                    {activeDay < itinerary.days.length - 1 ? (
-                      <button className={styles.btnPrimary} style={{ padding: "10px 24px", fontSize: 13 }} onClick={() => setActiveDay(activeDay + 1)}>
-                        Jour {activeDay + 2} <ChevronRight size={13} />
-                      </button>
-                    ) : (
-                      <button className={styles.btnPrimary} style={{ padding: "10px 24px", fontSize: 13 }} onClick={() => setShowCheckout(true)}>
-                        <CheckCircle size={13} /> Réserver
-                      </button>
-                    )}
-                  </div>
-                </div>
-              );
-            })()}
-
-            {saveStatus === "ok"    && <div className={`${styles.saveFeedback} ${styles.saveFeedbackOk}`}><CheckCircle size={13} /> Itinéraire sauvegardé !</div>}
-            {saveStatus === "error" && <div className={`${styles.saveFeedback} ${styles.saveFeedbackErr}`}>✕ Erreur de sauvegarde. Réessayez.</div>}
-            {saveStatus === "login" && <div className={`${styles.saveFeedback} ${styles.saveFeedbackLogin}`}>🔒 Connectez-vous pour sauvegarder.</div>}
-
-            <div className={styles.recap}>
-              <div className={styles.recapPrice}>
-                <p className={styles.recapPriceLabel}>Total estimé</p>
-                <p className={styles.recapPriceValue}>{totalPrice}<span className={styles.recapPriceSuffix}>TND</span></p>
-              </div>
-              <p style={{ fontSize: 11, color: "#6B7280", margin: 0 }}>
-                {itinerary.days.length} jours · {selectedCities.join(", ")}
-              </p>
-              <div className={styles.recapActions}>
-                <button className={styles.saveBtn} onClick={saveItinerary} disabled={saving || saveStatus === "ok"}>
-                  {saving
-                    ? <><Loader2 size={12} className={styles.spin} /> Sauvegarde…</>
-                    : saveStatus === "ok"
-                    ? <><CheckCircle size={12} /> Sauvegardé !</>
-                    : <>💾 Sauvegarder</>}
-                </button>
-                <button className={styles.btnPrimary} style={{ padding: "10px 20px", fontSize: 13 }} onClick={() => setShowCheckout(true)}>
-                  Finaliser <ChevronRight size={13} />
-                </button>
-              </div>
-            </div>
-
-            <div style={{ textAlign: "center" }}>
-              <button className={styles.resetLink} onClick={resetAll}>
-                <RotateCcw size={10} /> Recommencer depuis le début
-              </button>
-            </div>
+            <ItineraireDisplay
+              itinerary={itinerary}
+              selectedCities={selectedCities}
+              selectedCats={selectedCats}
+              categories={categories as { id: string; nom?: string; name?: string }[]}
+              excursions={excursions}
+              totalPrice={totalPrice}
+              saving={saving}
+              saveStatus={saveStatus}
+              onBack={() => setStep("questions")}
+              onReset={resetAll}
+              onCheckout={() => setShowCheckout(true)}
+              onSave={saveItinerary}
+              onChangeActivity={handleChangeActivity}
+            />
           </div>
         )}
 

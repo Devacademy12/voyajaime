@@ -3,7 +3,7 @@
 //  Emplacement : /lib/routes.ts
 // ─────────────────────────────────────────────
 
-import ModeAssiste from "../modeAssister/page";
+import ModeAssiste from "../touriste/modeAssister/page";
 
 export const ROUTES = {
 
@@ -18,7 +18,8 @@ export const ROUTES = {
   touriste: {
     dashboard:    "/touriste/dashboard",
     itineraires:   "/touriste/itineraires",
-    itineraire:   "/touriste/modeLibre",
+    modeLibre:   "/touriste/modeLibre",
+    ModeAssiste : "/touriste/modeAssister",
     reservations: "/touriste/reservations",
     favoris:      "/touriste/favoris",
     messages:     "/touriste/messages",
