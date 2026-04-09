@@ -428,11 +428,7 @@ export default function TouristeNav({
                         </div>
                       </div>
                       <Link href={ROUTES.touriste.profil} className="ddi" onClick={() => setMenuOpen(false)}><User size={16} /> Mon profil</Link>
-                      <Link href={ROUTES.touriste.favoris} className="ddi" onClick={() => setMenuOpen(false)}>
-                        <Heart size={16} /> Mes favoris
-                        {favCount > 0 && <span style={{ marginLeft: "auto", background: "#DCE5FF", color: "#259FFC", padding: "1px 7px", borderRadius: 10, fontSize: 11, fontWeight: 700 }}>{favCount}</span>}
-                      </Link>
-                      <Link href={ROUTES.touriste.reservations} className="ddi" onClick={() => setMenuOpen(false)}><CalendarDays size={16} /> Mes réservations</Link>
+            
                       <Link href={ROUTES.touriste.messages} className="ddi" onClick={() => setMenuOpen(false)}><MessageCircle size={16} /> Messages</Link>
                       <div style={{ borderTop: "1px solid #E8EFFE", marginTop: 4, paddingTop: 4 }}>
                         <button className="ddi red" onClick={handleSignOut}><LogOut size={16} /> Se déconnecter</button>
