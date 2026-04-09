@@ -104,7 +104,7 @@ export default function ExcursionsPage() {
         @keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
         @keyframes fadeUp { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
         @keyframes spin { to{transform:rotate(360deg)} }
-        .exc-card { border-radius:18px; overflow:hidden; background:white; border:1px solid #dfe0e2; transition:all 0.25s; cursor:pointer; box-shadow:0 2px 8px rgba(5,51,102,.05); animation:fadeUp .35s ease both; }
+        .exc-card { border-radius:18px; overflow:hidden; background:#ffffff; border:1px solid #dfe0e2; transition:all 0.25s; cursor:pointer; box-shadow:0 2px 8px rgba(5,51,102,.05); animation:fadeUp .35s ease both; }
         .exc-card:hover { transform:translateY(-4px); box-shadow:0 14px 40px rgba(5,51,102,.12); border-color:#DCE5FF; }
         .exc-card img { transition:transform .4s ease; display:block; width:100%; height:100%; object-fit:cover; }
         .exc-card:hover img { transform:scale(1.05); }
@@ -138,7 +138,7 @@ export default function ExcursionsPage() {
      
    
 
-      <div style={{ background:"#F8FAFF", minHeight:"100vh", padding:"36px 28px", fontFamily:"'DM Sans',system-ui,sans-serif" }}>
+      <div style={{ background:"#ffffff", minHeight:"100vh", padding:"36px 28px", fontFamily:"'DM Sans',system-ui,sans-serif" }}>
         <div style={{ maxWidth:1160, margin:"0 auto" }}>
 
           <div style={{ marginBottom:28, animation:"fadeUp .3s ease" }}>

@@ -189,7 +189,7 @@ export default function ItinerairesClient() {
 
       {/* Empty */}
       {items.length === 0 ? (
-        <div style={{ textAlign:"center", padding:"72px 24px", background:"white", borderRadius:28, border:"1px solid #E5E7EB", boxShadow:"0 2px 12px rgba(0,0,0,.04)" }}>
+        <div style={{ textAlign:"center", padding:"72px 24px", background:"#ffffff", borderRadius:28, border:"1px solid #E5E7EB", boxShadow:"0 2px 12px rgba(0,0,0,.04)" }}>
           <Map size={52} color="#D1D5DB" style={{ margin:"0 auto 16px" }}/>
           <h2 style={{ fontFamily:"'Playfair Display',serif", fontSize:24, fontWeight:900, color:"#111827", marginBottom:10 }}>Aucun itinéraire sauvegardé</h2>
           <p style={{ fontSize:14, color:"#9CA3AF", marginBottom:28, maxWidth:320, margin:"0 auto 28px" }}>Planifiez votre voyage en Tunisie et sauvegardez votre itinéraire</p>

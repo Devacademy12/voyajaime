@@ -24,7 +24,7 @@ const CSS_CONFIG = `
 .itineraire-config-page {
   height: calc(100vh - 64px);
   display: flex; flex-direction: column;
-  background: #F0F4F6;
+  background: #ffffff;
   font-family: 'DM Sans', system-ui, sans-serif;
   overflow: hidden;
 }
@@ -33,7 +33,7 @@ const CSS_CONFIG = `
   display: flex; align-items: center; justify-content: center;
   padding: 12px 32px;
   background: white;
-  border-bottom: 1px solid #EEF1F3;
+  border-bottom: 1px solid #ffffff;
   box-shadow: 0 1px 6px rgba(0,0,0,.04);
   position: relative;
 }

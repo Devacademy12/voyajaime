@@ -13,7 +13,7 @@
   height: calc(100vh - 64px);
   display: flex;
   flex-direction: column;
-  background: #F0F4F6;
+  background: #f8fafa;
   font-family: 'DM Sans', system-ui, sans-serif;
   overflow: hidden;
 }

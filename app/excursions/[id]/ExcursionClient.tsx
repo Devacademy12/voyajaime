@@ -48,12 +48,12 @@ const CSS = `
 
 :root {
   --primary: #0B4F6C;
-  --accent: #E8A838;
-  --sand: #F7F3EE;
+  --accent: #4138e8;
+  --sand: #fafafa;
   --ink: #12100E;
   --muted: #7A7068;
-  --border: #EAE5DE;
-  --white: #FFFEFB;
+  --border: #fffffe;
+  --white: #fffefb;
 }
 
 *{box-sizing:border-box;margin:0;padding:0}
