@@ -1,29 +1,15 @@
 "use client";
 
-/**
- * Drop-in replacement for the `step === "itineraire"` block in ModeAssiste.tsx
- *
- * Changes vs original:
- * - All emoji icons replaced with Lucide-React icons
- * - Activity cards show excursion PHOTOS (carousel), name, city, price, time,
- *   duration, languages, inclusions, description
- * - Cleaner day-tab bar
- * - "Changer" alt-picker redesigned
- * - Full dark-mode compatibility via CSS variables
- *
- * Usage: paste this file next to ModeAssiste.tsx and import ItineraireDisplay.
- * Replace the `{step === "itineraire" && itinerary && ( ... )}` block with:
- *   <ItineraireDisplay {...props} />
- */
-
 import React, { useState } from "react";
 import {
   MapPin, Clock, Globe, Gift, RefreshCw, ChevronLeft,
   ChevronRight, CheckCircle, RotateCcw, Loader2,
-  ImageOff, Star, Users, BadgeCheck, Calendar,
+  ImageOff, Star, Users, Calendar, DollarSign, Camera,
+  Languages, Package, Heart, X,
 } from "lucide-react";
+import styles from "@/public/style/ModeAssiste.module.css";
 
-/* ─── Types (mirror ModeAssiste) ─── */
+/* ─── Types ─── */
 type Activity = {
   id: string;
   name: string;
@@ -37,6 +23,8 @@ type Activity = {
   inclusion?: string | string[];
   city?: string;
   rating?: number;
+  reviews_count?: number;
+  max_people?: number;
 };
 
 type DayPlan = {
@@ -85,44 +73,44 @@ function parsePhotos(val?: string | string[]): string[] {
   return list.filter(u => u.startsWith("http") || u.startsWith("/"));
 }
 
-/* ─── Photo carousel ─── */
-function PhotoCarousel({ photos, alt }: { photos: string[]; alt: string }) {
-  const [idx, setIdx] = useState(0);
+function formatPrice(price?: number): string {
+  if (!price) return "Gratuit";
+  return `${price} TND`;
+}
+
+/* ─── Photo Gallery Component ─── */
+function PhotoGallery({ photos, title }: { photos: string[]; title: string }) {
+  const [currentIndex, setCurrentIndex] = useState(0);
 
   if (!photos.length) {
     return (
-      <div style={photoBox}>
-        <ImageOff size={28} color="var(--color-text-secondary)" />
-        <span style={{ fontSize: 11, color: "var(--color-text-secondary)", marginTop: 6 }}>
-          Aucune photo
-        </span>
+      <div className={styles.photoPlaceholder}>
+        <Camera size={32} />
+        <span>Aucune photo</span>
       </div>
     );
   }
 
+  const next = () => setCurrentIndex((currentIndex + 1) % photos.length);
+  const prev = () => setCurrentIndex((currentIndex - 1 + photos.length) % photos.length);
+
   return (
-    <div style={{ ...photoBox, padding: 0, overflow: "hidden", position: "relative" }}>
-      <img
-        src={photos[idx]}
-        alt={alt}
-        style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
-        onError={e => { (e.target as HTMLImageElement).style.display = "none"; }}
-      />
+    <div className={styles.photoGallery}>
+      <img src={photos[currentIndex]} alt={`${title} - ${currentIndex + 1}`} />
       {photos.length > 1 && (
         <>
-          <button style={arrowBtn("left")} onClick={() => setIdx((idx - 1 + photos.length) % photos.length)}>
-            <ChevronLeft size={14} />
+          <button className={styles.galleryNavPrev} onClick={prev}>
+            <ChevronLeft size={20} />
           </button>
-          <button style={arrowBtn("right")} onClick={() => setIdx((idx + 1) % photos.length)}>
-            <ChevronRight size={14} />
+          <button className={styles.galleryNavNext} onClick={next}>
+            <ChevronRight size={20} />
           </button>
-          <div style={dotRow}>
-            {photos.map((_, i) => (
+          <div className={styles.galleryDots}>
+            {photos.map((_, idx) => (
               <span
-                key={i}
-                onClick={() => setIdx(i)}
-                style={{ width: 5, height: 5, borderRadius: "50%", cursor: "pointer",
-                  background: i === idx ? "#fff" : "rgba(255,255,255,0.45)" }}
+                key={idx}
+                className={`${styles.galleryDot} ${idx === currentIndex ? styles.galleryDotActive : ""}`}
+                onClick={() => setCurrentIndex(idx)}
               />
             ))}
           </div>
@@ -132,93 +120,84 @@ function PhotoCarousel({ photos, alt }: { photos: string[]; alt: string }) {
   );
 }
 
-/* ─── Activity card ─── */
-function ActivityCard({
-  act, dayIdx, actIdx, onEdit,
-}: {
-  act: Activity; dayIdx: number; actIdx: number; onEdit: () => void;
-}) {
-  const photos   = parsePhotos(act.photos);
-  const langs    = parseList(act.languages);
-  const includes = parseList(act.inclusion);
-  const price    = Number(act.price) || 0;
+/* ─── Activity Card Component ─── */
+function ActivityCard({ activity, onEdit }: { activity: Activity; onEdit: () => void }) {
+  const photos = parsePhotos(activity.photos);
+  const languages = parseList(activity.languages);
+  const inclusions = parseList(activity.inclusion);
+  const price = activity.price || 0;
 
   return (
-    <div style={card}>
-      {/* Photo */}
-      <PhotoCarousel photos={photos} alt={act.name} />
-
-      {/* Body */}
-      <div style={{ padding: "14px 16px 12px" }}>
-        {/* Title row */}
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8 }}>
-          <h3 style={{ margin: 0, fontSize: 15, fontWeight: 500, color: "var(--color-text-primary)", lineHeight: 1.3 }}>
-            {act.name}
-          </h3>
-          <span style={priceBadge(price)}>
-            {price === 0 ? "Gratuit" : `${price} TND`}
+    <div className={styles.actCard}>
+      <PhotoGallery photos={photos} title={activity.name} />
+      
+      <div className={styles.actInfo}>
+        <div className={styles.actTop}>
+          <h4 className={styles.actName}>{activity.name}</h4>
+          <span className={`${styles.priceBadge} ${price === 0 ? styles.priceBadgeFree : ""}`}>
+            <DollarSign size={12} />
+            {formatPrice(price)}
           </span>
         </div>
 
-        {/* Meta row */}
-        <div style={metaRow}>
-          {act.time && (
-            <span style={metaItem}>
-              <Clock size={12} style={{ flexShrink: 0 }} />
-              {act.time}
+        <div className={styles.actMeta}>
+          {activity.time && (
+            <span>
+              <Clock size={12} />
+              {activity.time}
             </span>
           )}
-          {act.duration && (
-            <span style={metaItem}>
-              <Calendar size={12} style={{ flexShrink: 0 }} />
-              {act.duration}
+          {activity.duration && (
+            <span>
+              <Calendar size={12} />
+              {activity.duration}
             </span>
           )}
-          {act.city && (
-            <span style={metaItem}>
-              <MapPin size={12} style={{ flexShrink: 0 }} />
-              {act.city}
+          {activity.city && (
+            <span>
+              <MapPin size={12} />
+              {activity.city}
             </span>
           )}
-          {act.rating && (
-            <span style={metaItem}>
-              <Star size={12} style={{ flexShrink: 0, color: "#F59E0B" }} />
-              {act.rating}
+          {activity.rating && (
+            <span>
+              <Star size={12} fill="#F59E0B" color="#F59E0B" />
+              {activity.rating}
+              {activity.reviews_count && <span>({activity.reviews_count})</span>}
+            </span>
+          )}
+          {activity.max_people && (
+            <span>
+              <Users size={12} />
+              Max {activity.max_people}
             </span>
           )}
         </div>
 
-        {/* Description */}
-        {act.description && (
-          <p style={{ margin: "8px 0 0", fontSize: 13, color: "var(--color-text-secondary)", lineHeight: 1.6 }}>
-            {act.description}
-          </p>
+        {activity.description && (
+          <p className={styles.actDesc}>{activity.description}</p>
         )}
 
-        {/* Languages */}
-        {langs.length > 0 && (
-          <div style={{ marginTop: 10, display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" }}>
-            <Globe size={12} color="var(--color-text-secondary)" style={{ flexShrink: 0 }} />
-            {langs.map((l, i) => (
-              <span key={i} style={tagPill}>{l}</span>
-            ))}
+        {languages.length > 0 && (
+          <div className={styles.actLanguages}>
+            <Languages size={12} />
+            <span>{languages.join(" • ")}</span>
           </div>
         )}
 
-        {/* Inclusions */}
-        {includes.length > 0 && (
-          <div style={{ marginTop: 8, display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" }}>
-            <Gift size={12} color="var(--color-text-secondary)" style={{ flexShrink: 0 }} />
-            {includes.map((inc, i) => (
-              <span key={i} style={{ ...tagPill, background: "var(--color-background-success)", color: "var(--color-text-success)" }}>
-                {inc}
-              </span>
-            ))}
+        {inclusions.length > 0 && (
+          <div className={styles.actInclusions}>
+            <Package size={12} />
+            <div className={styles.inclusionList}>
+              {inclusions.slice(0, 3).map((inc, i) => (
+                <span key={i} className={styles.inclusionTag}>{inc}</span>
+              ))}
+              {inclusions.length > 3 && <span>+{inclusions.length - 3}</span>}
+            </div>
           </div>
         )}
 
-        {/* Change button */}
-        <button style={changeBtn} onClick={onEdit}>
+        <button className={styles.changeBtn} onClick={onEdit}>
           <RefreshCw size={12} />
           Changer cette activité
         </button>
@@ -227,398 +206,306 @@ function ActivityCard({
   );
 }
 
-/* ─── Alt picker ─── */
-function AltPicker({
-  alternatives, currentName, onPick, onClose,
+/* ─── Alternative Picker Component ─── */
+function AlternativePicker({
+  alternatives,
+  currentName,
+  onPick,
+  onClose,
 }: {
-  alternatives: Activity[]; currentName: string; onPick: (a: Activity) => void; onClose: () => void;
+  alternatives: Activity[];
+  currentName: string;
+  onPick: (alt: Activity) => void;
+  onClose: () => void;
 }) {
+  if (!alternatives.length) {
+    return (
+      <div className={styles.altPanel}>
+        <div className={styles.altHeader}>
+          <h5 className={styles.altTitle}>Aucune alternative</h5>
+          <button className={styles.closeBtn} onClick={onClose}>
+            <X size={14} />
+          </button>
+        </div>
+        <p style={{ fontSize: 12, color: "#6B7280", textAlign: "center", padding: 12 }}>
+          Aucune autre activité disponible dans cette ville.
+        </p>
+      </div>
+    );
+  }
+
   return (
-    <div style={altPanel}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-        <span style={{ fontSize: 13, fontWeight: 500, color: "var(--color-text-primary)" }}>
-          Remplacer « {currentName} »
-        </span>
-        <button style={iconBtn} onClick={onClose}>
-          <ChevronLeft size={14} /> Annuler
+    <div className={styles.altPanel}>
+      <div className={styles.altHeader}>
+        <h5 className={styles.altTitle}>Remplacer "{currentName}"</h5>
+        <button className={styles.closeBtn} onClick={onClose}>
+          <X size={14} />
         </button>
       </div>
-
-      {alternatives.length === 0 ? (
-        <p style={{ fontSize: 13, color: "var(--color-text-secondary)", textAlign: "center", padding: "16px 0" }}>
-          Aucune alternative disponible.
-        </p>
-      ) : (
-        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          {alternatives.map((alt, i) => {
-            const photos = parsePhotos(alt.photos);
-            const price  = Number(alt.price) || 0;
-            return (
-              <button key={i} style={altCard} onClick={() => onPick(alt)}>
-                {photos[0] && (
-                  <img src={photos[0]} alt={alt.name} style={altThumb} />
-                )}
-                <div style={{ flex: 1, minWidth: 0, textAlign: "left" }}>
-                  <p style={{ margin: 0, fontSize: 13, fontWeight: 500, color: "var(--color-text-primary)" }}>
-                    {alt.name}
-                  </p>
-                  <div style={{ display: "flex", gap: 8, marginTop: 3, alignItems: "center" }}>
-                    {alt.duration && (
-                      <span style={{ fontSize: 11, color: "var(--color-text-secondary)", display: "flex", alignItems: "center", gap: 3 }}>
-                        <Clock size={10} />{alt.duration}
-                      </span>
-                    )}
-                    <span style={{ fontSize: 11, color: price === 0 ? "var(--color-text-success)" : "var(--color-text-primary)", fontWeight: 500 }}>
-                      {price === 0 ? "Gratuit" : `${price} TND`}
-                    </span>
-                  </div>
-                  {alt.description && (
-                    <p style={{ margin: "3px 0 0", fontSize: 11, color: "var(--color-text-secondary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                      {alt.description}
-                    </p>
-                  )}
+      
+      <div className={styles.altList}>
+        {alternatives.map((alt, idx) => {
+          const photos = parsePhotos(alt.photos);
+          const price = alt.price || 0;
+          
+          return (
+            <div
+              key={idx}
+              className={styles.altCard}
+              onClick={() => onPick(alt)}
+            >
+              {photos[0] && (
+                <img src={photos[0]} alt={alt.name} className={styles.altThumb} />
+              )}
+              <div className={styles.altInfo}>
+                <div className={styles.altTop}>
+                  <span className={styles.altName}>{alt.name}</span>
+                  <span className={`${styles.altPrice} ${price === 0 ? styles.altPriceFree : ""}`}>
+                    {formatPrice(price)}
+                  </span>
                 </div>
-                <BadgeCheck size={16} style={{ color: "var(--color-text-info)", flexShrink: 0 }} />
-              </button>
-            );
-          })}
-        </div>
-      )}
+                <div className={styles.altMeta}>
+                  {alt.duration && <span>⏱️ {alt.duration}</span>}
+                  {alt.city && <span>📍 {alt.city}</span>}
+                </div>
+                {alt.description && (
+                  <div className={styles.altDesc}>{alt.description}</div>
+                )}
+              </div>
+              <Heart size={16} className={styles.altSelect} />
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }
 
-/* ════════ Main export ════════ */
+/* ════════ MAIN COMPONENT ════════ */
 export default function ItineraireDisplay({
-  itinerary, selectedCities, excursions,
-  totalPrice, saving, saveStatus,
-  onBack, onReset, onCheckout, onSave, onChangeActivity,
+  itinerary,
+  selectedCities,
+  excursions,
+  totalPrice,
+  saving,
+  saveStatus,
+  onBack,
+  onReset,
+  onCheckout,
+  onSave,
+  onChangeActivity,
 }: ItineraireDisplayProps) {
   const [activeDay, setActiveDay] = useState(0);
-  const [editing, setEditing]     = useState<{ dayIdx: number; actIdx: number } | null>(null);
+  const [editing, setEditing] = useState<{ dayIdx: number; actIdx: number } | null>(null);
 
-  const day = itinerary.days[activeDay];
+  const currentDay = itinerary.days[activeDay];
 
-  /* Build alternatives for current edit target */
-  const alts: Activity[] = (() => {
+  // Générer des alternatives pour l'activité en cours d'édition
+  const getAlternatives = (): Activity[] => {
     if (!editing) return [];
-    const d      = itinerary.days[editing.dayIdx];
-    const city   = d.city;
-    const curId  = d.activities[editing.actIdx].id;
-    const used   = new Set(itinerary.days.flatMap(dd => dd.activities.map(a => a.id)));
+    
+    const day = itinerary.days[editing.dayIdx];
+    const currentAct = day.activities[editing.actIdx];
+    const city = day.city;
+    
+    // Filtrer les excursions de la même ville
     return excursions
-      .filter(e => e.city === city && e.id !== curId && !used.has(e.id))
-      .slice(0, 6)
-      .map(e => ({
-        id: e.id, name: e.title, description: e.description,
-        time: d.activities[editing.actIdx].time,
-        duration: e.duration_hours ? `${e.duration_hours}h` : "2h",
-        price: e.price_per_person || 0,
-        photos: e.photos,
-        languages: e.languages,
-        inclusion: e.inclusions,
-        city: e.city,
-        rating: e.rating,
+      .filter(exc => exc.city === city && exc.id !== currentAct.id)
+      .slice(0, 5)
+      .map(exc => ({
+        id: exc.id,
+        name: exc.title,
+        description: exc.description,
+        duration: exc.duration_hours ? `${exc.duration_hours}h` : "2h",
+        price: exc.price_per_person || 0,
+        photos: exc.photos,
+        languages: exc.languages,
+        inclusion: exc.inclusions,
+        city: exc.city,
+        rating: exc.rating,
+        time: currentAct.time,
       }));
-  })();
-
-  const applyAlt = (alt: Activity) => {
-    if (!editing) return;
-    onChangeActivity(editing.dayIdx, editing.actIdx, alt);
-    setEditing(null);
   };
 
-  return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
+  const handleSelectAlternative = (alt: Activity) => {
+    if (editing) {
+      onChangeActivity(editing.dayIdx, editing.actIdx, alt);
+      setEditing(null);
+    }
+  };
 
-      {/* ── Header ── */}
-      <div style={headerWrap}>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <h1 style={{ margin: 0, fontSize: 20, fontWeight: 500, color: "var(--color-text-primary)", lineHeight: 1.25 }}>
-            {itinerary.title}
-          </h1>
-          <p style={{ margin: "4px 0 0", fontSize: 13, color: "var(--color-text-secondary)", display: "flex", alignItems: "center", gap: 6 }}>
-            <Calendar size={12} /> {itinerary.days.length} jours
-            <MapPin size={12} style={{ marginLeft: 4 }} /> {selectedCities.join(", ")}
+  const totalActivities = itinerary.days.reduce((sum, day) => sum + day.activities.length, 0);
+
+  return (
+    <div className={styles.itiRoot}>
+      {/* Header */}
+      <div className={styles.itiHeader}>
+        <div>
+          <h2 className={styles.itiTitle}>{itinerary.title}</h2>
+          <p className={styles.itiMeta}>
+            <span>
+              <Calendar size={12} style={{ display: "inline", marginRight: 4 }} />
+              {itinerary.days.length} jours
+            </span>
+            <span>
+              <MapPin size={12} style={{ display: "inline", marginRight: 4 }} />
+              {selectedCities.join(" → ")}
+            </span>
+            <span>
+              <CheckCircle size={12} style={{ display: "inline", marginRight: 4 }} />
+              {totalActivities} activités
+            </span>
           </p>
         </div>
-        <button style={secondaryBtn} onClick={onBack}>
-          <RefreshCw size={12} /> Modifier
+        <button className={styles.btnSecondary} onClick={onBack}>
+          <RefreshCw size={14} />
+          Modifier
         </button>
       </div>
 
-      {/* ── Day tabs ── */}
-      <div style={dayTabsWrap}>
-        {itinerary.days.map((d, i) => (
+      {/* Day Navigation Tabs */}
+      <div className={styles.dayTabs}>
+        {itinerary.days.map((day, idx) => (
           <button
-            key={i}
-            style={{ ...dayTab, ...(activeDay === i ? dayTabActive : {}) }}
-            onClick={() => { setActiveDay(i); setEditing(null); }}
+            key={idx}
+            className={`${styles.dayTab} ${activeDay === idx ? styles.dayTabOn : ""}`}
+            onClick={() => {
+              setActiveDay(idx);
+              setEditing(null);
+            }}
           >
-            <span style={{ fontSize: 11, opacity: 0.7 }}>J{d.day}</span>
-            <span style={{ fontSize: 12, fontWeight: activeDay === i ? 500 : 400 }}>{d.city}</span>
+            <span>Jour {day.day}</span>
+            <span style={{ fontSize: 11, opacity: 0.8 }}>{day.city}</span>
           </button>
         ))}
       </div>
 
-      {/* ── Day banner ── */}
-      <div style={dayBanner}>
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <div style={dayCircle}>
-            <span style={{ fontSize: 13, fontWeight: 500 }}>{day.day}</span>
-          </div>
-          <div>
-            <p style={{ margin: 0, fontSize: 15, fontWeight: 500, color: "var(--color-text-primary)" }}>
-              {day.city}
-            </p>
-            {day.theme && (
-              <p style={{ margin: 0, fontSize: 12, color: "var(--color-text-secondary)" }}>{day.theme}</p>
-            )}
-          </div>
+      {/* Current Day Banner */}
+      <div className={styles.dayBanner}>
+        <div className={styles.dayBannerEmoji}>
+          {currentDay.emoji || "📍"}
         </div>
-        <span style={{ fontSize: 12, color: "var(--color-text-secondary)", display: "flex", alignItems: "center", gap: 4 }}>
-          <Users size={12} /> {day.activities.length} activité{day.activities.length > 1 ? "s" : ""}
-        </span>
+        <div>
+          <h3 className={styles.dayBannerName}>
+            Jour {currentDay.day} : {currentDay.city}
+          </h3>
+          {currentDay.theme && (
+            <p className={styles.dayBannerTheme}>{currentDay.theme}</p>
+          )}
+        </div>
+        <div style={{ marginLeft: "auto", fontSize: 12, color: "#6B7280" }}>
+          <Users size={14} style={{ display: "inline", marginRight: 4 }} />
+          {currentDay.activities.length} activité{currentDay.activities.length > 1 ? "s" : ""}
+        </div>
       </div>
 
-      {/* ── Activities ── */}
-      <div style={{ display: "flex", flexDirection: "column", gap: 14, padding: "0 0 8px" }}>
-        {day.activities.map((act, ai) => (
-          <div key={act.id || ai}>
-            {editing?.dayIdx === activeDay && editing?.actIdx === ai ? (
-              <AltPicker
-                alternatives={alts}
-                currentName={act.name}
-                onPick={applyAlt}
+      {/* Activities List */}
+      <div className={styles.itiBody}>
+        {currentDay.activities.map((activity, actIdx) => (
+          <div key={activity.id || actIdx}>
+            {editing?.dayIdx === activeDay && editing?.actIdx === actIdx ? (
+              <AlternativePicker
+                alternatives={getAlternatives()}
+                currentName={activity.name}
+                onPick={handleSelectAlternative}
                 onClose={() => setEditing(null)}
               />
             ) : (
               <ActivityCard
-                act={act}
-                dayIdx={activeDay}
-                actIdx={ai}
-                onEdit={() => setEditing({ dayIdx: activeDay, actIdx: ai })}
+                activity={activity}
+                onEdit={() => setEditing({ dayIdx: activeDay, actIdx: actIdx })}
               />
             )}
           </div>
         ))}
       </div>
 
-      {/* ── Day nav ── */}
-      <div style={{ display: "flex", justifyContent: "space-between", marginTop: 8 }}>
+      {/* Day Navigation Buttons */}
+      <div style={{ display: "flex", justifyContent: "space-between", padding: "0 24px 16px 24px", gap: 12 }}>
         <button
-          style={{ ...secondaryBtn, visibility: activeDay > 0 ? "visible" : "hidden" }}
-          onClick={() => { setActiveDay(activeDay - 1); setEditing(null); }}
+          className={styles.btnSecondary}
+          onClick={() => activeDay > 0 && setActiveDay(activeDay - 1)}
+          disabled={activeDay === 0}
+          style={{ opacity: activeDay === 0 ? 0.5 : 1, cursor: activeDay === 0 ? "not-allowed" : "pointer" }}
         >
-          <ChevronLeft size={13} /> Jour {activeDay}
+          <ChevronLeft size={14} />
+          Jour précédent
         </button>
+        
         {activeDay < itinerary.days.length - 1 ? (
-          <button style={primaryBtn} onClick={() => { setActiveDay(activeDay + 1); setEditing(null); }}>
-            Jour {activeDay + 2} <ChevronRight size={13} />
+          <button
+            className={styles.btnPrimary}
+            onClick={() => setActiveDay(activeDay + 1)}
+            style={{ padding: "8px 24px" }}
+          >
+            Jour suivant
+            <ChevronRight size={14} />
           </button>
         ) : (
-          <button style={primaryBtn} onClick={onCheckout}>
-            <CheckCircle size={13} /> Réserver
+          <button
+            className={styles.btnPrimary}
+            onClick={onCheckout}
+            style={{ padding: "8px 24px", background: "#10B981" }}
+          >
+            Finaliser la réservation
+            <ChevronRight size={14} />
           </button>
         )}
       </div>
 
-      {/* ── Save feedback ── */}
-      {saveStatus === "ok"    && <div style={{ ...saveFeedback, color: "var(--color-text-success)", borderColor: "var(--color-border-success)" }}><CheckCircle size={13} /> Itinéraire sauvegardé !</div>}
-      {saveStatus === "error" && <div style={{ ...saveFeedback, color: "var(--color-text-danger)", borderColor: "var(--color-border-danger)" }}>Erreur de sauvegarde. Réessayez.</div>}
-      {saveStatus === "login" && <div style={{ ...saveFeedback, color: "var(--color-text-warning)", borderColor: "var(--color-border-warning)" }}>Connectez-vous pour sauvegarder.</div>}
-
-      {/* ── Recap / CTA ── */}
-      <div style={recapWrap}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+      {/* Footer Recap */}
+      <div className={styles.recap}>
+        <div className={styles.recapPrice}>
+          <span className={styles.recapPriceLabel}>Total estimé</span>
           <div>
-            <p style={{ margin: 0, fontSize: 11, color: "var(--color-text-secondary)" }}>Total estimé</p>
-            <p style={{ margin: "2px 0 0", fontSize: 24, fontWeight: 500, color: "var(--color-text-primary)" }}>
-              {totalPrice} <span style={{ fontSize: 13, fontWeight: 400, color: "var(--color-text-secondary)" }}>TND</span>
-            </p>
+            <span className={styles.recapPriceValue}>{totalPrice}</span>
+            <span className={styles.recapPriceSuffix}>TND</span>
           </div>
-          <div style={{ display: "flex", gap: 8 }}>
-            <button style={secondaryBtn} onClick={onSave} disabled={saving || saveStatus === "ok"}>
-              {saving
-                ? <><Loader2 size={12} /> Sauvegarde…</>
-                : saveStatus === "ok"
-                ? <><CheckCircle size={12} /> Sauvegardé</>
-                : "💾 Sauvegarder"}
-            </button>
-            <button style={primaryBtn} onClick={onCheckout}>
-              Finaliser <ChevronRight size={13} />
-            </button>
-          </div>
+          <small style={{ fontSize: 9, color: "#9CA3AF" }}>
+            *Prix par personne, hors options
+          </small>
         </div>
-      </div>
 
-      {/* ── Reset ── */}
-      <div style={{ textAlign: "center", marginTop: 6 }}>
-        <button style={resetLink} onClick={onReset}>
-          <RotateCcw size={10} /> Recommencer depuis le début
-        </button>
-      </div>
+        <div className={styles.recapActions}>
+          <button className={styles.resetLink} onClick={onReset}>
+            <RotateCcw size={12} />
+            Nouvel itinéraire
+          </button>
 
+          <button className={styles.saveBtn} onClick={onSave} disabled={saving}>
+            {saving ? (
+              <>
+                <Loader2 size={14} className={styles.spin} />
+                Sauvegarde...
+              </>
+            ) : saveStatus === "ok" ? (
+              <>
+                <CheckCircle size={14} />
+                Sauvegardé
+              </>
+            ) : (
+              <>
+                <Heart size={14} />
+                Sauvegarder
+              </>
+            )}
+          </button>
+        </div>
+
+        {/* Save Status Feedback */}
+        {saveStatus !== "idle" && (
+          <div className={`${styles.saveFeedback} ${
+            saveStatus === "ok" ? styles.saveFeedbackOk :
+            saveStatus === "error" ? styles.saveFeedbackErr :
+            styles.saveFeedbackLogin
+          }`}>
+            {saveStatus === "ok" && <CheckCircle size={14} />}
+            {saveStatus === "ok" && "Itinéraire sauvegardé avec succès !"}
+            {saveStatus === "error" && "Erreur lors de la sauvegarde. Veuillez réessayer."}
+            {saveStatus === "login" && "Connectez-vous pour sauvegarder votre itinéraire."}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
-
-/* ════════ Styles ════════ */
-const card: React.CSSProperties = {
-  background: "var(--color-background-primary)",
-  border: "0.5px solid var(--color-border-tertiary)",
-  borderRadius: "var(--border-radius-lg)",
-  overflow: "hidden",
-};
-
-const photoBox: React.CSSProperties = {
-  width: "100%", height: 200,
-  background: "var(--color-background-secondary)",
-  display: "flex", flexDirection: "column",
-  alignItems: "center", justifyContent: "center",
-};
-
-const arrowBtn = (side: "left" | "right"): React.CSSProperties => ({
-  position: "absolute", top: "50%", transform: "translateY(-50%)",
-  [side]: 8,
-  background: "rgba(0,0,0,0.4)", border: "none", borderRadius: "50%",
-  width: 28, height: 28, display: "flex", alignItems: "center", justifyContent: "center",
-  cursor: "pointer", color: "#fff", padding: 0,
-});
-
-const dotRow: React.CSSProperties = {
-  position: "absolute", bottom: 8, left: "50%", transform: "translateX(-50%)",
-  display: "flex", gap: 4,
-};
-
-const metaRow: React.CSSProperties = {
-  display: "flex", flexWrap: "wrap", gap: 10, marginTop: 6,
-};
-
-const metaItem: React.CSSProperties = {
-  display: "flex", alignItems: "center", gap: 4,
-  fontSize: 12, color: "var(--color-text-secondary)",
-};
-
-const tagPill: React.CSSProperties = {
-  fontSize: 11, padding: "2px 8px", borderRadius: 999,
-  background: "var(--color-background-secondary)",
-  color: "var(--color-text-secondary)",
-  border: "0.5px solid var(--color-border-tertiary)",
-};
-
-const priceBadge = (price: number): React.CSSProperties => ({
-  fontSize: 12, fontWeight: 500, padding: "3px 10px", borderRadius: 999, flexShrink: 0,
-  background: price === 0 ? "var(--color-background-success)" : "var(--color-background-info)",
-  color: price === 0 ? "var(--color-text-success)" : "var(--color-text-info)",
-});
-
-const changeBtn: React.CSSProperties = {
-  marginTop: 12, width: "100%",
-  display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
-  padding: "8px 0", borderRadius: "var(--border-radius-md)",
-  border: "0.5px solid var(--color-border-secondary)",
-  background: "transparent", cursor: "pointer",
-  fontSize: 12, color: "var(--color-text-secondary)",
-};
-
-const altPanel: React.CSSProperties = {
-  background: "var(--color-background-secondary)",
-  border: "0.5px solid var(--color-border-secondary)",
-  borderRadius: "var(--border-radius-lg)", padding: "14px 16px",
-};
-
-const altCard: React.CSSProperties = {
-  display: "flex", alignItems: "center", gap: 10,
-  padding: "10px 12px",
-  background: "var(--color-background-primary)",
-  border: "0.5px solid var(--color-border-tertiary)",
-  borderRadius: "var(--border-radius-md)",
-  cursor: "pointer", width: "100%",
-};
-
-const altThumb: React.CSSProperties = {
-  width: 48, height: 48, objectFit: "cover",
-  borderRadius: "var(--border-radius-md)", flexShrink: 0,
-};
-
-const headerWrap: React.CSSProperties = {
-  display: "flex", gap: 12, alignItems: "flex-start",
-  padding: "0 0 16px", marginBottom: 4,
-  borderBottom: "0.5px solid var(--color-border-tertiary)",
-};
-
-const dayTabsWrap: React.CSSProperties = {
-  display: "flex", gap: 6, overflowX: "auto", padding: "12px 0",
-  scrollbarWidth: "none",
-};
-
-const dayTab: React.CSSProperties = {
-  display: "flex", flexDirection: "column", alignItems: "center",
-  padding: "6px 14px", borderRadius: "var(--border-radius-md)",
-  border: "0.5px solid var(--color-border-tertiary)",
-  background: "transparent", cursor: "pointer", flexShrink: 0,
-  fontSize: 12, color: "var(--color-text-secondary)",
-};
-
-const dayTabActive: React.CSSProperties = {
-  background: "var(--color-background-info)",
-  color: "var(--color-text-info)",
-  borderColor: "var(--color-border-info)",
-};
-
-const dayBanner: React.CSSProperties = {
-  display: "flex", justifyContent: "space-between", alignItems: "center",
-  padding: "10px 14px", marginBottom: 14,
-  background: "var(--color-background-secondary)",
-  border: "0.5px solid var(--color-border-tertiary)",
-  borderRadius: "var(--border-radius-md)",
-};
-
-const dayCircle: React.CSSProperties = {
-  width: 36, height: 36, borderRadius: "50%",
-  background: "var(--color-background-info)",
-  display: "flex", alignItems: "center", justifyContent: "center",
-  color: "var(--color-text-info)",
-};
-
-const primaryBtn: React.CSSProperties = {
-  display: "flex", alignItems: "center", gap: 6, padding: "10px 20px",
-  borderRadius: "var(--border-radius-md)", border: "none",
-  background: "var(--color-background-info)", color: "var(--color-text-info)",
-  fontSize: 13, fontWeight: 500, cursor: "pointer",
-};
-
-const secondaryBtn: React.CSSProperties = {
-  display: "flex", alignItems: "center", gap: 6, padding: "8px 14px",
-  borderRadius: "var(--border-radius-md)",
-  border: "0.5px solid var(--color-border-secondary)",
-  background: "transparent", color: "var(--color-text-secondary)",
-  fontSize: 12, cursor: "pointer",
-};
-
-const iconBtn: React.CSSProperties = {
-  display: "flex", alignItems: "center", gap: 4,
-  border: "none", background: "transparent",
-  fontSize: 12, color: "var(--color-text-secondary)", cursor: "pointer",
-};
-
-const saveFeedback: React.CSSProperties = {
-  marginTop: 10, padding: "8px 14px", borderRadius: "var(--border-radius-md)",
-  border: "0.5px solid", fontSize: 13,
-  display: "flex", alignItems: "center", gap: 6,
-};
-
-const recapWrap: React.CSSProperties = {
-  marginTop: 16, padding: "14px 16px",
-  background: "var(--color-background-secondary)",
-  border: "0.5px solid var(--color-border-tertiary)",
-  borderRadius: "var(--border-radius-lg)",
-};
-
-const resetLink: React.CSSProperties = {
-  display: "inline-flex", alignItems: "center", gap: 5,
-  fontSize: 11, color: "var(--color-text-secondary)",
-  background: "none", border: "none", cursor: "pointer",
-  padding: "8px 0",
-};
