@@ -5,6 +5,7 @@
 /* ══════════════════════════════════════════
    VARIABLES — Brand Colors VoyajAime
    ══════════════════════════════════════════ */
+   
 :root {
   --brand-dark: #053366;
   --brand-primary: #02AFCF;
@@ -30,6 +31,8 @@
     margin: 0;
     padding: 0;
   }
+ 
+
 
   html,
   body {

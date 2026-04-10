@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import "./styles/prestataires.css";
 import "../public/style/conversations.css";
+import '../public/style/excursion-client.css';
 
 export const metadata: Metadata = {
   title: "VoyajAime — Découvrez la Tunisie",

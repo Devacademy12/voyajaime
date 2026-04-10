@@ -53,7 +53,8 @@ function normalizePlan(raw: RawPlan): DayPlan[] {
               city:             String(dd.city || ""),
               price_per_person: Number(a.price) || 0,
               duration_hours:   parseFloat(String(a.duration || "2")) || 2,
-              photos:           [],
+              // ✅ FIX: récupère les photos directement depuis le JSON IA
+              photos: Array.isArray(a.photos) ? (a.photos as string[]) : [],
             },
           }))
         : [];
