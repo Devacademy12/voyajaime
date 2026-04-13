@@ -99,13 +99,13 @@ body {
 }
 .exc-title {
   font-family: 'Cormorant Garamond', serif;
-  font-size: clamp(28px, 3.5vw, 48px);
+  font-size: clamp(28px, 4vw, 42px);
   font-weight: 700;
-  color: #12100E;
+  color: #053366;
   letter-spacing: -.5px;
-  line-height: 1.1;
+  line-height: 1.2;
   margin-bottom: 16px;
-  font-style: italic;
+ 
 }
 .exc-meta {
   display: flex;

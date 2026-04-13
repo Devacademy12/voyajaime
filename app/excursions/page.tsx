@@ -5,7 +5,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabaseClient";
 import { sanitizeText } from "@/app/lib/sanitize";
 import {
-  Search, MapPin, Clock, Star, Heart, Lock,
+  Search, MapPin, Clock, Star, Heart, 
   Loader2, Mountain, UserPlus, LogIn, Calendar,
 } from "lucide-react";
 import TouristeNav from "@/app/components/touriste/TouristeNav";
@@ -457,7 +457,7 @@ export default function ExcursionsPage() {
                         ? <Loader2 size={15} color="#9CA3AF" style={{ animation: "spin .65s linear infinite" }} />
                         : user
                           ? <Heart size={16} fill={favorites.has(exc.id) ? "#EF4444" : "none"} color={favorites.has(exc.id) ? "#EF4444" : "#374151"} strokeWidth={2.2} />
-                          : <Lock size={13} color="#9CA3AF" />
+                          : <Heart size={13} color="#9CA3AF" />
                       }
                     </button>
                   </div>
@@ -530,7 +530,7 @@ export default function ExcursionsPage() {
                       >
                         {user
                           ? <><Calendar size={13} /> Réserver</>
-                          : <><Lock size={11} /> Réserver</>
+                          : <><Calendar size={11} /> Réserver</>
                         }
                       </button>
                     </div>
