@@ -186,8 +186,7 @@ export default function ExcursionClient({
   return (
     <>
       <TouristeNav />
-
-      {/* Breadcrumb */}
+       <br />
       <div className="exc-breadcrumb">
         <div className="exc-breadcrumb-inner">
           <div className="exc-breadcrumb-links">

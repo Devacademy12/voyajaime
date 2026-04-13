@@ -284,10 +284,9 @@ export default function ExcursionsPage() {
       `}</style>
 
       <TouristeNav />
+      
       <div style={{ paddingTop: 64 }} />
-
       <div style={{ background: "#f7f8fc", minHeight: "100vh", fontFamily: "'DM Sans',system-ui,sans-serif" }}>
-
         {/* ── HERO ── */}
         <div style={{
           background: "white", paddingTop: 56, paddingBottom: 40,
