@@ -9,17 +9,21 @@ import {
   Heart, Lock, MapPin, Clock, Star, ChevronDown,
   ArrowRight, Sparkles, Map, Search, Bot, ClipboardList,
   Mountain, User, CalendarCheck, UserPlus, LogIn, Building2,
+  Tag, Camera, Utensils, Compass, Sailboat, Landmark, Coffee
 } from "lucide-react";
 import TouristeNav from "@/app/components/touriste/TouristeNav";
 import AuthModal from "@/app/components/auth/AuthModal";
 
-const SLIDES = [
-  { url: "https://images.pexels.com/photos/27599624/pexels-photo-27599624.jpeg?auto=compress&cs=tinysrgb&w=1800", city: "Sidi Bou Saïd", region: "Gouvernorat de Tunis", desc: "Le village aux maisons bleues et blanches suspendu sur la Méditerranée", color: "#2B96A8" },
-  { url: "/images/sahara.webp", city: "Désert du Sahara", region: "Gouvernorat de Kébili", desc: "Dunes infinies, nuits étoilées et silence absolu à Douz", color: "#D97706" },
-  { url: "https://images.pexels.com/photos/27631749/pexels-photo-27631749.jpeg?auto=compress&cs=tinysrgb&w=1800", city: "Médina de Tunis", region: "Patrimoine UNESCO", desc: "Labyrinthe millénaire de ruelles, souks et palais ottomans", color: "#7C3AED" },
-  { url: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=1800&q=90&fit=crop", city: "Île de Djerba", region: "Gouvernorat de Médenine", desc: "Plages de sable blanc et eaux turquoise de la Méditerranée", color: "#059669" },
-  { url: "/images/Tozeur.jpg", city: "Tozeur & Oasis", region: "Sud-Ouest tunisien", desc: "Palmiers, sources d'eau fraîche et architecture en briques de sable", color: "#B45309" },
-];
+const SLIDE_COLORS = ["#2B96A8","#D97706","#7C3AED","#059669","#B45309","#E11D48","#0EA5E9"];
+
+interface SlideExcursion {
+  id: string;
+  url: string;
+  city: string;
+  region: string;
+  categories: string[];
+  color: string;
+}
 
 const FALLBACK_IMG = "https://images.unsplash.com/photo-1568515387631-8b650bbcdb90?w=600&q=80&fit=crop";
 
@@ -44,6 +48,66 @@ const SkeletonCard = () => (
   </div>
 );
 
+// Fonction pour obtenir une icône en fonction de la catégorie
+const getCategoryIcon = (category: string) => {
+  const cat = category.toLowerCase();
+  if (cat.includes("culture") || cat.includes("historique") || cat.includes("musée")) return <Landmark size={14} />;
+  if (cat.includes("nature") || cat.includes("randonnée") || cat.includes("desert")) return <Compass size={14} />;
+  if (cat.includes("culinaire") || cat.includes("gastronomie") || cat.includes("dégustation")) return <Utensils size={14} />;
+  if (cat.includes("plage") || cat.includes("mer") || cat.includes("nautique")) return <Sailboat size={14} />;
+  if (cat.includes("photo") || cat.includes("coucher")) return <Camera size={14} />;
+  if (cat.includes("café") || cat.includes("thé")) return <Coffee size={14} />;
+  return <Tag size={14} />;
+};
+
+// Fonction pour formater l'affichage des catégories
+const formatCategories = (categories: string[]) => {
+  if (!categories || categories.length === 0) return null;
+  
+  return (
+    <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 8 }}>
+      {categories.slice(0, 3).map((cat, idx) => (
+        <span
+          key={idx}
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 4,
+            padding: "4px 10px",
+            backgroundColor: "rgba(255,255,255,0.15)",
+            backdropFilter: "blur(8px)",
+            borderRadius: 20,
+            fontSize: 11,
+            fontWeight: 600,
+            color: "white",
+            letterSpacing: 0.3,
+            border: "1px solid rgba(255,255,255,0.2)"
+          }}
+        >
+          {getCategoryIcon(cat)}
+          {cat}
+        </span>
+      ))}
+      {categories.length > 3 && (
+        <span
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            padding: "4px 10px",
+            backgroundColor: "rgba(255,255,255,0.1)",
+            borderRadius: 20,
+            fontSize: 11,
+            fontWeight: 600,
+            color: "rgba(255,255,255,0.8)"
+          }}
+        >
+          +{categories.length - 3}
+        </span>
+      )}
+    </div>
+  );
+};
+
 export default function HomePage() {
   const [current,    setCurrent]    = useState(0);
   const [fading,     setFading]     = useState(false);
@@ -55,6 +119,8 @@ export default function HomePage() {
   const [excLoading, setExcLoading] = useState(true);
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [authModalMode, setAuthModalMode] = useState<"login" | "register" | "prestataire">("login");
+  const [slides, setSlides] = useState<SlideExcursion[]>([]);
+  const [slidesLoading, setSlidesLoading] = useState(true);
 
   const router   = useRouter();
   const supabase = useMemo(() => createClient(), []);
@@ -83,6 +149,29 @@ export default function HomePage() {
       });
   }, [supabase]);
 
+  /* ── Slider excursions depuis Supabase ── */
+  useEffect(() => {
+    supabase.from("excursions")
+      .select("id, title, city, description, photos, categories")
+      .eq("is_active", true)
+      .order("rating", { ascending: false })
+      .limit(7)
+      .then(({ data }) => {
+        if (data && data.length > 0) {
+          const mapped: SlideExcursion[] = data.map((exc, i) => ({
+            id: exc.id,
+            url: exc.photos?.find(Boolean) || FALLBACK_IMG,
+            city: exc.title,
+            region: exc.city,
+            categories: exc.categories || [],
+            color: SLIDE_COLORS[i % SLIDE_COLORS.length],
+          }));
+          setSlides(mapped);
+        }
+        setSlidesLoading(false);
+      });
+  }, [supabase]);
+
   const goTo = useCallback((idx: number) => {
     if (idx === current) return;
     setFading(true);
@@ -96,13 +185,13 @@ export default function HomePage() {
       setProgress((elapsed / DURATION) * 100);
       if (elapsed >= DURATION) {
         elapsed = 0; setFading(true);
-        setTimeout(() => { setCurrent(p => (p + 1) % SLIDES.length); setFading(false); setProgress(0); }, 500);
+        setTimeout(() => { setCurrent(p => slides.length > 0 ? (p + 1) % slides.length : 0); setFading(false); setProgress(0); }, 500);
       }
     }, TICK);
     return () => clearInterval(timer);
   }, [current]);
 
-  const slide = SLIDES[current];
+  const slide = slides[current] ?? { url: FALLBACK_IMG, city: "", region: "", categories: [], color: "#2B96A8", id: "" };
 
   const openAuth = (mode: "login" | "register" | "prestataire", redirect?: string) => {
     if (redirect) sessionStorage.setItem("redirect_after_login", redirect);
@@ -205,6 +294,14 @@ export default function HomePage() {
         .fu1{animation-delay:0.1s}.fu2{animation-delay:0.25s}.fu3{animation-delay:0.4s}.fu4{animation-delay:0.55s}
         @keyframes bounce{0%,100%{transform:translateX(-50%) translateY(0)}50%{transform:translateX(-50%) translateY(8px)}}
         @keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+        @keyframes spin{to{transform:rotate(360deg)}}
+
+        /* ── Categories container animation ── */
+        .categories-container {
+          animation: fadeUp 0.5s ease forwards;
+          opacity: 0;
+          animation-delay: 0.35s;
+        }
 
         /* ── Responsive ── */
         @media(max-width:900px){
@@ -224,9 +321,20 @@ export default function HomePage() {
 
       {/* ══ NAVBAR ══ */}
       <TouristeNav userName={userName} favCount={favCount} isLoggedIn={!!user} />
+         <div style={{ paddingTop: 40 }} />
 
       {/* ══ HERO SLIDER ══ */}
       <section style={{ position: "relative", height: "100vh", overflow: "hidden" }}>
+        {/* Loading skeleton */}
+        {slidesLoading && (
+          <div style={{ position: "absolute", inset: 0, background: "linear-gradient(135deg,#0D1117 0%,#1a2332 100%)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <div style={{ textAlign: "center" }}>
+              <div style={{ width: 48, height: 48, border: "3px solid rgba(43,150,168,0.3)", borderTop: "3px solid #2B96A8", borderRadius: "50%", animation: "spin 0.9s linear infinite", margin: "0 auto 16px" }} />
+              <p style={{ color: "rgba(255,255,255,0.4)", fontSize: 14, fontWeight: 500 }}>Chargement des excursions…</p>
+            </div>
+          </div>
+        )}
+        
         <div className="slide-bg" style={{ backgroundImage: `url(${slide.url})`, opacity: fading ? 0 : 1, transform: fading ? "scale(1.03)" : "scale(1)" }} />
         <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to right,rgba(0,0,0,0.72) 0%,rgba(0,0,0,0.35) 55%,rgba(0,0,0,0.06) 100%)" }} />
         <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top,rgba(0,0,0,0.55) 0%,transparent 55%)" }} />
@@ -239,20 +347,38 @@ export default function HomePage() {
           <h1 className="fu fu2" style={{ fontFamily: "'Playfair Display',serif", fontSize: "clamp(42px,5.5vw,72px)", fontWeight: 900, color: "white", lineHeight: 1.05, letterSpacing: "-2px", marginBottom: 18, textShadow: "0 2px 28px rgba(0,0,0,0.25)" }}>
             {slide.city}
           </h1>
-          <p className="fu fu3" style={{ fontSize: 17, color: "rgba(255,255,255,0.82)", lineHeight: 1.7, marginBottom: 40, maxWidth: 480 }}>{slide.desc}</p>
+          
+          {/* CATEGORIES au lieu de la description */}
+          <div className="categories-container">
+            {slide.categories && slide.categories.length > 0 ? (
+              <div style={{ marginBottom: 40 }}>
+                {formatCategories(slide.categories)}
+              </div>
+            ) : (
+              <p style={{ fontSize: 17, color: "rgba(255,255,255,0.82)", lineHeight: 1.7, marginBottom: 40, maxWidth: 480 }}>
+                Découvrez cette excursion exceptionnelle en Tunisie
+              </p>
+            )}
+          </div>
+          
           <div className="fu fu4 hero-buttons" style={{ display: "flex", gap: 14 }}>
             <a href="#chemins" className="btn-primary">
               <Sparkles size={16} /> Planifier mon voyage
             </a>
-            <Link href={ROUTES.excursions} className="btn-ghost">
-              <Map size={15} /> Voir les excursions
-            </Link>
+            {slide.id
+              ? <Link href={ROUTES.excursion(slide.id)} className="btn-ghost">
+                  <Map size={15} /> Voir cette excursion
+                </Link>
+              : <Link href={ROUTES.excursions} className="btn-ghost">
+                  <Map size={15} /> Voir les excursions
+                </Link>
+            }
           </div>
         </div>
 
         {/* Dots */}
         <div style={{ position: "absolute", bottom: 44, left: 72, display: "flex", gap: 10, alignItems: "center" }}>
-          {SLIDES.map((_, i) => (
+          {slides.map((_, i) => (
             <button key={i} onClick={() => goTo(i)} style={{ background: "none", border: "none", cursor: "pointer", padding: 4 }}>
               {i === current
                 ? <div style={{ width: 38, height: 6, borderRadius: 3, background: slide.color, overflow: "hidden" }}>
@@ -263,7 +389,7 @@ export default function HomePage() {
           ))}
         </div>
         <div style={{ position: "absolute", bottom: 48, right: 72, fontSize: 12, color: "rgba(255,255,255,0.4)", fontWeight: 600, letterSpacing: 1.5 }}>
-          {String(current + 1).padStart(2, "0")} / {String(SLIDES.length).padStart(2, "0")}
+          {String(current + 1).padStart(2, "0")} / {String(slides.length).padStart(2, "0")}
         </div>
         <div style={{ position: "absolute", bottom: 32, left: "50%", animation: "bounce 2s infinite" }}>
           <ChevronDown size={22} color="rgba(255,255,255,0.38)" />
@@ -272,12 +398,13 @@ export default function HomePage() {
 
       {/* ══ CHEMINS PRINCIPAUX ══ */}
       <section id="chemins" style={{ position: "relative", overflow: "hidden" }}>
-        <div style={{ position: "absolute", inset: 0, backgroundImage: `url(${SLIDES[2].url})`, backgroundSize: "cover", backgroundPosition: "center", filter: "blur(3px) brightness(0.35)", transform: "scale(1.05)" }} />
+        <div style={{ position: "absolute", inset: 0, backgroundImage: `url(${slides[2]?.url || slides[0]?.url || FALLBACK_IMG})`, backgroundSize: "cover", backgroundPosition: "center", filter: "blur(3px) brightness(0.35)", transform: "scale(1.05)" }} />
         <div style={{ position: "absolute", inset: 0, background: "rgba(4,12,22,0.65)" }} />
 
         <div style={{ position: "relative", zIndex: 1, padding: "96px 72px 108px", maxWidth: 1200, margin: "0 auto" }} className="section-pad">
           {/* Header de section */}
           <div style={{ textAlign: "center", marginBottom: 72 }}>
+            <p className="section-eyebrow" style={{ justifyContent: "center" }}>Choisissez votre style</p>
             <h2 className="section-title section-title-light">
               Votre voyage en Tunisie,<br />à votre façon
             </h2>
@@ -390,6 +517,7 @@ export default function HomePage() {
           {/* Header */}
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 52, flexWrap: "wrap", gap: 20 }}>
             <div>
+              <p className="section-eyebrow">Sélection de la semaine</p>
               <h2 className="section-title">
                 Excursions<br />populaires
               </h2>
