@@ -321,7 +321,7 @@ export default function HomePage() {
 
       {/* ══ NAVBAR ══ */}
       <TouristeNav userName={userName} favCount={favCount} isLoggedIn={!!user} />
-         <div style={{ paddingTop: 40 }} />
+         <div style={{ paddingTop: 10 }} />
 
       {/* ══ HERO SLIDER ══ */}
       <section style={{ position: "relative", height: "100vh", overflow: "hidden" }}>
