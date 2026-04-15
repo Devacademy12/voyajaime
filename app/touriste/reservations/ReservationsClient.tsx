@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { createClient } from "@/lib/supabaseClient";
 import Link from "next/link";
 import {
@@ -8,7 +8,7 @@ import {
   CheckCircle, CreditCard, Wallet, Building2,
   ChevronRight, ChevronLeft, MessageSquare, X, Loader2,
   ShieldCheck, ArrowRight, Ticket, Phone, Navigation,
-  AlertCircle, ExternalLink,
+  AlertCircle, ExternalLink, Timer, History,
 } from "lucide-react";
 
 // ─── Types ───────────────────────────────────────────────────────────
@@ -31,6 +31,7 @@ interface Reservation {
   platform_fee: number;
   status: string;
   payment_status?: string | null;
+  payment_deadline?: string | null;
   excursion: Excursion | null;
 }
 
@@ -62,10 +63,11 @@ function fmtDate(d: string, short = false) {
   return dt.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
 }
 
-// ─── CSS global injecté une seule fois ───────────────────────────────
+// ─── CSS global ───────────────────────────────────────────────────────
 const GLOBAL_CSS = `
   @keyframes rspin  { from { transform: rotate(0deg)   } to { transform: rotate(360deg) } }
   @keyframes fadeIn { from { opacity: 0; transform: translateY(6px) } to { opacity: 1; transform: none } }
+  @keyframes pulse  { 0%,100% { opacity: 1 } 50% { opacity: .5 } }
   .resa-card { animation: fadeIn .3s ease both; }
   .resa-card:hover { box-shadow: 0 10px 32px rgba(0,0,0,.12) !important; transform: translateY(-2px) !important; }
   .pay-method:hover { border-color: #2B96A8 !important; background: #F0FDF9 !important; }
@@ -73,35 +75,127 @@ const GLOBAL_CSS = `
   .pay-btn-primary:hover { background: #1e7a8a; box-shadow: 0 6px 20px rgba(43,150,168,.4); }
   .pay-btn-dark { background: #111827; color: white; }
   .pay-btn-dark:hover { background: #1f2937; }
+  .timer-urgent { animation: pulse .8s ease-in-out infinite; }
 `;
 
 // ═══════════════════════════════════════════════════════════════════════
-//  CheckoutModal — 4 étapes : Revue → Infos → Paiement → Succès
+//  CheckoutModal
 // ═══════════════════════════════════════════════════════════════════════
 function CheckoutModal({
   reservation,
   onClose,
   onPaid,
+  autoStart = false,
 }: {
   reservation: Reservation;
   onClose: () => void;
   onPaid: (id: string) => void;
+  autoStart?: boolean;
 }) {
   const supabase = createClient();
   const exc      = reservation.excursion;
 
-  const [step,        setStep]        = useState<1 | 2 | 3 | 4>(1);
+  const [step,        setStep]      = useState<1 | 2 | 3 | 4>(autoStart ? 3 : 1);
   const [specialNote, setSpecialNote] = useState("");
   const [payMethod,   setPayMethod]   = useState<PayMethod>("flouci");
   const [loading,     setLoading]     = useState(false);
   const [error,       setError]       = useState("");
-  const [flouciUrl,   setFlouciUrl]   = useState<string | null>(null); // lien redirection Flouci
+  const [flouciUrl,   setFlouciUrl]   = useState<string | null>(null);
+  const [cancelled,   setCancelled]   = useState(false);
+
+  // ── Calcul du temps restant ─────────────────────────────────────────
+  function getSecondsLeft() {
+    if (!reservation.payment_deadline) return 3600;
+    const deadline = new Date(reservation.payment_deadline).getTime();
+    const now      = Date.now();
+    const diff     = Math.floor((deadline - now) / 1000);
+    return Math.max(0, diff);
+  }
+
+  const [timeLeft, setTimeLeft] = useState<number>(getSecondsLeft);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  useEffect(() => {
+    if (step === 4 || cancelled) return;
+
+    const remaining = getSecondsLeft();
+    if (remaining <= 0) { triggerCancel(); return; }
+    setTimeLeft(remaining);
+
+    timerRef.current = setInterval(() => {
+      const left = getSecondsLeft();
+      setTimeLeft(left);
+      if (left <= 0) {
+        clearInterval(timerRef.current!);
+        triggerCancel();
+      }
+    }, 1000);
+
+    return () => { if (timerRef.current) clearInterval(timerRef.current); };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step, cancelled, reservation.payment_deadline]);
+
+  async function triggerCancel() {
+    setCancelled(true);
+    try {
+      await supabase
+        .from("reservations")
+        .update({ status: "cancelled", payment_status: "expired" })
+        .eq("id", reservation.id)
+        .eq("status", "pending");
+    } catch (e) {
+      console.warn("Auto-cancel error:", e);
+    }
+  }
+
+  function fmtCountdown(secs: number) {
+    const m = Math.floor(secs / 60).toString().padStart(2, "0");
+    const s = (secs % 60).toString().padStart(2, "0");
+    return `${m}:${s}`;
+  }
+
+  const isUrgent = timeLeft <= 300;
 
   const base  = reservation.total_price - reservation.platform_fee;
   const fee   = reservation.platform_fee;
   const total = reservation.total_price;
 
-  // ── Trigger n8n notification ───────────────────────────────────────
+  // ── Copie dans l'historique après paiement ──────────────────────────
+  async function addToHistory() {
+    try {
+      const { data: res, error } = await supabase
+        .from("reservations")
+        .select(`
+          id, booking_code, date, time, people_count, total_price, platform_fee,
+          payment_method, status, excursion:excursions(title, city)
+        `)
+        .eq("id", reservation.id)
+        .single();
+
+      if (error || !res) return;
+
+      await supabase
+        .from("historique_reservations")
+        .insert({
+          original_reservation_id: res.id,
+          booking_code: res.booking_code,
+          excursion_title: res.excursion?.title,
+          excursion_city: res.excursion?.city,
+          date: res.date,
+          time: res.time,
+          people_count: res.people_count,
+          total_price: res.total_price,
+          platform_fee: res.platform_fee,
+          payment_method: res.payment_method || payMethod,
+          payment_status: "paid",
+          payment_date: new Date().toISOString(),
+        });
+    } catch (e) {
+      console.warn("addToHistory error:", e);
+    }
+  }
+
+  // ── Notification n8n ────────────────────────────────────────────────
   async function notifyN8n(method: PayMethod) {
     const { data: { user } } = await supabase.auth.getUser();
     fetch("/api/n8n-trigger", {
@@ -125,25 +219,26 @@ function CheckoutModal({
     }).catch(err => console.warn("[n8n] non disponible:", err));
   }
 
-  // ── Paiement Flouci (redirection) ─────────────────────────────────
+  // ── Paiement Flouci ─────────────────────────────────────────────────
   async function handleFlouci() {
     setLoading(true);
     setError("");
     try {
-      const res  = await fetch("/api/paiement/flouci", {
+      const res = await fetch("/api/paiement/flouci", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ reservation_id: reservation.id }),
+        body: JSON.stringify({ 
+          reservation_id: reservation.id,
+          special_notes: specialNote,
+        }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Erreur Flouci");
-      // Sauvegarder note spéciale avant redirection
+      
       if (specialNote) {
-        await supabase
-          .from("reservations")
-          .update({ special_notes: specialNote })
-          .eq("id", reservation.id);
+        await supabase.from("reservations").update({ special_notes: specialNote }).eq("id", reservation.id);
       }
+      
       setFlouciUrl(data.payment_url);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Erreur lors de l'initialisation du paiement.");
@@ -152,7 +247,7 @@ function CheckoutModal({
     }
   }
 
-  // ── Paiement cash / virement (local) ──────────────────────────────
+  // ── Paiement cash / virement ────────────────────────────────────────
   async function handleLocalPay() {
     setLoading(true);
     setError("");
@@ -160,15 +255,22 @@ function CheckoutModal({
       const { error: e1 } = await supabase
         .from("reservations")
         .update({
-          payment_status: payMethod === "cash" ? "pending_cash" : "pending_bank",
+          payment_status: "paid",
           payment_method: payMethod,
           special_notes:  specialNote || null,
+          status: "confirmed",
+          paid_at: new Date().toISOString(),
         })
         .eq("id", reservation.id);
 
       if (e1) throw e1;
 
+      // ✅ Copie dans l'historique
+      await addToHistory();
       await notifyN8n(payMethod);
+
+      if (timerRef.current) clearInterval(timerRef.current);
+
       setStep(4);
       onPaid(reservation.id);
     } catch (e) {
@@ -178,16 +280,11 @@ function CheckoutModal({
     }
   }
 
-  // ── Dispatcher ────────────────────────────────────────────────────
   async function handlePay() {
-    if (payMethod === "flouci") {
-      await handleFlouci();
-    } else {
-      await handleLocalPay();
-    }
+    if (payMethod === "flouci") await handleFlouci();
+    else await handleLocalPay();
   }
 
-  // ── Overlay click ─────────────────────────────────────────────────
   const handleOverlayClick = useCallback((e: React.MouseEvent) => {
     if (e.target === e.currentTarget && step !== 4) onClose();
   }, [step, onClose]);
@@ -206,18 +303,20 @@ function CheckoutModal({
     >
       <div style={{
         background: "white", borderRadius: 24, width: "100%", maxWidth: 520,
-        maxHeight: "94vh", overflowY: "auto",
+        maxHeight: "94vh", overflowY: "hidden",
         boxShadow: "0 32px 80px rgba(0,0,0,.3)",
+        display: "flex", flexDirection: "column",
       }}>
 
         {/* ── Sticky header ── */}
         <div style={{
           position: "sticky", top: 0, background: "white", zIndex: 10,
           borderBottom: "1px solid #F3F4F6", padding: "20px 24px 16px",
+          flexShrink: 0,
         }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: step !== 4 ? 20 : 0 }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: step !== 4 && !cancelled ? 16 : 0 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-              {step > 1 && step < 4 && (
+              {step > 1 && step < 4 && !cancelled && (
                 <button
                   onClick={() => { setError(""); setFlouciUrl(null); setStep(s => (s - 1) as 1|2|3|4); }}
                   style={{ width: 32, height: 32, borderRadius: "50%", border: "1.5px solid #E5E7EB", background: "white", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
@@ -226,16 +325,17 @@ function CheckoutModal({
                 </button>
               )}
               <div>
-                {step !== 4 && (
+                {step !== 4 && !cancelled && (
                   <p style={{ fontSize: 11, fontWeight: 700, color: "#9CA3AF", textTransform: "uppercase", letterSpacing: 1, marginBottom: 2 }}>
                     Étape {step} sur 3
                   </p>
                 )}
                 <h2 style={{ fontSize: 18, fontWeight: 800, color: "#111827", lineHeight: 1.2 }}>
-                  {step === 1 && "Revue de la réservation"}
-                  {step === 2 && "Informations voyageur"}
-                  {step === 3 && "Paiement"}
-                  {step === 4 && "✓ Réservation confirmée"}
+                  {cancelled          && "⏱ Réservation expirée"}
+                  {!cancelled && step === 1 && "Revue de la réservation"}
+                  {!cancelled && step === 2 && "Informations voyageur"}
+                  {!cancelled && step === 3 && "Paiement"}
+                  {!cancelled && step === 4 && "✓ Paiement confirmé"}
                 </h2>
               </div>
             </div>
@@ -250,8 +350,8 @@ function CheckoutModal({
           </div>
 
           {/* Barre de progression */}
-          {step !== 4 && (
-            <div style={{ display: "flex", gap: 6 }}>
+          {step !== 4 && !cancelled && (
+            <div style={{ display: "flex", gap: 6, marginBottom: 10 }}>
               {STEPS.map((s, i) => (
                 <div key={s} style={{ flex: 1, display: "flex", flexDirection: "column", gap: 5 }}>
                   <div style={{ height: 3, borderRadius: 99, background: i < step ? "#2B96A8" : "#E5E7EB", transition: "background .3s" }} />
@@ -260,15 +360,98 @@ function CheckoutModal({
               ))}
             </div>
           )}
+
+          {/* ── Compte à rebours ── */}
+          {step !== 4 && !cancelled && (
+            <div
+              className={isUrgent ? "timer-urgent" : ""}
+              style={{
+                display: "flex", alignItems: "center", justifyContent: "space-between",
+                padding: "8px 14px",
+                background: isUrgent ? "#FEF2F2" : "#F0FDF9",
+                border: `1.5px solid ${isUrgent ? "#FCA5A5" : "#A7F3D0"}`,
+                borderRadius: 10,
+                marginBottom: 12,
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                <Timer size={13} color={isUrgent ? "#DC2626" : "#059669"} strokeWidth={2} />
+                <span style={{ fontSize: 12, fontWeight: 600, color: isUrgent ? "#DC2626" : "#059669" }}>
+                  {isUrgent ? "⚠ Dernier délai — payez vite !" : "Temps restant pour payer"}
+                </span>
+              </div>
+              <span style={{
+                fontFamily: "monospace", fontSize: 15, fontWeight: 900,
+                color: isUrgent ? "#DC2626" : "#065F46",
+                background: isUrgent ? "#FEE2E2" : "#D1FAE5",
+                padding: "2px 10px", borderRadius: 8,
+              }}>
+                {fmtCountdown(timeLeft)}
+              </span>
+            </div>
+          )}
+          
+
+          {/* ⭐ MESSAGE D'INFORMATION EXPIRATION ⭐ */}
+          {step !== 4 && !cancelled && (
+            <div style={{
+              padding: "10px 14px",
+              background: "#FEF3C7",
+              borderLeft: "4px solid #F59E0B",
+              borderRadius: 8,
+              display: "flex",
+              alignItems: "center",
+              gap: 10,
+            }}>
+              <AlertCircle size={16} color="#D97706" />
+              <span style={{ fontSize: 12, color: "#92400E" }}>
+                ⏰ Cette réservation sera <strong>automatiquement annulée</strong> si le paiement n'est pas finalisé sous <strong>1 heure</strong>.
+              </span>
+            </div>
+          )}
         </div>
 
-        <div style={{ padding: 24 }}>
+        {/* ── Contenu scrollable ── */}
+        <div style={{ padding: 24, overflowY: "auto", flex: 1 }}>
+
+          {/* ══ ÉCRAN EXPIRÉ ════════════════════════════════════════════ */}
+          {cancelled && (
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 18, paddingTop: 12, textAlign: "center" }}>
+              <div style={{
+                width: 80, height: 80, borderRadius: "50%",
+                background: "linear-gradient(135deg,#FEE2E2,#FECaca)",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                border: "4px solid #FCA5A5",
+              }}>
+                <Timer size={38} color="#EF4444" strokeWidth={1.5} />
+              </div>
+              <div>
+                <h3 style={{ fontSize: 22, fontWeight: 900, color: "#111827", marginBottom: 8 }}>Délai expiré</h3>
+                <p style={{ fontSize: 14, color: "#6B7280", lineHeight: 1.8, maxWidth: 340 }}>
+                  Votre réservation <strong style={{ color: "#374151" }}>#{reservation.booking_code}</strong> a été
+                  {" "}<strong style={{ color: "#DC2626" }}>automatiquement annulée</strong> car le délai d'1 heure
+                  pour effectuer le paiement est dépassé.
+                </p>
+              </div>
+              <div style={{ background: "#FEF3C7", border: "1px solid #FDE68A", borderRadius: 12, padding: "12px 16px", maxWidth: 340 }}>
+                <p style={{ fontSize: 13, color: "#92400E", fontWeight: 600 }}>
+                  💡 Vous pouvez créer une nouvelle réservation à tout moment depuis la page des excursions.
+                </p>
+              </div>
+              <button
+                onClick={onClose}
+                style={{ padding: "13px 36px", background: "#111827", color: "white", border: "none", borderRadius: 14, fontSize: 14, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" }}
+              >
+                Fermer
+              </button>
+            </div>
+          )}
+
+          {!cancelled && (<>
 
           {/* ══ STEP 1 — Revue ══════════════════════════════════════════ */}
           {step === 1 && (
             <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-
-              {/* Photo + titre */}
               <div style={{ borderRadius: 16, overflow: "hidden", height: 180, background: "linear-gradient(135deg,#2B96A8,#0e7490)", position: "relative" }}>
                 {exc?.photos?.[0] && <img src={exc.photos[0]} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />}
                 <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top,rgba(0,0,0,.5) 0%,transparent 50%)" }} />
@@ -281,13 +464,12 @@ function CheckoutModal({
                 </div>
               </div>
 
-              {/* Détails grille */}
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
                 {[
-                  { label: "Date",      value: fmtDate(reservation.date, true),        Icon: CalendarDays },
-                  { label: "Heure",     value: reservation.time,                        Icon: Clock        },
-                  { label: "Voyageurs", value: `${reservation.people_count} pers.`,    Icon: Users        },
-                  { label: "Durée",     value: `${exc?.duration_hours ?? "–"}h`,        Icon: Clock        },
+                  { label: "Date",      value: fmtDate(reservation.date, true),     Icon: CalendarDays },
+                  { label: "Heure",     value: reservation.time,                     Icon: Clock        },
+                  { label: "Voyageurs", value: `${reservation.people_count} pers.`, Icon: Users        },
+                  { label: "Durée",     value: `${exc?.duration_hours ?? "–"}h`,     Icon: Clock        },
                 ].map(({ label, value, Icon }) => (
                   <div key={label} style={{ background: "#F9FAFB", borderRadius: 12, padding: "12px 14px", border: "1px solid #F3F4F6" }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
@@ -299,7 +481,6 @@ function CheckoutModal({
                 ))}
               </div>
 
-              {/* Détail des frais */}
               <div style={{ border: "1.5px solid #E5E7EB", borderRadius: 16, overflow: "hidden" }}>
                 <div style={{ background: "#F9FAFB", padding: "14px 18px", borderBottom: "1px solid #E5E7EB" }}>
                   <p style={{ fontSize: 12, fontWeight: 700, color: "#6B7280", textTransform: "uppercase", letterSpacing: .8 }}>Détail des frais</p>
@@ -321,17 +502,13 @@ function CheckoutModal({
                 </div>
               </div>
 
-              {/* Annulation gratuite */}
               <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "12px 14px", background: "#F0FDF4", borderRadius: 12, border: "1px solid #BBF7D0" }}>
                 <ShieldCheck size={16} color="#16A34A" strokeWidth={1.5} />
                 <span style={{ fontSize: 13, color: "#15803D", fontWeight: 600 }}>Annulation gratuite jusqu'à 24h avant</span>
               </div>
 
-              <button
-                onClick={() => setStep(2)}
-                className="pay-btn-dark"
-                style={{ width: "100%", padding: 15, border: "none", borderRadius: 14, fontSize: 15, fontWeight: 800, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, transition: "all .2s" }}
-              >
+              <button onClick={() => setStep(2)} className="pay-btn-dark"
+                style={{ width: "100%", padding: 15, border: "none", borderRadius: 14, fontSize: 15, fontWeight: 800, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, transition: "all .2s" }}>
                 Continuer <ChevronRight size={17} />
               </button>
             </div>
@@ -340,8 +517,6 @@ function CheckoutModal({
           {/* ══ STEP 2 — Informations ═══════════════════════════════════ */}
           {step === 2 && (
             <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-
-              {/* Mini résumé */}
               <div style={{ display: "flex", gap: 12, alignItems: "center", background: "#F9FAFB", border: "1px solid #E5E7EB", borderRadius: 14, padding: "12px 14px" }}>
                 <div style={{ width: 44, height: 44, borderRadius: 10, overflow: "hidden", flexShrink: 0, background: "#E5E7EB" }}>
                   {exc?.photos?.[0] && <img src={exc.photos[0]} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />}
@@ -350,12 +525,9 @@ function CheckoutModal({
                   <p style={{ fontSize: 13, fontWeight: 700, color: "#111827" }}>{exc?.title}</p>
                   <p style={{ fontSize: 12, color: "#6B7280" }}>{fmtDate(reservation.date)} · {reservation.people_count} pers.</p>
                 </div>
-                <div style={{ textAlign: "right" }}>
-                  <p style={{ fontSize: 16, fontWeight: 900, color: "#111827" }}>{total} <span style={{ fontSize: 11, fontWeight: 500 }}>TND</span></p>
-                </div>
+                <p style={{ fontSize: 16, fontWeight: 900, color: "#111827" }}>{total} <span style={{ fontSize: 11, fontWeight: 500 }}>TND</span></p>
               </div>
 
-              {/* Note spéciale */}
               <div>
                 <label style={{ display: "flex", alignItems: "center", gap: 7, fontSize: 13, fontWeight: 700, color: "#111827", marginBottom: 10 }}>
                   <MessageSquare size={14} color="#2B96A8" strokeWidth={2} />
@@ -379,11 +551,8 @@ function CheckoutModal({
                 />
               </div>
 
-              <button
-                onClick={() => setStep(3)}
-                className="pay-btn-dark"
-                style={{ width: "100%", padding: 15, border: "none", borderRadius: 14, fontSize: 15, fontWeight: 800, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, transition: "all .2s" }}
-              >
+              <button onClick={() => setStep(3)} className="pay-btn-dark"
+                style={{ width: "100%", padding: 15, border: "none", borderRadius: 14, fontSize: 15, fontWeight: 800, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, transition: "all .2s" }}>
                 Passer au paiement <ChevronRight size={17} />
               </button>
             </div>
@@ -392,8 +561,6 @@ function CheckoutModal({
           {/* ══ STEP 3 — Paiement ═══════════════════════════════════════ */}
           {step === 3 && (
             <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-
-              {/* Montant */}
               <div style={{ background: "linear-gradient(135deg,#0e7490,#2B96A8)", borderRadius: 18, padding: "22px 24px", color: "white", textAlign: "center" }}>
                 <p style={{ fontSize: 13, opacity: .8, marginBottom: 6, fontWeight: 500 }}>Montant total à payer</p>
                 <p style={{ fontSize: 38, fontWeight: 900, letterSpacing: "-1px" }}>
@@ -402,23 +569,17 @@ function CheckoutModal({
                 <p style={{ fontSize: 12, opacity: .65, marginTop: 6 }}>dont {fee} TND de frais de service</p>
               </div>
 
-              {/* Méthodes de paiement */}
               <div>
                 <p style={{ fontSize: 13, fontWeight: 700, color: "#111827", marginBottom: 12 }}>Choisissez votre méthode de paiement</p>
                 <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                   {PAY_METHODS.map(m => (
-                    <button
-                      key={m.id}
-                      className="pay-method"
+                    <button key={m.id} className="pay-method"
                       onClick={() => { setPayMethod(m.id); setError(""); setFlouciUrl(null); }}
                       style={{
-                        display: "flex", alignItems: "center", gap: 14,
-                        padding: "14px 16px",
+                        display: "flex", alignItems: "center", gap: 14, padding: "14px 16px",
                         border: `2px solid ${payMethod === m.id ? "#2B96A8" : "#E5E7EB"}`,
-                        borderRadius: 14,
-                        background: payMethod === m.id ? "#EFF9FB" : "white",
-                        cursor: "pointer", textAlign: "left",
-                        transition: "all .15s", fontFamily: "inherit",
+                        borderRadius: 14, background: payMethod === m.id ? "#EFF9FB" : "white",
+                        cursor: "pointer", textAlign: "left", transition: "all .15s", fontFamily: "inherit",
                       }}
                     >
                       <div style={{
@@ -433,7 +594,6 @@ function CheckoutModal({
                         <p style={{ fontSize: 14, fontWeight: 700, color: "#111827" }}>{m.label}</p>
                         <p style={{ fontSize: 12, color: "#9CA3AF" }}>{m.sub}</p>
                       </div>
-                      {/* Badge Flouci */}
                       {m.id === "flouci" && (
                         <span style={{ fontSize: 10, fontWeight: 700, padding: "3px 8px", background: "#DCFCE7", color: "#15803D", borderRadius: 20 }}>
                           Recommandé
@@ -452,7 +612,6 @@ function CheckoutModal({
                 </div>
               </div>
 
-              {/* Erreur */}
               {error && (
                 <div style={{ display: "flex", gap: 8, padding: "11px 14px", background: "#FEF2F2", border: "1px solid #FCA5A5", borderRadius: 12 }}>
                   <AlertCircle size={15} color="#DC2626" strokeWidth={1.5} style={{ flexShrink: 0, marginTop: 1 }} />
@@ -460,23 +619,13 @@ function CheckoutModal({
                 </div>
               )}
 
-              {/* Lien Flouci généré */}
               {flouciUrl && (
                 <div style={{ padding: "14px 16px", background: "#F0FDF4", border: "1.5px solid #86EFAC", borderRadius: 14 }}>
                   <p style={{ fontSize: 13, fontWeight: 700, color: "#15803D", marginBottom: 10, display: "flex", alignItems: "center", gap: 6 }}>
                     <CheckCircle size={14} strokeWidth={2.5} /> Lien de paiement prêt
                   </p>
-                  <a
-                    href={flouciUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    style={{
-                      display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
-                      width: "100%", padding: "13px", background: "#16A34A", color: "white",
-                      border: "none", borderRadius: 12, fontSize: 14, fontWeight: 700,
-                      textDecoration: "none", transition: "background .2s",
-                    }}
-                  >
+                  <a href={flouciUrl} target="_blank" rel="noopener noreferrer"
+                    style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, width: "100%", padding: "13px", background: "#16A34A", color: "white", border: "none", borderRadius: 12, fontSize: 14, fontWeight: 700, textDecoration: "none" }}>
                     <ExternalLink size={15} /> Payer {total} TND via Flouci
                   </a>
                   <p style={{ fontSize: 11, color: "#6B7280", textAlign: "center", marginTop: 8 }}>
@@ -485,23 +634,14 @@ function CheckoutModal({
                 </div>
               )}
 
-              {/* Bouton confirmer */}
               {!flouciUrl && (
-                <button
-                  onClick={handlePay}
-                  disabled={loading}
-                  className="pay-btn-primary"
+                <button onClick={handlePay} disabled={loading} className="pay-btn-primary"
                   style={{
                     width: "100%", padding: 16, border: "none", borderRadius: 14,
-                    fontSize: 15, fontWeight: 800,
-                    cursor: loading ? "not-allowed" : "pointer",
-                    fontFamily: "inherit",
-                    display: "flex", alignItems: "center", justifyContent: "center", gap: 10,
-                    opacity: loading ? 0.7 : 1,
-                    boxShadow: "0 4px 16px rgba(43,150,168,.4)",
-                    transition: "all .2s",
-                  }}
-                >
+                    fontSize: 15, fontWeight: 800, cursor: loading ? "not-allowed" : "pointer",
+                    fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center", gap: 10,
+                    opacity: loading ? 0.7 : 1, boxShadow: "0 4px 16px rgba(43,150,168,.4)", transition: "all .2s",
+                  }}>
                   {loading
                     ? <><Loader2 size={17} style={{ animation: "rspin 1s linear infinite" }} /> Traitement en cours…</>
                     : payMethod === "flouci"
@@ -524,8 +664,7 @@ function CheckoutModal({
 
               <div style={{ textAlign: "center", padding: "20px 0 10px" }}>
                 <div style={{
-                  width: 72, height: 72, borderRadius: "50%",
-                  background: "#D1FAE5",
+                  width: 72, height: 72, borderRadius: "50%", background: "#D1FAE5",
                   display: "flex", alignItems: "center", justifyContent: "center",
                   margin: "0 auto 16px", border: "4px solid #A7F3D0",
                 }}>
@@ -533,13 +672,12 @@ function CheckoutModal({
                 </div>
                 <h3 style={{ fontSize: 20, fontWeight: 900, color: "#111827", marginBottom: 6 }}>Paiement enregistré !</h3>
                 <p style={{ fontSize: 14, color: "#6B7280", lineHeight: 1.7 }}>
-                  Votre réservation est confirmée. Un email de confirmation vous a été envoyé. 📧
+                  Votre réservation est confirmée et ajoutée à votre historique. 📧
                 </p>
               </div>
 
-              {/* Ticket de réservation */}
+              {/* Ticket */}
               <div style={{ border: "2px solid #E5E7EB", borderRadius: 20, overflow: "hidden" }}>
-                {/* Header ticket */}
                 <div style={{ background: "linear-gradient(135deg,#0e7490,#2B96A8)", padding: "20px 22px" }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
                     <div>
@@ -556,14 +694,13 @@ function CheckoutModal({
                   </div>
                 </div>
 
-                {/* Corps ticket */}
                 <div style={{ padding: "18px 22px", display: "flex", flexDirection: "column", gap: 14 }}>
                   {[
-                    { Icon: Ticket,      label: "Code de réservation", value: reservation.booking_code },
-                    { Icon: CalendarDays,label: "Date & heure",         value: `${fmtDate(reservation.date)} · ${reservation.time}` },
-                    { Icon: Users,       label: "Voyageurs",            value: `${reservation.people_count} personne${reservation.people_count > 1 ? "s" : ""}` },
-                    { Icon: Navigation,  label: "Lieu de rendez-vous",  value: exc?.meeting_point || exc?.city || "Communiqué par le prestataire" },
-                    { Icon: Phone,       label: "Contact d'urgence",    value: "+216 70 000 000" },
+                    { Icon: Ticket,       label: "Code de réservation", value: reservation.booking_code },
+                    { Icon: CalendarDays, label: "Date & heure",         value: `${fmtDate(reservation.date)} · ${reservation.time}` },
+                    { Icon: Users,        label: "Voyageurs",            value: `${reservation.people_count} personne${reservation.people_count > 1 ? "s" : ""}` },
+                    { Icon: Navigation,   label: "Lieu de rendez-vous",  value: exc?.meeting_point || exc?.city || "Communiqué par le prestataire" },
+                    { Icon: Phone,        label: "Contact d'urgence",    value: "+216 70 000 000" },
                   ].map(({ Icon, label, value }) => (
                     <div key={label} style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
                       <div style={{ width: 34, height: 34, borderRadius: 10, background: "#EFF9FB", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
@@ -577,14 +714,12 @@ function CheckoutModal({
                   ))}
                 </div>
 
-                {/* Séparation ticket style */}
                 <div style={{ display: "flex", alignItems: "center", padding: "0 10px", borderTop: "2px dashed #E5E7EB" }}>
                   <div style={{ width: 20, height: 20, borderRadius: "50%", background: "#F3F4F6", border: "2px solid #E5E7EB", flexShrink: 0, marginLeft: -20 }} />
                   <div style={{ flex: 1 }} />
                   <div style={{ width: 20, height: 20, borderRadius: "50%", background: "#F3F4F6", border: "2px solid #E5E7EB", flexShrink: 0, marginRight: -20 }} />
                 </div>
 
-                {/* Footer ticket */}
                 <div style={{ padding: "14px 22px 18px", background: "#F9FAFB", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                     <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#10B981" }} />
@@ -594,24 +729,30 @@ function CheckoutModal({
                 </div>
               </div>
 
-              {/* Actions */}
+              {/* ✅ Bouton Historique */}
+              <div style={{ background: "linear-gradient(135deg,#EFF9FB,#D1FAE5)", border: "1.5px solid #6EE7B7", borderRadius: 16, padding: "16px 18px", display: "flex", alignItems: "center", gap: 12 }}>
+                <div style={{ width: 42, height: 42, borderRadius: 12, background: "#2B96A8", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                  <History size={20} color="white" strokeWidth={1.5} />
+                </div>
+                <div style={{ flex: 1 }}>
+                  <p style={{ fontSize: 13, fontWeight: 700, color: "#065F46" }}>Excursion ajoutée à votre historique</p>
+                  <p style={{ fontSize: 12, color: "#6B7280" }}>Retrouvez tous vos voyages dans la section Historique</p>
+                </div>
+              </div>
+
               <div style={{ display: "flex", gap: 10 }}>
-                <button
-                  onClick={onClose}
-                  style={{ flex: 1, padding: 14, background: "#F3F4F6", color: "#374151", border: "none", borderRadius: 14, fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}
-                >
+                <button onClick={onClose}
+                  style={{ flex: 1, padding: 14, background: "#F3F4F6", color: "#374151", border: "none", borderRadius: 14, fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
                   Fermer
                 </button>
-                <Link
-                  href="/touriste/reservations"
-                  onClick={onClose}
-                  style={{ flex: 2, padding: 14, background: "#111827", color: "white", borderRadius: 14, textDecoration: "none", fontSize: 14, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}
-                >
-                  <CalendarDays size={15} /> Mes réservations
+                <Link href="/touriste/historique" onClick={onClose}
+                  style={{ flex: 2, padding: 14, background: "#111827", color: "white", borderRadius: 14, textDecoration: "none", fontSize: 14, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
+                  <History size={15} /> Voir l'historique
                 </Link>
               </div>
             </div>
           )}
+          </>)}
         </div>
       </div>
     </div>
@@ -625,7 +766,23 @@ function ReservationCard({ r, onPay }: { r: Reservation; onPay: () => void }) {
   const exc   = r.excursion;
   const s     = STATUS_CONFIG[r.status] ?? STATUS_CONFIG.pending;
   const photo = exc?.photos?.[0];
-  const paid  = r.payment_status === "paid" || r.payment_status === "pending_cash" || r.payment_status === "pending_bank" || r.status === "completed";
+  const paid  = r.payment_status === "paid" || r.payment_status === "pending_cash" || r.payment_status === "pending_bank" || r.status === "confirmed" || r.status === "completed";
+
+  const [timeLeftCard, setTimeLeftCard] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (r.status !== "pending" || paid || !r.payment_deadline) return;
+    const deadline = new Date(r.payment_deadline).getTime();
+    const tick = () => {
+      const left = Math.max(0, Math.floor((deadline - Date.now()) / 1000));
+      setTimeLeftCard(left);
+    };
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, [r.status, r.payment_deadline, paid]);
+
+  const cardUrgent = timeLeftCard !== null && timeLeftCard <= 300;
 
   return (
     <div
@@ -636,7 +793,6 @@ function ReservationCard({ r, onPay }: { r: Reservation; onPay: () => void }) {
         boxShadow: "0 1px 4px rgba(0,0,0,.05)", transition: "box-shadow .2s, transform .2s",
       }}
     >
-      {/* Image */}
       <div style={{ position: "relative", height: 220, flexShrink: 0, overflow: "hidden", background: "linear-gradient(135deg,#2B96A8,#0e7490)" }}>
         {photo
           ? <img src={photo} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
@@ -646,7 +802,6 @@ function ReservationCard({ r, onPay }: { r: Reservation; onPay: () => void }) {
         }
         <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top,rgba(0,0,0,.5) 0%,transparent 55%)" }} />
 
-        {/* Badge statut */}
         <span style={{
           position: "absolute", top: 12, left: 12,
           display: "inline-flex", alignItems: "center", gap: 5,
@@ -657,7 +812,6 @@ function ReservationCard({ r, onPay }: { r: Reservation; onPay: () => void }) {
           {s.label}
         </span>
 
-        {/* Badge payé */}
         {paid && (
           <span style={{
             position: "absolute", top: 12, right: 12,
@@ -669,7 +823,6 @@ function ReservationCard({ r, onPay }: { r: Reservation; onPay: () => void }) {
           </span>
         )}
 
-        {/* Titre + ville */}
         <div style={{ position: "absolute", bottom: 12, left: 14, right: 14 }}>
           <h3 style={{ fontSize: 14, fontWeight: 800, color: "white", marginBottom: 3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
             {exc?.title ?? "Excursion"}
@@ -680,7 +833,6 @@ function ReservationCard({ r, onPay }: { r: Reservation; onPay: () => void }) {
         </div>
       </div>
 
-      {/* Corps de la carte */}
       <div style={{ padding: "14px 16px", flex: 1, display: "flex", flexDirection: "column", gap: 8 }}>
         <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
           <span style={{ fontSize: 12, color: "#6B7280", display: "flex", alignItems: "center", gap: 5 }}>
@@ -700,6 +852,29 @@ function ReservationCard({ r, onPay }: { r: Reservation; onPay: () => void }) {
           </span>
         </div>
 
+        {timeLeftCard !== null && timeLeftCard > 0 && (
+          <div className={cardUrgent ? "timer-urgent" : ""} style={{
+            display: "flex", alignItems: "center", justifyContent: "space-between",
+            padding: "6px 10px",
+            background: cardUrgent ? "#FEF2F2" : "#F0FDF9",
+            border: `1px solid ${cardUrgent ? "#FCA5A5" : "#A7F3D0"}`,
+            borderRadius: 8,
+          }}>
+            <span style={{ fontSize: 11, color: cardUrgent ? "#DC2626" : "#059669", fontWeight: 600, display: "flex", alignItems: "center", gap: 4 }}>
+              <Timer size={11} /> {cardUrgent ? "Urgent !" : "Expiration dans"}
+            </span>
+            <span style={{ fontSize: 12, fontFamily: "monospace", fontWeight: 800, color: cardUrgent ? "#DC2626" : "#065F46" }}>
+              {Math.floor(timeLeftCard / 60).toString().padStart(2,"0")}:{(timeLeftCard % 60).toString().padStart(2,"0")}
+            </span>
+          </div>
+        )}
+
+        {timeLeftCard === 0 && (
+          <div style={{ padding: "6px 10px", background: "#FEF2F2", border: "1px solid #FCA5A5", borderRadius: 8 }}>
+            <span style={{ fontSize: 11, color: "#DC2626", fontWeight: 700 }}>⏱ Délai expiré — réservation annulée</span>
+          </div>
+        )}
+
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "auto", paddingTop: 6 }}>
           <span style={{ fontSize: 11, color: "#9CA3AF", fontFamily: "monospace", background: "#F9FAFB", padding: "3px 8px", borderRadius: 6, border: "1px solid #E5E7EB" }}>
             #{r.booking_code}
@@ -711,21 +886,15 @@ function ReservationCard({ r, onPay }: { r: Reservation; onPay: () => void }) {
         </div>
       </div>
 
-      {/* Bouton payer */}
       {!paid && r.status !== "cancelled" && (
         <div style={{ borderTop: "1px solid #F3F4F6", padding: "12px 16px" }}>
-          <button
-            onClick={onPay}
-            className="pay-btn-dark"
+          <button onClick={onPay} className="pay-btn-dark"
             style={{
-              width: "100%", padding: "11px 16px",
-              border: "none", borderRadius: 12,
-              fontSize: 13, fontWeight: 800,
-              cursor: "pointer", fontFamily: "inherit",
+              width: "100%", padding: "11px 16px", border: "none", borderRadius: 12,
+              fontSize: 13, fontWeight: 800, cursor: "pointer", fontFamily: "inherit",
               display: "flex", alignItems: "center", justifyContent: "center", gap: 7,
               transition: "background .2s",
-            }}
-          >
+            }}>
             <CreditCard size={13} strokeWidth={2} />
             Payer maintenant · {r.total_price} TND
             <ArrowRight size={13} />
@@ -741,11 +910,13 @@ function ReservationCard({ r, onPay }: { r: Reservation; onPay: () => void }) {
 // ═══════════════════════════════════════════════════════════════════════
 export default function ReservationsClient({
   reservations: init,
+  autoOpenId,
 }: {
   reservations: Reservation[];
   total?: number;
   pending?: number;
   confirmed?: number;
+  autoOpenId?: string;
 }) {
   const [reservations, setReservations] = useState(init);
   const [checkout,     setCheckout]     = useState<Reservation | null>(null);
@@ -754,9 +925,24 @@ export default function ReservationsClient({
   const pending   = reservations.filter(r => r.status === "pending").length;
   const confirmed = reservations.filter(r => r.status === "confirmed").length;
 
+  useEffect(() => {
+    if (autoOpenId) {
+      const target = reservations.find(r => r.id === autoOpenId);
+      if (target && target.payment_status !== "paid" && target.status !== "cancelled") {
+        setCheckout(target);
+      }
+    } else {
+      const latestUnpaid = reservations
+        .filter(r => r.status === "pending" && !r.payment_status)
+        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0];
+      if (latestUnpaid) setCheckout(latestUnpaid);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   function handlePaid(id: string) {
     setReservations(prev =>
-      prev.map(r => r.id === id ? { ...r, payment_status: "paid" } : r)
+      prev.map(r => r.id === id ? { ...r, payment_status: "paid", status: "confirmed" } : r)
     );
   }
 
@@ -764,7 +950,6 @@ export default function ReservationsClient({
     <div>
       <style>{GLOBAL_CSS}</style>
 
-      {/* Compteurs */}
       {total > 0 && (
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 24, flexWrap: "wrap" }}>
           {[
@@ -781,7 +966,6 @@ export default function ReservationsClient({
         </div>
       )}
 
-      {/* Etat vide */}
       {total === 0 ? (
         <div style={{ textAlign: "center", padding: "80px 20px", background: "white", borderRadius: 24, border: "1px solid #E5E7EB" }}>
           <div style={{ width: 72, height: 72, borderRadius: "50%", background: "#EFF9FB", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 20px" }}>
@@ -791,15 +975,12 @@ export default function ReservationsClient({
           <p style={{ fontSize: 14, color: "#6B7280", marginBottom: 24, lineHeight: 1.6 }}>
             Découvrez les excursions et planifiez votre prochain voyage en Tunisie
           </p>
-          <Link
-            href="/excursions"
-            style={{
-              display: "inline-flex", alignItems: "center", gap: 8,
-              padding: "13px 26px", background: "#2B96A8", color: "white",
-              borderRadius: 14, textDecoration: "none", fontSize: 14, fontWeight: 700,
-              boxShadow: "0 4px 14px rgba(43,150,168,.35)",
-            }}
-          >
+          <Link href="/excursions" style={{
+            display: "inline-flex", alignItems: "center", gap: 8,
+            padding: "13px 26px", background: "#2B96A8", color: "white",
+            borderRadius: 14, textDecoration: "none", fontSize: 14, fontWeight: 700,
+            boxShadow: "0 4px 14px rgba(43,150,168,.35)",
+          }}>
             <Sparkles size={16} /> Explorer les excursions <ArrowRight size={15} />
           </Link>
         </div>
@@ -813,12 +994,12 @@ export default function ReservationsClient({
         </div>
       )}
 
-      {/* Modal checkout */}
       {checkout && (
         <CheckoutModal
           reservation={checkout}
           onClose={() => setCheckout(null)}
           onPaid={handlePaid}
+          autoStart={!!autoOpenId && checkout.id === autoOpenId}
         />
       )}
     </div>

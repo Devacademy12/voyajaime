@@ -23,7 +23,8 @@ export const ROUTES = {
     reservations: "/touriste/reservations",
     favoris:      "/touriste/favoris",
     messages:     "/touriste/messages",
-    profil:       "/touriste/profil",
+    profil: "/touriste/profil",
+    historique: "/touriste/historique",
   },
 
   // ── Prestataire ─────────────────────────────
