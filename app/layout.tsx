@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import "./styles/prestataires.css";
+import "../public/style/prestataires.css";
 import "../public/style/conversations.css";
 import '../public/style/excursion-client.css';
 

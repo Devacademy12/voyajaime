@@ -93,10 +93,7 @@ export default async function TouristeReservations() {
       {/* ── Header ── */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 28 }}>
         <div>
-          <p style={{ fontSize: 12, fontWeight: 600, color: "#2B96A8", textTransform: "uppercase", letterSpacing: 1, marginBottom: 6 }}>
-            MON ESPACE
-          </p>
-          <h1 style={{ fontSize: 30, fontWeight: 700, color: "#111827", margin: 0 }}>Mes réservations</h1>
+          <h1 style={{ fontSize: 30, fontWeight: 700, color: "#053366", margin: 0 }}>Mes réservations</h1>
         </div>
 
         <Link
