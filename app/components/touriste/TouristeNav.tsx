@@ -106,7 +106,7 @@ export default function TouristeNav({
 
   const isPlanActive =
     pathname === ROUTES.touriste.ModeAssiste ||
-    pathname === ROUTES.touriste.modeLibre||
+    pathname === ROUTES.touriste.modeLibre ||
     pathname.startsWith("/touriste/modeAssister") ||
     pathname.startsWith("/touriste/modeLibre");
 
@@ -428,8 +428,11 @@ export default function TouristeNav({
                         </div>
                       </div>
                       <Link href={ROUTES.touriste.profil} className="ddi" onClick={() => setMenuOpen(false)}><User size={16} /> Mon profil</Link>
-            
                       <Link href={ROUTES.touriste.messages} className="ddi" onClick={() => setMenuOpen(false)}><MessageCircle size={16} /> Messages</Link>
+                      {/* Correction: Remplacer historique par un lien valide ou le retirer */}
+                      {ROUTES.touriste.historique && (
+                        <Link href={ROUTES.touriste.historique} className="ddi" onClick={() => setMenuOpen(false)}><MessageCircle size={16} /> Historique</Link>
+                      )}
                       <div style={{ borderTop: "1px solid #E8EFFE", marginTop: 4, paddingTop: 4 }}>
                         <button className="ddi red" onClick={handleSignOut}><LogOut size={16} /> Se déconnecter</button>
                       </div>
@@ -470,7 +473,7 @@ export default function TouristeNav({
               <p className="g-plan-label">Planifier mon voyage</p>
               <Link
                 href={ROUTES.touriste.ModeAssiste}
-                className={`g-mlink ${pathname.startsWith("/modeAssister") ? "on" : ""}`}
+                className={`g-mlink ${pathname.startsWith("/touriste/modeAssister") ? "on" : ""}`}
                 onClick={() => setMobileOpen(false)}
               >
                 <Wand2 size={15} /> Mode Assisté
@@ -493,11 +496,17 @@ export default function TouristeNav({
         ) : (
           <>
             {publicLinks.map(l => (
-              <Link key={l.href} href={l.href}
-                className={`g-mlink ${isActive(l.href) ? "on" : ""}`}
-                onClick={() => setMobileOpen(false)}>
-                {l.icon} {l.label}
-              </Link>
+              l.anchor ? (
+                <a key={l.href} href={l.href} className="g-mlink" onClick={() => setMobileOpen(false)}>
+                  {l.icon} {l.label}
+                </a>
+              ) : (
+                <Link key={l.href} href={l.href}
+                  className={`g-mlink ${isActive(l.href) ? "on" : ""}`}
+                  onClick={() => setMobileOpen(false)}>
+                  {l.icon} {l.label}
+                </Link>
+              )
             ))}
             <div style={{ borderTop: "1px solid rgba(255,255,255,0.1)", marginTop: 4, paddingTop: 8 }}>
               <Link href={ROUTES.auth} onClick={() => setMobileOpen(false)}

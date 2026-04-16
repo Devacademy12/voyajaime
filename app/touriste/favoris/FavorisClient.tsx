@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabaseClient";
 import { sanitizeText } from "@/app/lib/sanitize";
 import Link from "next/link";
@@ -38,6 +39,7 @@ function todayISO() {
 
 export default function FavorisClient({ favoris: init, userId }: { favoris: Favori[]; userId: string }) {
   const supabase = createClient();
+  const router = useRouter();
   const [favoris, setFavoris] = useState(init);
   const [removing, setRemoving] = useState<string | null>(null);
   const [sort, setSort] = useState<"default" | "price_asc" | "price_desc" | "rating">("default");
@@ -46,6 +48,7 @@ export default function FavorisClient({ favoris: init, userId }: { favoris: Favo
   const [people, setPeople] = useState(1);
   const [booking, setBooking] = useState<"idle" | "loading" | "success" | "error">("idle");
   const [bookingError, setBookingError] = useState("");
+  const [newReservationId, setNewReservationId] = useState<string | null>(null);
 
   const SERVICE_FEE_PCT = 0.10;
   const basePrice  = modal ? modal.price_per_person * people : 0;
@@ -87,12 +90,12 @@ export default function FavorisClient({ favoris: init, userId }: { favoris: Favo
       const prestataire_email = process.env.NEXT_PUBLIC_PRESTATAIRE_NOTIFY_EMAIL || "";
 
       // 3. Insérer la réservation dans Supabase
-      const { error } = await supabase.from("reservations").insert({
+      const { data: insertData, error } = await supabase.from("reservations").insert({
         touriste_id: userId, excursion_id: modal.id,
         booking_code: code, date, time: "09:00",
         people_count: people, total_price: totalPrice,
         platform_fee: serviceFee, status: "pending",
-      });
+      }).select("id").single();
       if (error) throw error;
 
       // 4. Déclencher l'agent n8n via API route (évite les problèmes CORS)
@@ -114,6 +117,14 @@ export default function FavorisClient({ favoris: init, userId }: { favoris: Favo
       }).catch(err => console.warn("[n8n] Agent non disponible:", err));
 
       setBooking("success");
+      setNewReservationId(insertData?.id || null);
+
+      // 5. Redirection automatique vers la page paiement après 1.5s
+      if (insertData?.id) {
+        setTimeout(() => {
+          router.push(`/touriste/reservations?pay=${insertData.id}`);
+        }, 1500);
+      }
     } catch (e) {
       setBookingError(e instanceof Error ? e.message : "Une erreur est survenue.");
       setBooking("error");
@@ -340,11 +351,14 @@ export default function FavorisClient({ favoris: init, userId }: { favoris: Favo
                 <p style={{ fontSize: 14, color: "#6B7280", lineHeight: 1.7, marginBottom: 4 }}>
                   Votre réservation pour <strong style={{ color: "#053366" }}>{sanitizeText(modal.title)}</strong> a bien été enregistrée.
                 </p>
-                <p style={{ fontSize: 12, color: "#9CA3AF", marginBottom: 28 }}>En attente de confirmation par le prestataire.</p>
+                <p style={{ fontSize: 13, color: "#2B96A8", fontWeight: 600, marginBottom: 24, display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
+                  <span style={{ display: "inline-block", width: 8, height: 8, borderRadius: "50%", background: "#2B96A8", animation: "pulse 1s infinite" }} />
+                  Redirection vers le paiement en cours…
+                </p>
                 <div style={{ display: "flex", gap: 10 }}>
-                  <button onClick={closeModal} style={{ flex: 1, padding: "12px", background: "#F3F4F6", color: "#374151", border: "none", borderRadius: 12, fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>Fermer</button>
-                  <Link href="/touriste/reservations" style={{ flex: 2, padding: "12px", background: "linear-gradient(135deg,#053366,#02AFCF)", color: "white", borderRadius: 12, textDecoration: "none", fontSize: 14, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, boxShadow: "0 6px 20px rgba(2,175,207,0.35)" }}>
-                    <CalendarDays size={14} /> Voir mes réservations
+                  <button onClick={closeModal} style={{ flex: 1, padding: "12px", background: "#F3F4F6", color: "#374151", border: "none", borderRadius: 12, fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>Annuler</button>
+                  <Link href={newReservationId ? `/touriste/reservations?pay=${newReservationId}` : "/touriste/reservations"} style={{ flex: 2, padding: "12px", background: "linear-gradient(135deg,#053366,#02AFCF)", color: "white", borderRadius: 12, textDecoration: "none", fontSize: 14, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, boxShadow: "0 6px 20px rgba(2,175,207,0.35)" }}>
+                    <CalendarDays size={14} /> Aller au paiement →
                   </Link>
                 </div>
               </div>
