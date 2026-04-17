@@ -25,7 +25,7 @@ interface SlideExcursion {
   color: string;
 }
 
-const FALLBACK_IMG = "https://images.unsplash.com/photo-1568515387631-8b650bbcdb90?w=600&q=80&fit=crop";
+const FALLBACK_IMG = "https://images.unsplash.com/photo-1539020140153-e479b8c22e70?w=1800&q=90";
 
 interface Excursion {
   id: string; title: string; city: string;
@@ -221,7 +221,7 @@ export default function HomePage() {
         .section-title {
           font-family:'Playfair Display',serif;
           font-size:clamp(32px,4vw,52px);
-          font-weight:900; color:#111827;
+          font-weight:900; color: #053366;
           letter-spacing:-1.5px; line-height:1.1;
         }
         .section-title-light { color:white }
@@ -517,7 +517,7 @@ export default function HomePage() {
           {/* Header */}
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 52, flexWrap: "wrap", gap: 20 }}>
             <div>
-              <p className="section-eyebrow">Sélection de la semaine</p>
+            
               <h2 className="section-title">
                 Excursions<br />populaires
               </h2>
@@ -585,7 +585,7 @@ export default function HomePage() {
                             </span>
                           )}
                         </div>
-                        <div style={{ padding: "7px 14px", background: user ? "#111827" : "#F3F4F6", color: user ? "white" : "#9CA3AF", borderRadius: 10, fontSize: 12, fontWeight: 700, display: "inline-flex", alignItems: "center", gap: 5 }}>
+                        <div style={{ padding: "7px 14px", background: user ? "#02AFCF" : "#F3F4F6", color: user ? "white" : "#9CA3AF", borderRadius: 10, fontSize: 12, fontWeight: 700, display: "inline-flex", alignItems: "center", gap: 5 }}>
                           {user ? <><CalendarCheck size={13} /> Réserver</> : <><Lock size={12} /> Réserver</>}
                         </div>
                       </div>
