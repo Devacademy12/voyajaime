@@ -23,9 +23,9 @@ export default async function TouristeFavoris() {
     <div style={{ padding:"36px 48px 60px", maxWidth:1160, margin:"0 auto", width:"100%" }}>
       <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:36 }}>
         <div>
-          <h1 style={{ fontSize:32, fontWeight:900, color:"#053366", letterSpacing:"-0.5px" }}>Mes favoris</h1>
+          <h1 style={{ fontSize: 28, fontWeight: 700, color: "#053366", margin: 0 }}>Mes favoris</h1>
         </div>
-        <Link href="/excursions" style={{ padding:"11px 22px", background:"#2B96A8", color:"white", borderRadius:12, textDecoration:"none", fontSize:14, fontWeight:700, boxShadow:"0 4px 14px rgba(43,150,168,0.3)", display:"inline-flex", alignItems:"center", gap:8 }}>
+        <Link href="/excursions" style={{ padding:"11px 22px", background:"#02AFCF", color:"white", borderRadius:12, textDecoration:"none", fontSize:14, fontWeight:700, boxShadow:"0 4px 14px rgba(43,150,168,0.3)", display:"inline-flex", alignItems:"center", gap:8 }}>
           <Compass size={16} strokeWidth={2} /> Découvrir plus
         </Link>
       </div>

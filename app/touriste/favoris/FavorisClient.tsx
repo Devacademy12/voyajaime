@@ -317,7 +317,6 @@ export default function FavorisClient({ favoris: init, userId }: { favoris: Favo
                   )}
                 </div>
                 <div style={{ display: "flex", gap: 8 }}>
-                  <Link href="/touriste/itineraire" className="plan-btn"><Plus size={12} /> Ajouter au plan</Link>
                   <button onClick={() => openModal(exc)} className="reserve-btn">Réserver <ArrowRight size={12} /></button>
                 </div>
               </div>

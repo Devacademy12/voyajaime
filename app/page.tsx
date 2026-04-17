@@ -404,7 +404,6 @@ export default function HomePage() {
         <div style={{ position: "relative", zIndex: 1, padding: "96px 72px 108px", maxWidth: 1200, margin: "0 auto" }} className="section-pad">
           {/* Header de section */}
           <div style={{ textAlign: "center", marginBottom: 72 }}>
-            <p className="section-eyebrow" style={{ justifyContent: "center" }}>Choisissez votre style</p>
             <h2 className="section-title section-title-light">
               Votre voyage en Tunisie,<br />à votre façon
             </h2>
