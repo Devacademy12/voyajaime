@@ -246,7 +246,7 @@ export default function ItinerairesClient() {
                   </div>
 
                   <div style={{ display:"flex", gap:8, flexShrink:0 }} onClick={e => e.stopPropagation()}>
-                    <a href="/touriste/itineraire"
+                    <a href={`/touriste/itineraires/${it.id}`}
                       style={{ padding:"8px 14px", background:"#F3F4F6", color:"#374151", borderRadius:20, fontSize:12, fontWeight:700, textDecoration:"none", display:"flex", alignItems:"center", gap:5, transition:"all .15s" }}
                       onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background="#E5E7EB"; }}
                       onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background="#F3F4F6"; }}>

@@ -730,12 +730,6 @@ export default function ExcursionClient({
                 <p className="prestataire-desc-text">{sanitizeText(prestataire.description)}</p>
               </div>
             )}
-            {prestataire.phone && (
-              <div className="prestataire-phone">
-                <span className="prestataire-phone-label"><HeadphonesIcon size={13} />Téléphone</span>
-                <span className="prestataire-phone-value">{sanitizeText(prestataire.phone)}</span>
-              </div>
-            )}
             <button onClick={() => setShowPrestataire(false)} className="btn-book" style={{ marginTop: 8 }}>Fermer</button>
           </div>
         </div>

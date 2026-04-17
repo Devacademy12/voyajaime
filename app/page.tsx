@@ -623,7 +623,6 @@ export default function HomePage() {
       <footer className="footer" style={{ background: "#0D1117", padding: "36px 72px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           <Logo />
-          <span style={{ fontFamily: "'Playfair Display',serif", color: "white", fontWeight: 700, fontSize: 16 }}>VoyajAime</span>
         </div>
         <p style={{ color: "#4B5563", fontSize: 13 }}>© 2026 VoyajAime — Tourisme en Tunisie</p>
         <div style={{ display: "flex", gap: 20, alignItems: "center" }}>
