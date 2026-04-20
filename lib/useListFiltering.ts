@@ -5,19 +5,28 @@ export interface FilterConfig<T> {
   searchFields?: (keyof T)[];
   filterKey?: keyof T;
   secondaryFilters?: Record<string, any>;
+  filterFn?: (item: T, filter: string) => boolean;
+  searchFn?: (item: T, query: string) => boolean;
+  initialSearch?: string;
+  initialFilter?: string;
+  initialCityFilter?: string;
 }
 
 export function useListFiltering<T extends Record<string, any>>(config: FilterConfig<T>) {
-  const [search, setSearch] = useState("");
-  const [filter, setFilter] = useState("all");
-  const [cityFilter, setCityFilter] = useState("all");
+  const [search, setSearch] = useState(config.initialSearch ?? "");
+  const [filter, setFilter] = useState(config.initialFilter ?? "all");
+  const [cityFilter, setCityFilter] = useState(config.initialCityFilter ?? "all");
 
   const filtered = useMemo(() => {
     let list = config.data;
 
     // Primary filter
-    if (config.filterKey && filter !== "all") {
-      list = list.filter((item) => item[config.filterKey!] === filter);
+    if (filter !== "all") {
+      if (config.filterFn) {
+        list = list.filter((item) => config.filterFn!(item, filter));
+      } else if (config.filterKey) {
+        list = list.filter((item) => item[config.filterKey!] === filter);
+      }
     }
 
     // Secondary filters
@@ -37,13 +46,17 @@ export function useListFiltering<T extends Record<string, any>>(config: FilterCo
     // Search
     if (search.trim()) {
       const q = search.toLowerCase();
-      const fields = config.searchFields || [];
-      list = list.filter(item =>
-        fields.some(field => {
-          const value = item[field];
-          return value && String(value).toLowerCase().includes(q);
-        })
-      );
+      if (config.searchFn) {
+        list = list.filter((item) => config.searchFn!(item, q));
+      } else {
+        const fields = config.searchFields || [];
+        list = list.filter((item) =>
+          fields.some((field) => {
+            const value = item[field];
+            return value && String(value).toLowerCase().includes(q);
+          })
+        );
+      }
     }
 
     return list;

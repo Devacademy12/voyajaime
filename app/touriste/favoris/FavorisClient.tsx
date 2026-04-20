@@ -72,64 +72,93 @@ export default function FavorisClient({ favoris: init, userId }: { favoris: Favo
     setModal(null); setBooking("idle");
   };
 
-  const handleConfirm = async () => {
-    if (!modal) return;
-    if (!date) { setBookingError("Veuillez choisir une date."); return; }
-    if (people < 1) { setBookingError("Minimum 1 personne."); return; }
-    if (modal.max_people && people > modal.max_people) {
-      setBookingError("Maximum " + modal.max_people + " personnes."); return;
+
+const handleConfirm = async () => {
+  if (!modal) return;
+  if (!date) { setBookingError("Veuillez choisir une date."); return; }
+  if (people < 1) { setBookingError("Minimum 1 personne."); return; }
+  if (modal.max_people && people > modal.max_people) {
+    setBookingError("Maximum " + modal.max_people + " personnes."); return;
+  }
+  
+  setBooking("loading"); 
+  setBookingError("");
+  
+  try {
+    const code = genBookingCode();
+
+    // 1. Récupérer l'utilisateur
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    if (userError) throw new Error("Impossible de récupérer vos informations");
+    
+    const touriste_name = user?.user_metadata?.full_name || user?.email?.split('@')[0] || "Touriste";
+    const touriste_email = user?.email || "";
+    
+    if (!touriste_email) {
+      throw new Error("Email non trouvé. Veuillez vous reconnecter.");
     }
-    setBooking("loading"); setBookingError("");
+
+    // 2. Insérer la réservation dans Supabase
+    const { data: insertData, error: insertError } = await supabase.from("reservations").insert({
+      touriste_id: userId,
+      excursion_id: modal.id,
+      booking_code: code,
+      date,
+      time: "09:00",
+      people_count: people,
+      total_price: totalPrice,
+      platform_fee: serviceFee,
+      status: "pending",
+    }).select("id").single();
+    
+    if (insertError) throw insertError;
+
+    // 3. Envoyer à n8n (ne bloque pas la réservation si erreur)
     try {
-      const code = genBookingCode();
-
-      // Infos touriste depuis la session (sans requête Supabase supplémentaire)
-      const { data: { user } } = await supabase.auth.getUser();
-      const touriste_name  = user?.user_metadata?.full_name || user?.email || "Touriste";
-      const touriste_email = user?.email || "";
-      const prestataire_email = process.env.NEXT_PUBLIC_PRESTATAIRE_NOTIFY_EMAIL || "";
-
-      // 3. Insérer la réservation dans Supabase
-      const { data: insertData, error } = await supabase.from("reservations").insert({
-        touriste_id: userId, excursion_id: modal.id,
-        booking_code: code, date, time: "09:00",
-        people_count: people, total_price: totalPrice,
-        platform_fee: serviceFee, status: "pending",
-      }).select("id").single();
-      if (error) throw error;
-
-      // 4. Déclencher l'agent n8n via API route (évite les problèmes CORS)
-      fetch("/api/n8n-trigger", {
+      const n8nResponse = await fetch("/api/n8n-trigger", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           touriste_name,
           touriste_email,
-          excursion_title:   modal.title,
-          excursion_city:    modal.city,
-          prestataire_name:  modal.title || "Prestataire",
-          prestataire_email,
-          booking_code:      code,
+          excursion_title: modal.title,
+          excursion_city: modal.city,
+          prestataire_name: modal.title || "Prestataire",
+          prestataire_email: process.env.NEXT_PUBLIC_PRESTATAIRE_NOTIFY_EMAIL || "",
+          booking_code: code,
           date,
-          people_count:      people,
-          total_price:       totalPrice,
+          people_count: people,
+          total_price: totalPrice,
         }),
-      }).catch(err => console.warn("[n8n] Agent non disponible:", err));
-
-      setBooking("success");
-      setNewReservationId(insertData?.id || null);
-
-      // 5. Redirection automatique vers la page paiement après 1.5s
-      if (insertData?.id) {
-        setTimeout(() => {
-          router.push(`/touriste/reservations?pay=${insertData.id}`);
-        }, 1500);
+      });
+      
+      if (!n8nResponse.ok) {
+        console.warn("[n8n] Notification non envoyée:", await n8nResponse.text());
+        // On continue malgré l'erreur n8n
+      } else {
+        console.log("[n8n] Notification envoyée avec succès");
       }
-    } catch (e) {
-      setBookingError(e instanceof Error ? e.message : "Une erreur est survenue.");
-      setBooking("error");
+    } catch (n8nError) {
+      console.warn("[n8n] Erreur réseau:", n8nError);
+      // Ne pas bloquer la réservation
     }
-  };
+
+    setBooking("success");
+    setNewReservationId(insertData?.id || null);
+
+    // 4. Redirection après 1.5s
+    if (insertData?.id) {
+      setTimeout(() => {
+        router.push(`/touriste/reservations?pay=${insertData.id}`);
+      }, 1500);
+    }
+    
+  } catch (e) {
+    console.error("[Réservation] Erreur:", e);
+    setBookingError(e instanceof Error ? e.message : "Une erreur est survenue lors de la réservation.");
+    setBooking("error");
+  }
+};
 
   const sorted = [...favoris].sort((a, b) => {
     const ea = getExc(a), eb = getExc(b);

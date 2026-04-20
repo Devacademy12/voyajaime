@@ -1,9 +1,10 @@
 "use client";
-import { useState } from "react";
 import {
   Clock, CheckCircle, FolderOpen, Trash2, ThumbsUp,
   MapPin, Star, MessageCircle, XCircle, Mountain,
 } from "lucide-react";
+import { useListFiltering } from "../../../lib/useListFiltering";
+import { useCrudOperation } from "../../../lib/useCrudOperation";
 import { useToast } from "../../../lib/useToast";
 import { Toast } from "../../components/ui/Toast";
 
@@ -16,44 +17,44 @@ interface Avis {
 }
 
 export default function AvisClient({ avis: initial }: { avis: Avis[] }) {
-  const [avis, setAvis]     = useState(initial);
-  const [filter, setFilter] = useState<Filter>("pending");
-  const [loading, setLoading] = useState<string | null>(null);
+  const { loading, data: avis, execute } = useCrudOperation(initial, async (payload) => {
+    const res = await fetch("/api/admin/moderate-avis", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ avisId: payload.id, action: payload.action }),
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error || "Erreur serveur");
+    return json;
+  });
+
   const { toast, showToast } = useToast();
 
-  const callApi = async (avisId: string, action: string) => {
-    const res = await fetch("/api/admin/moderate-avis", {
-      method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ avisId, action }),
-    });
-    const j = await res.json();
-    if (!res.ok) throw new Error(j.error || "Erreur serveur");
-  };
+  const { filter, setFilter, filtered } = useListFiltering<Avis>({
+    data: avis,
+    filterFn: (item, value) =>
+      value === "pending"
+        ? !item.is_moderated
+        : value === "approved"
+        ? item.is_moderated
+        : true,
+    initialFilter: "pending",
+  });
 
   const handleApprove = async (id: string, name: string) => {
-    setLoading(id);
-    try {
-      await callApi(id, "approve");
-      setAvis(prev => prev.map(a => a.id === id ? { ...a, is_moderated: true } : a));
-      showToast(`Avis de ${name} approuvé et publié`);
-    } catch (e) { showToast(`Erreur : ${e instanceof Error ? e.message : "Erreur"}`, false); }
-    setLoading(null);
+    await execute(id, { id, action: "approve" }, {
+      successMessage: `Avis de ${name} approuvé et publié`,
+      onSuccess: (prev) => prev.map(a => a.id === id ? { ...a, is_moderated: true } : a),
+    });
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("Supprimer définitivement cet avis ?")) return;
-    setLoading(id);
-    try {
-      await callApi(id, "delete");
-      setAvis(prev => prev.filter(a => a.id !== id));
-      showToast("Avis supprimé");
-    } catch (e) { showToast(`Erreur : ${e instanceof Error ? e.message : "Erreur"}`, false); }
-    setLoading(null);
+    await execute(id, { id, action: "delete" }, {
+      confirmMessage: "Supprimer définitivement cet avis ?",
+      successMessage: "Avis supprimé",
+    });
   };
 
-  const filtered = avis.filter(a =>
-    filter === "pending" ? !a.is_moderated : filter === "approved" ? a.is_moderated : true
-  );
   const counts = {
     pending:  avis.filter(a => !a.is_moderated).length,
     approved: avis.filter(a => a.is_moderated).length,

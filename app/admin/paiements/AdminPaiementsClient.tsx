@@ -7,6 +7,7 @@ import { StatusBadge } from "../../components/ui";
 import EmptyState from "../../components/ui/EmptyState";
 import { Toast } from "../../components/ui";
 import { useToast } from "../../../lib/useToast";
+import { useListFiltering } from "../../../lib/useListFiltering";
 import { RevenueChart, StatusPills, PaymentsToolbar, PaymentRow } from "../../components/admin/PaymentsUI";
 import { Paiement, PaiementStatus, PAIEMENT_STATUS, fmtMonth, exportCSV } from "../../../lib/paiement";
 
@@ -29,11 +30,42 @@ interface Props {
 }
 
 export default function AdminPaiementsClient({ paiements, prestataires, reservations, excursions, touristes }: Props) {
-  const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState<"all" | PaiementStatus>("all");
   const [sortBy, setSortBy] = useState<"date" | "amount">("date");
   const [showChart, setShowChart] = useState(false);
   const { toast, showToast } = useToast();
+
+  const {
+    search,
+    setSearch,
+    filter: statusFilter,
+    setFilter: setStatusFilter,
+    filtered: filteredPayments,
+  } = useListFiltering<Paiement>({
+    data: paiements,
+    filterFn: (payment, filter) =>
+      filter === "all" || payment.status === filter,
+    searchFn: (payment, q) => {
+      const resa = resaMap[payment.reservation_id] || {};
+      const exc = excMap[String(resa.excursion_id)] || ({} as Excursion);
+      const prest = prestMap[payment.prestataire_id] || {};
+      return [
+        exc.title,
+        exc.city,
+        prest.agency_name || prest.full_name,
+        resa.booking_code,
+      ].some((value) => String(value || "").toLowerCase().includes(q));
+    },
+  });
+
+  const filtered = useMemo(
+    () =>
+      [...filteredPayments].sort((a, b) =>
+        sortBy === "amount"
+          ? Number(b.amount) - Number(a.amount)
+          : new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+      ),
+    [filteredPayments, sortBy],
+  );
 
   const prestMap = useMemo(() => Object.fromEntries(prestataires.map((p) => [p.user_id, p])), [prestataires]);
   const resaMap = useMemo(() => Object.fromEntries(reservations.map((r) => [String(r.id), r])), [reservations]);
@@ -124,26 +156,7 @@ export default function AdminPaiementsClient({ paiements, prestataires, reservat
   }
 
   return (
-    <div style={{ fontFamily: "'DM Sans', system-ui, sans-serif" }}>
-      <style>{`
-        @keyframes fadeUp { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
-        .ap-card { animation: fadeUp .35s ease both; }
-        .stat-card:hover { transform: translateY(-3px); box-shadow: 0 10px 30px rgba(5,51,102,.1) !important; }
-        .ap-kpis  { display: grid; grid-template-columns: repeat(3,1fr); gap: 16px; margin-bottom: 20px; }
-        .ap-pills { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; margin-bottom: 20px; }
-        .ap-row   { display: flex; justify-content: space-between; align-items: center; padding: 14px 18px; background: white; border-radius: 14px; border: 1px solid #EEF2FF; transition: all .15s; margin-bottom: 8px; }
-        .ap-row:hover { background: #F8FAFF; border-color: #DCE5FF; }
-        .ap-ftab  { padding: 7px 16px; border-radius: 20px; border: 1.5px solid #DCE5FF; font-size: 12px; font-weight: 600; font-family: inherit; transition: all .2s; white-space: nowrap; background: white; color: #053366; }
-        .ap-ftab.on { background: linear-gradient(135deg,#02AFCF,#259FFC); color: white; border-color: transparent; box-shadow: 0 3px 10px rgba(2,175,207,.3); }
-        .ap-select { padding: 9px 14px; border: 1.5px solid #DCE5FF; border-radius: 12px; font-size: 13px; font-family: inherit; outline: none; color: #053366; background: white; }
-        .ap-btn   { display: inline-flex; align-items: center; gap: 6px; padding: 9px 16px; border-radius: 12px; font-size: 13px; font-weight: 600; font-family: inherit; transition: all .2s; border: 1.5px solid #DCE5FF; background: white; color: #053366; }
-        .ap-btn:hover { background: #F8FAFF; border-color: #02AFCF; }
-        .ap-btn.active { background: linear-gradient(135deg,#02AFCF,#259FFC); color: white; border-color: transparent; box-shadow: 0 3px 10px rgba(2,175,207,.3); }
-        .ap-row-meta { display: flex; justify-content: space-between; align-items: center; width: 100%; gap: 12px; }
-        @media(max-width:900px) { .ap-kpis { grid-template-columns: repeat(2,1fr); } }
-        @media(max-width:600px) { .ap-kpis { grid-template-columns: 1fr; } .ap-pills { grid-template-columns: 1fr; } .ap-row-meta { flex-direction: column; align-items: flex-start; } .ap-row-right { align-self: flex-end; } }
-      `}</style>
-
+    <div className="admin-page">
       <Toast toast={toast} />
 
       {/* Header */}
@@ -164,7 +177,7 @@ export default function AdminPaiementsClient({ paiements, prestataires, reservat
             <button className={`ap-btn ${showChart ? "active" : ""}`} onClick={() => setShowChart((v) => !v)}>
               <BarChart3 size={14} /> Graphique
             </button>
-            <button className="ap-btn active" onClick={handleExport} style={{ cursor: "pointer" }}>
+            <button className="ap-btn active" onClick={handleExport} type="button">
               Exporter CSV
             </button>
           </div>
@@ -199,7 +212,7 @@ export default function AdminPaiementsClient({ paiements, prestataires, reservat
         counts={counts}
       />
 
-      <p style={{ fontSize: 13, color: "#9CA3AF", marginBottom: 12, fontWeight: 500 }}>
+      <p className="admin-row-count">
         {filtered.length} résultat{filtered.length > 1 ? "s" : ""}
       </p>
 
@@ -214,17 +227,8 @@ export default function AdminPaiementsClient({ paiements, prestataires, reservat
                 setSearch("");
                 setStatusFilter("all");
               }}
-              style={{
-                padding: "8px 20px",
-                background: "linear-gradient(135deg,#02AFCF,#259FFC)",
-                border: "none",
-                borderRadius: 10,
-                fontSize: 13,
-                fontWeight: 600,
-                color: "white",
-                cursor: "pointer",
-                fontFamily: "inherit",
-              }}
+              className="admin-cta-button"
+              type="button"
             >
               Réinitialiser
             </button>
