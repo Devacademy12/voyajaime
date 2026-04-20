@@ -104,40 +104,10 @@ export default async function TouristeReservations({
       {/* ── Header ── */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 28 }}>
         <div>
-          <p style={{
-            fontSize: 11,
-            fontWeight: 700,
-            color: "#02AFCF",
-            textTransform: "uppercase",
-            letterSpacing: 1.5,
-            marginBottom: 6,
-          }}>
-            MON ESPACE
-          </p>
           <h1 style={{ fontSize: 28, fontWeight: 700, color: "#053366", margin: 0 }}>
             Mes réservations
           </h1>
         </div>
-
-        <Link
-          href="/touriste/itineraire"
-          style={{
-            padding: "10px 22px",
-            background: "#053366",
-            color: "white",
-            borderRadius: 30,
-            textDecoration: "none",
-            fontSize: 14,
-            fontWeight: 600,
-            display: "inline-flex",
-            alignItems: "center",
-            gap: 8,
-            transition: "background 0.2s",
-          }}
-        >
-          <Plus size={16} />
-          Nouvelle réservation
-        </Link>
       </div>
 
       {/* ── Alerte paiement en attente ── */}

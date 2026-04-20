@@ -167,12 +167,8 @@ export default function ItinerairesClient() {
 
       {/* Header */}
       <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:32 }}>
-        <div>
-          <div style={{ display:"flex", alignItems:"center", gap:7, marginBottom:8 }}>
-            <Map size={13} color="#2B96A8"/>
-            <p style={{ fontSize:11, fontWeight:700, color:"#2B96A8", textTransform:"uppercase", letterSpacing:".08em", margin:0 }}>Mes voyages</p>
-          </div>
-          <h1 style={{ fontFamily:"'Playfair Display',serif", fontSize:32, fontWeight:900, color:"#111827", margin:0, lineHeight:1.1 }}>
+        <div> 
+          <h1 style={{ fontSize: 28, fontWeight: 700, color: "#053366", margin: 0 }}>
             Mes itinéraires
           </h1>
           <p style={{ fontSize:13, color:"#9CA3AF", marginTop:8, display:"flex", alignItems:"center", gap:5 }}>
@@ -180,12 +176,7 @@ export default function ItinerairesClient() {
             {items.length} itinéraire{items.length !== 1 ? "s" : ""} sauvegardé{items.length !== 1 ? "s" : ""}
           </p>
         </div>
-        <a href="/touriste/itineraire"
-          style={{ display:"inline-flex", alignItems:"center", gap:8, padding:"12px 22px", background:"#2B96A8", color:"white", borderRadius:40, textDecoration:"none", fontSize:13, fontWeight:700, boxShadow:"0 6px 20px -6px rgba(43,150,168,.5)" }}
-          onMouseEnter={e => (e.currentTarget as HTMLElement).style.background="#1e7a8a"}
-          onMouseLeave={e => (e.currentTarget as HTMLElement).style.background="#2B96A8"}>
-          <Plus size={15}/> Nouvel itinéraire
-        </a>
+        
       </div>
 
       {/* Empty */}
@@ -255,7 +246,7 @@ export default function ItinerairesClient() {
                   </div>
 
                   <div style={{ display:"flex", gap:8, flexShrink:0 }} onClick={e => e.stopPropagation()}>
-                    <a href="/touriste/itineraire"
+                    <a href={`/touriste/itineraires/${it.id}`}
                       style={{ padding:"8px 14px", background:"#F3F4F6", color:"#374151", borderRadius:20, fontSize:12, fontWeight:700, textDecoration:"none", display:"flex", alignItems:"center", gap:5, transition:"all .15s" }}
                       onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background="#E5E7EB"; }}
                       onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background="#F3F4F6"; }}>

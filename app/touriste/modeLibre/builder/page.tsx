@@ -92,50 +92,6 @@ const getCategoryIcon = (categoryName?: string) => {
   return iconMap[categoryName || ""] || <MapPinned size={13} />;
 };
 
-// Map des émojis de villes vers icônes Lucide
-const getCityIcon = (cityName?: string) => {
-  const iconMap: Record<string, React.ReactNode> = {
-    "Tunis": <Building2 size={13} />,
-    "Sidi Bou Said": <Landmark size={13} />,
-    "Carthage": <Flag size={13} />,
-    "Hammamet": <Waves size={13} />,
-    "Sousse": <Ship size={13} />,
-    "Monastir": <Compass size={13} />,
-    "Djerba": <Sun size={13} />,
-    "Tozeur": <Mountain size={13} />,
-    "Douz": <Sun size={13} />,
-    "Kairouan": <Landmark size={13} />,
-    "El Jem": <Landmark size={13} />,
-    "Mahdia": <Waves size={13} />,
-    "Nabeul": <PalmtreeIcon size={13} />,
-    "Bizerte": <Ship size={13} />,
-    "Tabarka": <Trees size={13} />,
-    "Zaghouan": <Mountain size={13} />,
-  };
-  return iconMap[cityName || ""] || <LocateFixed size={13} />;
-};
-
-// Composant Palmtree personnalisé (car pas dans Lucide par défaut)
-const PalmtreeIcon = ({ size = 13, ...props }) => (
-  <svg 
-    xmlns="http://www.w3.org/2000/svg" 
-    width={size} 
-    height={size} 
-    viewBox="0 0 24 24" 
-    fill="none" 
-    stroke="currentColor" 
-    strokeWidth="2" 
-    strokeLinecap="round" 
-    strokeLinejoin="round" 
-    {...props}
-  >
-    <path d="M12 22V12M12 12L8 8L12 4L16 8L12 12Z" />
-    <path d="M12 12L15 9L12 6L9 9L12 12Z" />
-    <path d="M5 15L12 12L19 15" />
-    <path d="M7 18L12 15L17 18" />
-  </svg>
-);
-
 const SLOTS = [
   { key: "matin" as TimeKey, label: "Matin", icon: <Sunrise size={13} />, color: "#F59E0B", hint: "8h — 12h", defaultTime: "09:00" },
   { key: "aprem" as TimeKey, label: "Après-midi", icon: <Sun size={13} />, color: "#2B96A8", hint: "13h — 17h", defaultTime: "13:00" },
@@ -339,7 +295,7 @@ function BuilderInner() {
             <div key={i} className="res-day-card">
               <div className="res-day-header">
                 <h3 className="res-day-title">
-                  <span>{getCityIcon(day.city)}</span>Jour {i + 1} — {day.city}
+                  <span><LocateFixed size={13} /></span>Jour {i + 1} — {day.city}
                   {day.date && <span className="res-day-date">· {new Date(day.date).toLocaleDateString("fr-FR", { day: "numeric", month: "long" })}</span>}
                 </h3>
                 {day.activities.length > 0 && (
@@ -439,7 +395,7 @@ function BuilderInner() {
           const cnt = day.activities.length;
           return (
             <button key={i} className={`bl-day-tab${activeDay === i ? " active" : ""}`} onClick={() => setActiveDay(i)}>
-              <span>{getCityIcon(day.city)}</span>Jour {i + 1} — {day.city}
+              <span><LocateFixed size={13} /></span>Jour {i + 1} — {day.city}
               {cnt > 0 && <span className="bl-day-tab-cnt">{cnt}</span>}
             </button>
           );
@@ -538,7 +494,7 @@ function BuilderInner() {
           <div className="bl-planner-header">
             <div className="bl-planner-top">
               <div className="bl-planner-day-info">
-                <div className="bl-planner-emoji">{getCityIcon(currentDay?.city)}</div>
+                <div className="bl-planner-emoji"><LocateFixed size={13} /></div>
                 <div>
                   <div className="bl-planner-day-name">Jour {activeDay + 1} — {currentDay?.city}</div>
                   <div className="bl-planner-date-row">
@@ -562,7 +518,7 @@ function BuilderInner() {
                         });
                       }}
                     >
-                      {villes.map(c => <option key={c.id} value={c.nom}>{getCityIcon(c.nom)} {c.nom}</option>)}
+                      {villes.map(c => <option key={c.id} value={c.nom}>{c.nom}</option>)}
                     </select>
                   </div>
                 </div>
