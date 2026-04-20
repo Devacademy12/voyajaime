@@ -232,8 +232,7 @@ export default function EditItineraireClient({ itineraireId }: { itineraireId: s
     @keyframes slideIn{from{opacity:0;transform:translateX(20px)}to{opacity:1;transform:translateX(0)}}
 
     /* Topbar */
-    .ed-top{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 24px;background:white;border-bottom:1px solid #EEF2FF;position:sticky;top:0;z-index:100}
-    .ed-top-left{display:flex;align-items:center;gap:12px}
+.ed-top{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 10rem;background:white;border-bottom:1px solid #EEF2FF;position:sticky;top:0;z-index:100}    .ed-top-left{display:flex;align-items:center;gap:12px}
     .ed-top-right{display:flex;align-items:center;gap:10px}
     .ed-back{display:flex;align-items:center;gap:6px;background:#F3F4F6;border:none;padding:8px 14px;border-radius:20px;font-size:13px;font-weight:600;color:#374151;cursor:pointer;font-family:inherit;transition:all .15s}
     .ed-back:hover{background:#E5E7EB}
@@ -246,8 +245,7 @@ export default function EditItineraireClient({ itineraireId }: { itineraireId: s
     .ed-stat{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;color:#6B7280;padding:6px 12px;background:#F3F4F6;border-radius:20px}
 
     /* Layout */
-    .ed-body{display:grid;grid-template-columns:260px 1fr;min-height:calc(100vh - 64px)}
-    @media(max-width:900px){.ed-body{grid-template-columns:1fr}}
+.ed-body{display:grid;grid-template-columns:260px 1fr;min-height:calc(100vh - 64px);padding:0 10rem}    @media(max-width:900px){.ed-body{grid-template-columns:1fr}}
 
     /* Sidebar jours */
     .ed-sidebar{background:white;border-right:1px solid #EEF2FF;padding:20px 14px;display:flex;flex-direction:column;gap:8px;position:sticky;top:64px;height:calc(100vh - 64px);overflow-y:auto}

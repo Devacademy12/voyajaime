@@ -9,7 +9,7 @@ import {
   Heart, Star, Clock, MapPin, ArrowRight,
   SlidersHorizontal, Loader, Plus, Compass,
   X, CalendarDays, Users, Minus, CheckCircle, AlertCircle,
-  Banknote, Tag, Sparkles,
+  Banknote, Tag, Sparkles, Eye,
 } from "lucide-react";
 
 interface Excursion {
@@ -23,7 +23,6 @@ interface Favori {
   excursion: Excursion | Excursion[] | null;
 }
 
-/* ✅ Normalise toujours excursion tableau → objet unique */
 function getExc(f: Favori): Excursion | null {
   if (!f.excursion) return null;
   if (Array.isArray(f.excursion)) return f.excursion[0] ?? null;
@@ -36,6 +35,8 @@ function genBookingCode() {
 function todayISO() {
   return new Date().toISOString().split("T")[0];
 }
+
+const FALLBACK_IMG = "https://images.unsplash.com/photo-1568515387631-8b650bbcdb90?w=600&q=80";
 
 export default function FavorisClient({ favoris: init, userId }: { favoris: Favori[]; userId: string }) {
   const supabase = createClient();
@@ -115,28 +116,38 @@ const handleConfirm = async () => {
 
     // 3. Envoyer à n8n (ne bloque pas la réservation si erreur)
     try {
-      const n8nResponse = await fetch("/api/n8n-trigger", {
+      const code = genBookingCode();
+      const { data: { user } } = await supabase.auth.getUser();
+      const touriste_name  = user?.user_metadata?.full_name || user?.email || "Touriste";
+      const touriste_email = user?.email || "";
+      const prestataire_email = process.env.NEXT_PUBLIC_PRESTATAIRE_NOTIFY_EMAIL || "";
+
+      const { data: insertData, error } = await supabase.from("reservations").insert({
+        touriste_id: userId, excursion_id: modal.id,
+        booking_code: code, date, time: "09:00",
+        people_count: people, total_price: totalPrice,
+        platform_fee: serviceFee, status: "pending",
+      }).select("id").single();
+      if (error) throw error;
+
+      fetch("/api/n8n-trigger", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          touriste_name,
-          touriste_email,
-          excursion_title: modal.title,
-          excursion_city: modal.city,
-          prestataire_name: modal.title || "Prestataire",
-          prestataire_email: process.env.NEXT_PUBLIC_PRESTATAIRE_NOTIFY_EMAIL || "",
-          booking_code: code,
-          date,
-          people_count: people,
-          total_price: totalPrice,
+          touriste_name, touriste_email,
+          excursion_title: modal.title, excursion_city: modal.city,
+          prestataire_name: modal.title || "Prestataire", prestataire_email,
+          booking_code: code, date, people_count: people, total_price: totalPrice,
         }),
-      });
-      
-      if (!n8nResponse.ok) {
-        console.warn("[n8n] Notification non envoyée:", await n8nResponse.text());
-        // On continue malgré l'erreur n8n
-      } else {
-        console.log("[n8n] Notification envoyée avec succès");
+      }).catch(err => console.warn("[n8n] Agent non disponible:", err));
+
+      setBooking("success");
+      setNewReservationId(insertData?.id || null);
+
+      if (insertData?.id) {
+        setTimeout(() => {
+          router.push(`/touriste/reservations?pay=${insertData.id}`);
+        }, 1500);
       }
     } catch (n8nError) {
       console.warn("[n8n] Erreur réseau:", n8nError);
@@ -175,7 +186,9 @@ const handleConfirm = async () => {
       <div className="empty-state-icon" style={{ background: "linear-gradient(135deg,#FEF2F2,#FFF0F3)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 20px", boxShadow: "0 8px 24px rgba(244,63,94,0.15)" }}>
         <Heart size={36} color="#FDA4AF" strokeWidth={1.5} />
       </div>
-      <h3 className="empty-state-title" style={{ fontSize: 20, fontWeight: 800, color: "#053366", marginBottom: 8, letterSpacing: "-0.3px" }}>Aucun favori pour l&apos;instant</h3>
+      <h3 className="empty-state-title" style={{ fontSize: 20, fontWeight: 800, color: "#053366", marginBottom: 8, letterSpacing: "-0.3px" }}>
+        Aucun favori pour l&apos;instant
+      </h3>
       <p className="empty-state-text" style={{ fontSize: 14, color: "#6B7280", marginBottom: 28, lineHeight: 1.7, maxWidth: 340, margin: "0 auto 28px" }}>
         Parcourez les excursions et cliquez sur l&apos;icône cœur pour sauvegarder vos préférées
       </p>
@@ -203,11 +216,28 @@ const handleConfirm = async () => {
         .fav-card:hover .card-img { transform:scale(1.07); }
         .card-img { width:100%; height:100%; object-fit:cover; transition:transform 0.5s ease; display:block; }
 
+        /* Overlay visible on card hover */
+        .card-detail-overlay {
+          position:absolute; inset:0;
+          background:rgba(5,51,102,0.45);
+          display:flex; align-items:center; justify-content:center;
+          opacity:0; transition:opacity 0.25s ease;
+        }
+        .fav-card:hover .card-detail-overlay { opacity:1; }
+        .card-detail-overlay-btn {
+          display:inline-flex; align-items:center; gap:7px;
+          padding:11px 22px; background:white; color:#053366;
+          border-radius:30px; font-size:13px; font-weight:700;
+          text-decoration:none; box-shadow:0 4px 16px rgba(0,0,0,0.2);
+          transform:translateY(6px); transition:transform 0.25s ease;
+        }
+        .fav-card:hover .card-detail-overlay-btn { transform:translateY(0); }
+
         .remove-btn {
           position:absolute; top:12px; right:12px; width:36px; height:36px; border-radius:50%;
           background:rgba(255,255,255,0.95); border:none; cursor:pointer;
           display:flex; align-items:center; justify-content:center;
-          box-shadow:0 2px 12px rgba(0,0,0,0.15); transition:all 0.2s;
+          box-shadow:0 2px 12px rgba(0,0,0,0.15); transition:all 0.2s; z-index:2;
         }
         .remove-btn:hover { transform:scale(1.15); box-shadow:0 4px 16px rgba(239,68,68,0.25); }
 
@@ -305,34 +335,69 @@ const handleConfirm = async () => {
           if (!exc) return null;
           return (
             <div key={f.id} className="fav-card" style={{ animationDelay: `${i * 0.06}s` }}>
+
+              {/* ── Photo + overlay "Voir les détails" ── */}
               <div style={{ position: "relative", height: 210, overflow: "hidden", background: "#EEF2FF" }}>
-                <img src={exc.photos?.[0] || "https://images.unsplash.com/photo-1568515387631-8b650bbcdb90?w=600&q=80"}
-                  alt={sanitizeText(exc.title)} className="card-img" />
-                <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(5,51,102,0.4) 0%, transparent 55%)" }} />
-                <button className="remove-btn" onClick={() => handleRemove(f.id)} disabled={removing === f.id}>
+                <img
+                  src={exc.photos?.[0] || FALLBACK_IMG}
+                  alt={sanitizeText(exc.title)}
+                  className="card-img"
+                />
+                {/* dark-to-transparent gradient at bottom */}
+                <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(5,51,102,0.4) 0%, transparent 55%)", pointerEvents: "none" }} />
+
+                {/* Hover overlay → detail page */}
+                <Link href={`/excursions/${exc.id}`} className="card-detail-overlay" aria-label={`Voir les détails de ${sanitizeText(exc.title)}`}>
+                  <span className="card-detail-overlay-btn">
+                    <Eye size={14} /> Voir les détails
+                  </span>
+                </Link>
+
+                {/* Remove (heart) button — above overlay */}
+                <button
+                  className="remove-btn"
+                  onClick={() => handleRemove(f.id)}
+                  disabled={removing === f.id}
+                  title="Retirer des favoris"
+                >
                   {removing === f.id
                     ? <Loader size={15} color="#9CA3AF" style={{ animation: "spin 1s linear infinite" }} />
-                    : <Heart size={15} color="#F43F5E" fill="#F43F5E" />}
+                    : <Heart size={15} color="#F43F5E" fill="#F43F5E" />
+                  }
                 </button>
+
+                {/* Category badge */}
                 {exc.categories?.[0] && (
-                  <div style={{ position: "absolute", top: 12, left: 12, padding: "4px 11px", background: "rgba(5,51,102,0.7)", backdropFilter: "blur(8px)", borderRadius: 20, fontSize: 11, fontWeight: 700, color: "white" }}>
+                  <div style={{ position: "absolute", top: 12, left: 12, padding: "4px 11px", background: "rgba(5,51,102,0.7)", backdropFilter: "blur(8px)", borderRadius: 20, fontSize: 11, fontWeight: 700, color: "white", pointerEvents: "none" }}>
                     {sanitizeText(exc.categories[0])}
                   </div>
                 )}
-                <div style={{ position: "absolute", bottom: 12, left: 12, padding: "5px 12px", background: "linear-gradient(135deg,#02AFCF,#259FFC)", borderRadius: 20, fontSize: 14, fontWeight: 800, color: "white", boxShadow: "0 4px 12px rgba(2,175,207,0.4)" }}>
+
+                {/* Price badge */}
+                <div style={{ position: "absolute", bottom: 12, left: 12, padding: "5px 12px", background: "linear-gradient(135deg,#02AFCF,#259FFC)", borderRadius: 20, fontSize: 14, fontWeight: 800, color: "white", boxShadow: "0 4px 12px rgba(2,175,207,0.4)", pointerEvents: "none" }}>
                   {exc.price_per_person} <span style={{ fontSize: 11, fontWeight: 500 }}>TND</span>
                 </div>
               </div>
 
+              {/* ── Card body ── */}
               <div style={{ padding: "16px 18px 18px" }}>
                 <div style={{ marginBottom: 12 }}>
-                  <h3 style={{ fontSize: 15, fontWeight: 800, color: "#053366", marginBottom: 4, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", letterSpacing: "-0.2px" }}>
-                    {sanitizeText(exc.title)}
-                  </h3>
+                  {/* Title → also a link to detail */}
+                  <Link
+                    href={`/excursions/${exc.id}`}
+                    style={{ textDecoration: "none" }}
+                  >
+                    <h3 style={{ fontSize: 15, fontWeight: 800, color: "#053366", marginBottom: 4, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", letterSpacing: "-0.2px", cursor: "pointer" }}
+                      title={sanitizeText(exc.title)}
+                    >
+                      {sanitizeText(exc.title)}
+                    </h3>
+                  </Link>
                   <p style={{ fontSize: 12, color: "#9CA3AF", display: "flex", alignItems: "center", gap: 4 }}>
                     <MapPin size={11} color="#02AFCF" strokeWidth={2} />{sanitizeText(exc.city)}
                   </p>
                 </div>
+
                 <div style={{ display: "flex", gap: 14, marginBottom: 14, paddingBottom: 14, borderBottom: "1px solid #EEF2FF" }}>
                   <span style={{ fontSize: 12, color: "#6B7280", display: "flex", alignItems: "center", gap: 4 }}>
                     <Clock size={11} color="#9CA3AF" strokeWidth={2} />{exc.duration_hours}h
@@ -345,8 +410,15 @@ const handleConfirm = async () => {
                     </span>
                   )}
                 </div>
+
+                {/* Action buttons */}
                 <div style={{ display: "flex", gap: 8 }}>
-                  <button onClick={() => openModal(exc)} className="reserve-btn">Réserver <ArrowRight size={12} /></button>
+                  <Link href={`/excursions/${exc.id}`} className="plan-btn">
+                    <Eye size={13} /> Détails
+                  </Link>
+                  <button onClick={() => openModal(exc)} className="reserve-btn">
+                    Réserver <ArrowRight size={12} />
+                  </button>
                 </div>
               </div>
             </div>
@@ -354,7 +426,7 @@ const handleConfirm = async () => {
         })}
       </div>
 
-      {/* ══ MODAL ══ */}
+      {/* ══ MODAL RÉSERVATION ══ */}
       {modal && (
         <div className="modal-overlay-custom" onClick={e => { if (e.target === e.currentTarget) closeModal(); }}>
           <div className="modal-box-custom">
@@ -392,18 +464,28 @@ const handleConfirm = async () => {
               </div>
             ) : (
               <div style={{ padding: "20px 24px 28px", display: "flex", flexDirection: "column", gap: 16 }}>
+
+                {/* Excursion summary in modal — also links to detail */}
                 <div style={{ display: "flex", alignItems: "center", gap: 12, background: "#F8FAFF", border: "1px solid #DCE5FF", borderRadius: 16, padding: "12px 14px" }}>
-                  <div style={{ width: 52, height: 52, borderRadius: 12, overflow: "hidden", flexShrink: 0, background: "#DCE5FF" }}>
-                    <img src={modal.photos?.[0] || "https://images.unsplash.com/photo-1568515387631-8b650bbcdb90?w=200&q=80"} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                  </div>
+                  <Link href={`/excursions/${modal.id}`} style={{ width: 52, height: 52, borderRadius: 12, overflow: "hidden", flexShrink: 0, background: "#DCE5FF", display: "block" }}>
+                    <img src={modal.photos?.[0] || FALLBACK_IMG} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                  </Link>
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <p style={{ fontSize: 14, fontWeight: 700, color: "#053366", marginBottom: 4, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{sanitizeText(modal.title)}</p>
+                    <Link href={`/excursions/${modal.id}`} style={{ textDecoration: "none" }}>
+                      <p style={{ fontSize: 14, fontWeight: 700, color: "#053366", marginBottom: 4, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        {sanitizeText(modal.title)}
+                      </p>
+                    </Link>
                     <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
                       <span style={{ fontSize: 11, color: "#6B7280", display: "flex", alignItems: "center", gap: 3 }}><MapPin size={9} color="#02AFCF" strokeWidth={2}/>{sanitizeText(modal.city)}</span>
                       <span style={{ fontSize: 11, color: "#6B7280", display: "flex", alignItems: "center", gap: 3 }}><Clock size={9} color="#9CA3AF" strokeWidth={2}/>{modal.duration_hours}h</span>
                       <span style={{ fontSize: 11, color: "#6B7280", display: "flex", alignItems: "center", gap: 3 }}><Tag size={9} color="#9CA3AF" strokeWidth={2}/>{modal.price_per_person} TND</span>
                     </div>
                   </div>
+                  {/* Quick link to detail page from modal */}
+                  <Link href={`/excursions/${modal.id}`} title="Voir les détails" style={{ flexShrink: 0, width: 32, height: 32, borderRadius: 8, background: "#EEF2FF", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <Eye size={14} color="#053366" />
+                  </Link>
                 </div>
 
                 <div>
