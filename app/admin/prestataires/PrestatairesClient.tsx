@@ -141,15 +141,6 @@ export default function PrestatairesClient({ prestataires: initial }: { prestata
     setEditLoading(false);
   };
 
-  const filtered = prestataires.filter(p => {
-    const statusOk = filter === "pending" ? !p.is_validated : filter === "validated" ? p.is_validated : true;
-    const name = (p.agency_name || p.full_name || "").toLowerCase();
-    const searchOk = !search || name.includes(search.toLowerCase()) || (p.city||"").toLowerCase().includes(search.toLowerCase());
-    const cityOk = !cityFilter || p.city === cityFilter;
-    return statusOk && searchOk && cityOk;
-  });
-
-  const cities = [...new Set(prestataires.map(p => p.city).filter(Boolean))].sort() as string[];
   const counts = {
     pending:   prestataires.filter(p => !p.is_validated).length,
     validated: prestataires.filter(p => p.is_validated).length,

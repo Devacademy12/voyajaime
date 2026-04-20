@@ -1,212 +1,49 @@
-import { CalendarDays, Clock, CheckCircle, TrendingUp, MapPin, Search, ChevronDown, Waves, UserCheck, Banknote } from "lucide-react";
-import { RESERVATION_STATUS, ReservationStatus } from "@/lib/statusConfig";
+"use client";
 
-// ─── STAT CARD ───
-interface StatCardProps {
-  label: string;
-  value: string;
-  color: string;
-  bg: string;
-  border: string;
-  Icon: React.ElementType;
+// components/admin/ReservationsUI.tsx
+// ── StatCard · SearchBar · CityFilter · FilterTabs · EmptyReservations · ReservationRow
+
+import React, { useState } from "react";
+import {
+  Search, MapPin, ChevronDown, ChevronUp, ChevronRight,
+  CalendarDays, Clock, Users, CreditCard, Tag,
+  CheckCircle, XCircle, AlertTriangle,
+} from "lucide-react";
+import { RESERVATION_STATUS, ReservationStatus } from "../../../lib/statusConfig";
+
+// ─── Types ────────────────────────────────────────────────────────────
+interface ResRow {
+  id:           string;
+  booking_code: string;
+  date:         string;
+  time:         string;
+  people_count: number;
+  total_price:  number;
+  platform_fee: number;
+  status:       string;
+  touriste_name:string;
+  excursion:    { title?: string; city?: string } | null;
 }
 
-export function StatCard({ label, value, color, bg, border, Icon }: StatCardProps) {
-  return (
-    <div style={{ background: bg, borderRadius: 14, padding: "16px 18px", border: `1px solid ${border}`, display: "flex", alignItems: "center", gap: 12 }}>
-      <div style={{ width: 38, height: 38, borderRadius: 10, background: `${color}18`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-        <Icon size={17} color={color} strokeWidth={1.5} />
-      </div>
-      <div>
-        <p style={{ fontSize: 11, color: "#6B7280", fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 2 }}>{label}</p>
-        <p style={{ fontSize: 19, fontWeight: 900, color, lineHeight: 1 }}>{value}</p>
-      </div>
-    </div>
-  );
-}
+// ─── CSS ──────────────────────────────────────────────────────────────
+const RES_CSS = `
+  @keyframes fadeUp { from { opacity:0; transform:translateY(8px) } to { opacity:1; transform:none } }
+  @keyframes dropIn { from { opacity:0; transform:translateY(-6px) } to { opacity:1; transform:none } }
+  .res-card { animation: fadeUp .3s ease both; }
+  .res-card:hover { box-shadow: 0 6px 24px rgba(0,0,0,.09) !important; transform: translateY(-1px); transition: all .18s; }
+  .res-row-btn { width:100%; text-align:left; background:none; border:none; cursor:pointer; font-family:inherit; padding:0; }
+  .res-tab { border:1.5px solid #E5E7EB; border-radius:10px; padding:8px 14px; font-size:12px; font-weight:700; cursor:pointer; transition:all .15s; font-family:inherit; display:inline-flex; align-items:center; gap:6px; background:white; color:#6B7280; }
+  .res-tab:hover  { border-color:#2B96A8; color:#2B96A8; }
+  .res-tab.active { border-color:#2B96A8; background:#EFF9FB; color:#2B96A8; }
+  .city-dropdown  { animation: dropIn .15s ease both; position:absolute; top:calc(100% + 6px); left:0; min-width:200px; background:white; border:1.5px solid #E5E7EB; border-radius:14px; box-shadow:0 12px 36px rgba(0,0,0,.12); z-index:200; overflow:hidden; }
+  .city-opt { padding:10px 14px; font-size:13px; font-weight:600; cursor:pointer; transition:background .1s; color:#374151; }
+  .city-opt:hover  { background:#F9FAFB; }
+  .city-opt.active { background:#EFF9FB; color:#2B96A8; }
+  .reset-btn { padding:11px 22px; background:#2B96A8; color:white; border:none; border-radius:12px; font-size:14px; font-weight:700; cursor:pointer; font-family:inherit; }
+  .reset-btn:hover { background:#1e7a8a; }
+`;
 
-// ─── SEARCH BAR ───
-interface SearchBarProps {
-  value: string;
-  onChange: (value: string) => void;
-}
-
-export function SearchBar({ value, onChange }: SearchBarProps) {
-  return (
-    <div style={{ flex: 1, minWidth: 220, position: "relative" }}>
-      <Search size={14} color="#9CA3AF" strokeWidth={2}
-        style={{ position: "absolute", left: 11, top: "50%", transform: "translateY(-50%)", pointerEvents: "none" }} />
-      <input
-        type="text"
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder="Rechercher par nom, code, ville..."
-        style={{
-          width: "100%", padding: "8px 12px 8px 32px",
-          border: "1.5px solid #E5E7EB", borderRadius: 20,
-          fontSize: 13, color: "#111827", background: "white",
-          outline: "none", fontFamily: "inherit",
-          transition: "border-color .2s", boxSizing: "border-box",
-        }}
-        onFocus={(e) => (e.target.style.borderColor = "#2B96A8")}
-        onBlur={(e) => (e.target.style.borderColor = "#E5E7EB")}
-      />
-    </div>
-  );
-}
-
-// ─── CITY FILTER DROPDOWN ───
-interface CityFilterProps {
-  cities: string[];
-  value: string;
-  onChange: (city: string) => void;
-  isOpen: boolean;
-  onToggle: () => void;
-}
-
-export function CityFilter({ cities, value, onChange, isOpen, onToggle }: CityFilterProps) {
-  if (cities.length === 0) return null;
-
-  return (
-    <div style={{ position: "relative", flexShrink: 0 }}>
-      <button
-        onClick={onToggle}
-        style={{
-          display: "flex", alignItems: "center", gap: 7,
-          padding: "8px 14px", border: "1.5px solid #E5E7EB", borderRadius: 20,
-          background: "white", color: value !== "all" ? "#2B96A8" : "#374151",
-          fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "inherit",
-        }}
-      >
-        <MapPin size={13} color={value !== "all" ? "#2B96A8" : "#9CA3AF"} strokeWidth={2} />
-        {value === "all" ? "Toutes les villes" : value}
-        <ChevronDown size={13} color="#9CA3AF" strokeWidth={2} />
-      </button>
-      {isOpen && (
-        <div
-          style={{
-            position: "absolute", top: "calc(100% + 6px)", left: 0, zIndex: 50,
-            background: "white", border: "1px solid #E5E7EB", borderRadius: 12,
-            boxShadow: "0 8px 24px rgba(0,0,0,.1)", minWidth: 180, overflow: "hidden",
-          }}
-          onMouseLeave={onToggle}
-        >
-          {[{ key: "all", label: "Toutes les villes" }, ...cities.map((c) => ({ key: c, label: c }))].map((opt) => (
-            <button key={opt.key}
-              onClick={() => { onChange(opt.key); onToggle(); }}
-              style={{
-                display: "flex", alignItems: "center", gap: 8,
-                width: "100%", padding: "10px 16px", border: "none",
-                background: value === opt.key ? "#EFF9FB" : "white",
-                color: value === opt.key ? "#2B96A8" : "#374151",
-                textAlign: "left", fontSize: 13, fontWeight: value === opt.key ? 700 : 500,
-                cursor: "pointer", fontFamily: "inherit",
-              }}
-            >
-              <MapPin size={12} color={value === opt.key ? "#2B96A8" : "#9CA3AF"} strokeWidth={1.5} />
-              {opt.label}
-            </button>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
-// ─── FILTER TABS ───
-interface FilterTabsProps {
-  tabs: Array<{ key: string; label: string; Icon: React.ElementType }>;
-  active: string;
-  counts: Record<string, number>;
-  totalCount: number;
-  onSelect: (key: string) => void;
-}
-
-export function FilterTabs({ tabs, active, counts, totalCount, onSelect }: FilterTabsProps) {
-  return (
-    <>
-      {tabs.map((tab) => {
-        const count = tab.key === "all" ? totalCount : (counts[tab.key] ?? 0);
-        const isActive = active === tab.key;
-        return (
-          <button key={tab.key}
-            onClick={() => onSelect(tab.key)}
-            style={{
-              padding: "8px 16px", borderRadius: 20,
-              border: isActive ? "none" : "1px solid #E5E7EB",
-              cursor: "pointer", fontSize: 13, fontWeight: 600,
-              fontFamily: "inherit",
-              background: isActive ? "#2B96A8" : "white",
-              color: isActive ? "white" : "#6B7280",
-              display: "flex", alignItems: "center", gap: 6,
-              transition: "all .15s",
-            }}
-          >
-            <tab.Icon size={13} strokeWidth={2} />
-            {tab.label}
-            <span style={{
-              padding: "1px 7px", borderRadius: 20, fontSize: 12,
-              background: isActive ? "rgba(255,255,255,.25)" : "#F3F4F6",
-              color: isActive ? "white" : "#374151",
-            }}>
-              {count}
-            </span>
-          </button>
-        );
-      })}
-    </>
-  );
-}
-
-// ─── EMPTY STATE ───
-interface EmptyStateProps {
-  filter: string;
-  search: string;
-  onReset: () => void;
-}
-
-export function EmptyReservations({ filter, search, onReset }: EmptyStateProps) {
-  return (
-    <div style={{ textAlign: "center", padding: "60px", background: "white", borderRadius: 16, border: "1px solid #E5E7EB" }}>
-      <div style={{ width: 56, height: 56, borderRadius: "50%", background: "#F3F4F6", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
-        {filter === "pending"
-          ? <CheckCircle size={26} color="#9CA3AF" strokeWidth={1.5} />
-          : <CalendarDays size={26} color="#9CA3AF" strokeWidth={1.5} />
-        }
-      </div>
-      <p style={{ fontWeight: 700, color: "#111827", fontSize: 15, marginBottom: 6 }}>
-        {search
-          ? `Aucun résultat pour « ${search} »`
-          : filter === "pending"
-          ? "Aucune réservation en attente"
-          : "Aucune réservation trouvée"}
-      </p>
-      <button
-        onClick={onReset}
-        style={{ marginTop: 12, padding: "8px 18px", background: "#F3F4F6", border: "none", borderRadius: 10, fontSize: 13, fontWeight: 600, color: "#374151", cursor: "pointer", fontFamily: "inherit" }}
-      >
-        Réinitialiser les filtres
-      </button>
-    </div>
-  );
-}
-
-// ─── RESERVATION ROW ───
-interface ReservationRowProps {
-  r: {
-    id: string;
-    booking_code: string;
-    date: string;
-    time: string;
-    people_count: number;
-    total_price: number;
-    platform_fee: number;
-    status: string;
-    touriste_name: string;
-    excursion: { title?: string; city?: string } | null;
-  };
-}
-
+// ─── Helpers ──────────────────────────────────────────────────────────
 function fmtDate(d: string) {
   if (!d) return "—";
   return new Date(d + "T00:00:00").toLocaleDateString("fr-FR", {
@@ -214,88 +51,404 @@ function fmtDate(d: string) {
   });
 }
 
-export function ReservationRow({ r }: ReservationRowProps) {
-  const s = RESERVATION_STATUS[r.status as ReservationStatus] ?? RESERVATION_STATUS.pending;
+function getStatusCfg(status: string) {
+  return RESERVATION_STATUS[status as ReservationStatus] ?? {
+    label: status, color: "#6B7280", bg: "#F3F4F6", border: "#E5E7EB", dot: "#9CA3AF",
+  };
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+//  StatCard
+// ═══════════════════════════════════════════════════════════════════════
+export function StatCard({
+  label, value, color, bg, border, Icon,
+}: {
+  label: string; value: string;
+  color: string; bg: string; border: string;
+  Icon: React.ElementType;
+}) {
+  return (
+    <>
+      <style>{RES_CSS}</style>
+      <div style={{
+        background: "white", borderRadius: 18,
+        border: `1.5px solid ${border}`,
+        padding: "18px 20px",
+        display: "flex", alignItems: "center", gap: 14,
+        boxShadow: "0 2px 10px rgba(0,0,0,.04)",
+        animation: "fadeUp .35s ease both",
+      }}>
+        <div style={{
+          width: 46, height: 46, borderRadius: 13,
+          background: bg, border: `1px solid ${border}`,
+          display: "flex", alignItems: "center", justifyContent: "center",
+          flexShrink: 0,
+        }}>
+          <Icon size={20} color={color} strokeWidth={1.8} />
+        </div>
+        <div>
+          <p style={{ fontSize: 11, fontWeight: 700, color: "#9CA3AF", textTransform: "uppercase", letterSpacing: .8, marginBottom: 3 }}>
+            {label}
+          </p>
+          <p style={{ fontSize: 20, fontWeight: 900, color: "#111827", lineHeight: 1 }}>
+            {value}
+          </p>
+        </div>
+      </div>
+    </>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+//  SearchBar
+// ═══════════════════════════════════════════════════════════════════════
+export function SearchBar({
+  value, onChange,
+}: { value: string; onChange: (v: string) => void }) {
+  return (
+    <div style={{
+      flex: 1, minWidth: 200,
+      display: "flex", alignItems: "center", gap: 8,
+      background: "#F9FAFB", border: "1.5px solid #E5E7EB",
+      borderRadius: 12, padding: "9px 14px",
+      transition: "border-color .15s",
+    }}>
+      <Search size={15} color="#9CA3AF" strokeWidth={2} />
+      <input
+        value={value}
+        onChange={e => onChange(e.target.value)}
+        placeholder="Code, touriste, excursion, ville…"
+        style={{
+          flex: 1, border: "none", background: "transparent",
+          fontSize: 13, fontFamily: "inherit", color: "#111827", outline: "none",
+        }}
+      />
+      {value && (
+        <button
+          onClick={() => onChange("")}
+          style={{ background: "none", border: "none", cursor: "pointer", padding: 0, display: "flex" }}
+        >
+          <XCircle size={14} color="#9CA3AF" />
+        </button>
+      )}
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+//  CityFilter
+// ═══════════════════════════════════════════════════════════════════════
+export function CityFilter({
+  cities, value, onChange, isOpen, onToggle,
+}: {
+  cities: string[]; value: string;
+  onChange: (v: string) => void;
+  isOpen: boolean; onToggle: () => void;
+}) {
+  if (!cities.length) return null;
+
+  return (
+    <div style={{ position: "relative" }}>
+      <button
+        onClick={onToggle}
+        style={{
+          display: "inline-flex", alignItems: "center", gap: 7,
+          padding: "9px 14px",
+          border: `1.5px solid ${value !== "all" ? "#2B96A8" : "#E5E7EB"}`,
+          borderRadius: 12,
+          background: value !== "all" ? "#EFF9FB" : "white",
+          color: value !== "all" ? "#2B96A8" : "#374151",
+          fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit",
+          transition: "all .15s",
+        }}
+      >
+        <MapPin size={14} strokeWidth={2} />
+        {value === "all" ? "Toutes villes" : value}
+        {isOpen ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
+      </button>
+
+      {isOpen && (
+        <div className="city-dropdown">
+          <div
+            className={`city-opt ${value === "all" ? "active" : ""}`}
+            onClick={() => { onChange("all"); onToggle(); }}
+          >
+            Toutes les villes
+          </div>
+          {cities.map(city => (
+            <div
+              key={city}
+              className={`city-opt ${value === city ? "active" : ""}`}
+              onClick={() => { onChange(city); onToggle(); }}
+            >
+              {city}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+//  FilterTabs
+// ═══════════════════════════════════════════════════════════════════════
+export function FilterTabs({
+  tabs, active, counts, totalCount, onSelect,
+}: {
+  tabs: { key: string; label: string; Icon: React.ElementType }[];
+  active: string;
+  counts: Record<string, number>;
+  totalCount: number;
+  onSelect: (key: string) => void;
+}) {
+  return (
+    <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+      {tabs.map(({ key, label, Icon }) => {
+        const count = key === "all" ? totalCount : (counts[key] ?? 0);
+        const isActive = active === key;
+        const cfg = key !== "all" ? getStatusCfg(key) : null;
+        return (
+          <button
+            key={key}
+            className={`res-tab ${isActive ? "active" : ""}`}
+            onClick={() => onSelect(key)}
+            style={isActive && cfg ? {
+              borderColor: cfg.color,
+              background: cfg.bg,
+              color: cfg.color,
+            } : {}}
+          >
+            <Icon size={13} strokeWidth={2} />
+            {label}
+            <span style={{
+              background: isActive ? (cfg?.color ?? "#2B96A8") : "#E5E7EB",
+              color: isActive ? "white" : "#6B7280",
+              borderRadius: 99, fontSize: 10, fontWeight: 800,
+              padding: "1px 7px", minWidth: 20, textAlign: "center",
+            }}>
+              {count}
+            </span>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+//  EmptyReservations
+// ═══════════════════════════════════════════════════════════════════════
+export function EmptyReservations({
+  filter, search, onReset,
+}: { filter: string; search: string; onReset: () => void }) {
+  const isFiltered = filter !== "all" || search.trim().length > 0;
 
   return (
     <div style={{
-      background: "white", borderRadius: 16, padding: "20px",
-      border: `1px solid ${r.status === "pending" ? "#FEF3C7" : "#E5E7EB"}`,
-      borderLeft: `4px solid ${s.dot}`,
-      display: "flex", justifyContent: "space-between", alignItems: "center", gap: 20,
-      transition: "box-shadow .15s",
-    }}
-      onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.boxShadow = "0 4px 16px rgba(0,0,0,.07)")}
-      onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.boxShadow = "none")}
-    >
-      {/* Infos */}
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
-          {/* Avatar */}
-          <div style={{
-            width: 40, height: 40, borderRadius: "50%", flexShrink: 0,
-            background: r.status === "confirmed"
-              ? "linear-gradient(135deg, #2B96A8, #4AABB8)"
-              : r.status === "pending"
-              ? "linear-gradient(135deg, #F59E0B, #FBBF24)"
-              : "linear-gradient(135deg, #6B7280, #9CA3AF)",
-            display: "flex", alignItems: "center", justifyContent: "center",
-            color: "white", fontWeight: 700, fontSize: 16,
-          }}>
-            {r.touriste_name.charAt(0).toUpperCase()}
-          </div>
-
-          <div>
-            <p style={{ fontSize: 15, fontWeight: 600, color: "#111827" }}>{r.touriste_name}</p>
-            <p style={{ fontSize: 12, color: "#9CA3AF", fontFamily: "monospace" }}>#{r.booking_code}</p>
-          </div>
-
-          {/* Badge statut avec icône */}
-          <span style={{
-            display: "inline-flex", alignItems: "center", gap: 5,
-            padding: "3px 10px", borderRadius: 20, fontSize: 11, fontWeight: 600,
-            background: s.bg, color: s.color, border: `1px solid ${s.border}`,
-          }}>
-            {s.icon && <s.icon size={11} strokeWidth={2.5} />}
-            {s.label}
-          </span>
-        </div>
-
-        {/* Détails en ligne */}
-        <div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
-          {r.excursion?.title && (
-            <span style={{ fontSize: 13, color: "#374151", fontWeight: 600, display: "flex", alignItems: "center", gap: 5 }}>
-              <Waves size={13} color="#2B96A8" strokeWidth={1.5} />
-              {r.excursion.title}
-            </span>
-          )}
-          {r.excursion?.city && (
-            <span style={{ fontSize: 13, color: "#6B7280", display: "flex", alignItems: "center", gap: 4 }}>
-              <MapPin size={12} color="#9CA3AF" strokeWidth={1.5} />
-              {r.excursion.city}
-            </span>
-          )}
-          <span style={{ fontSize: 13, color: "#6B7280", display: "flex", alignItems: "center", gap: 4 }}>
-            <CalendarDays size={12} color="#9CA3AF" strokeWidth={1.5} />
-            {fmtDate(r.date)} à {r.time}
-          </span>
-          <span style={{ fontSize: 13, color: "#6B7280", display: "flex", alignItems: "center", gap: 4 }}>
-            <UserCheck size={12} color="#9CA3AF" strokeWidth={1.5} />
-            {r.people_count} personne{r.people_count > 1 ? "s" : ""}
-          </span>
-        </div>
+      textAlign: "center", padding: "72px 24px",
+      background: "white", borderRadius: 20,
+      border: "1px solid #E5E7EB",
+      animation: "fadeUp .3s ease both",
+    }}>
+      <div style={{
+        width: 72, height: 72, borderRadius: "50%",
+        background: "#F3F4F6",
+        display: "flex", alignItems: "center", justifyContent: "center",
+        margin: "0 auto 16px",
+      }}>
+        <CalendarDays size={30} color="#9CA3AF" strokeWidth={1.5} />
       </div>
-
-      {/* Prix */}
-      <div style={{ textAlign: "right", flexShrink: 0 }}>
-        <p style={{ fontSize: 20, fontWeight: 800, color: "#111827" }}>
-          {r.total_price} <span style={{ fontSize: 12, fontWeight: 500, color: "#9CA3AF" }}>TND</span>
-        </p>
-        <p style={{ fontSize: 11, color: "#9CA3AF", marginTop: 2, display: "flex", alignItems: "center", gap: 3, justifyContent: "flex-end" }}>
-          <Banknote size={10} color="#C4B8B0" strokeWidth={1.5} />
-          dont {r.platform_fee} TND comm.
-        </p>
-      </div>
+      <h3 style={{ fontSize: 18, fontWeight: 800, color: "#111827", marginBottom: 6 }}>
+        {isFiltered ? "Aucun résultat" : "Aucune réservation"}
+      </h3>
+      <p style={{ fontSize: 14, color: "#6B7280", marginBottom: 20 }}>
+        {isFiltered
+          ? "Essayez d'autres filtres ou termes de recherche"
+          : "Les réservations apparaîtront ici"}
+      </p>
+      {isFiltered && (
+        <button className="reset-btn" onClick={onReset}>
+          Réinitialiser les filtres
+        </button>
+      )}
     </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+//  ReservationRow — carte dépliable
+// ═══════════════════════════════════════════════════════════════════════
+export function ReservationRow({ r }: { r: ResRow }) {
+  const [expanded, setExpanded] = useState(false);
+  const cfg = getStatusCfg(r.status);
+  const fee = Number(r.platform_fee ?? 0);
+  const net = Number(r.total_price ?? 0) - fee;
+
+  return (
+    <>
+      <style>{RES_CSS}</style>
+      <div
+        className="res-card"
+        style={{
+          background: "white",
+          borderRadius: 16,
+          border: "1px solid #E5E7EB",
+          overflow: "hidden",
+          boxShadow: "0 1px 4px rgba(0,0,0,.04)",
+          borderLeft: `4px solid ${cfg.dot}`,
+        }}
+      >
+        {/* ── Ligne principale ── */}
+        <button
+          className="res-row-btn"
+          onClick={() => setExpanded(v => !v)}
+          style={{ padding: "16px 20px" }}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap" }}>
+
+            {/* Icône statut */}
+            <div style={{
+              width: 44, height: 44, borderRadius: 13, flexShrink: 0,
+              background: cfg.bg, border: `1.5px solid ${cfg.border}`,
+              display: "flex", alignItems: "center", justifyContent: "center",
+            }}>
+              {cfg.icon && <cfg.icon size={20} color={cfg.color} strokeWidth={1.5} />}
+            </div>
+
+            {/* Excursion + ville */}
+            <div style={{ flex: 1, minWidth: 160, textAlign: "left" }}>
+              <p style={{ fontSize: 14, fontWeight: 800, color: "#111827", marginBottom: 2, lineHeight: 1.3 }}>
+                {r.excursion?.title ?? "Excursion inconnue"}
+              </p>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                {r.excursion?.city && (
+                  <span style={{ fontSize: 12, color: "#6B7280", display: "flex", alignItems: "center", gap: 3 }}>
+                    <MapPin size={10} strokeWidth={1.5} /> {r.excursion.city}
+                  </span>
+                )}
+                <span style={{ color: "#E5E7EB" }}>·</span>
+                <span style={{ fontSize: 12, color: "#6B7280" }}>
+                  {r.touriste_name}
+                </span>
+              </div>
+            </div>
+
+            {/* Date & heure */}
+            <div style={{ textAlign: "left", minWidth: 90 }}>
+              <p style={{ fontSize: 10, fontWeight: 700, color: "#9CA3AF", textTransform: "uppercase", letterSpacing: .7, marginBottom: 3 }}>
+                Date
+              </p>
+              <p style={{ fontSize: 13, fontWeight: 700, color: "#374151" }}>
+                {fmtDate(r.date)}
+              </p>
+              <p style={{ fontSize: 11, color: "#9CA3AF", marginTop: 1 }}>{r.time}</p>
+            </div>
+
+            {/* Voyageurs */}
+            <div style={{ textAlign: "center", minWidth: 60 }}>
+              <p style={{ fontSize: 10, fontWeight: 700, color: "#9CA3AF", textTransform: "uppercase", letterSpacing: .7, marginBottom: 3 }}>
+                Pers.
+              </p>
+              <div style={{ display: "flex", alignItems: "center", gap: 4, justifyContent: "center" }}>
+                <Users size={13} color="#6B7280" strokeWidth={1.5} />
+                <p style={{ fontSize: 14, fontWeight: 800, color: "#111827" }}>{r.people_count}</p>
+              </div>
+            </div>
+
+            {/* Montant */}
+            <div style={{ textAlign: "right", minWidth: 90 }}>
+              <p style={{ fontSize: 10, fontWeight: 700, color: "#9CA3AF", textTransform: "uppercase", letterSpacing: .7, marginBottom: 3 }}>
+                Montant
+              </p>
+              <p style={{ fontSize: 17, fontWeight: 900, color: "#111827", lineHeight: 1 }}>
+                {r.total_price.toLocaleString("fr-FR")}
+                <span style={{ fontSize: 11, color: "#9CA3AF", marginLeft: 3, fontWeight: 500 }}>TND</span>
+              </p>
+            </div>
+
+            {/* Statut badge */}
+            <span style={{
+              display: "inline-flex", alignItems: "center", gap: 5,
+              padding: "4px 12px",
+              background: cfg.bg, border: `1.5px solid ${cfg.border}`,
+              borderRadius: 99, fontSize: 11, fontWeight: 700, color: cfg.color,
+              whiteSpace: "nowrap",
+            }}>
+              <span style={{ width: 6, height: 6, borderRadius: "50%", background: cfg.dot }} />
+              {cfg.label}
+            </span>
+
+            {/* Code réservation */}
+            <span style={{
+              fontSize: 11, color: "#9CA3AF", fontFamily: "monospace",
+              background: "#F9FAFB", padding: "3px 9px",
+              borderRadius: 7, border: "1px solid #E5E7EB",
+              whiteSpace: "nowrap",
+            }}>
+              #{r.booking_code}
+            </span>
+
+            {/* Flèche */}
+            <div style={{ color: "#9CA3AF", marginLeft: "auto" }}>
+              {expanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+            </div>
+          </div>
+        </button>
+
+        {/* ── Détail déroulant ── */}
+        {expanded && (
+          <div style={{
+            borderTop: "1px solid #F3F4F6",
+            padding: "16px 20px",
+            background: "#FAFAFA",
+          }}>
+            <div style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))",
+              gap: 16,
+              marginBottom: 16,
+            }}>
+              {[
+                { icon: Tag,          label: "Code",          value: `#${r.booking_code}` },
+                { icon: CalendarDays, label: "Date excursion", value: fmtDate(r.date) },
+                { icon: Clock,        label: "Heure départ",  value: r.time },
+                { icon: Users,        label: "Voyageurs",     value: `${r.people_count} pers.` },
+                { icon: CreditCard,   label: "Total",         value: `${r.total_price.toLocaleString("fr-FR")} TND` },
+                { icon: CreditCard,   label: "Commission",    value: `${fee.toLocaleString("fr-FR")} TND` },
+              ].map(({ icon: Icon, label, value }) => (
+                <div key={label}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 5, marginBottom: 4 }}>
+                    <Icon size={11} color="#9CA3AF" strokeWidth={1.5} />
+                    <span style={{ fontSize: 10, fontWeight: 700, color: "#9CA3AF", textTransform: "uppercase", letterSpacing: .6 }}>
+                      {label}
+                    </span>
+                  </div>
+                  <p style={{ fontSize: 13, fontWeight: 700, color: "#111827" }}>{value}</p>
+                </div>
+              ))}
+            </div>
+
+            {/* Barre de décomposition */}
+            <div style={{ marginTop: 4 }}>
+              <div style={{ display: "flex", height: 7, borderRadius: 99, overflow: "hidden", gap: 1 }}>
+                <div style={{ flex: net, background: "#2B96A8" }} title={`Net: ${net} TND`} />
+                <div style={{ flex: fee, background: "#F59E0B", opacity: .85 }} title={`Commission: ${fee} TND`} />
+              </div>
+              <div style={{ display: "flex", gap: 16, marginTop: 6 }}>
+                <span style={{ fontSize: 11, color: "#2B96A8", fontWeight: 700, display: "flex", alignItems: "center", gap: 4 }}>
+                  <span style={{ width: 8, height: 8, borderRadius: 2, background: "#2B96A8" }} />
+                  Net prestataire : {net.toLocaleString("fr-FR")} TND
+                </span>
+                <span style={{ fontSize: 11, color: "#D97706", fontWeight: 700, display: "flex", alignItems: "center", gap: 4 }}>
+                  <span style={{ width: 8, height: 8, borderRadius: 2, background: "#F59E0B" }} />
+                  Commission : {fee.toLocaleString("fr-FR")} TND
+                </span>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </>
   );
 }
