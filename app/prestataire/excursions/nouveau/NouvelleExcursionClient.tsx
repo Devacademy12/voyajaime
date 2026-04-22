@@ -22,15 +22,6 @@ const DIFFICULTY = [
 ];
 const DAYS_FR = ["Dim", "Lun", "Mar", "Mer", "Jeu", "Ven", "Sam"];
 
-// Heures de départ disponibles
-const DEPARTURE_TIMES = [
-  "06:00", "06:30", "07:00", "07:30", "08:00", "08:30",
-  "09:00", "09:30", "10:00", "10:30", "11:00", "11:30",
-  "12:00", "12:30", "13:00", "13:30", "14:00", "14:30",
-  "15:00", "15:30", "16:00", "16:30", "17:00", "17:30",
-  "18:00", "19:00", "20:00",
-];
-
 function toggle(arr: string[], item: string) {
   return arr.includes(item) ? arr.filter(i => i !== item) : [...arr, item];
 }
@@ -41,7 +32,7 @@ function toggle(arr: string[], item: string) {
 interface PhotoPreview { file: File; url: string; uploading: boolean; uploaded?: string; }
 interface Ville        { id: string; nom: string; active: boolean; }
 interface Categorie    { id: string; nom: string; couleur: string; }
-interface DateDispo    { date: string; slots: number; time: string; } // ← time ajouté
+interface DateDispo    { date: string; slots: number; time: string; }
 
 /* ─────────────────────────────────────────────
    Hook de validation
@@ -138,14 +129,18 @@ export default function NouvelleExcursionClient({
   const [impInfo,     setImpInfo]     = useState("");
   const [cancelPol,   setCancelPol]   = useState("Annulation gratuite jusqu'à 24h avant");
   const [dates,       setDates]       = useState<DateDispo[]>([]);
-  const [newDate,     setNewDate]     = useState("");
-  const [newSlots,    setNewSlots]    = useState(10);
-  const [newTime,     setNewTime]     = useState("09:00"); // ← NOUVEAU
-  const [recurDays,   setRecurDays]   = useState<number[]>([]);
-  const [recurSlots,  setRecurSlots]  = useState(10);
-  const [recurTime,   setRecurTime]   = useState("09:00"); // ← NOUVEAU
-  const [recurFrom,   setRecurFrom]   = useState("");
-  const [recurTo,     setRecurTo]     = useState("");
+
+  /* ── Ajout d'une date ── */
+  const [newDate,  setNewDate]  = useState("");
+  const [newSlots, setNewSlots] = useState(10);
+  const [newTime,  setNewTime]  = useState("09:00"); // ← input time natif
+
+  /* ── Dates récurrentes ── */
+  const [recurDays,  setRecurDays]  = useState<number[]>([]);
+  const [recurSlots, setRecurSlots] = useState(10);
+  const [recurTime,  setRecurTime]  = useState("09:00"); // ← input time natif
+  const [recurFrom,  setRecurFrom]  = useState("");
+  const [recurTo,    setRecurTo]    = useState("");
 
   const { v, isReadyToPublish, pct } = useValidation({ title, city, description, languages, categories, dates, photos });
 
@@ -176,48 +171,75 @@ export default function NouvelleExcursionClient({
 
   /* ── Dates ── */
   const addDate = () => {
-    if (!newDate || dates.find(d=>d.date===newDate)) return;
-    setDates(p=>[...p, { date:newDate, slots:newSlots, time:newTime }]
-      .sort((a,b)=>a.date.localeCompare(b.date)));
+    if (!newDate || dates.find(d => d.date === newDate)) return;
+    // ← time est bien inclus dans chaque entrée
+    setDates(p => [...p, { date: newDate, slots: newSlots, time: newTime }]
+      .sort((a, b) => a.date.localeCompare(b.date)));
     setNewDate("");
   };
-  const removeDate    = (d:string) => setDates(p=>p.filter(x=>x.date!==d));
-  const updateSlots   = (d:string, s:number) => setDates(p=>p.map(x=>x.date===d?{...x,slots:s}:x));
-  const updateTime    = (d:string, t:string) => setDates(p=>p.map(x=>x.date===d?{...x,time:t}:x)); // ← NOUVEAU
+  const removeDate  = (d: string) => setDates(p => p.filter(x => x.date !== d));
+  const updateSlots = (d: string, s: number) => setDates(p => p.map(x => x.date===d ? {...x, slots:s} : x));
+  const updateTime  = (d: string, t: string) => setDates(p => p.map(x => x.date===d ? {...x, time:t}  : x));
 
   const genRecurring = () => {
-    if (!recurFrom||!recurTo||recurDays.length===0) return;
+    if (!recurFrom || !recurTo || recurDays.length===0) return;
     const from=new Date(recurFrom), to=new Date(recurTo), added:DateDispo[]=[], cur=new Date(from);
-    while(cur<=to){
-      if(recurDays.includes(cur.getDay())){
-        const iso=cur.toISOString().slice(0,10);
-        if(!dates.find(d=>d.date===iso)) added.push({ date:iso, slots:recurSlots, time:recurTime });
+    while (cur <= to) {
+      if (recurDays.includes(cur.getDay())) {
+        const iso = cur.toISOString().slice(0,10);
+        // ← time récurrent inclus
+        if (!dates.find(d => d.date===iso)) added.push({ date:iso, slots:recurSlots, time:recurTime });
       }
       cur.setDate(cur.getDate()+1);
     }
-    setDates(p=>[...p,...added].sort((a,b)=>a.date.localeCompare(b.date)));
+    setDates(p => [...p, ...added].sort((a,b) => a.date.localeCompare(b.date)));
   };
 
-  /* ── Submit ── */
-  const submit = async (pub:boolean) => {
-    if (!title||!city||!description){ setError("Remplissez les champs obligatoires."); setTab("infos"); return; }
+  /* ── Submit ──
+     available_dates = [{ date, slots, time }, ...]
+     → stocké tel quel dans la colonne JSONB de Supabase             ── */
+  const submit = async (pub: boolean) => {
+    if (!title || !city || !description) { setError("Remplissez les champs obligatoires."); setTab("infos"); return; }
     setLoading(true); setPubMode(pub); setError(null);
-    const {data:{user}} = await supabase.auth.getUser();
-    if (!user){ setError("Session expirée."); setLoading(false); return; }
-    const photoUrls = photos.length>0 ? await uploadPhotos(user.id) : [];
-    const {error:err} = await supabase.from("excursions").insert({
-      prestataire_id:user.id, title, city, description,
-      duration_hours:duration, price_per_person:price, max_people:maxPeople,
-      categories, languages, inclusions, photos:photoUrls, is_active:pub,
-      meeting_point:meetingPt||null, difficulty:difficulty||null, min_age:minAge||null,
-      what_to_bring:whatBring||null, not_included:notIncl||null,
-      important_info:impInfo||null, cancel_policy:cancelPol||null,
-      available_dates:dates.length>0?dates:null, // ← contient maintenant time
+    const { data:{ user } } = await supabase.auth.getUser();
+    if (!user) { setError("Session expirée."); setLoading(false); return; }
+
+    const photoUrls = photos.length > 0 ? await uploadPhotos(user.id) : [];
+
+    // S'assurer que chaque date a bien un time non vide
+    const safeDates = dates.map(d => ({
+      date:  d.date,
+      slots: d.slots,
+      time:  d.time || "09:00",   // ← fallback si jamais vide
+    }));
+
+    const { error: err } = await supabase.from("excursions").insert({
+      prestataire_id:   user.id,
+      title,
+      city,
+      description,
+      duration_hours:   duration,
+      price_per_person: price,
+      max_people:       maxPeople,
+      categories,
+      languages,
+      inclusions,
+      photos:           photoUrls,
+      is_active:        pub,
+      meeting_point:    meetingPt  || null,
+      difficulty:       difficulty || null,
+      min_age:          minAge     || null,
+      what_to_bring:    whatBring  || null,
+      not_included:     notIncl    || null,
+      important_info:   impInfo    || null,
+      cancel_policy:    cancelPol  || null,
+      available_dates:  safeDates.length > 0 ? safeDates : null, // ← [{ date, slots, time }]
     });
+
     setLoading(false);
-    if (err){ setError(err.message); return; }
+    if (err) { setError(err.message); return; }
     setSuccess(true);
-    setTimeout(()=>{ window.location.href="/prestataire/excursions"; }, 2000);
+    setTimeout(() => { window.location.href = "/prestataire/excursions"; }, 2000);
   };
 
   /* ── Succès ── */
@@ -263,6 +285,26 @@ export default function NouvelleExcursionClient({
           border-color:#0F766E;background:white;box-shadow:0 0 0 3px rgba(15,118,110,.1);
         }
         .nf-field input::placeholder,.nf-field textarea::placeholder{color:#CBD5E1;}
+
+        /* ── input[type=time] natif ── */
+        .time-input {
+          padding:9px 12px;border:1.5px solid #E2E8F0;border-radius:10px;
+          font-size:13px;font-family:inherit !important;color:#0F172A;outline:none;
+          transition:all .2s;background:#FAFBFC;cursor:pointer;
+          box-sizing:border-box;
+        }
+        .time-input:focus {
+          border-color:#0F766E;background:white;box-shadow:0 0 0 3px rgba(15,118,110,.1);
+        }
+        /* ── input[type=time] dans la liste des dates ── */
+        .time-input-sm {
+          padding:6px 8px;border:1.5px solid #E2E8F0;border-radius:8px;
+          font-size:12px;font-family:inherit !important;color:#0F172A;outline:none;
+          transition:border-color .2s;background:#FAFBFC;cursor:pointer;
+          min-width:88px;
+        }
+        .time-input-sm:focus { border-color:#0F766E; background:white; }
+
         .tab-btn{display:flex;align-items:center;gap:7px;padding:8px 15px;border-radius:10px;
           font-size:12.5px;font-weight:600;cursor:pointer;font-family:inherit !important;
           border:none;transition:all .2s;white-space:nowrap;}
@@ -276,8 +318,6 @@ export default function NouvelleExcursionClient({
         .date-row:hover{border-color:#CBD5E1;}
         .num{width:68px;padding:7px 10px;border:1.5px solid #E2E8F0;border-radius:8px;font-size:13px;font-family:inherit !important;color:#0F172A;outline:none;text-align:center;transition:border-color .2s;background:#FAFBFC;}
         .num:focus{border-color:#0F766E;background:white;}
-        .time-select{padding:7px 10px;border:1.5px solid #E2E8F0;border-radius:8px;font-size:12px;font-family:inherit !important;color:#0F172A;outline:none;transition:border-color .2s;background:#FAFBFC;cursor:pointer;appearance:none;-webkit-appearance:none;min-width:80px;}
-        .time-select:focus{border-color:#0F766E;background:white;}
         .day{padding:5px 11px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit !important;border:1.5px solid #E2E8F0;background:white;color:#64748B;transition:all .15s;}
         .day.on{background:#0F172A;color:white;border-color:#0F172A;}
         .pub-btn{display:flex;align-items:center;gap:8px;padding:11px 22px;border-radius:11px;cursor:pointer;font-family:inherit !important;font-size:13.5px;font-weight:700;border:none;transition:all .22s;letter-spacing:-.01em;}
@@ -484,45 +524,46 @@ export default function NouvelleExcursionClient({
               <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:14, alignItems:"start" }}>
                 <div style={{ display:"flex", flexDirection:"column", gap:14 }}>
 
-                  {/* Ajouter une date */}
+                  {/* ── Ajouter une date ── */}
                   <div className="card">
                     <SectionTitle icon={CalendarDays} label="Ajouter une date"/>
                     <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
 
-                      {/* Date */}
+                      {/* Champ date */}
                       <div className="nf-field">
-                        <input type="date" value={newDate} min={today} onChange={e=>setNewDate(e.target.value)}/>
+                        <input type="date" value={newDate} min={today} onChange={e => setNewDate(e.target.value)}/>
                       </div>
 
-                      {/* Heure de départ + Places */}
-                      <div style={{ display:"flex", gap:8, alignItems:"center", flexWrap:"wrap" }}>
+                      {/* ── Heure de départ (input time natif) + places ── */}
+                      <div style={{ display:"flex", gap:10, alignItems:"center" }}>
 
-                        {/* ── HEURE DE DÉPART ── */}
-                        <div style={{ display:"flex", alignItems:"center", gap:6, flex:1, minWidth:140 }}>
-                          <Clock size={12} color="#94A3B8" style={{ flexShrink:0 }}/>
-                          <div style={{ position:"relative", flex:1 }}>
-                            <select
-                              value={newTime}
-                              onChange={e=>setNewTime(e.target.value)}
-                              className="time-select"
-                              style={{ width:"100%" }}
-                            >
-                              {DEPARTURE_TIMES.map(t=>(
-                                <option key={t} value={t}>{t}</option>
-                              ))}
-                            </select>
-                          </div>
+                        {/* Heure — input time natif, un seul champ clair */}
+                        <div style={{ display:"flex", alignItems:"center", gap:7, flex:1, background:"#FAFBFC", border:"1.5px solid #E2E8F0", borderRadius:10, padding:"0 12px" }}>
+                          <Clock size={13} color="#94A3B8" style={{ flexShrink:0 }}/>
+                          <input
+                            type="time"
+                            value={newTime}
+                            onChange={e => setNewTime(e.target.value)}
+                            className="time-input"
+                            style={{ flex:1, border:"none", background:"transparent", padding:"9px 0", boxShadow:"none" }}
+                          />
                         </div>
 
                         {/* Places */}
                         <div style={{ display:"flex", alignItems:"center", gap:6 }}>
-                          <Users size={12} color="#94A3B8"/>
-                          <input type="number" min={1} max={maxPeople} value={newSlots} onChange={e=>setNewSlots(Number(e.target.value))} className="num"/>
+                          <Users size={13} color="#94A3B8"/>
+                          <input
+                            type="number" min={1} max={maxPeople}
+                            value={newSlots}
+                            onChange={e => setNewSlots(Number(e.target.value))}
+                            className="num"
+                          />
                           <span style={{ fontSize:11, color:"#94A3B8" }}>pl.</span>
                         </div>
 
+                        {/* Bouton ajouter */}
                         <button type="button" onClick={addDate} disabled={!newDate}
-                          style={{ display:"flex", alignItems:"center", gap:6, padding:"9px 14px", borderRadius:9, background:newDate?"#0F172A":"#F1F5F9", color:newDate?"white":"#94A3B8", border:"none", cursor:newDate?"pointer":"not-allowed", fontSize:12.5, fontWeight:700, fontFamily:"inherit", transition:"all .18s" }}>
+                          style={{ display:"flex", alignItems:"center", gap:6, padding:"9px 14px", borderRadius:9, background:newDate?"#0F172A":"#F1F5F9", color:newDate?"white":"#94A3B8", border:"none", cursor:newDate?"pointer":"not-allowed", fontSize:12.5, fontWeight:700, fontFamily:"inherit", transition:"all .18s", whiteSpace:"nowrap" }}>
                           <Plus size={13}/> Ajouter
                         </button>
                       </div>
@@ -531,20 +572,20 @@ export default function NouvelleExcursionClient({
                       {newDate && (
                         <div style={{ display:"flex", alignItems:"center", gap:6, padding:"8px 12px", background:"#F0FDF4", borderRadius:8, border:"1px solid #BBF7D0", fontSize:12, color:"#059669", fontWeight:600 }}>
                           <CheckCircle2 size={12}/>
-                          {new Date(newDate+"T00:00:00").toLocaleDateString("fr-FR",{weekday:"long",day:"numeric",month:"long"})} à {newTime} — {newSlots} place{newSlots>1?"s":""}
+                          {new Date(newDate+"T00:00:00").toLocaleDateString("fr-FR",{weekday:"long",day:"numeric",month:"long"})} à <strong>{newTime}</strong> — {newSlots} place{newSlots>1?"s":""}
                         </div>
                       )}
                     </div>
                   </div>
 
-                  {/* Dates récurrentes */}
+                  {/* ── Dates récurrentes ── */}
                   <div className="card">
                     <SectionTitle icon={Clock} label="Dates récurrentes" subtitle="Générer sur une période"/>
                     <div style={{ marginBottom:12 }}>
                       <label style={{ fontSize:11, fontWeight:700, color:"#475569", textTransform:"uppercase", letterSpacing:".5px", display:"block", marginBottom:7 }}>Jours de la semaine</label>
                       <div style={{ display:"flex", gap:5, flexWrap:"wrap" }}>
-                        {DAYS_FR.map((d,i)=>(
-                          <button key={i} type="button" className={`day ${recurDays.includes(i)?"on":""}`} onClick={()=>setRecurDays(p=>p.includes(i)?p.filter(x=>x!==i):[...p,i])}>
+                        {DAYS_FR.map((d,i) => (
+                          <button key={i} type="button" className={`day ${recurDays.includes(i)?"on":""}`} onClick={() => setRecurDays(p => p.includes(i)?p.filter(x=>x!==i):[...p,i])}>
                             {d}
                           </button>
                         ))}
@@ -559,24 +600,27 @@ export default function NouvelleExcursionClient({
                       ))}
                     </div>
 
-                    {/* ── HEURE RÉCURRENTE ── */}
+                    {/* ── Heure récurrente (input time natif) ── */}
                     <div style={{ marginBottom:10 }}>
                       <label style={{ fontSize:11, fontWeight:700, color:"#475569", textTransform:"uppercase", letterSpacing:".5px", display:"block", marginBottom:6 }}>Heure de départ</label>
-                      <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-                        <Clock size={13} color="#94A3B8"/>
-                        <select value={recurTime} onChange={e=>setRecurTime(e.target.value)} className="time-select">
-                          {DEPARTURE_TIMES.map(t=>(
-                            <option key={t} value={t}>{t}</option>
-                          ))}
-                        </select>
-                        <span style={{ fontSize:12, color:"#94A3B8" }}>pour toutes les dates générées</span>
+                      <div style={{ display:"flex", alignItems:"center", gap:8, background:"#FAFBFC", border:"1.5px solid #E2E8F0", borderRadius:10, padding:"0 12px", width:"fit-content" }}>
+                        <Clock size={13} color="#94A3B8" style={{ flexShrink:0 }}/>
+                        <input
+                          type="time"
+                          value={recurTime}
+                          onChange={e => setRecurTime(e.target.value)}
+                          className="time-input"
+                          style={{ border:"none", background:"transparent", padding:"9px 0", boxShadow:"none" }}
+                        />
                       </div>
+                      <p style={{ fontSize:11, color:"#94A3B8", marginTop:5 }}>Appliquée à toutes les dates générées</p>
                     </div>
 
                     <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:12 }}>
                       <span style={{ fontSize:12, color:"#64748B" }}>Places/date :</span>
                       <input type="number" min={1} max={maxPeople} value={recurSlots} onChange={e=>setRecurSlots(Number(e.target.value))} className="num"/>
                     </div>
+
                     <button type="button" onClick={genRecurring} disabled={recurDays.length===0||!recurFrom||!recurTo}
                       style={{ width:"100%", display:"flex", alignItems:"center", justifyContent:"center", gap:7, padding:"9px", borderRadius:10, background:(recurDays.length>0&&recurFrom&&recurTo)?"#F0FDF4":"#F8FAFC", color:(recurDays.length>0&&recurFrom&&recurTo)?"#059669":"#94A3B8", border:`1.5px solid ${(recurDays.length>0&&recurFrom&&recurTo)?"#BBF7D0":"#E2E8F0"}`, cursor:(recurDays.length>0&&recurFrom&&recurTo)?"pointer":"not-allowed", fontSize:12.5, fontWeight:700, fontFamily:"inherit", transition:"all .18s" }}>
                       <CalendarDays size={13}/> Générer les dates
@@ -584,9 +628,9 @@ export default function NouvelleExcursionClient({
                   </div>
                 </div>
 
-                {/* Liste des dates */}
+                {/* ── Liste des dates ── */}
                 <div className="card">
-                  <SectionTitle icon={CalendarDays} label={`Dates sélectionnées${dates.length?` (${dates.length})`:""}`} subtitle="Modifiez les places et l'heure par date"/>
+                  <SectionTitle icon={CalendarDays} label={`Dates sélectionnées${dates.length?` (${dates.length})`:""}`} subtitle="Modifiez l'heure et les places par date"/>
                   {dates.length===0 ? (
                     <div style={{ textAlign:"center", padding:"24px 16px", color:"#94A3B8" }}>
                       <CalendarDays size={36} color="#E2E8F0" style={{ margin:"0 auto 12px", display:"block" }}/>
@@ -595,29 +639,26 @@ export default function NouvelleExcursionClient({
                     </div>
                   ) : (
                     <>
-                      {dates.map(d=>{
+                      {dates.map(d => {
                         const dt = new Date(d.date+"T00:00:00");
                         return (
                           <div key={d.date} className="date-row">
+                            {/* Jour */}
                             <div style={{ flex:1, minWidth:0 }}>
                               <p style={{ fontSize:12.5, fontWeight:700, color:"#0F172A", margin:0, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
                                 {dt.toLocaleDateString("fr-FR",{weekday:"short",day:"numeric",month:"short",year:"numeric"})}
                               </p>
                             </div>
 
-                            {/* ── Heure éditable par date ── */}
-                            <div style={{ display:"flex", alignItems:"center", gap:4 }}>
-                              <Clock size={10} color="#94A3B8"/>
-                              <select
+                            {/* ── Heure éditable par date (input time natif) ── */}
+                            <div style={{ display:"flex", alignItems:"center", gap:5 }}>
+                              <Clock size={11} color="#94A3B8"/>
+                              <input
+                                type="time"
                                 value={d.time}
-                                onChange={e=>updateTime(d.date, e.target.value)}
-                                className="time-select"
-                                style={{ minWidth:72, fontSize:11, padding:"5px 7px" }}
-                              >
-                                {DEPARTURE_TIMES.map(t=>(
-                                  <option key={t} value={t}>{t}</option>
-                                ))}
-                              </select>
+                                onChange={e => updateTime(d.date, e.target.value)}
+                                className="time-input-sm"
+                              />
                             </div>
 
                             {/* Places */}
@@ -627,13 +668,15 @@ export default function NouvelleExcursionClient({
                               <span style={{ fontSize:11, color:"#94A3B8" }}>pl.</span>
                             </div>
 
-                            <button type="button" onClick={()=>removeDate(d.date)} style={{ width:26, height:26, borderRadius:"50%", border:"none", background:"#FEE2E2", color:"#DC2626", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+                            <button type="button" onClick={() => removeDate(d.date)}
+                              style={{ width:26, height:26, borderRadius:"50%", border:"none", background:"#FEE2E2", color:"#DC2626", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
                               <X size={11}/>
                             </button>
                           </div>
                         );
                       })}
-                      <button type="button" onClick={()=>setDates([])} style={{ width:"100%", display:"flex", alignItems:"center", justifyContent:"center", gap:6, marginTop:10, padding:"8px", borderRadius:9, background:"#FEF2F2", color:"#DC2626", border:"1.5px solid #FCA5A5", cursor:"pointer", fontSize:12, fontWeight:700, fontFamily:"inherit" }}>
+                      <button type="button" onClick={() => setDates([])}
+                        style={{ width:"100%", display:"flex", alignItems:"center", justifyContent:"center", gap:6, marginTop:10, padding:"8px", borderRadius:9, background:"#FEF2F2", color:"#DC2626", border:"1.5px solid #FCA5A5", cursor:"pointer", fontSize:12, fontWeight:700, fontFamily:"inherit" }}>
                         <Trash2 size={12}/> Tout supprimer
                       </button>
                     </>
@@ -657,7 +700,7 @@ export default function NouvelleExcursionClient({
                 ) : (
                   <>
                     <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:10, marginBottom:12 }}>
-                      {photos.map((p,i)=>(
+                      {photos.map((p,i) => (
                         <div key={i} style={{ position:"relative", aspectRatio:"4/3", borderRadius:12, overflow:"hidden", background:"#F1F5F9", border:i===0?"2.5px solid #0F766E":"2px solid transparent", boxShadow:i===0?"0 0 0 3px rgba(15,118,110,.15)":"none" }}>
                           <img src={p.url} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }}/>
                           {p.uploading
@@ -700,7 +743,7 @@ export default function NouvelleExcursionClient({
                 <div style={{ height:"100%", borderRadius:100, width:`${pct}%`, background:isReadyToPublish?"linear-gradient(90deg,#059669,#10B981)":"linear-gradient(90deg,#0F766E,#14B8A6)", transition:"width .4s ease" }}/>
               </div>
               <div style={{ display:"flex", flexDirection:"column", gap:4 }}>
-                {CHECKLIST.map(r=>(
+                {CHECKLIST.map(r => (
                   <div key={r.key} style={{ display:"flex", alignItems:"center", gap:8, padding:"5px 0" }}>
                     {r.ok
                       ? <CheckCircle2 size={13} color="#059669" style={{ flexShrink:0 }}/>

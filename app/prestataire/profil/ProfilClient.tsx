@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { createClient } from "@/lib/supabaseClient";
 import { useToast } from "../../../lib/useToast";
 import { Toast } from "../../components/ui/Toast";
@@ -44,8 +44,39 @@ export default function ProfilClient({ profile, email }: Props) {
   const [avatarFile,   setAvatarFile]   = useState<File | null>(null);
   const [avatarLoading,setAvatarLoading]= useState(false);
   const [loading,      setLoading]      = useState(false);
+  const [userId,       setUserId]       = useState<string | null>(null);
+  const [isValidated,  setIsValidated]  = useState(false);
 
   const { toast, showToast } = useToast();
+
+  // Récupérer l'ID utilisateur
+  useEffect(() => {
+    const getUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        setUserId(user.id);
+        // Récupérer le statut de validation
+        const { data: profileData } = await supabase
+          .from("profiles")
+          .select("is_validated")
+          .eq("user_id", user.id)
+          .single();
+        setIsValidated(profileData?.is_validated || false);
+      }
+    };
+    getUser();
+  }, [supabase]);
+
+  // Calculer l'initiale pour l'avatar par défaut
+  const initiale = fullName && fullName.length > 0 
+    ? fullName.charAt(0).toUpperCase() 
+    : email.charAt(0).toUpperCase();
+
+  // Nom affiché
+  const displayName = fullName || email.split("@")[0];
+
+  // Avatar actuel (priorité à la prévisualisation)
+  const currentAvatar = avatarPreview || avatarUrl;
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -62,7 +93,7 @@ export default function ProfilClient({ profile, email }: Props) {
   };
 
   const uploadAvatar = async (): Promise<string | null> => {
-    if (!avatarFile) return avatarUrl || null;
+    if (!avatarFile || !userId) return avatarUrl || null;
     setAvatarLoading(true);
     const ext  = avatarFile.name.split(".").pop() || "jpg";
     const path = `${userId}/avatar-${Date.now()}.${ext}`;
@@ -76,7 +107,7 @@ export default function ProfilClient({ profile, email }: Props) {
 
   const removeAvatar = async () => {
     if (!confirm("Supprimer la photo de profil ?")) return;
-    if (avatarUrl) {
+    if (avatarUrl && userId) {
       const path = avatarUrl.split("/avatars/")[1];
       if (path) await supabase.storage.from("avatars").remove([path]);
       await supabase.from("profiles").update({ avatar_url: null }).eq("user_id", userId);
@@ -87,6 +118,10 @@ export default function ProfilClient({ profile, email }: Props) {
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!userId) {
+      showToast("Utilisateur non identifié", false);
+      return;
+    }
     setLoading(true);
     let finalUrl = avatarUrl;
     if (avatarFile) {
@@ -94,7 +129,11 @@ export default function ProfilClient({ profile, email }: Props) {
       if (uploaded) { finalUrl = uploaded; setAvatarUrl(uploaded); setAvatarPreview(null); setAvatarFile(null); }
     }
     const { error } = await supabase.from("profiles").update({
-      full_name: fullName, agency_name: agencyName, city, phone, description,
+      full_name: fullName, 
+      agency_name: agencyName, 
+      city, 
+      phone, 
+      description,
       avatar_url: finalUrl || null,
     }).eq("user_id", userId);
     setLoading(false);
@@ -160,7 +199,7 @@ export default function ProfilClient({ profile, email }: Props) {
                 </div>
               )}
               {/* Badge edit */}
-              {!avatarFile && (
+              {!avatarFile && currentAvatar && (
                 <div style={{ position: "absolute", bottom: 2, right: 2, width: 22, height: 22, borderRadius: "50%", background: "#2B96A8", border: "2px solid white", display: "flex", alignItems: "center", justifyContent: "center" }}>
                   <Pencil size={11} color="white" />
                 </div>
