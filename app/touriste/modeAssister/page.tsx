@@ -64,7 +64,8 @@ function extractItinerary(raw: unknown): Itinerary {
 export default function ModeAssiste() {
   const supabase = createClient();
 
-const [step, setStep] = useState<"questions" | "generation" | "itineraire" | "resume">("questions");  const [days, setDays]             = useState(5);
+  const [step, setStep] = useState<"questions" | "generation" | "itineraire" | "resume">("questions");
+  const [days, setDays]             = useState(5);
   const [selectedCities, setSelectedCities] = useState<string[]>([]);
   const [selectedCats,   setSelectedCats]   = useState<string[]>([]);
 
@@ -418,41 +419,30 @@ Format:
         )}
 
         {/* ══ ITINÉRAIRE — délégué à ItineraireDisplay ══ */}
-        {step === "itineraire" && itinerary && (
-  <div className={styles.itiRoot}>
-    {/* Bouton résumé indépendant */}
-    <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "1rem" }}>
-      <button
-        onClick={() => setStep("resume")}
-        style={{
-          display: "inline-flex", alignItems: "center", gap: ".4rem",
-          padding: ".5rem 1.1rem", borderRadius: "8px", border: "none",
-          background: "#2B96A8", color: "white", fontSize: ".82rem",
-          fontWeight: 600, cursor: "pointer",
-        }}
-      >
-        Voir le résumé →
-      </button>
-    </div>
+      {step === "itineraire" && itinerary && (
+          <div className={styles.itiRoot}>
+            {/* Action bar */}
+           
 
-    <ItineraireDisplay
-      itinerary={itinerary}
-      selectedCities={selectedCities}
-      selectedCats={selectedCats}
-      categories={categories as { id: string; nom?: string; name?: string }[]}
-      excursions={excursions}
-      totalPrice={totalPrice}
-      saving={saving}
-      saveStatus={saveStatus}
-      onBack={() => setStep("questions")}
-      onReset={resetAll}
-      onCheckout={() => setShowCheckout(true)}
-      onSave={saveItinerary}
-      onChangeActivity={handleChangeActivity}
-      
-    />
-  </div>
-)}
+            <ItineraireDisplay
+              itinerary={itinerary}
+              selectedCities={selectedCities}
+              selectedCats={selectedCats}
+              categories={categories as { id: string; nom?: string; name?: string }[]}
+              excursions={excursions}
+              totalPrice={totalPrice}
+              saving={saving}
+              saveStatus={saveStatus}
+              onBack={() => setStep("questions")}
+              onReset={resetAll}
+              onCheckout={() => setShowCheckout(true)}
+              onSave={saveItinerary}
+              onChangeActivity={handleChangeActivity}
+            />
+          </div>
+        )}
+
+       
       </main>
 
       {showCheckout && itineraryAsExc && (
