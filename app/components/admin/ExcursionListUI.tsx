@@ -71,51 +71,63 @@ export function ExcursionToolbar({ search, setSearch, filter, setFilter, view, s
 // ─── EXCURSION GRID CARD ───
 export function ExcursionGridCard({ exc, loading, onToggle, onDelete }: any) {
   return (
-    <div style={{ borderRadius: 18, overflow: "hidden", background: "white", border: "1px solid #F0F0F0", transition: "all .25s", position: "relative", cursor: "pointer" }} onClick={e => { if ((e.target as HTMLElement).closest("button")) return; window.location.href = `/admin/excursions/${exc.id}`; }} onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.transform = "translateY(-3px)"; (e.currentTarget as HTMLElement).style.boxShadow = "0 12px 36px rgba(0,0,0,.1)"; }} onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.transform = "translateY(0)"; (e.currentTarget as HTMLElement).style.boxShadow = "none"; }}>
+    <div
+      className="admin-card-grid"
+      onClick={e => { if ((e.target as HTMLElement).closest("button")) return; window.location.href = `/admin/excursions/${exc.id}`; }}
+    >
       {/* Image */}
-      <div style={{ overflow: "hidden", height: 190, position: "relative", background: "#F3F4F6" }}>
-        <img src={exc.photos?.find((p: string) => p) || FALLBACK} alt={exc.title} style={{ width: "100%", height: 190, objectFit: "cover", display: "block", transition: "transform .4s" }} onMouseEnter={(e) => (e.currentTarget as HTMLImageElement).style.transform = "scale(1.04)"} onMouseLeave={(e) => (e.currentTarget as HTMLImageElement).style.transform = "scale(1)"}
-          onError={e => { (e.target as HTMLImageElement).src = FALLBACK; }} />
-        <div style={{ position: "absolute", top: 10, left: 10 }}>
-          <span style={{ padding: "3px 9px", borderRadius: 20, fontSize: 11, fontWeight: 800, background: exc.is_active ? "rgba(21,128,61,.9)" : "rgba(107,114,128,.85)", backdropFilter: "blur(6px)", color: "white", display: "inline-flex", alignItems: "center", gap: 4 }}>
-            <span style={{ width: 6, height: 6, borderRadius: "50%", background: "currentColor", opacity: 0.8 }} />
-            {exc.is_active ? "Actif" : "Brouillon"}
-          </span>
+      <div className="admin-card-image">
+        <img
+          src={exc.photos?.find((p: string) => p) || FALLBACK}
+          alt={exc.title}
+          onError={e => { (e.target as HTMLImageElement).src = FALLBACK; }}
+        />
+        <div className={`admin-card-status ${exc.is_active ? "active" : "draft"}`}>
+          <span style={{ width: 6, height: 6, borderRadius: "50%", background: "currentColor", opacity: 0.8 }} />
+          {exc.is_active ? "Actif" : "Brouillon"}
         </div>
         {exc.categories?.[0] && (
-          <div style={{ position: "absolute", top: 10, right: 10, padding: "3px 9px", background: "rgba(0,0,0,.5)", backdropFilter: "blur(6px)", borderRadius: 20, fontSize: 11, color: "white", fontWeight: 600 }}>
+          <div className="admin-card-category">
             {exc.categories[0]}
           </div>
         )}
         {exc.photos?.filter(Boolean).length > 1 && (
-          <div style={{ position: "absolute", bottom: 10, right: 10, padding: "3px 8px", background: "rgba(0,0,0,.5)", backdropFilter: "blur(6px)", borderRadius: 20, fontSize: 11, color: "white", display: "flex", alignItems: "center", gap: 4 }}>
+          <div className="admin-card-photo-count">
             <Camera size={11} /> {exc.photos.filter(Boolean).length}
           </div>
         )}
       </div>
 
       {/* Content */}
-      <div style={{ padding: "16px 18px" }}>
-        <h3 style={{ fontSize: 14, fontWeight: 800, color: "#111827", marginBottom: 4, lineHeight: 1.3 }}>{exc.title}</h3>
-        <p style={{ fontSize: 12, color: "#9CA3AF", marginBottom: 12, display: "flex", alignItems: "center", gap: 5 }}>
+      <div className="admin-card-content">
+        <h3 className="admin-card-title">{exc.title}</h3>
+        <p className="admin-card-meta">
           <MapPin size={11} color="#C4B8B0" strokeWidth={1.5} />{exc.city}
           <span style={{ marginLeft: 4, display: "inline-flex", alignItems: "center", gap: 4 }}>
             <Users size={11} color="#C4B8B0" strokeWidth={1.5} />{exc.prestataire_name}
           </span>
         </p>
 
-        <div style={{ display: "flex", gap: 12, fontSize: 12, color: "#6B7280", marginBottom: 14, paddingBottom: 14, borderBottom: "1px solid #F3F4F6" }}>
+        <div className="admin-card-stats">
           <span style={{ display: "flex", alignItems: "center", gap: 4 }}><Clock size={11} strokeWidth={1.5} />{exc.duration_hours}h</span>
           <span style={{ display: "flex", alignItems: "center", gap: 4 }}><Wallet size={11} strokeWidth={1.5} />{exc.price_per_person} TND</span>
           <span style={{ display: "flex", alignItems: "center", gap: 4 }}><Users size={11} strokeWidth={1.5} />{exc.max_people}</span>
           {exc.rating > 0 && <span style={{ display: "flex", alignItems: "center", gap: 4 }}><Star size={11} fill="#F59E0B" color="#F59E0B" />{exc.rating}</span>}
         </div>
 
-        <div style={{ display: "flex", gap: 8 }}>
-          <button style={{ padding: "7px 12px", borderRadius: 9, border: "1px solid #E5E7EB", cursor: "pointer", fontSize: 12, fontWeight: 700, fontFamily: "inherit", transition: "all .2s", background: "white", whiteSpace: "nowrap", display: "inline-flex", alignItems: "center", gap: 5, flex: 1, color: exc.is_active ? "#374151" : "#059669", borderColor: exc.is_active ? "#E5E7EB" : "#BBF7D0", backgroundColor: exc.is_active ? "white" : "#F0FDF4", opacity: loading === exc.id ? 0.5 : 1 }} disabled={loading === exc.id} onClick={() => onToggle(exc.id, exc.is_active)}>
+        <div className="admin-card-actions">
+          <button
+            className={`admin-action-button ${exc.is_active ? "" : "success"}`}
+            disabled={loading === exc.id}
+            onClick={() => onToggle(exc.id, exc.is_active)}
+          >
             {loading === exc.id ? "..." : exc.is_active ? <><Pause size={12} /> Désactiver</> : <><Play size={12} /> Activer</>}
           </button>
-          <button style={{ padding: "7px 12px", borderRadius: 9, border: "1px solid #E5E7EB", cursor: "pointer", fontSize: 12, fontWeight: 700, fontFamily: "inherit", transition: "all .2s", background: "white", whiteSpace: "nowrap", display: "inline-flex", alignItems: "center", gap: 5, color: "#DC2626", borderColor: "#FECACA", backgroundColor: "#FEF2F2", width: 36, justifyContent: "center", opacity: loading === exc.id ? 0.5 : 1 }} disabled={loading === exc.id} onClick={() => onDelete(exc.id, exc.title)}>
+          <button
+            className="admin-action-button danger"
+            disabled={loading === exc.id}
+            onClick={() => onDelete(exc.id, exc.title)}
+          >
             <Trash2 size={13} />
           </button>
         </div>

@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { useCrudOperation } from "../../../lib/useCrudOperation";
+import { useListFiltering } from "../../../lib/useListFiltering";
 import { useToast } from "../../../lib/useToast";
 import { Toast } from "../../components/ui/Toast";
 import {
@@ -25,11 +27,17 @@ interface Prestataire {
 type Filter = "pending" | "validated" | "all";
 
 export default function PrestatairesClient({ prestataires: initial }: { prestataires: Prestataire[] }) {
-  const [prestataires, setPrestataires] = useState(initial);
-  const [filter, setFilter]     = useState<Filter>("pending");
-  const [search, setSearch]     = useState("");
-  const [cityFilter, setCityFilter] = useState("");
-  const [loading, setLoading]   = useState<string | null>(null);
+  const { loading, data: prestataires, execute } = useCrudOperation(initial, async (payload) => {
+    const res = await fetch("/api/admin/validate-prestataire", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ userId: payload.id, action: payload.action }),
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error || "Erreur");
+    return json;
+  });
+
   const [selected, setSelected] = useState<Prestataire | null>(null);
   const [mode, setMode]         = useState<"view" | "edit">("view");
   const [editFullName, setEditFullName] = useState("");
@@ -41,53 +49,76 @@ export default function PrestatairesClient({ prestataires: initial }: { prestata
 
   const { toast, showToast } = useToast();
 
+  const {
+    search,
+    setSearch,
+    filter,
+    setFilter,
+    cityFilter,
+    setCityFilter,
+    filtered,
+    cities,
+  } = useListFiltering<Prestataire>({
+    data: prestataires,
+    searchFields: ["agency_name", "full_name", "city"],
+    filterFn: (item, value) =>
+      value === "pending"
+        ? !item.is_validated
+        : value === "validated"
+        ? item.is_validated
+        : true,
+    initialFilter: "pending",
+  });
+
   const openModal = (p: Prestataire, m: "view" | "edit" = "view") => {
     setSelected(p); setMode(m);
     setEditFullName(p.full_name || ""); setEditAgency(p.agency_name || "");
     setEditCity(p.city || ""); setEditPhone(p.phone || ""); setEditDesc(p.description || "");
   };
 
-  const callApi = async (userId: string, action: string) => {
-    const res = await fetch("/api/admin/validate-prestataire", {
-      method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ userId, action }),
-    });
-    if (!res.ok) { const j = await res.json(); throw new Error(j.error || "Erreur"); }
-  };
-
   const handleValidate = async (userId: string, name: string) => {
-    setLoading(userId);
-    try {
-      await callApi(userId, "validate");
-      setPrestataires(prev => prev.map(p => p.user_id === userId ? { ...p, is_validated: true } : p));
-      if (selected?.user_id === userId) setSelected(s => s ? { ...s, is_validated: true } : null);
-      showToast(`${name} validé avec succès`);
-    } catch (e) { showToast(`Erreur : ${e instanceof Error ? e.message : "Erreur"}`, false); }
-    setLoading(null);
+    await execute(userId, { id: userId, action: "validate" }, {
+      onSuccess: (items) => {
+        if (selected?.user_id === userId) {
+          setSelected({ ...selected, is_validated: true });
+        }
+        return items.map((p) =>
+          p.user_id === userId ? { ...p, is_validated: true } : p,
+        );
+      },
+      successMessage: `${name} validé avec succès`,
+      errorPrefix: "Validation",
+    });
   };
 
   const handleRevoke = async (userId: string, name: string) => {
-    if (!confirm(`Révoquer l'accès de ${name} ?`)) return;
-    setLoading(userId);
-    try {
-      await callApi(userId, "revoke");
-      setPrestataires(prev => prev.map(p => p.user_id === userId ? { ...p, is_validated: false } : p));
-      if (selected?.user_id === userId) setSelected(s => s ? { ...s, is_validated: false } : null);
-      showToast(`Accès de ${name} révoqué`);
-    } catch (e) { showToast(`Erreur : ${e instanceof Error ? e.message : "Erreur"}`, false); }
-    setLoading(null);
+    await execute(userId, { id: userId, action: "revoke" }, {
+      confirmMessage: `Révoquer l'accès de ${name} ?`,
+      onSuccess: (items) => {
+        if (selected?.user_id === userId) {
+          setSelected({ ...selected, is_validated: false });
+        }
+        return items.map((p) =>
+          p.user_id === userId ? { ...p, is_validated: false } : p,
+        );
+      },
+      successMessage: `Accès de ${name} révoqué`,
+      errorPrefix: "Révocation",
+    });
   };
 
   const handleDelete = async (userId: string, name: string) => {
-    if (!confirm(`Supprimer définitivement ${name} ? Irréversible.`)) return;
-    setLoading(userId);
-    try {
-      await callApi(userId, "delete");
-      setPrestataires(prev => prev.filter(p => p.user_id !== userId));
-      setSelected(null);
-      showToast(`${name} supprimé`);
-    } catch (e) { showToast(`Erreur : ${e instanceof Error ? e.message : "Erreur"}`, false); }
-    setLoading(null);
+    await execute(userId, { id: userId, action: "delete" }, {
+      confirmMessage: `Supprimer définitivement ${name} ? Irréversible.`,
+      onSuccess: (items) => {
+        if (selected?.user_id === userId) {
+          setSelected(null);
+        }
+        return items.filter((p) => p.user_id !== userId);
+      },
+      successMessage: `${name} supprimé`,
+      errorPrefix: "Suppression",
+    });
   };
 
   const handleSaveEdit = async () => {
@@ -110,15 +141,6 @@ export default function PrestatairesClient({ prestataires: initial }: { prestata
     setEditLoading(false);
   };
 
-  const filtered = prestataires.filter(p => {
-    const statusOk = filter === "pending" ? !p.is_validated : filter === "validated" ? p.is_validated : true;
-    const name = (p.agency_name || p.full_name || "").toLowerCase();
-    const searchOk = !search || name.includes(search.toLowerCase()) || (p.city||"").toLowerCase().includes(search.toLowerCase());
-    const cityOk = !cityFilter || p.city === cityFilter;
-    return statusOk && searchOk && cityOk;
-  });
-
-  const cities = [...new Set(prestataires.map(p => p.city).filter(Boolean))].sort() as string[];
   const counts = {
     pending:   prestataires.filter(p => !p.is_validated).length,
     validated: prestataires.filter(p => p.is_validated).length,

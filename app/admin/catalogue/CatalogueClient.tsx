@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { useToast } from "../../../lib/useToast";
+import { useCrudOperation } from "../../../lib/useCrudOperation";
+import { apiPost } from "../../../lib/api";
 import { Toast } from "../../components/ui/Toast";
 import {
   MapPin, Tag, Plus, Pencil, Trash2, Play, Pause,
@@ -28,94 +30,97 @@ export default function CatalogueClient({
   villes: initV, categories: initC,
 }: { villes: Ville[]; categories: Categorie[] }) {
   const [tab, setTab] = useState<"villes"|"categories">("villes");
-  const [villes, setVilles]             = useState(initV);
   const [villeModal, setVilleModal]     = useState<Partial<Ville> | null>(null);
-  const [villeLoading, setVilleLoading] = useState<string|null>(null);
-  const [categories, setCategories]     = useState(initC);
   const [catModal, setCatModal]         = useState<Partial<Categorie> | null>(null);
-  const [catLoading, setCatLoading]     = useState<string|null>(null);
-  
+
   const { toast, showToast } = useToast();
 
   // ── VILLES CRUD ──
-  const callVille = async (body: object) => {
-    const r = await fetch("/api/admin/villes", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(body) });
-    if (!r.ok) throw new Error((await r.json()).error);
-    return r.json();
-  };
+  const { loading: villeLoading, data: villes, execute: executeVille } = useCrudOperation(initV, async (payload) => {
+    return apiPost("/api/admin/villes", payload);
+  });
 
   const saveVille = async () => {
     if (!villeModal?.nom?.trim()) { showToast("Le nom est requis", false); return; }
-    setVilleLoading("save");
     try {
       if (villeModal.id) {
-        const updated = await callVille({ action:"update", id:villeModal.id, nom:villeModal.nom, region:villeModal.region, description:villeModal.description, active:villeModal.active });
-        setVilles(p => p.map(v => v.id===villeModal.id ? updated : v));
-        showToast("Ville mise à jour");
+        await executeVille(villeModal.id, {
+          action: "update",
+          id: villeModal.id,
+          nom: villeModal.nom,
+          region: villeModal.region,
+          description: villeModal.description,
+          active: villeModal.active
+        }, {
+          successMessage: "Ville mise à jour",
+          onSuccess: (prev) => prev.map(v => v.id === villeModal.id ? { ...v, ...villeModal } : v),
+        });
       } else {
-        const created = await callVille({ action:"create", nom:villeModal.nom, region:villeModal.region, description:villeModal.description, active:villeModal.active });
-        setVilles(p => [...p, created].sort((a,b)=>a.nom.localeCompare(b.nom)));
-        showToast("Ville ajoutée");
+        await executeVille("create", {
+          action: "create",
+          nom: villeModal.nom,
+          region: villeModal.region,
+          description: villeModal.description,
+          active: villeModal.active
+        }, {
+          successMessage: "Ville ajoutée",
+          onSuccess: (prev) => [...prev, { ...villeModal, id: "temp" } as Ville].sort((a,b)=>a.nom.localeCompare(b.nom)),
+        });
       }
       setVilleModal(null);
     } catch(e) { showToast(`Erreur : ${e instanceof Error ? e.message : "Erreur"}`, false); }
-    setVilleLoading(null);
   };
 
   const deleteVille = async (id:string, nom:string) => {
-    if (!confirm(`Supprimer "${nom}" ?`)) return;
-    setVilleLoading(id);
-    try {
-      await callVille({ action:"delete", id });
-      setVilles(p => p.filter(v=>v.id!==id));
-      showToast("Ville supprimée");
-    } catch(e) { showToast(`Erreur : ${e instanceof Error ? e.message : "Erreur"}`, false); }
-    setVilleLoading(null);
+    await executeVille(id, { action: "delete", id }, {
+      confirmMessage: `Supprimer "${nom}" ?`,
+      successMessage: "Ville supprimée",
+    });
   };
 
   const toggleVille = async (v:Ville) => {
-    setVilleLoading(v.id);
-    try {
-      const updated = await callVille({ action:"toggle", id:v.id, active:!v.active });
-      setVilles(p => p.map(x => x.id===v.id ? updated : x));
-    } catch(e) { showToast(`Erreur : ${e instanceof Error ? e.message : "Erreur"}`, false); }
-    setVilleLoading(null);
+    await executeVille(v.id, { action: "toggle", id: v.id, active: !v.active }, {
+      onSuccess: (prev) => prev.map(x => x.id === v.id ? { ...x, active: !x.active } : x),
+    });
   };
 
   // ── CATÉGORIES CRUD ──
-  const callCat = async (body: object) => {
-    const r = await fetch("/api/admin/categories", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(body) });
-    if (!r.ok) throw new Error((await r.json()).error);
-    return r.json();
-  };
+  const { loading: catLoading, data: categories, execute: executeCat } = useCrudOperation(initC, async (payload) => {
+    return apiPost("/api/admin/categories", payload);
+  });
 
   const saveCat = async () => {
     if (!catModal?.nom?.trim()) { showToast("Le nom est requis", false); return; }
-    setCatLoading("save");
     try {
       if (catModal.id) {
-        const updated = await callCat({ action:"update", id:catModal.id, nom:catModal.nom, couleur:catModal.couleur });
-        setCategories(p => p.map(c => c.id===catModal.id ? updated : c));
-        showToast("Catégorie mise à jour");
+        await executeCat(catModal.id, {
+          action: "update",
+          id: catModal.id,
+          nom: catModal.nom,
+          couleur: catModal.couleur
+        }, {
+          successMessage: "Catégorie mise à jour",
+          onSuccess: (prev) => prev.map(c => c.id === catModal.id ? { ...c, ...catModal } : c),
+        });
       } else {
-        const created = await callCat({ action:"create", nom:catModal.nom, couleur:catModal.couleur });
-        setCategories(p => [...p, created].sort((a,b)=>a.nom.localeCompare(b.nom)));
-        showToast("Catégorie ajoutée");
+        await executeCat("create", {
+          action: "create",
+          nom: catModal.nom,
+          couleur: catModal.couleur
+        }, {
+          successMessage: "Catégorie ajoutée",
+          onSuccess: (prev) => [...prev, { ...catModal, id: "temp" } as Categorie].sort((a,b)=>a.nom.localeCompare(b.nom)),
+        });
       }
       setCatModal(null);
     } catch(e) { showToast(`Erreur : ${e instanceof Error ? e.message : "Erreur"}`, false); }
-    setCatLoading(null);
   };
 
   const deleteCat = async (id:string, nom:string) => {
-    if (!confirm(`Supprimer "${nom}" ?`)) return;
-    setCatLoading(id);
-    try {
-      await callCat({ action:"delete", id });
-      setCategories(p => p.filter(c=>c.id!==id));
-      showToast("Catégorie supprimée");
-    } catch(e) { showToast(`Erreur : ${e instanceof Error ? e.message : "Erreur"}`, false); }
-    setCatLoading(null);
+    await executeCat(id, { action: "delete", id }, {
+      confirmMessage: `Supprimer "${nom}" ?`,
+      successMessage: "Catégorie supprimée",
+    });
   };
 
   return (

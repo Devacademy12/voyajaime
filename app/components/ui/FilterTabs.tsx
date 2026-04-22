@@ -21,15 +21,14 @@ export function FilterTabs({ tabs, activeTab, onTabChange, className = "" }: Pro
       {tabs.map(({ key, label, icon: Icon, count }) => (
         <button
           key={key}
+          type="button"
           onClick={() => onTabChange(key)}
           className={`filter-tab ${activeTab === key ? "active" : ""}`}
         >
-          {Icon && <Icon size={13} strokeWidth={2} />}
-          {label}
+          {Icon && <Icon size={13} strokeWidth={2} className="filter-tab-icon" />}
+          <span>{label}</span>
           {count !== undefined && (
-            <span className="filter-tab-count">
-              {count}
-            </span>
+            <span className="filter-tab-count">{count}</span>
           )}
         </button>
       ))}

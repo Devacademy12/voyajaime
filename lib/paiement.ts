@@ -37,6 +37,12 @@ export function fmtMonth(dateStr: string): string {
   });
 }
 
+export function fmtAmount(amount: number | string): string {
+  const num = typeof amount === "string" ? parseFloat(amount) : amount;
+  if (isNaN(num)) return "0";
+  return num.toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
 export function groupByMonth(paiements: Paiement[]): Record<string, Paiement[]> {
   const grouped: Record<string, Paiement[]> = {};
   paiements.forEach(paiement => {

@@ -73,14 +73,48 @@ export default function FavorisClient({ favoris: init, userId }: { favoris: Favo
     setModal(null); setBooking("idle");
   };
 
-  const handleConfirm = async () => {
-    if (!modal) return;
-    if (!date) { setBookingError("Veuillez choisir une date."); return; }
-    if (people < 1) { setBookingError("Minimum 1 personne."); return; }
-    if (modal.max_people && people > modal.max_people) {
-      setBookingError("Maximum " + modal.max_people + " personnes."); return;
+
+const handleConfirm = async () => {
+  if (!modal) return;
+  if (!date) { setBookingError("Veuillez choisir une date."); return; }
+  if (people < 1) { setBookingError("Minimum 1 personne."); return; }
+  if (modal.max_people && people > modal.max_people) {
+    setBookingError("Maximum " + modal.max_people + " personnes."); return;
+  }
+  
+  setBooking("loading"); 
+  setBookingError("");
+  
+  try {
+    const code = genBookingCode();
+
+    // 1. Récupérer l'utilisateur
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    if (userError) throw new Error("Impossible de récupérer vos informations");
+    
+    const touriste_name = user?.user_metadata?.full_name || user?.email?.split('@')[0] || "Touriste";
+    const touriste_email = user?.email || "";
+    
+    if (!touriste_email) {
+      throw new Error("Email non trouvé. Veuillez vous reconnecter.");
     }
-    setBooking("loading"); setBookingError("");
+
+    // 2. Insérer la réservation dans Supabase
+    const { data: insertData, error: insertError } = await supabase.from("reservations").insert({
+      touriste_id: userId,
+      excursion_id: modal.id,
+      booking_code: code,
+      date,
+      time: "09:00",
+      people_count: people,
+      total_price: totalPrice,
+      platform_fee: serviceFee,
+      status: "pending",
+    }).select("id").single();
+    
+    if (insertError) throw insertError;
+
+    // 3. Envoyer à n8n (ne bloque pas la réservation si erreur)
     try {
       const code = genBookingCode();
       const { data: { user } } = await supabase.auth.getUser();
@@ -115,11 +149,27 @@ export default function FavorisClient({ favoris: init, userId }: { favoris: Favo
           router.push(`/touriste/reservations?pay=${insertData.id}`);
         }, 1500);
       }
-    } catch (e) {
-      setBookingError(e instanceof Error ? e.message : "Une erreur est survenue.");
-      setBooking("error");
+    } catch (n8nError) {
+      console.warn("[n8n] Erreur réseau:", n8nError);
+      // Ne pas bloquer la réservation
     }
-  };
+
+    setBooking("success");
+    setNewReservationId(insertData?.id || null);
+
+    // 4. Redirection après 1.5s
+    if (insertData?.id) {
+      setTimeout(() => {
+        router.push(`/touriste/reservations?pay=${insertData.id}`);
+      }, 1500);
+    }
+    
+  } catch (e) {
+    console.error("[Réservation] Erreur:", e);
+    setBookingError(e instanceof Error ? e.message : "Une erreur est survenue lors de la réservation.");
+    setBooking("error");
+  }
+};
 
   const sorted = [...favoris].sort((a, b) => {
     const ea = getExc(a), eb = getExc(b);
