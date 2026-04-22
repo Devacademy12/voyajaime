@@ -96,7 +96,7 @@ export default function ProfilClient({ profile, email }: Props) {
     if (!avatarFile || !userId) return avatarUrl || null;
     setAvatarLoading(true);
     const ext  = avatarFile.name.split(".").pop() || "jpg";
-    const path = `${userId}/avatar-${Date.now()}.${ext}`;
+    const path = `${User}/avatar-${Date.now()}.${ext}`;
     const { data, error } = await supabase.storage
       .from("avatars").upload(path, avatarFile, { upsert: true });
     setAvatarLoading(false);
@@ -110,7 +110,7 @@ export default function ProfilClient({ profile, email }: Props) {
     if (avatarUrl && userId) {
       const path = avatarUrl.split("/avatars/")[1];
       if (path) await supabase.storage.from("avatars").remove([path]);
-      await supabase.from("profiles").update({ avatar_url: null }).eq("user_id", userId);
+      await supabase.from("profiles").update({ avatar_url: null }).eq("user_id", User);
     }
     setAvatarUrl(""); setAvatarPreview(null); setAvatarFile(null);
     showToast("Photo supprimée");

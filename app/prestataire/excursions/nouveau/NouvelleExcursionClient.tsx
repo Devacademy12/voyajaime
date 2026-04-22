@@ -341,7 +341,7 @@ export default function NouvelleExcursionClient({
           </a>
           <div style={{ display:"flex", alignItems:"flex-start", justifyContent:"space-between", flexWrap:"wrap", gap:14 }}>
             <div>
-              <h1 style={{ fontSize:26, fontWeight:800, color:"#0F172A", margin:0, letterSpacing:"-.04em" }}>Nouvelle excursion</h1>
+              <h1 style={{ fontSize:26, fontWeight:800, color:"#053366", margin:0, letterSpacing:"-.04em" }}>Nouvelle excursion</h1>
               <p style={{ fontSize:13, color:"#64748B", margin:"6px 0 0", fontWeight:500 }}>Complétez tous les champs pour débloquer la publication</p>
             </div>
             <div style={{ display:"flex", alignItems:"center", gap:10 }}>

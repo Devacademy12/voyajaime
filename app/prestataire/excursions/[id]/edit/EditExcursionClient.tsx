@@ -269,16 +269,16 @@ export default function EditExcursionClient({
           transition:all .2s;background:#FAFBFC;box-sizing:border-box;
         }
         .nf-field input:focus,.nf-field select:focus,.nf-field textarea:focus {
-          border-color:#0F766E;background:white;box-shadow:0 0 0 3px rgba(15,118,110,.1);
+          border-color:#0F766E;background:white;box-shadow:0 0 0 3px rgba(15, 20, 118, 0.1);
         }
         .nf-field input::placeholder,.nf-field textarea::placeholder{color:#CBD5E1;}
         .tab-btn{display:flex;align-items:center;gap:7px;padding:8px 15px;border-radius:10px;font-size:12.5px;font-weight:600;cursor:pointer;font-family:inherit !important;border:none;transition:all .2s;white-space:nowrap;}
-        .tab-btn.on{background:#0F172A;color:white;box-shadow:0 2px 8px rgba(15,23,42,.25);}
+        .tab-btn.on{background:#02AFCF;color:white;box-shadow:0 2px 8px rgba(13, 48, 129, 0.25);}
         .tab-btn:not(.on){background:white;color:#64748B;border:1.5px solid #E2E8F0;}
         .tab-btn:not(.on):hover{background:#F8FAFC;border-color:#CBD5E1;color:#0F172A;}
         .card{background:white;border-radius:16px;border:1px solid #EEF2F7;padding:22px 24px;box-shadow:0 1px 4px rgba(15,23,42,.04);}
         .drop-z{border:2px dashed #E2E8F0;border-radius:14px;padding:40px 28px;text-align:center;cursor:pointer;transition:all .22s;background:#FAFBFC;}
-        .drop-z:hover{border-color:#0F766E;background:rgba(15,118,110,.03);}
+        .drop-z:hover{border-color:#0F766E;background:rgba(15, 53, 118, 0.03);}
         .date-row{display:flex;align-items:center;gap:10px;padding:10px 14px;background:#F8FAFC;border-radius:10px;border:1.5px solid #EEF2F7;margin-bottom:7px;transition:border-color .15s;}
         .date-row:hover{border-color:#CBD5E1;}
         .num{width:68px;padding:7px 10px;border:1.5px solid #E2E8F0;border-radius:8px;font-size:13px;font-family:inherit !important;color:#0F172A;outline:none;text-align:center;transition:border-color .2s;background:#FAFBFC;}
@@ -288,9 +288,9 @@ export default function EditExcursionClient({
         .day{padding:5px 11px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit !important;border:1.5px solid #E2E8F0;background:white;color:#64748B;transition:all .15s;}
         .day.on{background:#0F172A;color:white;border-color:#0F172A;}
         .pub-btn{display:flex;align-items:center;gap:8px;padding:11px 22px;border-radius:11px;cursor:pointer;font-family:inherit !important;font-size:13.5px;font-weight:700;border:none;transition:all .22s;letter-spacing:-.01em;}
-        .pub-btn.ready{background:linear-gradient(135deg,#0F766E,#0D9488);color:white;box-shadow:0 4px 14px rgba(15,118,110,.35);}
-        .pub-btn.ready:hover{transform:translateY(-1px);box-shadow:0 6px 18px rgba(15,118,110,.4);}
-        .pub-btn.locked{background:#F1F5F9;color:#94A3B8;cursor:not-allowed;}
+        .pub-btn.ready{background:linear-gradient(135deg,#02AFCF,#02AFCF);color:white;box-shadow:0 4px 14px rgba(15, 82, 118, 0.35);}
+        .pub-btn.ready:hover{transform:translateY(-1px);box-shadow:0 6px 18px rgba(18, 77, 128, 0.4);}
+        .pub-btn.locked{background:#02AFCF;color:#94A3B8;cursor:not-allowed;}
         .draft-btn{display:flex;align-items:center;gap:8px;padding:10px 18px;border-radius:10px;cursor:pointer;font-family:inherit !important;font-size:13px;font-weight:600;background:white;color:#475569;border:1.5px solid #E2E8F0;transition:all .18s;}
         .draft-btn:hover:not(:disabled){background:#F8FAFC;border-color:#CBD5E1;}
         .draft-btn:disabled{opacity:.5;cursor:not-allowed;}
@@ -308,14 +308,14 @@ export default function EditExcursionClient({
           </Link>
           <div style={{ display:"flex", alignItems:"flex-start", justifyContent:"space-between", flexWrap:"wrap", gap:14 }}>
             <div>
-              <h1 style={{ fontSize:26, fontWeight:800, color:"#0F172A", margin:0, letterSpacing:"-.04em" }}>Modifier l&apos;excursion</h1>
+              <h1 style={{ fontSize:26, fontWeight:800, color:"#053366", margin:0, letterSpacing:"-.04em" }}>Modifier l&apos;excursion</h1>
               <p style={{ fontSize:13, color:"#64748B", margin:"6px 0 0", fontWeight:500 }}>{exc.title}</p>
             </div>
             <div style={{ display:"flex", alignItems:"center", gap:10 }}>
               {/* Statut actuel */}
               <div style={{ display:"flex", alignItems:"center", gap:6, padding:"6px 12px", background:"#F9FAFB", borderRadius:10, border:"1px solid #E5E7EB" }}>
-                <span style={{ width:7, height:7, borderRadius:"50%", background:exc.is_active?"#10B981":"#D1D5DB", flexShrink:0 }}/>
-                <span style={{ fontSize:12, fontWeight:600, color:exc.is_active?"#065F46":"#9CA3AF" }}>
+                <span style={{ width:7, height:7, borderRadius:"50%", background:exc.is_active?"#053366":"#D1D5DB", flexShrink:0 }}/>
+                <span style={{ fontSize:12, fontWeight:600, color:exc.is_active?"#053366":"#9CA3AF" }}>
                   {exc.is_active?"Publiée":"Brouillon"}
                 </span>
               </div>
