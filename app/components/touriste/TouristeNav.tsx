@@ -290,7 +290,7 @@ export default function TouristeNav({
         top: 0, left: 0, right: 0,
         zIndex: 200,
         height: 76,
-        background: scrolled ? "rgba(20, 20, 225, 0.85)" : "rgba(122, 190, 253, 0.25)",
+        background: scrolled ? "rgba(20, 20, 225, 0.85)" : "rgba(122, 190, 253, 0.4)",
         backdropFilter: "blur(18px)",
         WebkitBackdropFilter: "blur(18px)",
         borderBottom: scrolled ? "1px solid rgba(47, 46, 46, 0.08)" : "1px solid transparent",
