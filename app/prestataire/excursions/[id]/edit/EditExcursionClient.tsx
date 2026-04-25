@@ -14,7 +14,6 @@ import {
 /* ─────────────────────────────────────────────
    Constantes
 ───────────────────────────────────────────── */
-const LANGUAGES  = ["Français", "Anglais", "Arabe", "Allemand", "Espagnol", "Italien"];
 const INCLUSIONS = ["Guide francophone", "Transport", "Repas", "Eau minérale", "Équipement", "Photos", "Billet d'entrée"];
 const DIFFICULTY = [
   { value: "facile",    label: "Facile",    icon: "🟢", color: "#059669", bg: "rgba(5,150,105,.08)",  border: "rgba(5,150,105,.25)"  },
@@ -37,6 +36,11 @@ function toggle(arr: string[], item: string) {
 /* ─────────────────────────────────────────────
    Types
 ───────────────────────────────────────────── */
+interface DateDispo {
+  date: string;
+  slots: number;
+  departure_time: string; // ✅ aligné avec le JSONB de la page nouvelle
+}
 interface Excursion {
   id: string; title: string; city: string; description: string;
   duration_hours: number; price_per_person: number; max_people: number;
@@ -45,12 +49,12 @@ interface Excursion {
   meeting_point?: string; difficulty?: string; min_age?: number;
   what_to_bring?: string; not_included?: string;
   important_info?: string; cancel_policy?: string;
-  available_dates?: DateDispo[];
+  available_dates?: DateDispo[]; // ✅ type corrigé
 }
-interface Ville        { id: string; nom: string; emoji?: string; active?: boolean; }
-interface Categorie    { id: string; nom: string; couleur: string; emoji?: string; }
+interface Ville     { id: string; nom: string; emoji?: string; active?: boolean; }
+interface Categorie { id: string; nom: string; couleur: string; emoji?: string; }
+interface Langue    { id: string; nom: string; } // ✅ ajout
 interface PhotoPreview { file?: File; url: string; uploading: boolean; uploaded?: string; existing?: boolean; }
-interface DateDispo    { date: string; slots: number; time: string; }
 
 /* ─────────────────────────────────────────────
    Validation hook
@@ -117,8 +121,13 @@ function Field({ label, required, hint, children }: { label:string; required?:bo
    Composant principal
 ───────────────────────────────────────────── */
 export default function EditExcursionClient({
-  exc, villes, categories: categoriesDB,
-}: { exc: Excursion; villes: Ville[]; categories: Categorie[] }) {
+  exc, villes, categories: categoriesDB, langues = [], // ✅ langues dynamique
+}: {
+  exc: Excursion;
+  villes: Ville[];
+  categories: Categorie[];
+  langues?: Langue[]; // ✅ ajout
+}) {
   const supabase = createClient();
   const fileRef  = useRef<HTMLInputElement>(null);
   const [loading, setLoading] = useState(false);
@@ -127,7 +136,6 @@ export default function EditExcursionClient({
   const [error,   setError]   = useState<string | null>(null);
   const [tab,     setTab]     = useState<"infos"|"details"|"dates"|"photos">("infos");
 
-  /* Champs */
   const [title,       setTitle]       = useState(exc.title);
   const [city,        setCity]        = useState(exc.city);
   const [description, setDescription] = useState(exc.description);
@@ -144,16 +152,25 @@ export default function EditExcursionClient({
   const [notIncl,     setNotIncl]     = useState(exc.not_included || "");
   const [impInfo,     setImpInfo]     = useState(exc.important_info || "");
   const [cancelPol,   setCancelPol]   = useState(exc.cancel_policy || "Annulation gratuite jusqu'à 24h avant");
-  const [dates,       setDates]       = useState<DateDispo[]>(exc.available_dates || []);
-  const [newDate,     setNewDate]     = useState("");
-  const [newSlots,    setNewSlots]    = useState(10);
-  const [newTime,     setNewTime]     = useState("09:00");
-  const [recurDays,   setRecurDays]   = useState<number[]>([]);
-  const [recurSlots,  setRecurSlots]  = useState(10);
-  const [recurTime,   setRecurTime]   = useState("09:00");
-  const [recurFrom,   setRecurFrom]   = useState("");
-  const [recurTo,     setRecurTo]     = useState("");
-  const [photos,      setPhotos]      = useState<PhotoPreview[]>(
+
+  // ✅ Normalisation à la lecture : compatibilité ancien champ `time` + nouveau `departure_time`
+  const [dates, setDates] = useState<DateDispo[]>(
+    (exc.available_dates || []).map(d => ({
+      date:           d.date,
+      slots:          d.slots,
+      departure_time: (d as any).departure_time || (d as any).time || "09:00",
+    }))
+  );
+
+  const [newDate,    setNewDate]    = useState("");
+  const [newSlots,   setNewSlots]   = useState(10);
+  const [newTime,    setNewTime]    = useState("09:00");
+  const [recurDays,  setRecurDays]  = useState<number[]>([]);
+  const [recurSlots, setRecurSlots] = useState(10);
+  const [recurTime,  setRecurTime]  = useState("09:00");
+  const [recurFrom,  setRecurFrom]  = useState("");
+  const [recurTo,    setRecurTo]    = useState("");
+  const [photos, setPhotos] = useState<PhotoPreview[]>(
     (exc.photos || []).filter(Boolean).map(url => ({ url, uploading:false, existing:true, uploaded:url }))
   );
 
@@ -187,46 +204,68 @@ export default function EditExcursionClient({
 
   /* ── Dates ── */
   const addDate = () => {
-    if (!newDate||dates.find(d=>d.date===newDate)) return;
-    setDates(p=>[...p,{date:newDate,slots:newSlots,time:newTime}].sort((a,b)=>a.date.localeCompare(b.date)));
+    if (!newDate || dates.find(d => d.date === newDate)) return;
+    setDates(p => [...p, { date:newDate, slots:newSlots, departure_time:newTime }]
+      .sort((a,b) => a.date.localeCompare(b.date)));
     setNewDate("");
   };
-  const removeDate  = (d:string) => setDates(p=>p.filter(x=>x.date!==d));
-  const updateSlots = (d:string,s:number) => setDates(p=>p.map(x=>x.date===d?{...x,slots:s}:x));
-  const updateTime  = (d:string,t:string) => setDates(p=>p.map(x=>x.date===d?{...x,time:t}:x));
+  const removeDate       = (d: string) => setDates(p => p.filter(x => x.date !== d));
+  const updateSlots      = (d: string, s: number) => setDates(p => p.map(x => x.date===d ? {...x, slots:s} : x));
+  const updateTime       = (d: string, t: string) => setDates(p => p.map(x => x.date===d ? {...x, departure_time:t} : x)); // ✅ departure_time
+
   const genRecurring = () => {
-    if (!recurFrom||!recurTo||recurDays.length===0) return;
-    const from=new Date(recurFrom),to=new Date(recurTo),added:DateDispo[]=[],cur=new Date(from);
-    while(cur<=to){
-      if(recurDays.includes(cur.getDay())){
-        const iso=cur.toISOString().slice(0,10);
-        if(!dates.find(d=>d.date===iso)) added.push({date:iso,slots:recurSlots,time:recurTime});
+    if (!recurFrom || !recurTo || recurDays.length===0) return;
+    const from=new Date(recurFrom), to=new Date(recurTo), added:DateDispo[]=[], cur=new Date(from);
+    while (cur <= to) {
+      if (recurDays.includes(cur.getDay())) {
+        const iso = cur.toISOString().slice(0,10);
+        if (!dates.find(d => d.date===iso)) added.push({ date:iso, slots:recurSlots, departure_time:recurTime }); // ✅
       }
       cur.setDate(cur.getDate()+1);
     }
-    setDates(p=>[...p,...added].sort((a,b)=>a.date.localeCompare(b.date)));
+    setDates(p => [...p, ...added].sort((a,b) => a.date.localeCompare(b.date)));
   };
 
   /* ── Submit ── */
   const submit = async (pub: boolean) => {
-    if (!title||!city||!description){ setError("Remplissez les champs obligatoires."); setTab("infos"); return; }
+    if (!title || !city || !description) { setError("Remplissez les champs obligatoires."); setTab("infos"); return; }
     setLoading(true); setPubMode(pub); setError(null);
-    const {data:{user}} = await supabase.auth.getUser();
-    if (!user){ setError("Session expirée."); setLoading(false); return; }
+    const { data:{ user } } = await supabase.auth.getUser();
+    if (!user) { setError("Session expirée."); setLoading(false); return; }
+
     const photoUrls = await uploadPhotos(user.id);
-    const {error:err} = await supabase.from("excursions").update({
+
+    // ✅ Normalisation avant envoi
+    const safeDates = dates.map(d => ({
+      date:           d.date,
+      slots:          d.slots,
+      departure_time: d.departure_time || "09:00",
+    }));
+    const defaultDepartureTime = safeDates.length > 0 ? safeDates[0].departure_time : "09:00";
+
+    const { error: err } = await supabase.from("excursions").update({
       title, city, description,
-      duration_hours:duration, price_per_person:price, max_people:maxPeople,
-      categories, languages, inclusions, photos:photoUrls, is_active:pub,
-      meeting_point:meetingPt||null, difficulty:difficulty||null, min_age:minAge||null,
-      what_to_bring:whatBring||null, not_included:notIncl||null,
-      important_info:impInfo||null, cancel_policy:cancelPol||null,
-      available_dates:dates.length>0?dates:null,
+      duration_hours:   duration,
+      price_per_person: price,
+      max_people:       maxPeople,
+      categories, languages, inclusions,
+      photos:           photoUrls,
+      is_active:        pub,
+      meeting_point:    meetingPt  || null,
+      difficulty:       difficulty || null,
+      min_age:          minAge     || null,
+      what_to_bring:    whatBring  || null,
+      not_included:     notIncl    || null,
+      important_info:   impInfo    || null,
+      cancel_policy:    cancelPol  || null,
+      depart_time:      defaultDepartureTime,   // ✅ colonne Supabase
+      available_dates:  safeDates.length > 0 ? safeDates : null,
     }).eq("id", exc.id).eq("prestataire_id", user.id);
+
     setLoading(false);
-    if (err){ setError(err.message); return; }
+    if (err) { setError(err.message); return; }
     setSuccess(true);
-    setTimeout(()=>{ window.location.href=`/prestataire/excursions/${exc.id}`; }, 1800);
+    setTimeout(() => { window.location.href = `/prestataire/excursions/${exc.id}`; }, 1800);
   };
 
   /* ── Succès ── */
@@ -235,7 +274,9 @@ export default function EditExcursionClient({
       <div style={{ width:88, height:88, borderRadius:"50%", background:"linear-gradient(135deg,#ECFDF5,#D1FAE5)", border:"4px solid #A7F3D0", display:"flex", alignItems:"center", justifyContent:"center", margin:"0 auto 24px", boxShadow:"0 8px 24px rgba(5,150,105,.2)" }}>
         <CheckCircle2 size={40} color="#059669" />
       </div>
-      <h2 style={{ fontSize:24, fontWeight:800, color:"#0F172A", marginBottom:10, letterSpacing:"-.03em" }}>Excursion {pubMode?"publiée":"sauvegardée"} !</h2>
+      <h2 style={{ fontSize:24, fontWeight:800, color:"#0F172A", marginBottom:10, letterSpacing:"-.03em" }}>
+        Excursion {pubMode ? "publiée" : "sauvegardée"} !
+      </h2>
       <p style={{ color:"#64748B", fontSize:14 }}>Redirection en cours...</p>
     </div>
   );
@@ -269,16 +310,16 @@ export default function EditExcursionClient({
           transition:all .2s;background:#FAFBFC;box-sizing:border-box;
         }
         .nf-field input:focus,.nf-field select:focus,.nf-field textarea:focus {
-          border-color:#0F766E;background:white;box-shadow:0 0 0 3px rgba(15, 20, 118, 0.1);
+          border-color:#0F766E;background:white;box-shadow:0 0 0 3px rgba(15,118,110,.1);
         }
         .nf-field input::placeholder,.nf-field textarea::placeholder{color:#CBD5E1;}
         .tab-btn{display:flex;align-items:center;gap:7px;padding:8px 15px;border-radius:10px;font-size:12.5px;font-weight:600;cursor:pointer;font-family:inherit !important;border:none;transition:all .2s;white-space:nowrap;}
-        .tab-btn.on{background:#02AFCF;color:white;box-shadow:0 2px 8px rgba(13, 48, 129, 0.25);}
+        .tab-btn.on{background:#02AFCF;color:white;box-shadow:0 2px 8px rgba(13,48,129,.25);}
         .tab-btn:not(.on){background:white;color:#64748B;border:1.5px solid #E2E8F0;}
         .tab-btn:not(.on):hover{background:#F8FAFC;border-color:#CBD5E1;color:#0F172A;}
         .card{background:white;border-radius:16px;border:1px solid #EEF2F7;padding:22px 24px;box-shadow:0 1px 4px rgba(15,23,42,.04);}
         .drop-z{border:2px dashed #E2E8F0;border-radius:14px;padding:40px 28px;text-align:center;cursor:pointer;transition:all .22s;background:#FAFBFC;}
-        .drop-z:hover{border-color:#0F766E;background:rgba(15, 53, 118, 0.03);}
+        .drop-z:hover{border-color:#0F766E;background:rgba(15,118,110,.03);}
         .date-row{display:flex;align-items:center;gap:10px;padding:10px 14px;background:#F8FAFC;border-radius:10px;border:1.5px solid #EEF2F7;margin-bottom:7px;transition:border-color .15s;}
         .date-row:hover{border-color:#CBD5E1;}
         .num{width:68px;padding:7px 10px;border:1.5px solid #E2E8F0;border-radius:8px;font-size:13px;font-family:inherit !important;color:#0F172A;outline:none;text-align:center;transition:border-color .2s;background:#FAFBFC;}
@@ -288,9 +329,9 @@ export default function EditExcursionClient({
         .day{padding:5px 11px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit !important;border:1.5px solid #E2E8F0;background:white;color:#64748B;transition:all .15s;}
         .day.on{background:#0F172A;color:white;border-color:#0F172A;}
         .pub-btn{display:flex;align-items:center;gap:8px;padding:11px 22px;border-radius:11px;cursor:pointer;font-family:inherit !important;font-size:13.5px;font-weight:700;border:none;transition:all .22s;letter-spacing:-.01em;}
-        .pub-btn.ready{background:linear-gradient(135deg,#02AFCF,#02AFCF);color:white;box-shadow:0 4px 14px rgba(15, 82, 118, 0.35);}
-        .pub-btn.ready:hover{transform:translateY(-1px);box-shadow:0 6px 18px rgba(18, 77, 128, 0.4);}
-        .pub-btn.locked{background:#02AFCF;color:#94A3B8;cursor:not-allowed;}
+        .pub-btn.ready{background:linear-gradient(135deg,#02AFCF,#0284a8);color:white;box-shadow:0 4px 14px rgba(2,175,207,.35);}
+        .pub-btn.ready:hover{transform:translateY(-1px);box-shadow:0 6px 18px rgba(2,175,207,.4);}
+        .pub-btn.locked{background:#F1F5F9;color:#94A3B8;cursor:not-allowed;}
         .draft-btn{display:flex;align-items:center;gap:8px;padding:10px 18px;border-radius:10px;cursor:pointer;font-family:inherit !important;font-size:13px;font-weight:600;background:white;color:#475569;border:1.5px solid #E2E8F0;transition:all .18s;}
         .draft-btn:hover:not(:disabled){background:#F8FAFC;border-color:#CBD5E1;}
         .draft-btn:disabled{opacity:.5;cursor:not-allowed;}
@@ -312,14 +353,12 @@ export default function EditExcursionClient({
               <p style={{ fontSize:13, color:"#64748B", margin:"6px 0 0", fontWeight:500 }}>{exc.title}</p>
             </div>
             <div style={{ display:"flex", alignItems:"center", gap:10 }}>
-              {/* Statut actuel */}
               <div style={{ display:"flex", alignItems:"center", gap:6, padding:"6px 12px", background:"#F9FAFB", borderRadius:10, border:"1px solid #E5E7EB" }}>
-                <span style={{ width:7, height:7, borderRadius:"50%", background:exc.is_active?"#053366":"#D1D5DB", flexShrink:0 }}/>
-                <span style={{ fontSize:12, fontWeight:600, color:exc.is_active?"#053366":"#9CA3AF" }}>
-                  {exc.is_active?"Publiée":"Brouillon"}
+                <span style={{ width:7, height:7, borderRadius:"50%", background:exc.is_active?"#059669":"#D1D5DB", flexShrink:0 }}/>
+                <span style={{ fontSize:12, fontWeight:600, color:exc.is_active?"#059669":"#9CA3AF" }}>
+                  {exc.is_active ? "Publiée" : "Brouillon"}
                 </span>
               </div>
-              {/* Anneau progression */}
               <div style={{ position:"relative", width:50, height:50 }}>
                 <svg width="50" height="50" viewBox="0 0 50 50" style={{ transform:"rotate(-90deg)" }}>
                   <circle cx="25" cy="25" r="21" fill="none" stroke="#EEF2F7" strokeWidth="4.5"/>
@@ -332,16 +371,19 @@ export default function EditExcursionClient({
                 </div>
               </div>
               <button type="button" className="draft-btn" onClick={() => submit(false)} disabled={loading}>
-                {loading&&!pubMode?<Loader2 size={13} className="spin"/>:<Save size={13}/>} Brouillon
+                {loading && !pubMode ? <Loader2 size={13} className="spin"/> : <Save size={13}/>} Brouillon
               </button>
               <button type="button" className={`pub-btn ${isReady?"ready":"locked"}`} onClick={() => isReady && submit(true)} disabled={loading||!isReady}>
-                {loading&&pubMode?<><Loader2 size={14} className="spin"/> Mise à jour...</>:isReady?<><Rocket size={14}/> Enregistrer & publier</>:<><Lock size={13}/> Compléter ({pct}%)</>}
+                {loading && pubMode
+                  ? <><Loader2 size={14} className="spin"/> Mise à jour...</>
+                  : isReady
+                    ? <><Rocket size={14}/> Enregistrer & publier</>
+                    : <><Lock size={13}/> Compléter ({pct}%)</>}
               </button>
             </div>
           </div>
         </div>
 
-        {/* Erreur */}
         {error && (
           <div style={{ display:"flex", alignItems:"center", gap:10, padding:"12px 16px", background:"#FEF2F2", border:"1px solid #FECACA", borderRadius:12, marginBottom:18, fontSize:13, color:"#DC2626", fontWeight:600 }}>
             <AlertTriangle size={14}/> {error}
@@ -352,7 +394,6 @@ export default function EditExcursionClient({
 
           {/* ── Colonne principale ── */}
           <div>
-            {/* Tabs */}
             <div style={{ display:"flex", gap:6, marginBottom:16, flexWrap:"wrap" }}>
               {TABS.map(({key,label,icon:Icon,warn}) => (
                 <button key={key} type="button" className={`tab-btn ${tab===key?"on":""}`} onClick={()=>setTab(key as typeof tab)}>
@@ -370,7 +411,8 @@ export default function EditExcursionClient({
                   <div style={{ display:"flex", flexDirection:"column", gap:14 }}>
                     <Field label="Titre" required>
                       <div className="nf-field">
-                        <input placeholder="Ex : Médina de Tunis — Visite guidée & dégustation" value={title} onChange={e=>setTitle(e.target.value)}
+                        <input placeholder="Ex : Médina de Tunis — Visite guidée & dégustation" value={title}
+                          onChange={e=>setTitle(e.target.value)}
                           style={{ borderColor:title.length>0&&!v.title?"#FCA5A5":v.title?"#86EFAC":"#E2E8F0" }}/>
                       </div>
                       {title.length>0&&!v.title&&<p style={{ fontSize:11, color:"#EF4444", marginTop:4, fontWeight:600 }}>Minimum 5 caractères</p>}
@@ -387,7 +429,8 @@ export default function EditExcursionClient({
                     </Field>
                     <Field label="Description" required hint="Décrivez les points d'intérêt, l'ambiance, l'expérience vécue.">
                       <div className="nf-field">
-                        <textarea rows={4} placeholder="Partez à la découverte..." value={description} onChange={e=>setDescription(e.target.value)}
+                        <textarea rows={4} placeholder="Partez à la découverte..." value={description}
+                          onChange={e=>setDescription(e.target.value)}
                           style={{ resize:"vertical", borderColor:description.length>0&&!v.description?"#FCA5A5":v.description?"#86EFAC":"#E2E8F0" }}/>
                       </div>
                       <div style={{ display:"flex", justifyContent:"space-between", marginTop:4 }}>
@@ -407,7 +450,9 @@ export default function EditExcursionClient({
                       { label:"Personnes max",     val:maxPeople, min:1,   max:100, step:1,   set:setMaxPeople },
                     ].map(f=>(
                       <Field key={f.label} label={f.label}>
-                        <div className="nf-field"><input type="number" min={f.min} max={f.max} step={f.step} value={f.val} onChange={e=>f.set(Number(e.target.value))}/></div>
+                        <div className="nf-field">
+                          <input type="number" min={f.min} max={f.max} step={f.step} value={f.val} onChange={e=>f.set(Number(e.target.value))}/>
+                        </div>
                       </Field>
                     ))}
                   </div>
@@ -416,21 +461,34 @@ export default function EditExcursionClient({
                 <div className="card">
                   <SectionTitle icon={Tag} label="Catégories" subtitle={v.categories?`${categories.length} sélectionnée(s)`:"Sélectionnez au moins une catégorie"}/>
                   <div style={{ display:"flex", flexWrap:"wrap", gap:7 }}>
-                    {categoriesDB.map(c=><Chip key={c.id} label={`${c.emoji||""}${c.emoji?" ":""}${c.nom}`} selected={categories.includes(c.nom)} color={c.couleur} onClick={()=>setCategories(toggle(categories,c.nom))}/>)}
+                    {categoriesDB.map(c=>(
+                      <Chip key={c.id} label={`${c.emoji||""}${c.emoji?" ":""}${c.nom}`} selected={categories.includes(c.nom)} color={c.couleur} onClick={()=>setCategories(toggle(categories,c.nom))}/>
+                    ))}
                   </div>
                 </div>
 
+                {/* ✅ Langues dynamiques depuis Supabase */}
                 <div className="card">
                   <SectionTitle icon={Languages} label="Langues parlées" subtitle={v.languages?`${languages.length} sélectionnée(s)`:"Sélectionnez au moins une langue"}/>
-                  <div style={{ display:"flex", flexWrap:"wrap", gap:7 }}>
-                    {LANGUAGES.map(l=><Chip key={l} label={l} selected={languages.includes(l)} color="#7C3AED" onClick={()=>setLanguages(toggle(languages,l))}/>)}
-                  </div>
+                  {langues.length === 0 ? (
+                    <div style={{ padding:"14px 16px", background:"#FEF9EC", border:"1px solid #FDE68A", borderRadius:10, fontSize:12, color:"#92400E", fontWeight:600, display:"flex", alignItems:"center", gap:8 }}>
+                      <AlertCircle size={13}/> Aucune langue configurée — ajoutez-en dans votre panneau d&apos;administration.
+                    </div>
+                  ) : (
+                    <div style={{ display:"flex", flexWrap:"wrap", gap:7 }}>
+                      {langues.map(l=>(
+                        <Chip key={l.id} label={l.nom} selected={languages.includes(l.nom)} color="#7C3AED" onClick={()=>setLanguages(toggle(languages,l.nom))}/>
+                      ))}
+                    </div>
+                  )}
                 </div>
 
                 <div className="card">
                   <SectionTitle icon={Package} label="Inclus dans le prix" subtitle="Optionnel"/>
                   <div style={{ display:"flex", flexWrap:"wrap", gap:7 }}>
-                    {INCLUSIONS.map(i=><Chip key={i} label={i} selected={inclusions.includes(i)} color="#059669" onClick={()=>setInclusions(toggle(inclusions,i))}/>)}
+                    {INCLUSIONS.map(i=>(
+                      <Chip key={i} label={i} selected={inclusions.includes(i)} color="#059669" onClick={()=>setInclusions(toggle(inclusions,i))}/>
+                    ))}
                   </div>
                 </div>
               </div>
@@ -472,10 +530,14 @@ export default function EditExcursionClient({
                   <SectionTitle icon={Package} label="Inclus et non inclus"/>
                   <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:14 }}>
                     <Field label="Non inclus" hint="Ex : billets, repas...">
-                      <div className="nf-field"><textarea rows={3} placeholder={"- Billets d'entrée\n- Repas personnels"} value={notIncl} onChange={e=>setNotIncl(e.target.value)} style={{ resize:"vertical" }}/></div>
+                      <div className="nf-field">
+                        <textarea rows={3} placeholder={"- Billets d'entrée\n- Repas personnels"} value={notIncl} onChange={e=>setNotIncl(e.target.value)} style={{ resize:"vertical" }}/>
+                      </div>
                     </Field>
                     <Field label="Ce qu'il faut apporter">
-                      <div className="nf-field"><textarea rows={3} placeholder={"- Chaussures confortables\n- Eau"} value={whatBring} onChange={e=>setWhatBring(e.target.value)} style={{ resize:"vertical" }}/></div>
+                      <div className="nf-field">
+                        <textarea rows={3} placeholder={"- Chaussures confortables\n- Eau"} value={whatBring} onChange={e=>setWhatBring(e.target.value)} style={{ resize:"vertical" }}/>
+                      </div>
                     </Field>
                   </div>
                 </div>
@@ -484,10 +546,14 @@ export default function EditExcursionClient({
                   <SectionTitle icon={AlertCircle} label="Informations importantes & annulation"/>
                   <div style={{ display:"flex", flexDirection:"column", gap:12 }}>
                     <Field label="Informations importantes">
-                      <div className="nf-field"><textarea rows={3} placeholder="Ex : Non accessible aux PMR." value={impInfo} onChange={e=>setImpInfo(e.target.value)} style={{ resize:"vertical" }}/></div>
+                      <div className="nf-field">
+                        <textarea rows={3} placeholder="Ex : Non accessible aux PMR." value={impInfo} onChange={e=>setImpInfo(e.target.value)} style={{ resize:"vertical" }}/>
+                      </div>
                     </Field>
                     <Field label="Politique d'annulation">
-                      <div className="nf-field"><input placeholder="Ex : Annulation gratuite jusqu'à 24h avant" value={cancelPol} onChange={e=>setCancelPol(e.target.value)}/></div>
+                      <div className="nf-field">
+                        <input placeholder="Ex : Annulation gratuite jusqu'à 24h avant" value={cancelPol} onChange={e=>setCancelPol(e.target.value)}/>
+                      </div>
                     </Field>
                   </div>
                 </div>
@@ -579,8 +645,8 @@ export default function EditExcursionClient({
                     </div>
                   ) : (
                     <>
-                      {dates.map(d=>{
-                        const dt=new Date(d.date+"T00:00:00");
+                      {dates.map(d => {
+                        const dt = new Date(d.date+"T00:00:00");
                         return (
                           <div key={d.date} className="date-row">
                             <div style={{ flex:1, minWidth:0 }}>
@@ -590,7 +656,8 @@ export default function EditExcursionClient({
                             </div>
                             <div style={{ display:"flex", alignItems:"center", gap:4 }}>
                               <Clock size={10} color="#94A3B8"/>
-                              <select value={d.time||"09:00"} onChange={e=>updateTime(d.date,e.target.value)} className="time-select" style={{ minWidth:72, fontSize:11, padding:"5px 7px" }}>
+                              {/* ✅ departure_time */}
+                              <select value={d.departure_time || "09:00"} onChange={e=>updateTime(d.date,e.target.value)} className="time-select" style={{ minWidth:72, fontSize:11, padding:"5px 7px" }}>
                                 {DEPARTURE_TIMES.map(t=><option key={t} value={t}>{t}</option>)}
                               </select>
                             </div>
@@ -656,8 +723,6 @@ export default function EditExcursionClient({
 
           {/* ── Panneau latéral ── */}
           <div style={{ display:"flex", flexDirection:"column", gap:12, position:"sticky", top:0 }}>
-
-            {/* Checklist */}
             <div className="card">
               <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:14 }}>
                 <div>
@@ -690,15 +755,14 @@ export default function EditExcursionClient({
               {!isReady&&<p style={{ fontSize:11, color:"#94A3B8", textAlign:"center", marginTop:8, lineHeight:1.5 }}>Complétez tous les champs pour publier.</p>}
             </div>
 
-            {/* Aperçu gains */}
             <div style={{ background:"linear-gradient(135deg,#F0FDF4,#ECFDF5)", borderRadius:14, border:"1px solid rgba(5,150,105,.2)", padding:"16px 18px" }}>
               <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:12 }}>
                 <Banknote size={13} color="#059669"/>
                 <span style={{ fontWeight:700, fontSize:12, color:"#059669" }}>Aperçu des gains</span>
               </div>
               {[
-                { l:"Prix affiché",    v:`${price} TND`,                  c:"#0F172A"  },
-                { l:"Commission (10%)",v:`−${Math.round(price*.1)} TND`,  c:"#DC2626"  },
+                { l:"Prix affiché",     v:`${price} TND`,                  c:"#0F172A" },
+                { l:"Commission (10%)", v:`−${Math.round(price*.1)} TND`,  c:"#DC2626" },
               ].map(r=>(
                 <div key={r.l} style={{ display:"flex", justifyContent:"space-between", fontSize:12, marginBottom:6 }}>
                   <span style={{ color:"#64748B" }}>{r.l}</span><strong style={{ color:r.c }}>{r.v}</strong>
@@ -710,7 +774,6 @@ export default function EditExcursionClient({
               </div>
             </div>
 
-            {/* Bouton brouillon */}
             <button type="button" className="draft-btn" onClick={()=>submit(false)} disabled={loading} style={{ width:"100%", justifyContent:"center" }}>
               {loading&&!pubMode?<Loader2 size={13} className="spin"/>:<Save size={13}/>} Sauvegarder en brouillon
             </button>
