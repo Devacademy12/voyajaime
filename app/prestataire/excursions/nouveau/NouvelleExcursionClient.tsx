@@ -2,6 +2,7 @@
 
 import { useState, useRef } from "react";
 import { createClient } from "@/lib/supabaseClient";
+import { sanitizeText } from "@/app/lib/sanitize";
 import {
   ArrowLeft, FileText, ImageIcon, Settings2, Tag,
   AlertTriangle, CheckCircle2, Loader2, X, Plus,
@@ -41,6 +42,7 @@ function useValidation(s: {
   title: string; city: string; description: string;
   languages: string[]; categories: string[];
   dates: DateDispo[]; photos: PhotoPreview[];
+  price: number; duration: number; maxPeople: number;
 }) {
   const v = {
     title:       s.title.trim().length >= 5,
@@ -50,6 +52,9 @@ function useValidation(s: {
     categories:  s.categories.length > 0,
     dates:       s.dates.length > 0,
     photos:      s.photos.length >= 1,
+    price:       s.price > 0 && s.price <= 9999,
+    duration:    s.duration >= 0.5 && s.duration <= 24,
+    maxPeople:   s.maxPeople >= 1 && s.maxPeople <= 200,
   };
   const vals = Object.values(v);
   return {
@@ -142,7 +147,7 @@ export default function NouvelleExcursionClient({
   const [recurFrom,  setRecurFrom]  = useState("");
   const [recurTo,    setRecurTo]    = useState("");
 
-  const { v, isReadyToPublish, pct } = useValidation({ title, city, description, languages, categories, dates, photos });
+  const { v, isReadyToPublish, pct } = useValidation({ title, city, description, languages, categories, dates, photos, price, duration, maxPeople });
 
   /* ── Photos ── */
   const handleFiles = (files: FileList|null) => {

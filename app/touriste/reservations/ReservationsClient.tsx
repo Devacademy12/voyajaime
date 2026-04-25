@@ -8,11 +8,12 @@ import {
   CheckCircle, CreditCard, Wallet, Building2,
   ChevronRight, ChevronLeft, MessageSquare, X, Loader2,
   ShieldCheck, ArrowRight, Ticket, Phone, Navigation,
-  AlertCircle, ExternalLink, Timer, History,
+  AlertCircle, ExternalLink, Timer, History, RefreshCcw,
 } from "lucide-react";
 
 // ─── Types ───────────────────────────────────────────────────────────
 interface Excursion {
+  id: string;
   title: string;
   city: string;
   photos: string[];
@@ -32,6 +33,7 @@ interface Reservation {
   status: string;
   payment_status?: string | null;
   payment_deadline?: string | null;
+  excursion_id?: string;
   excursion: Excursion | null;
 }
 
@@ -138,6 +140,10 @@ function CheckoutModal({
   async function triggerCancel() {
     setCancelled(true);
     try {
+      await supabase.rpc('restore_slots_on_cancel', {
+        p_reservation_id: reservation.id
+      });
+      
       await supabase
         .from("reservations")
         .update({ status: "cancelled", payment_status: "expired" })
@@ -155,19 +161,18 @@ function CheckoutModal({
   }
 
   const isUrgent = timeLeft <= 300;
-
   const base  = reservation.total_price - reservation.platform_fee;
   const fee   = reservation.platform_fee;
   const total = reservation.total_price;
 
   // ── Copie dans l'historique après paiement ──────────────────────────
-  async function addToHistory() {
+  async function addToHistory(paymentMethod: PayMethod) {
     try {
       const { data: res, error } = await supabase
         .from("reservations")
         .select(`
           id, booking_code, date, time, people_count, total_price, platform_fee,
-          payment_method, status, excursion:excursions(title, city)
+          payment_method, status, excursion:excursions(id, title, city)
         `)
         .eq("id", reservation.id)
         .single();
@@ -179,6 +184,7 @@ function CheckoutModal({
         .insert({
           original_reservation_id: res.id,
           booking_code: res.booking_code,
+          excursion_id: res.excursion?.id,
           excursion_title: res.excursion?.title,
           excursion_city: res.excursion?.city,
           date: res.date,
@@ -186,7 +192,7 @@ function CheckoutModal({
           people_count: res.people_count,
           total_price: res.total_price,
           platform_fee: res.platform_fee,
-          payment_method: res.payment_method || payMethod,
+          payment_method: paymentMethod,
           payment_status: "paid",
           payment_date: new Date().toISOString(),
         });
@@ -207,8 +213,6 @@ function CheckoutModal({
         touriste_email:    user?.email || "",
         excursion_title:   exc?.title   || "Excursion",
         excursion_city:    exc?.city    || "",
-        prestataire_name:  "Prestataire",
-        prestataire_email: process.env.NEXT_PUBLIC_PRESTATAIRE_NOTIFY_EMAIL || "",
         booking_code:      reservation.booking_code,
         date:              reservation.date,
         people_count:      reservation.people_count,
@@ -265,8 +269,7 @@ function CheckoutModal({
 
       if (e1) throw e1;
 
-      // ✅ Copie dans l'historique
-      await addToHistory();
+      await addToHistory(payMethod);
       await notifyN8n(payMethod);
 
       if (timerRef.current) clearInterval(timerRef.current);
@@ -308,7 +311,7 @@ function CheckoutModal({
         display: "flex", flexDirection: "column",
       }}>
 
-        {/* ── Sticky header ── */}
+        {/* Sticky header */}
         <div style={{
           position: "sticky", top: 0, background: "white", zIndex: 10,
           borderBottom: "1px solid #F3F4F6", padding: "20px 24px 16px",
@@ -361,7 +364,7 @@ function CheckoutModal({
             </div>
           )}
 
-          {/* ── Compte à rebours ── */}
+          {/* Compte à rebours */}
           {step !== 4 && !cancelled && (
             <div
               className={isUrgent ? "timer-urgent" : ""}
@@ -391,8 +394,7 @@ function CheckoutModal({
             </div>
           )}
           
-
-          {/* ⭐ MESSAGE D'INFORMATION EXPIRATION ⭐ */}
+          {/* Message d'information expiration */}
           {step !== 4 && !cancelled && (
             <div style={{
               padding: "10px 14px",
@@ -411,10 +413,10 @@ function CheckoutModal({
           )}
         </div>
 
-        {/* ── Contenu scrollable ── */}
+        {/* Contenu scrollable */}
         <div style={{ padding: 24, overflowY: "auto", flex: 1 }}>
 
-          {/* ══ ÉCRAN EXPIRÉ ════════════════════════════════════════════ */}
+          {/* ÉCRAN EXPIRÉ */}
           {cancelled && (
             <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 18, paddingTop: 12, textAlign: "center" }}>
               <div style={{
@@ -449,7 +451,7 @@ function CheckoutModal({
 
           {!cancelled && (<>
 
-          {/* ══ STEP 1 — Revue ══════════════════════════════════════════ */}
+          {/* STEP 1 — Revue */}
           {step === 1 && (
             <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
               <div style={{ borderRadius: 16, overflow: "hidden", height: 180, background: "linear-gradient(135deg,#2B96A8,#0e7490)", position: "relative" }}>
@@ -514,7 +516,7 @@ function CheckoutModal({
             </div>
           )}
 
-          {/* ══ STEP 2 — Informations ═══════════════════════════════════ */}
+          {/* STEP 2 — Informations */}
           {step === 2 && (
             <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
               <div style={{ display: "flex", gap: 12, alignItems: "center", background: "#F9FAFB", border: "1px solid #E5E7EB", borderRadius: 14, padding: "12px 14px" }}>
@@ -558,7 +560,7 @@ function CheckoutModal({
             </div>
           )}
 
-          {/* ══ STEP 3 — Paiement ═══════════════════════════════════════ */}
+          {/* STEP 3 — Paiement */}
           {step === 3 && (
             <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
               <div style={{ background: "linear-gradient(135deg,#0e7490,#2B96A8)", borderRadius: 18, padding: "22px 24px", color: "white", textAlign: "center" }}>
@@ -658,7 +660,7 @@ function CheckoutModal({
             </div>
           )}
 
-          {/* ══ STEP 4 — Succès ════════════════════════════════════════ */}
+          {/* STEP 4 — Succès */}
           {step === 4 && (
             <div style={{ display: "flex", flexDirection: "column", gap: 20, paddingTop: 8 }}>
 
@@ -729,7 +731,6 @@ function CheckoutModal({
                 </div>
               </div>
 
-              {/* ✅ Bouton Historique */}
               <div style={{ background: "linear-gradient(135deg,#EFF9FB,#D1FAE5)", border: "1.5px solid #6EE7B7", borderRadius: 16, padding: "16px 18px", display: "flex", alignItems: "center", gap: 12 }}>
                 <div style={{ width: 42, height: 42, borderRadius: 12, background: "#2B96A8", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                   <History size={20} color="white" strokeWidth={1.5} />
@@ -762,7 +763,7 @@ function CheckoutModal({
 // ═══════════════════════════════════════════════════════════════════════
 //  ReservationCard
 // ═══════════════════════════════════════════════════════════════════════
-function ReservationCard({ r, onPay }: { r: Reservation; onPay: () => void }) {
+function ReservationCard({ r, onPay, onRefresh }: { r: Reservation; onPay: () => void; onRefresh?: () => void }) {
   const exc   = r.excursion;
   const s     = STATUS_CONFIG[r.status] ?? STATUS_CONFIG.pending;
   const photo = exc?.photos?.[0];
@@ -776,11 +777,12 @@ function ReservationCard({ r, onPay }: { r: Reservation; onPay: () => void }) {
     const tick = () => {
       const left = Math.max(0, Math.floor((deadline - Date.now()) / 1000));
       setTimeLeftCard(left);
+      if (left === 0 && onRefresh) onRefresh();
     };
     tick();
     const id = setInterval(tick, 1000);
     return () => clearInterval(id);
-  }, [r.status, r.payment_deadline, paid]);
+  }, [r.status, r.payment_deadline, paid, onRefresh]);
 
   const cardUrgent = timeLeftCard !== null && timeLeftCard <= 300;
 
@@ -918,12 +920,51 @@ export default function ReservationsClient({
   confirmed?: number;
   autoOpenId?: string;
 }) {
+  const supabase = createClient();
   const [reservations, setReservations] = useState(init);
   const [checkout,     setCheckout]     = useState<Reservation | null>(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   const total     = reservations.length;
   const pending   = reservations.filter(r => r.status === "pending").length;
   const confirmed = reservations.filter(r => r.status === "confirmed").length;
+
+  const refreshReservations = useCallback(async () => {
+    setIsRefreshing(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data, error } = await supabase
+        .from("reservations")
+        .select(`
+          *,
+          excursion:excursions (
+            id, title, city, photos, duration_hours, price_per_person, meeting_point
+          )
+        `)
+        .eq("touriste_id", user.id)
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+      setReservations(data || []);
+    } catch (err) {
+      console.error("Erreur refresh:", err);
+    } finally {
+      setIsRefreshing(false);
+    }
+  }, [supabase]);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const hasPending = reservations.some(r => r.status === "pending");
+      if (hasPending) {
+        refreshReservations();
+      }
+    }, 30000);
+
+    return () => clearInterval(interval);
+  }, [reservations, refreshReservations]);
 
   useEffect(() => {
     if (autoOpenId) {
@@ -937,32 +978,61 @@ export default function ReservationsClient({
         .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0];
       if (latestUnpaid) setCheckout(latestUnpaid);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [reservations, autoOpenId]);
 
   function handlePaid(id: string) {
     setReservations(prev =>
       prev.map(r => r.id === id ? { ...r, payment_status: "paid", status: "confirmed" } : r)
     );
+    setCheckout(null);
+    setTimeout(() => refreshReservations(), 2000);
   }
 
   return (
     <div>
       <style>{GLOBAL_CSS}</style>
 
+      {isRefreshing && (
+        <div style={{ 
+          position: "fixed", bottom: 20, right: 20, 
+          background: "#2B96A8", color: "white", 
+          padding: "8px 16px", borderRadius: 30,
+          fontSize: 12, display: "flex", alignItems: "center", gap: 8,
+          zIndex: 1000, boxShadow: "0 2px 10px rgba(0,0,0,.2)"
+        }}>
+          <Loader2 size={14} style={{ animation: "rspin 1s linear infinite" }} />
+          Mise à jour...
+        </div>
+      )}
+
       {total > 0 && (
-        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 24, flexWrap: "wrap" }}>
-          {[
-            { dot: "#2B96A8", count: total,     label: "réservation",  color: "#2B96A8" },
-            { dot: "#F59E0B", count: pending,   label: "en attente",    color: "#D97706" },
-            { dot: "#10B981", count: confirmed, label: "confirmée",     color: "#059669" },
-          ].map(({ dot, count, label, color }, i) => (
-            <span key={i} style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 13, color: "#6B7280", fontWeight: 500 }}>
-              {i > 0 && <span style={{ color: "#D1D5DB" }}>·</span>}
-              <span style={{ width: 7, height: 7, borderRadius: "50%", background: dot, flexShrink: 0 }} />
-              <span style={{ fontSize: 14, fontWeight: 800, color }}>{count}</span> {label}{count > 1 ? "s" : ""}
-            </span>
-          ))}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 24, flexWrap: "wrap" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            {[
+              { dot: "#2B96A8", count: total,     label: "réservation",  color: "#2B96A8" },
+              { dot: "#F59E0B", count: pending,   label: "en attente",    color: "#D97706" },
+              { dot: "#10B981", count: confirmed, label: "confirmée",     color: "#059669" },
+            ].map(({ dot, count, label, color }, i) => (
+              <span key={i} style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 13, color: "#6B7280", fontWeight: 500 }}>
+                {i > 0 && <span style={{ color: "#D1D5DB" }}>·</span>}
+                <span style={{ width: 7, height: 7, borderRadius: "50%", background: dot, flexShrink: 0 }} />
+                <span style={{ fontSize: 14, fontWeight: 800, color }}>{count}</span> {label}{count > 1 ? "s" : ""}
+              </span>
+            ))}
+          </div>
+          
+          <button 
+            onClick={() => refreshReservations()}
+            disabled={isRefreshing}
+            style={{
+              background: "white", border: "1px solid #E5E7EB", borderRadius: 30,
+              padding: "6px 12px", fontSize: 12, cursor: "pointer",
+              display: "flex", alignItems: "center", gap: 5
+            }}
+          >
+            <RefreshCcw size={12} style={isRefreshing ? { animation: "rspin 1s linear infinite" } : {}} />
+            Actualiser
+          </button>
         </div>
       )}
 
@@ -988,7 +1058,11 @@ export default function ReservationsClient({
         <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 20 }}>
           {reservations.map((r, i) => (
             <div key={r.id} style={{ animationDelay: `${i * 0.05}s` }}>
-              <ReservationCard r={r} onPay={() => setCheckout(r)} />
+              <ReservationCard 
+                r={r} 
+                onPay={() => setCheckout(r)} 
+                onRefresh={refreshReservations}
+              />
             </div>
           ))}
         </div>
