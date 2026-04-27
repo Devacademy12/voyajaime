@@ -24,7 +24,9 @@ interface Prestataire {
   rating: number | null; created_at: string;
   excursion_count: number; excursion_active: number;
 }
-type Filter = "pending" | "validated" | "all";
+
+// ✅ Définir le type localement
+type FilterType = "pending" | "validated" | "all";
 
 export default function PrestatairesClient({ prestataires: initial }: { prestataires: Prestataire[] }) {
   const { loading, data: prestataires, execute } = useCrudOperation(initial, async (payload) => {
@@ -49,6 +51,7 @@ export default function PrestatairesClient({ prestataires: initial }: { prestata
 
   const { toast, showToast } = useToast();
 
+  // ✅ Utilise un seul type générique et caste les valeurs si nécessaire
   const {
     search,
     setSearch,
@@ -69,6 +72,11 @@ export default function PrestatairesClient({ prestataires: initial }: { prestata
         : true,
     initialFilter: "pending",
   });
+
+  // ✅ Fonction wrapper pour convertir le type
+  const handleFilterChange = (newFilter: FilterType) => {
+    setFilter(newFilter);
+  };
 
   const openModal = (p: Prestataire, m: "view" | "edit" = "view") => {
     setSelected(p); setMode(m);
@@ -133,11 +141,25 @@ export default function PrestatairesClient({ prestataires: initial }: { prestata
         }),
       });
       if (!res.ok) throw new Error((await res.json()).error);
+      
       const updated = { ...selected, full_name: editFullName, agency_name: editAgency, city: editCity, phone: editPhone, description: editDesc };
-      setPrestataires(prev => prev.map(p => p.user_id === selected.user_id ? updated : p));
-      setSelected(updated); setMode("view");
-      showToast("Profil mis à jour");
-    } catch (e) { showToast(`Erreur : ${e instanceof Error ? e.message : "Erreur"}`, false); }
+      
+      await execute(selected.user_id, { 
+        id: selected.user_id, 
+        action: "update",
+        value: updated 
+      }, {
+        onSuccess: (items) => {
+          return items.map(p => p.user_id === selected.user_id ? updated : p);
+        },
+        successMessage: "Profil mis à jour",
+      });
+      
+      setSelected(updated);
+      setMode("view");
+    } catch (e) { 
+      showToast(`Erreur : ${e instanceof Error ? e.message : "Erreur"}`, false); 
+    }
     setEditLoading(false);
   };
 
@@ -151,16 +173,15 @@ export default function PrestatairesClient({ prestataires: initial }: { prestata
     <>
       <Toast toast={toast} />
 
-      {/* ── BARRE FILTRES ── */}
       <div style={{ background: "white", borderRadius: 16, border: "1px solid #F3F4F6", padding: "16px 20px", marginBottom: 16, boxShadow: "0 1px 4px rgba(0,0,0,.04)" }}>
         <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
           <SearchBar value={search} onChange={setSearch} placeholder="Rechercher par nom, agence, ville..." />
           <CityFilter value={cityFilter} onChange={setCityFilter} cities={cities} />
           <div style={{ width: 1, height: 32, background: "#E5E7EB", flexShrink: 0 }} />
-          <FilterTabs value={filter} onChange={setFilter} counts={counts} />
+          {/* ✅ Utilise handleFilterChange qui a le bon type */}
+          <FilterTabs value={filter as FilterType} onChange={handleFilterChange} counts={counts} />
         </div>
 
-        {/* Résumé actif */}
         {(search || cityFilter || filter !== "all") && (
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 12, paddingTop: 12, borderTop: "1px solid #F3F4F6" }}>
             <span style={{ fontSize: 12, color: "#9CA3AF" }}>{filtered.length} résultat{filtered.length !== 1 ? "s" : ""}</span>
@@ -176,7 +197,6 @@ export default function PrestatairesClient({ prestataires: initial }: { prestata
         )}
       </div>
 
-      {/* ── LISTE ── */}
       {filtered.length === 0 ? (
         <EmptyPrestataires filter={filter} />
       ) : (
@@ -204,7 +224,6 @@ export default function PrestatairesClient({ prestataires: initial }: { prestata
         </div>
       )}
 
-      {/* ── MODAL ── */}
       {selected && (
         <PrestastaireModal
           p={selected}

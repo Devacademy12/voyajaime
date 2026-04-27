@@ -8,7 +8,7 @@ import { ROUTES } from "@/app/lib/routes";
 import {
   LayoutDashboard, Map, CalendarDays, Heart, MessageCircle,
   Mountain, Wallet, Star, UserCircle, Users, Shield,
-  FolderOpen, LogOut, Menu, X,
+  FolderOpen, LogOut, Menu, X, History,
 } from "lucide-react";
 
 type Role = "touriste" | "prestataire" | "admin";
@@ -17,10 +17,11 @@ interface NavItem { label: string; href: string; icon: React.ReactNode; }
 const NAV: Record<Role, NavItem[]> = {
   touriste: [
     { label: "Accueil",          href: ROUTES.touriste.dashboard,    icon: <LayoutDashboard size={18} /> },
-    { label: "Mon itinéraire",   href: ROUTES.touriste.itineraire,   icon: <Map size={18} /> },
+    { label: "Mon itinéraire",   href: ROUTES.touriste.itineraires,   icon: <Map size={18} /> },  // ✅ Corrigé : itineraires
     { label: "Mes réservations", href: ROUTES.touriste.reservations, icon: <CalendarDays size={18} /> },
     { label: "Mes favoris",      href: ROUTES.touriste.favoris,      icon: <Heart size={18} /> },
     { label: "Messages",         href: ROUTES.touriste.messages,     icon: <MessageCircle size={18} /> },
+    { label: "Historique",       href: ROUTES.touriste.historique,   icon: <History size={18} /> },
   ],
   prestataire: [
     { label: "Dashboard",      href: ROUTES.prestataire.dashboard,    icon: <LayoutDashboard size={18} /> },

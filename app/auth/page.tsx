@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import AuthModal from "@/app/components/auth/AuthModal";
 
 type Mode = "login" | "register" | "prestataire";
 
-export default function AuthPage() {
+// Composant client qui utilise useSearchParams
+function AuthContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [mode, setMode] = useState<Mode>("login");
@@ -35,7 +36,6 @@ export default function AuthPage() {
         }
       `}</style>
 
-      {/* Page d\'accueil en arrière-plan via iframe */}
       <iframe
         src="/"
         className="auth-bg-frame"
@@ -44,12 +44,42 @@ export default function AuthPage() {
         scrolling="no"
       />
 
-      {/* Modal toujours ouvert, fermeture → retour accueil */}
       <AuthModal
         isOpen={true}
         onClose={handleClose}
         defaultMode={mode}
       />
     </>
+  );
+}
+
+// Composant principal avec Suspense (Server Component)
+export default function AuthPage() {
+  return (
+    <Suspense fallback={
+      <div style={{ 
+        display: "flex", 
+        justifyContent: "center", 
+        alignItems: "center", 
+        height: "100vh",
+        background: "#F9FAFB"
+      }}>
+        <div style={{
+          width: 40,
+          height: 40,
+          border: "4px solid #E5E7EB",
+          borderTopColor: "#2B96A8",
+          borderRadius: "50%",
+          animation: "spin 0.8s linear infinite"
+        }} />
+        <style>{`
+          @keyframes spin {
+            to { transform: rotate(360deg); }
+          }
+        `}</style>
+      </div>
+    }>
+      <AuthContent />
+    </Suspense>
   );
 }

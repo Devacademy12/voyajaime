@@ -165,42 +165,61 @@ function CheckoutModal({
   const fee   = reservation.platform_fee;
   const total = reservation.total_price;
 
-  // ── Copie dans l'historique après paiement ──────────────────────────
-  async function addToHistory(paymentMethod: PayMethod) {
-    try {
-      const { data: res, error } = await supabase
-        .from("reservations")
-        .select(`
-          id, booking_code, date, time, people_count, total_price, platform_fee,
-          payment_method, status, excursion:excursions(id, title, city)
-        `)
-        .eq("id", reservation.id)
-        .single();
+  // ── Copie dans l'historique après paiement (CORRIGÉE) ──────────────────────────
+ // ── Copie dans l'historique après paiement ──────────────────────────
+// ── Copie dans l'historique après paiement (CORRIGÉE) ──────────────────────────
+async function addToHistory(paymentMethod: PayMethod) {
+  try {
+    const { data: res, error } = await supabase
+      .from("reservations")
+      .select(`
+        id, booking_code, date, time, people_count, total_price, platform_fee,
+        payment_method, status,
+        excursion_id,
+        excursions:excursions!reservations_excursion_id_fkey(id, title, city)
+      `)
+      .eq("id", reservation.id)
+      .single();
 
-      if (error || !res) return;
-
-      await supabase
-        .from("historique_reservations")
-        .insert({
-          original_reservation_id: res.id,
-          booking_code: res.booking_code,
-          excursion_id: res.excursion?.id,
-          excursion_title: res.excursion?.title,
-          excursion_city: res.excursion?.city,
-          date: res.date,
-          time: res.time,
-          people_count: res.people_count,
-          total_price: res.total_price,
-          platform_fee: res.platform_fee,
-          payment_method: paymentMethod,
-          payment_status: "paid",
-          payment_date: new Date().toISOString(),
-        });
-    } catch (e) {
-      console.warn("addToHistory error:", e);
+    if (error || !res) {
+      console.warn("addToHistory: no data", error);
+      return;
     }
-  }
 
+    // ✅ Typage explicite et gestion des deux cas
+    type ExcursionData = { id: string; title: string; city: string } | { id: string; title: string; city: string }[];
+    
+    let excursionData: { id: string; title: string; city: string } | null = null;
+    
+    if (res.excursions) {
+      if (Array.isArray(res.excursions) && res.excursions.length > 0) {
+        excursionData = res.excursions[0];
+      } else if (!Array.isArray(res.excursions)) {
+        excursionData = res.excursions;
+      }
+    }
+
+    await supabase
+      .from("historique_reservations")
+      .insert({
+        original_reservation_id: res.id,
+        booking_code: res.booking_code,
+        excursion_id: excursionData?.id || null,
+        excursion_title: excursionData?.title || null,
+        excursion_city: excursionData?.city || null,
+        date: res.date,
+        time: res.time,
+        people_count: res.people_count,
+        total_price: res.total_price,
+        platform_fee: res.platform_fee,
+        payment_method: paymentMethod,
+        payment_status: "paid",
+        payment_date: new Date().toISOString(),
+      });
+  } catch (e) {
+    console.warn("addToHistory error:", e);
+  }
+}
   // ── Notification n8n ────────────────────────────────────────────────
   async function notifyN8n(method: PayMethod) {
     const { data: { user } } = await supabase.auth.getUser();
@@ -915,9 +934,6 @@ export default function ReservationsClient({
   autoOpenId,
 }: {
   reservations: Reservation[];
-  total?: number;
-  pending?: number;
-  confirmed?: number;
   autoOpenId?: string;
 }) {
   const supabase = createClient();

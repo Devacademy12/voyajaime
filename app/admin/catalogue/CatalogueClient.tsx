@@ -7,7 +7,7 @@ import { apiPost } from "../../../lib/api";
 import { Toast } from "../../components/ui/Toast";
 import {
   MapPin, Tag, Plus, Pencil, Trash2, Play, Pause,
-  CheckCircle, XCircle, Save, X,
+  CheckCircle, Save, X,
 } from "lucide-react";
 
 interface Ville {
@@ -47,10 +47,12 @@ export default function CatalogueClient({
         await executeVille(villeModal.id, {
           action: "update",
           id: villeModal.id,
-          nom: villeModal.nom,
-          region: villeModal.region,
-          description: villeModal.description,
-          active: villeModal.active
+          value: {
+            nom: villeModal.nom,
+            region: villeModal.region,
+            description: villeModal.description,
+            active: villeModal.active
+          }
         }, {
           successMessage: "Ville mise à jour",
           onSuccess: (prev) => prev.map(v => v.id === villeModal.id ? { ...v, ...villeModal } : v),
@@ -58,10 +60,13 @@ export default function CatalogueClient({
       } else {
         await executeVille("create", {
           action: "create",
-          nom: villeModal.nom,
-          region: villeModal.region,
-          description: villeModal.description,
-          active: villeModal.active
+          id: "create",
+          value: {
+            nom: villeModal.nom,
+            region: villeModal.region,
+            description: villeModal.description,
+            active: villeModal.active
+          }
         }, {
           successMessage: "Ville ajoutée",
           onSuccess: (prev) => [...prev, { ...villeModal, id: "temp" } as Ville].sort((a,b)=>a.nom.localeCompare(b.nom)),
@@ -72,17 +77,26 @@ export default function CatalogueClient({
   };
 
   const deleteVille = async (id:string, nom:string) => {
-    await executeVille(id, { action: "delete", id }, {
+    await executeVille(id, {
+      action: "delete",
+      id: id,
+      value: { id }
+    }, {
       confirmMessage: `Supprimer "${nom}" ?`,
       successMessage: "Ville supprimée",
     });
   };
 
   const toggleVille = async (v:Ville) => {
-    await executeVille(v.id, { action: "toggle", id: v.id, active: !v.active }, {
-      onSuccess: (prev) => prev.map(x => x.id === v.id ? { ...x, active: !x.active } : x),
-    });
-  };
+  await executeVille(v.id, {
+    action: "toggle",
+    id: v.id,
+    value: { active: !v.active }
+  }, {
+    successMessage: "",  // 👈 Ajoute cette ligne (peut être vide)
+    onSuccess: (prev) => prev.map(x => x.id === v.id ? { ...x, active: !x.active } : x),
+  });
+};
 
   // ── CATÉGORIES CRUD ──
   const { loading: catLoading, data: categories, execute: executeCat } = useCrudOperation(initC, async (payload) => {
@@ -96,8 +110,10 @@ export default function CatalogueClient({
         await executeCat(catModal.id, {
           action: "update",
           id: catModal.id,
-          nom: catModal.nom,
-          couleur: catModal.couleur
+          value: {
+            nom: catModal.nom,
+            couleur: catModal.couleur
+          }
         }, {
           successMessage: "Catégorie mise à jour",
           onSuccess: (prev) => prev.map(c => c.id === catModal.id ? { ...c, ...catModal } : c),
@@ -105,8 +121,11 @@ export default function CatalogueClient({
       } else {
         await executeCat("create", {
           action: "create",
-          nom: catModal.nom,
-          couleur: catModal.couleur
+          id: "create",
+          value: {
+            nom: catModal.nom,
+            couleur: catModal.couleur
+          }
         }, {
           successMessage: "Catégorie ajoutée",
           onSuccess: (prev) => [...prev, { ...catModal, id: "temp" } as Categorie].sort((a,b)=>a.nom.localeCompare(b.nom)),
@@ -117,7 +136,11 @@ export default function CatalogueClient({
   };
 
   const deleteCat = async (id:string, nom:string) => {
-    await executeCat(id, { action: "delete", id }, {
+    await executeCat(id, {
+      action: "delete",
+      id: id,
+      value: { id }
+    }, {
       confirmMessage: `Supprimer "${nom}" ?`,
       successMessage: "Catégorie supprimée",
     });

@@ -238,12 +238,31 @@ export function PaymentRow({
   const fee    = Number(payment.platform_fee);
   const net    = Number(payment.net_amount);
 
+  // ✅ Fonction sécurisée pour récupérer la méthode de paiement
+  const getPaymentMethod = () => {
+    return (payment as any).payment_method || 
+           (payment as any).method || 
+           (payment as any).paymentType || 
+           "cash";
+  };
+
   const methodIcon = () => {
-    switch (payment.payment_method) {
+    const method = getPaymentMethod();
+    switch (method) {
       case "flouci": return <CreditCard size={11} strokeWidth={2} />;
       case "cash":   return <Wallet     size={11} strokeWidth={2} />;
       case "bank":   return <Building2  size={11} strokeWidth={2} />;
       default:       return <CreditCard size={11} strokeWidth={2} />;
+    }
+  };
+
+  const getPaymentMethodLabel = () => {
+    const method = getPaymentMethod();
+    switch (method) {
+      case "flouci": return "Flouci";
+      case "cash":   return "Espèces";
+      case "bank":   return "Virement";
+      default:       return method;
     }
   };
 
@@ -333,19 +352,14 @@ export function PaymentRow({
             {/* Statut + méthode */}
             <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 5 }}>
               <StatusBadge status={payment.status} />
-              {payment.payment_method && (
-                <span style={{
-                  fontSize: 10, fontWeight: 700, color: "#6B7280",
-                  display: "flex", alignItems: "center", gap: 3,
-                  background: "#F3F4F6", padding: "2px 8px", borderRadius: 6,
-                }}>
-                  {methodIcon()}
-                  {payment.payment_method === "flouci" ? "Flouci"
-                    : payment.payment_method === "cash"  ? "Espèces"
-                    : payment.payment_method === "bank"  ? "Virement"
-                    : payment.payment_method}
-                </span>
-              )}
+              <span style={{
+                fontSize: 10, fontWeight: 700, color: "#6B7280",
+                display: "flex", alignItems: "center", gap: 3,
+                background: "#F3F4F6", padding: "2px 8px", borderRadius: 6,
+              }}>
+                {methodIcon()}
+                {getPaymentMethodLabel()}
+              </span>
             </div>
 
             {/* Flèche */}

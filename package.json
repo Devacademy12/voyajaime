@@ -14,9 +14,10 @@
     "dompurify": "^3.3.3",
     "lucide-react": "^0.424.0",
     "next": "^16.1.6",
+    "or": "^0.2.0",
     "react": "^18.3.0",
     "react-dom": "^18.3.0",
-    "resend": "^6.9.4"
+    "resend": "^6.12.2"
   },
   "devDependencies": {
     "@types/dompurify": "^3.0.5",

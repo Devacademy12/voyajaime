@@ -7,9 +7,17 @@ export default async function ExcursionDetailPage({ params }: { params: Promise<
   const { id } = await params;
   const supabase = createAdminClient();
 
-  // 1. Excursion
-  const { data: exc, error } = await supabase.from("excursions").select("*").eq("id", id).single();
-  if (error || !exc) { console.error("Excursion not found:", id, error?.message); notFound(); }
+  // 1. Excursion avec catégories
+  const { data: exc, error } = await supabase
+    .from("excursions")
+    .select("*, categories")  // ✅ Ajout de categories
+    .eq("id", id)
+    .single();
+  
+  if (error || !exc) { 
+    console.error("Excursion not found:", id, error?.message); 
+    notFound(); 
+  }
 
   // 2. Prestataire avec avatar
   let prestataire = null;
@@ -68,12 +76,26 @@ export default async function ExcursionDetailPage({ params }: { params: Promise<
     myLikedIds = (likes || []).map((l: { avis_id: string }) => l.avis_id);
   }
 
+  // 5. Récupérer les catégories (si ce n'est pas déjà fait via la jointure)
+  let categories = exc.categories || [];
+  
+  // Si categories n'est pas dans exc, récupère-les séparément
+  if (!categories.length) {
+    const { data: excursionCategories } = await supabase
+      .from("excursion_categories")
+      .select("categories(*)")
+      .eq("excursion_id", id);
+    
+    categories = (excursionCategories || []).map((ec: any) => ec.categories).filter(Boolean);
+  }
+
   return (
     <ExcursionClient
       exc={exc}
       prestataire={prestataire}
       initialAvis={initialAvis}
       myLikedIds={myLikedIds}
+      categories={categories}  // ✅ Ajout de la propriété categories
     />
   );
 }
