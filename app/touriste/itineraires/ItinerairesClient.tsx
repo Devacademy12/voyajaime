@@ -3,10 +3,10 @@
 import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabaseClient";
 import {
-  Map, Plus, Trash2, Pencil, ChevronDown, ChevronUp,
+  Map, Trash2, Pencil, ChevronDown, ChevronUp,
   MapPin, Clock, CalendarDays, Coins, Sunrise, Sun,
   Moon, Loader2, AlertCircle, FileText, ShoppingCart,
-  Bot, PenLine, Star, Image as ImageIcon,
+  Bot, PenLine, Image as ImageIcon,
 } from "lucide-react";
 import CheckoutModal from "@/app/components/excursions/CheckoutModal";
 
@@ -27,6 +27,7 @@ type Itineraire = {
 type ExcursionForCheckout = {
   id: string; title: string; city: string;
   duration_hours: number; price_per_person: number; max_people: number;
+  available_dates?: any[] | null;
 };
 
 const TIME_ICON  = {
@@ -53,7 +54,6 @@ function normalizePlan(raw: RawPlan): DayPlan[] {
               city:             String(dd.city || ""),
               price_per_person: Number(a.price) || 0,
               duration_hours:   parseFloat(String(a.duration || "2")) || 2,
-              // ✅ FIX: récupère les photos directement depuis le JSON IA
               photos: Array.isArray(a.photos) ? (a.photos as string[]) : [],
             },
           }))
@@ -66,13 +66,15 @@ function normalizePlan(raw: RawPlan): DayPlan[] {
 
 export default function ItinerairesClient() {
   const sb = createClient();
-  const [items,      setItems]      = useState<Itineraire[]>([]);
-  const [loading,    setLoading]    = useState(true);
-  const [error,      setError]      = useState<string | null>(null);
-  const [deleting,   setDeleting]   = useState<string | null>(null);
-  const [expanded,   setExpanded]   = useState<string | null>(null);
-  const [checkoutExc,setCheckoutExc]= useState<ExcursionForCheckout | null>(null);
-  const [excPhotos,  setExcPhotos]  = useState<Record<string, string[]>>({});
+  const [items,        setItems]        = useState<Itineraire[]>([]);
+  const [loading,      setLoading]      = useState(true);
+  const [error,        setError]        = useState<string | null>(null);
+  const [deleting,     setDeleting]     = useState<string | null>(null);
+  const [expanded,     setExpanded]     = useState<string | null>(null);
+  const [excPhotos,    setExcPhotos]    = useState<Record<string, string[]>>({});
+
+  // ✅ Liste des excursions de l'itinéraire à ouvrir dans CheckoutModal
+  const [checkoutExcs, setCheckoutExcs] = useState<ExcursionForCheckout[] | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -88,7 +90,6 @@ export default function ItinerairesClient() {
       const itineraires: Itineraire[] = data || [];
       setItems(itineraires);
 
-      // Collecter tous les IDs d'excursions (mode libre + mode IA)
       const ids = new Set<string>();
       itineraires.forEach(it =>
         normalizePlan(it.plan).forEach(day =>
@@ -98,10 +99,14 @@ export default function ItinerairesClient() {
 
       if (ids.size > 0) {
         const { data: excs } = await sb
-          .from("excursions").select("id, photos").in("id", Array.from(ids));
+          .from("excursions")
+          .select("id, photos, available_dates")
+          .in("id", Array.from(ids));
         if (excs) {
           const map: Record<string, string[]> = {};
-          excs.forEach((e: { id:string; photos:string[] }) => { map[e.id] = e.photos || []; });
+          excs.forEach((e: { id:string; photos:string[]; available_dates?: any[] }) => {
+            map[e.id] = e.photos || [];
+          });
           setExcPhotos(map);
         }
       }
@@ -124,9 +129,30 @@ export default function ItinerairesClient() {
   const fmt        = (iso: string) => new Date(iso).toLocaleDateString("fr-FR", { day:"2-digit", month:"short", year:"numeric" });
   const isAssisted = (raw: RawPlan) => !!raw && !Array.isArray(raw) && typeof raw === "object" && "days" in raw;
 
-  const openCheckout = (act: ActivityItem) => {
-    if (!act.excursion?.price_per_person) return;
-    setCheckoutExc({ id:act.id, title:act.excursion.title, city:act.excursion.city, duration_hours:act.excursion.duration_hours, price_per_person:act.excursion.price_per_person, max_people:20 });
+  // ✅ Collecte toutes les excursions de l'itinéraire et ouvre CheckoutModal
+  const openItineraryCheckout = (it: Itineraire) => {
+    const plan = normalizePlan(it.plan);
+    const seen = new Set<string>();
+    const excursions: ExcursionForCheckout[] = [];
+
+    plan.forEach(day => {
+      (day.activities || []).forEach(act => {
+        if (!act.excursion?.price_per_person) return;
+        if (seen.has(act.id)) return; // pas de doublons
+        seen.add(act.id);
+        excursions.push({
+          id:               act.id,
+          title:            act.excursion.title,
+          city:             act.excursion.city,
+          duration_hours:   act.excursion.duration_hours,
+          price_per_person: act.excursion.price_per_person,
+          max_people:       20,
+          available_dates:  null,
+        });
+      });
+    });
+
+    if (excursions.length > 0) setCheckoutExcs(excursions);
   };
 
   if (loading) return (
@@ -156,9 +182,9 @@ export default function ItinerairesClient() {
         .it-card{animation:fadeUp .22s ease both;transition:box-shadow .2s,transform .18s}
         .it-card:hover{box-shadow:0 8px 28px -8px rgba(43,150,168,.2)!important;transform:translateY(-2px)}
         .it-btn{transition:all .15s;cursor:pointer;font-family:inherit;border:none;outline:none}
-        .it-reserve-btn{display:inline-flex;align-items:center;gap:5px;padding:6px 13px;background:linear-gradient(135deg,#02AFCF,#259FFC);color:white;border:none;border-radius:20px;font-size:11px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .18s;flex-shrink:0;white-space:nowrap}
-        .it-reserve-btn:hover{transform:translateY(-1px);box-shadow:0 4px 12px rgba(2,175,207,.4)}
-        .it-reserve-btn:disabled{background:#E5E7EB;color:#9CA3AF;cursor:not-allowed;transform:none;box-shadow:none}
+        .it-reserve-all-btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;background:linear-gradient(135deg,#2B96A8,#1e7a8a);color:white;border:none;border-radius:20px;font-size:12px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .18s;flex-shrink:0;white-space:nowrap}
+        .it-reserve-all-btn:hover{transform:translateY(-1px);box-shadow:0 4px 14px rgba(43,150,168,.4)}
+        .it-reserve-all-btn:disabled{background:#E5E7EB;color:#9CA3AF;cursor:not-allowed;transform:none;box-shadow:none}
         .act-row{display:flex;align-items:center;gap:10px;padding:10px 14px;background:#F9FAFB;border-radius:14px;margin-bottom:8px;border:1.5px solid #F3F4F6;transition:border .15s}
         .act-row:hover{border-color:#DCE5FF;background:#F8FAFF}
         .act-photo{width:48px;height:48px;border-radius:10px;object-fit:cover;flex-shrink:0;border:1px solid #EEF2FF}
@@ -167,19 +193,16 @@ export default function ItinerairesClient() {
 
       {/* Header */}
       <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:32 }}>
-        <div> 
-          <h1 style={{ fontSize: 28, fontWeight: 700, color: "#053366", margin: 0 }}>
-            Mes itinéraires
-          </h1>
+        <div>
+          <h1 style={{ fontSize:28, fontWeight:700, color:"#053366", margin:0 }}>Mes itinéraires</h1>
           <p style={{ fontSize:13, color:"#9CA3AF", marginTop:8, display:"flex", alignItems:"center", gap:5 }}>
             <CalendarDays size={13}/>
             {items.length} itinéraire{items.length !== 1 ? "s" : ""} sauvegardé{items.length !== 1 ? "s" : ""}
           </p>
         </div>
-        
       </div>
 
-      {/* Empty */}
+      {/* Empty state */}
       {items.length === 0 ? (
         <div style={{ textAlign:"center", padding:"72px 24px", background:"#ffffff", borderRadius:28, border:"1px solid #E5E7EB", boxShadow:"0 2px 12px rgba(0,0,0,.04)" }}>
           <Map size={52} color="#D1D5DB" style={{ margin:"0 auto 16px" }}/>
@@ -198,15 +221,19 @@ export default function ItinerairesClient() {
             const isOpen   = expanded === it.id;
             const assisted = isAssisted(it.plan);
 
+            // ✅ Vérifie qu'au moins une activité est réservable
+            const hasBookable = plan.some(d =>
+              (d.activities || []).some(a => a.excursion?.price_per_person > 0)
+            );
+
             return (
               <div key={it.id} className="it-card"
                 style={{ background:"white", borderRadius:24, border:"1px solid #E5E7EB", overflow:"hidden", boxShadow:"0 2px 10px rgba(0,0,0,.05)", animationDelay:`${idx * .06}s` }}>
 
-                {/* Card header */}
+                {/* ── Card header ── */}
                 <div style={{ padding:"20px 24px", display:"flex", alignItems:"center", gap:14, cursor:"pointer" }}
                   onClick={() => setExpanded(isOpen ? null : it.id)}>
 
-                  {/* Icône mode */}
                   <div style={{ width:50, height:50, borderRadius:16, background: assisted ? "linear-gradient(135deg,rgba(2,175,207,.15),rgba(37,159,252,.1))" : "linear-gradient(135deg,#EFF9FB,#D0F0F5)", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, border:`1px solid ${assisted ? "rgba(2,175,207,.25)" : "rgba(43,150,168,.15)"}` }}>
                     {assisted ? <Bot size={22} color="#02AFCF"/> : <PenLine size={22} color="#2B96A8"/>}
                   </div>
@@ -216,11 +243,9 @@ export default function ItinerairesClient() {
                       <h3 style={{ fontSize:15, fontWeight:800, color:"#111827", margin:0 }}>
                         {it.nb_jours} jour{it.nb_jours > 1 ? "s" : ""} en Tunisie
                       </h3>
-                      {/* Badge mode */}
                       <span style={{ display:"inline-flex", alignItems:"center", gap:4, fontSize:10, fontWeight:700, padding:"2px 8px", borderRadius:20, background: assisted ? "rgba(2,175,207,.1)" : "rgba(43,150,168,.08)", color: assisted ? "#02AFCF" : "#2B96A8" }}>
                         {assisted ? <><Bot size={10}/> Mode IA</> : <><PenLine size={10}/> Mode Libre</>}
                       </span>
-                      {/* Villes — texte simple, sans emoji */}
                       {it.villes_selectionnees?.slice(0, 3).map(v => (
                         <span key={v} style={{ display:"inline-flex", alignItems:"center", gap:3, fontSize:11, color:"#6B7280", background:"#F3F4F6", padding:"2px 8px", borderRadius:20, fontWeight:500 }}>
                           <MapPin size={9} color="#9CA3AF"/> {v}
@@ -245,17 +270,31 @@ export default function ItinerairesClient() {
                     </div>
                   </div>
 
-                  <div style={{ display:"flex", gap:8, flexShrink:0 }} onClick={e => e.stopPropagation()}>
+                  {/* ✅ Actions — plus de bouton Réserver individuel */}
+                  <div style={{ display:"flex", gap:8, flexShrink:0, alignItems:"center" }}
+                    onClick={e => e.stopPropagation()}>
+
                     <a href={`/touriste/itineraires/${it.id}`}
                       style={{ padding:"8px 14px", background:"#F3F4F6", color:"#374151", borderRadius:20, fontSize:12, fontWeight:700, textDecoration:"none", display:"flex", alignItems:"center", gap:5, transition:"all .15s" }}
                       onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background="#E5E7EB"; }}
                       onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background="#F3F4F6"; }}>
                       <Pencil size={12}/> Modifier
                     </a>
+
                     <button className="it-btn"
                       onClick={() => deleteIt(it.id)} disabled={deleting === it.id}
                       style={{ padding:"8px 14px", background:"#FEF2F2", color:"#DC2626", borderRadius:20, fontSize:12, fontWeight:700, display:"flex", alignItems:"center", gap:5 }}>
-                      {deleting === it.id ? <Loader2 size={13} style={{ animation:"spin .8s linear infinite" }}/> : <Trash2 size={13}/>}
+                      {deleting === it.id
+                        ? <Loader2 size={13} style={{ animation:"spin .8s linear infinite" }}/>
+                        : <Trash2 size={13}/>}
+                    </button>
+
+                    {/* ✅ Unique bouton réservation pour tout l'itinéraire */}
+                    <button
+                      className="it-reserve-all-btn"
+                      disabled={!hasBookable}
+                      onClick={() => openItineraryCheckout(it)}>
+                      <ShoppingCart size={13}/> Réserver l'itinéraire
                     </button>
                   </div>
 
@@ -264,7 +303,7 @@ export default function ItinerairesClient() {
                   </div>
                 </div>
 
-                {/* Détail */}
+                {/* ── Détail des jours ── */}
                 {isOpen && (
                   <div style={{ padding:"0 24px 20px", borderTop:"1px solid #F3F4F6" }}>
                     <div style={{ paddingTop:18 }}>
@@ -272,7 +311,6 @@ export default function ItinerairesClient() {
                         <p style={{ fontSize:13, color:"#C4C9D0", fontStyle:"italic" }}>Aucune activité planifiée</p>
                       ) : plan.map((day, di) => (
                         <div key={di} style={{ borderLeft:"3px solid #EEF2FF", paddingLeft:14, marginBottom:18 }}>
-                          {/* Jour header */}
                           <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:10 }}>
                             <MapPin size={12} color="#02AFCF"/>
                             <p style={{ fontSize:12, fontWeight:700, color:"#053366", margin:0 }}>
@@ -283,13 +321,9 @@ export default function ItinerairesClient() {
                           {(day.activities || []).length === 0 ? (
                             <p style={{ fontSize:12, color:"#D1D5DB", fontStyle:"italic" }}>Journée libre</p>
                           ) : (day.activities || []).map((act, ai) => {
-                            // Photo : cherche dans excPhotos (mode IA) ou dans l'excursion directement (mode libre)
                             const photo = excPhotos[act.id]?.[0] || act.excursion?.photos?.[0];
-
                             return (
                               <div key={act.id || ai} className="act-row">
-
-                                {/* Photo — identique pour mode IA et mode libre */}
                                 {photo ? (
                                   <img src={photo} alt={act.excursion?.title || ""} className="act-photo"
                                     onError={e => { (e.target as HTMLImageElement).style.display="none"; }}/>
@@ -299,7 +333,7 @@ export default function ItinerairesClient() {
                                   </div>
                                 )}
 
-                                {/* Infos */}
+                                {/* ✅ Infos activité — bouton individuel supprimé */}
                                 <div style={{ flex:1, minWidth:0 }}>
                                   <p style={{ fontSize:13, fontWeight:700, color:"#111827", margin:"0 0 4px", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
                                     {act.excursion?.title || "—"}
@@ -332,15 +366,6 @@ export default function ItinerairesClient() {
                                     </p>
                                   )}
                                 </div>
-
-                                {/* Bouton réserver */}
-                                <button
-                                  className="it-reserve-btn"
-                                  disabled={!act.excursion?.price_per_person}
-                                  onClick={e => { e.stopPropagation(); openCheckout(act); }}>
-                                  <ShoppingCart size={11}/> Réserver
-                                </button>
-
                               </div>
                             );
                           })}
@@ -355,8 +380,13 @@ export default function ItinerairesClient() {
         </div>
       )}
 
-      {checkoutExc && (
-        <CheckoutModal exc={checkoutExc} onClose={() => setCheckoutExc(null)}/>
+      {/* ✅ CheckoutModal — reçoit toutes les excursions de l'itinéraire */}
+      {checkoutExcs && checkoutExcs.length > 0 && (
+        <CheckoutModal
+          excursion={checkoutExcs[0]}
+          excursions={checkoutExcs}
+          onClose={() => setCheckoutExcs(null)}
+        />
       )}
     </div>
   );

@@ -130,40 +130,6 @@ const DIFFICULTY_CONFIG: Record<
   },
 };
 
-// ── Helper: safely format a date value of any type (handles jsonb from Supabase) ──
-function formatDate(date: unknown): string {
-  try {
-    if (date === null || date === undefined) return "";
-
-    let str: string;
-
-    if (date instanceof Date) {
-      // Native Date object
-      str = date.toISOString();
-    } else if (typeof date === "object") {
-      // jsonb object from Supabase e.g. { date: "2025-06-15" } or a plain ISO string wrapped
-      const obj = date as Record<string, unknown>;
-      const inner = obj.date ?? obj.value ?? obj.day ?? Object.values(obj)[0];
-      str = String(inner ?? "");
-    } else {
-      str = String(date);
-    }
-
-    // Extract YYYY-MM-DD part only (strip time/timezone)
-    const datePart = str.split("T")[0];
-    const [y, m, d] = datePart.split("-").map(Number);
-    if (!y || !m || !d) return str;
-
-    return new Date(y, m - 1, d).toLocaleDateString("fr-FR", {
-      day: "numeric",
-      month: "long",
-      year: "numeric",
-    });
-  } catch {
-    return String(date ?? "");
-  }
-}
-
 export default function ExcursionClient({
   exc,
   prestataire,
@@ -416,7 +382,6 @@ export default function ExcursionClient({
     setMsgSending(false);
   };
 
-  // Parse what_to_bring and not_included into arrays (support newline or comma)
   const parseBulletList = (text: string | null): string[] => {
     if (!text) return [];
     return text
@@ -880,23 +845,6 @@ export default function ExcursionClient({
                 </div>
               </div>
             )}
-
-            {/* Dates disponibles */}
-            {exc.available_dates &&
-              Array.isArray(exc.available_dates) &&
-              exc.available_dates.length > 0 && (
-                <div className="glass-card glass-card-padded">
-                  <h2 className="s-heading">Dates disponibles</h2>
-                  <div className="exc-dates-grid">
-                    {exc.available_dates.map((date, i) => (
-                      <span key={i} className="exc-date-chip">
-                        <CalendarDays size={12} />
-                        {formatDate(date)}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
 
             {/* ── REVIEWS SECTION ── */}
             <div>
