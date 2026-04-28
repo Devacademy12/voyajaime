@@ -39,7 +39,8 @@ function toggle(arr: string[], item: string) {
 interface DateDispo {
   date: string;
   slots: number;
-  departure_time: string; // ✅ aligné avec le JSONB de la page nouvelle
+  departure_time: string; // heure principale
+  departure_times?: string[]; // plusieurs heures de départ
 }
 interface Excursion {
   id: string; title: string; city: string; description: string;
@@ -159,12 +160,18 @@ export default function EditExcursionClient({
       date:           d.date,
       slots:          d.slots,
       departure_time: (d as any).departure_time || (d as any).time || "09:00",
+      departure_times: (() => {
+        const ts = (d as any).departure_times;
+        if (ts && Array.isArray(ts) && ts.length > 0) return ts;
+        const t = (d as any).departure_time || (d as any).time || "09:00";
+        return [t];
+      })(),
     }))
   );
 
   const [newDate,    setNewDate]    = useState("");
   const [newSlots,   setNewSlots]   = useState(10);
-  const [newTime,    setNewTime]    = useState("09:00");
+  const [newTimes,   setNewTimes]   = useState<string[]>(["09:00"]);
   const [recurDays,  setRecurDays]  = useState<number[]>([]);
   const [recurSlots, setRecurSlots] = useState(10);
   const [recurTime,  setRecurTime]  = useState("09:00");
@@ -211,7 +218,18 @@ export default function EditExcursionClient({
   };
   const removeDate       = (d: string) => setDates(p => p.filter(x => x.date !== d));
   const updateSlots      = (d: string, s: number) => setDates(p => p.map(x => x.date===d ? {...x, slots:s} : x));
-  const updateTime       = (d: string, t: string) => setDates(p => p.map(x => x.date===d ? {...x, departure_time:t} : x)); // ✅ departure_time
+  const updateTime = (d: string, t: string) => setDates(p => p.map(x => x.date===d ? {...x, departure_time:t} : x));
+  const addTimeToDate = (d: string, t: string) => setDates(p => p.map(x => {
+    if (x.date !== d) return x;
+    const times = Array.from(new Set([...(x.departure_times || [x.departure_time]), t])).sort();
+    return { ...x, departure_time: times[0], departure_times: times };
+  }));
+  const removeTimeFromDate = (d: string, t: string) => setDates(p => p.map(x => {
+    if (x.date !== d) return x;
+    const times = (x.departure_times || [x.departure_time]).filter(tt => tt !== t);
+    const safe = times.length > 0 ? times : ["09:00"];
+    return { ...x, departure_time: safe[0], departure_times: safe };
+  }));
 
   const genRecurring = () => {
     if (!recurFrom || !recurTo || recurDays.length===0) return;
@@ -219,7 +237,7 @@ export default function EditExcursionClient({
     while (cur <= to) {
       if (recurDays.includes(cur.getDay())) {
         const iso = cur.toISOString().slice(0,10);
-        if (!dates.find(d => d.date===iso)) added.push({ date:iso, slots:recurSlots, departure_time:recurTime }); // ✅
+        if (!dates.find(d => d.date===iso)) added.push({ date:iso, slots:recurSlots, departure_time:recurTime, departure_times:[recurTime] }); // ✅
       }
       cur.setDate(cur.getDate()+1);
     }
@@ -239,7 +257,8 @@ export default function EditExcursionClient({
     const safeDates = dates.map(d => ({
       date:           d.date,
       slots:          d.slots,
-      departure_time: d.departure_time || "09:00",
+      departure_time: (d.departure_times && d.departure_times.length > 0) ? d.departure_times[0] : (d.departure_time || "09:00"),
+      departure_times: (d.departure_times && d.departure_times.length > 0) ? d.departure_times : [d.departure_time || "09:00"],
     }));
     const defaultDepartureTime = safeDates.length > 0 ? safeDates[0].departure_time : "09:00";
 
@@ -570,12 +589,27 @@ export default function EditExcursionClient({
                       <div className="nf-field">
                         <input type="date" value={newDate} min={today} onChange={e=>setNewDate(e.target.value)}/>
                       </div>
-                      <div style={{ display:"flex", gap:8, alignItems:"center", flexWrap:"wrap" }}>
-                        <div style={{ display:"flex", alignItems:"center", gap:6, flex:1, minWidth:140 }}>
-                          <Clock size={12} color="#94A3B8" style={{ flexShrink:0 }}/>
-                          <select value={newTime} onChange={e=>setNewTime(e.target.value)} className="time-select" style={{ width:"100%" }}>
-                            {DEPARTURE_TIMES.map(t=><option key={t} value={t}>{t}</option>)}
-                          </select>
+                      <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+                        <div style={{ display:"flex", flexDirection:"column", gap:5 }}>
+                          <label style={{ fontSize:11, fontWeight:700, color:"#475569", textTransform:"uppercase", letterSpacing:".5px" }}>Heure(s) de départ</label>
+                          {newTimes.map((t, i) => (
+                            <div key={i} style={{ display:"flex", alignItems:"center", gap:6 }}>
+                              <Clock size={12} color="#94A3B8" style={{ flexShrink:0 }}/>
+                              <select value={t} onChange={e=>setNewTimes(p=>p.map((x,j)=>j===i?e.target.value:x))} className="time-select" style={{ flex:1 }}>
+                                {DEPARTURE_TIMES.map(tt=><option key={tt} value={tt}>{tt}</option>)}
+                              </select>
+                              {newTimes.length > 1 && (
+                                <button type="button" onClick={()=>setNewTimes(p=>p.filter((_,j)=>j!==i))}
+                                  style={{ width:24, height:24, borderRadius:"50%", border:"none", background:"#FEE2E2", color:"#DC2626", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+                                  <X size={10}/>
+                                </button>
+                              )}
+                            </div>
+                          ))}
+                          <button type="button" onClick={()=>setNewTimes(p=>[...p,"09:00"])}
+                            style={{ display:"flex", alignItems:"center", gap:5, padding:"5px 9px", borderRadius:7, background:"#F0FDF4", color:"#059669", border:"1px solid #BBF7D0", cursor:"pointer", fontSize:11, fontWeight:700, fontFamily:"inherit", width:"fit-content" }}>
+                            <Plus size={10}/> + Horaire
+                          </button>
                         </div>
                         <div style={{ display:"flex", alignItems:"center", gap:6 }}>
                           <Users size={12} color="#94A3B8"/>
@@ -583,14 +617,14 @@ export default function EditExcursionClient({
                           <span style={{ fontSize:11, color:"#94A3B8" }}>pl.</span>
                         </div>
                         <button type="button" onClick={addDate} disabled={!newDate}
-                          style={{ display:"flex", alignItems:"center", gap:6, padding:"9px 14px", borderRadius:9, background:newDate?"#0F172A":"#F1F5F9", color:newDate?"white":"#94A3B8", border:"none", cursor:newDate?"pointer":"not-allowed", fontSize:12.5, fontWeight:700, fontFamily:"inherit", transition:"all .18s" }}>
+                          style={{ display:"flex", alignItems:"center", gap:6, padding:"9px 14px", borderRadius:9, background:newDate?"#0F172A":"#F1F5F9", color:newDate?"white":"#94A3B8", border:"none", cursor:newDate?"pointer":"not-allowed", fontSize:12.5, fontWeight:700, fontFamily:"inherit", transition:"all .18s", width:"100%", justifyContent:"center" }}>
                           <Plus size={13}/> Ajouter
                         </button>
                       </div>
                       {newDate && (
                         <div style={{ display:"flex", alignItems:"center", gap:6, padding:"8px 12px", background:"#F0FDF4", borderRadius:8, border:"1px solid #BBF7D0", fontSize:12, color:"#059669", fontWeight:600 }}>
                           <CheckCircle2 size={12}/>
-                          {new Date(newDate+"T00:00:00").toLocaleDateString("fr-FR",{weekday:"long",day:"numeric",month:"long"})} à {newTime} — {newSlots} place{newSlots>1?"s":""}
+                          {new Date(newDate+"T00:00:00").toLocaleDateString("fr-FR",{weekday:"long",day:"numeric",month:"long"})} · départ{newTimes.filter(t=>t).length > 1 ? "s" : ""} à {newTimes.filter(t=>t).join(" / ")} — {newSlots} place{newSlots>1?"s":""}
                         </div>
                       )}
                     </div>
@@ -654,12 +688,30 @@ export default function EditExcursionClient({
                                 {dt.toLocaleDateString("fr-FR",{weekday:"short",day:"numeric",month:"short",year:"numeric"})}
                               </p>
                             </div>
-                            <div style={{ display:"flex", alignItems:"center", gap:4 }}>
-                              <Clock size={10} color="#94A3B8"/>
-                              {/* ✅ departure_time */}
-                              <select value={d.departure_time || "09:00"} onChange={e=>updateTime(d.date,e.target.value)} className="time-select" style={{ minWidth:72, fontSize:11, padding:"5px 7px" }}>
-                                {DEPARTURE_TIMES.map(t=><option key={t} value={t}>{t}</option>)}
-                              </select>
+                            <div style={{ display:"flex", flexDirection:"column", gap:3 }}>
+                              {(d.departure_times && d.departure_times.length > 0 ? d.departure_times : [d.departure_time]).map((t, ti) => (
+                                <div key={ti} style={{ display:"flex", alignItems:"center", gap:4 }}>
+                                  <Clock size={10} color="#94A3B8" style={{ flexShrink:0 }}/>
+                                  <select value={t || "09:00"} onChange={e => {
+                                    const times = d.departure_times && d.departure_times.length > 0 ? [...d.departure_times] : [d.departure_time];
+                                    times[ti] = e.target.value;
+                                    const sorted = times.sort();
+                                    setDates(p => p.map(x => x.date===d.date ? {...x, departure_time:sorted[0], departure_times:sorted} : x));
+                                  }} className="time-select" style={{ minWidth:68, fontSize:11, padding:"4px 5px" }}>
+                                    {DEPARTURE_TIMES.map(tt=><option key={tt} value={tt}>{tt}</option>)}
+                                  </select>
+                                  {(d.departure_times || []).length > 1 && (
+                                    <button type="button" onClick={()=>removeTimeFromDate(d.date, t)}
+                                      style={{ width:16, height:16, borderRadius:"50%", border:"none", background:"#FEE2E2", color:"#DC2626", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, padding:0 }}>
+                                      <X size={8}/>
+                                    </button>
+                                  )}
+                                </div>
+                              ))}
+                              <button type="button" onClick={()=>addTimeToDate(d.date, "09:00")}
+                                style={{ fontSize:9.5, color:"#059669", background:"transparent", border:"none", cursor:"pointer", textAlign:"left", padding:0, display:"flex", alignItems:"center", gap:2, fontFamily:"inherit", fontWeight:600 }}>
+                                <Plus size={8}/> Horaire
+                              </button>
                             </div>
                             <div style={{ display:"flex", alignItems:"center", gap:5 }}>
                               <Users size={11} color="#94A3B8"/>

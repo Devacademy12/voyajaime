@@ -39,7 +39,8 @@ interface Langue       { id: string; nom: string; }   // ← nouveau type Supaba
 interface DateDispo {
   date: string;
   slots: number;
-  departure_time: string;  // ← renommé clairement pour correspondre à Supabase
+  departure_time: string;  // heure principale (compatibilité)
+  departure_times?: string[]; // plusieurs heures de départ possibles
 }
 
 /* ─────────────────────────────────────────────
@@ -163,7 +164,7 @@ export default function NouvelleExcursionClient({
   /* ── Ajout d'une date ── */
   const [newDate,  setNewDate]  = useState("");
   const [newSlots, setNewSlots] = useState(10);
-  const [newTime,  setNewTime]  = useState("09:00");
+  const [newTimes, setNewTimes] = useState<string[]>(["09:00"]);
 
   /* ── Dates récurrentes ── */
   const [recurDays,  setRecurDays]  = useState<number[]>([]);
@@ -201,14 +202,35 @@ export default function NouvelleExcursionClient({
 
   /* ── Dates ── */
   const addDate = () => {
-    if (!newDate || dates.find(d => d.date === newDate)) return;
-    setDates(p => [...p, { date: newDate, slots: newSlots, departure_time: newTime || "09:00" }]
-      .sort((a, b) => a.date.localeCompare(b.date)));
+    if (!newDate) return;
+    const times = newTimes.filter(t => t.trim());
+    const mainTime = times.length > 0 ? times[0] : "09:00";
+    const existing = dates.find(d => d.date === newDate);
+    if (existing) {
+      // Fusionner les heures si la date existe déjà
+      const merged = Array.from(new Set([...(existing.departure_times || [existing.departure_time]), ...times])).sort();
+      setDates(p => p.map(x => x.date === newDate ? { ...x, departure_time: merged[0], departure_times: merged, slots: newSlots } : x));
+    } else {
+      setDates(p => [...p, { date: newDate, slots: newSlots, departure_time: mainTime, departure_times: times.length > 0 ? times : [mainTime] }]
+        .sort((a, b) => a.date.localeCompare(b.date)));
+    }
     setNewDate("");
+    setNewTimes(["09:00"]);
   };
   const removeDate        = (d: string) => setDates(p => p.filter(x => x.date !== d));
   const updateSlots       = (d: string, s: number) => setDates(p => p.map(x => x.date===d ? {...x, slots:s} : x));
   const updateDepartureTime = (d: string, t: string) => setDates(p => p.map(x => x.date===d ? {...x, departure_time:t} : x));
+  const addTimeToDate = (d: string, t: string) => setDates(p => p.map(x => {
+    if (x.date !== d) return x;
+    const times = Array.from(new Set([...(x.departure_times || [x.departure_time]), t])).sort();
+    return { ...x, departure_time: times[0], departure_times: times };
+  }));
+  const removeTimeFromDate = (d: string, t: string) => setDates(p => p.map(x => {
+    if (x.date !== d) return x;
+    const times = (x.departure_times || [x.departure_time]).filter(tt => tt !== t);
+    const safe = times.length > 0 ? times : ["09:00"];
+    return { ...x, departure_time: safe[0], departure_times: safe };
+  }));
 
   const genRecurring = () => {
     if (!recurFrom || !recurTo || recurDays.length===0) return;
@@ -216,7 +238,7 @@ export default function NouvelleExcursionClient({
     while (cur <= to) {
       if (recurDays.includes(cur.getDay())) {
         const iso = cur.toISOString().slice(0,10);
-        if (!dates.find(d => d.date===iso)) added.push({ date:iso, slots:recurSlots, departure_time: recurTime || "09:00" });
+        if (!dates.find(d => d.date===iso)) added.push({ date:iso, slots:recurSlots, departure_time: recurTime || "09:00", departure_times: [recurTime || "09:00"] });
       }
       cur.setDate(cur.getDate()+1);
     }
@@ -236,11 +258,15 @@ export default function NouvelleExcursionClient({
     const photoUrls = photos.length > 0 ? await uploadPhotos(user.id) : [];
 
     // Normaliser chaque date avec departure_time non vide
-    const safeDates = dates.map(d => ({
-      date:           d.date,
-      slots:          d.slots,
-      departure_time: d.departure_time || "09:00",
-    }));
+    const safeDates = dates.map(d => {
+      const times = (d.departure_times && d.departure_times.length > 0) ? d.departure_times : [d.departure_time || "09:00"];
+      return {
+        date:            d.date,
+        slots:           d.slots,
+        departure_time:  times[0],
+        departure_times: times,
+      };
+    });
 
     // departure_time par défaut = heure de la première date (ou "09:00")
     const defaultDepartureTime = safeDates.length > 0 ? safeDates[0].departure_time : "09:00";
@@ -705,23 +731,35 @@ export default function NouvelleExcursionClient({
                       </div>
                     </div>
 
-                    {/* Étape 2 : Heure de départ */}
+                    {/* Étape 2 : Heures de départ (plusieurs possibles) */}
                     <div style={{ marginBottom:14 }}>
-                      <div className="section-sep">Étape 2 — Heure de départ</div>
-                      <div style={{ display:"flex", alignItems:"center", gap:10 }}>
-                        <div className="time-wrapper" style={{ flex:1 }}>
-                          <Clock size={14} color="#0F766E" style={{ flexShrink:0 }}/>
-                          <input
-                            type="time"
-                            value={newTime}
-                            onChange={e => setNewTime(e.target.value)}
-                            className="time-input"
-                            style={{ padding:"11px 4px" }}
-                          />
-                        </div>
-                        <div style={{ fontSize:11, color:"#94A3B8", fontWeight:500 }}>
-                          Heure à laquelle<br/>l&apos;excursion commence
-                        </div>
+                      <div className="section-sep">Étape 2 — Heure(s) de départ</div>
+                      <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
+                        {newTimes.map((t, i) => (
+                          <div key={i} style={{ display:"flex", alignItems:"center", gap:8 }}>
+                            <div className="time-wrapper" style={{ flex:1 }}>
+                              <Clock size={14} color="#0F766E" style={{ flexShrink:0 }}/>
+                              <input
+                                type="time"
+                                value={t}
+                                onChange={e => setNewTimes(prev => prev.map((x, j) => j===i ? e.target.value : x))}
+                                className="time-input"
+                                style={{ padding:"11px 4px" }}
+                              />
+                            </div>
+                            {newTimes.length > 1 && (
+                              <button type="button" onClick={() => setNewTimes(p => p.filter((_, j) => j!==i))}
+                                style={{ width:26, height:26, borderRadius:"50%", border:"none", background:"#FEE2E2", color:"#DC2626", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+                                <X size={11}/>
+                              </button>
+                            )}
+                          </div>
+                        ))}
+                        <button type="button" onClick={() => setNewTimes(p => [...p, "09:00"])}
+                          style={{ display:"flex", alignItems:"center", gap:5, padding:"6px 10px", borderRadius:8, background:"#F0FDF4", color:"#059669", border:"1px solid #BBF7D0", cursor:"pointer", fontSize:11.5, fontWeight:700, fontFamily:"inherit", width:"fit-content" }}>
+                          <Plus size={11}/> Ajouter une heure
+                        </button>
+                        <p style={{ fontSize:11, color:"#94A3B8", margin:0 }}>Vous pouvez ajouter plusieurs horaires pour la même date (ex: 09:00 et 14:00)</p>
                       </div>
                     </div>
 
@@ -748,7 +786,7 @@ export default function NouvelleExcursionClient({
                         <CheckCircle2 size={13}/>
                         <span>
                           {new Date(newDate+"T00:00:00").toLocaleDateString("fr-FR",{weekday:"long",day:"numeric",month:"long"})}
-                          {" "}· départ à <strong>{newTime}</strong> · {newSlots} place{newSlots>1?"s":""}
+                          {" "}· départ{newTimes.filter(t=>t).length > 1 ? "s" : ""} à <strong>{newTimes.filter(t=>t).join(" / ")}</strong> · {newSlots} place{newSlots>1?"s":""}
                         </span>
                       </div>
                     )}
@@ -852,16 +890,35 @@ export default function NouvelleExcursionClient({
                               </p>
                             </div>
 
-                            {/* Heure de départ — input time natif, clairement libellé */}
-                            <div style={{ display:"flex", alignItems:"center", gap:5, minWidth:90 }}>
-                              <Clock size={11} color="#0F766E"/>
-                              <input
-                                type="time"
-                                value={d.departure_time}
-                                onChange={e => updateDepartureTime(d.date, e.target.value)}
-                                className="time-input-sm"
-                                title="Heure de départ"
-                              />
+                            {/* Heures de départ — plusieurs heures possibles */}
+                            <div style={{ display:"flex", flexDirection:"column", gap:3, minWidth:120 }}>
+                              {(d.departure_times && d.departure_times.length > 0 ? d.departure_times : [d.departure_time]).map((t, ti) => (
+                                <div key={ti} style={{ display:"flex", alignItems:"center", gap:4 }}>
+                                  <Clock size={10} color="#0F766E" style={{ flexShrink:0 }}/>
+                                  <input
+                                    type="time"
+                                    value={t}
+                                    onChange={e => {
+                                      const times = d.departure_times && d.departure_times.length > 0 ? [...d.departure_times] : [d.departure_time];
+                                      times[ti] = e.target.value;
+                                      const sorted = times.sort();
+                                      setDates(p => p.map(x => x.date===d.date ? {...x, departure_time:sorted[0], departure_times:sorted} : x));
+                                    }}
+                                    className="time-input-sm"
+                                    title="Heure de départ"
+                                  />
+                                  {(d.departure_times || []).length > 1 && (
+                                    <button type="button" onClick={() => removeTimeFromDate(d.date, t)}
+                                      style={{ width:18, height:18, borderRadius:"50%", border:"none", background:"#FEE2E2", color:"#DC2626", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, padding:0 }}>
+                                      <X size={9}/>
+                                    </button>
+                                  )}
+                                </div>
+                              ))}
+                              <button type="button" onClick={() => addTimeToDate(d.date, "09:00")}
+                                style={{ fontSize:10, color:"#059669", background:"transparent", border:"none", cursor:"pointer", textAlign:"left", padding:0, display:"flex", alignItems:"center", gap:3, fontFamily:"inherit", fontWeight:600 }}>
+                                <Plus size={9}/> Horaire
+                              </button>
                             </div>
 
                             {/* Places */}

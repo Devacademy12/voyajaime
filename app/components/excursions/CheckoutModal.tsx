@@ -56,13 +56,21 @@ function buildDateMap(exc: Excursion): Map<string, TimeSlot[]> {
   exc.available_dates.forEach((item: any) => {
     const d = item.date; if (!d) return;
     if (!map.has(d)) map.set(d, []);
-    const timeStr = item.time || `${item.start_time || "09:00"} – ${item.end_time || "17:00"}`;
-    map.get(d)!.push({
-      time: timeStr, language: item.language,
-      price: item.price_per_person || exc.price_per_person,
-      slots: item.slots ?? 0,
-      groupPrice: item.group_discount_available || false,
-      start_time: item.start_time, end_time: item.end_time,
+
+    // Support departure_times (array) OR single departure_time/time
+    const depTimes: string[] = (item.departure_times && Array.isArray(item.departure_times) && item.departure_times.length > 0)
+      ? item.departure_times
+      : [item.departure_time || item.time || item.start_time || "09:00"];
+
+    depTimes.forEach(t => {
+      const timeStr = t.slice(0, 5);
+      map.get(d)!.push({
+        time: timeStr, language: item.language,
+        price: item.price_per_person || exc.price_per_person,
+        slots: item.slots ?? 0,
+        groupPrice: item.group_discount_available || false,
+        start_time: item.start_time, end_time: item.end_time,
+      });
     });
   });
   return map;
@@ -445,14 +453,14 @@ export default function CheckoutModal({ exc, excursion, excursions, onClose }: P
   const platformFee = Math.round(subtotal * 0.1);
   const grandTotal  = subtotal + platformFee;
 
+  const [status,      setStatus]      = useState<"idle"|"loading"|"success"|"error">("idle");
+  const [errorMsg,    setErrorMsg]    = useState("");
+  const [bookingCodes,setBookingCodes]= useState<string[]>([]);
+
   const canSubmit =
     perExc.some(p => !!p.selectedSlot) &&
     perExc.every(p => !p.selectedSlot || p.selectedSlot.slots >= p.people) &&
     status === "idle";
-
-  const [status,      setStatus]      = useState<"idle"|"loading"|"success"|"error">("idle");
-  const [errorMsg,    setErrorMsg]    = useState("");
-  const [bookingCodes,setBookingCodes]= useState<string[]>([]);
 
   // Keep people within slot capacity
   useEffect(() => {
@@ -472,6 +480,23 @@ export default function CheckoutModal({ exc, excursion, excursions, onClose }: P
       const codes: string[] = [];
       for (const p of perExc) {
         if (!p.selectedSlot) continue;
+
+        // ── Vérification doublon : même excursion + même date + même touriste ──
+        const { data: existing, error: checkErr } = await supabase
+          .from("reservations")
+          .select("id")
+          .eq("touriste_id", user.id)
+          .eq("excursion_id", p.exc.id)
+          .eq("date", p.selectedDate)
+          .not("status", "eq", "cancelled")
+          .maybeSingle();
+        if (checkErr) { setErrorMsg(`Erreur de vérification : ${checkErr.message}`); setStatus("error"); return; }
+        if (existing) {
+          setErrorMsg(`Vous avez déjà une réservation pour "${p.exc.title}" à cette date. Veuillez choisir une autre date.`);
+          setStatus("error");
+          return;
+        }
+
         const code = genBookingCode();
         const tot  = p.selectedSlot.price * p.people;
         const fee  = Math.round(tot * 0.1);

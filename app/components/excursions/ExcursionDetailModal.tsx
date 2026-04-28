@@ -30,7 +30,7 @@ type ExcursionDetail = {
   not_included: string | null;
   important_info: string | null;
   cancel_policy: string | null;
-  available_dates: any;
+  available_dates?: Array<{ date: string; departure_time?: string; departure_times?: string[]; time?: string; slots?: number }> | null;
   depart_time: string | null;
 };
 
@@ -134,12 +134,31 @@ export function ExcursionDetailModal({ excursion, onClose, onAdd }: ExcursionDet
               <Clock size={14} color="#6B7280" />
               <span>{excursion.duration_hours} heures</span>
             </div>
-            {excursion.depart_time && (
-              <div className="detail-meta-item">
-                <Sunrise size={14} color="#6B7280" />
-                <span>Départ à {excursion.depart_time.slice(0, 5)}</span>
-              </div>
-            )}
+            {(() => {
+              const timesSet = new Set<string>();
+              if (excursion.available_dates && Array.isArray(excursion.available_dates)) {
+                excursion.available_dates.forEach((d: any) => {
+                  if (d.departure_times && Array.isArray(d.departure_times)) {
+                    d.departure_times.forEach((t: string) => { if (t) timesSet.add(t.slice(0, 5)); });
+                  } else {
+                    const t = d.departure_time || d.time;
+                    if (t) timesSet.add(t.slice(0, 5));
+                  }
+                });
+              }
+              if (timesSet.size === 0 && excursion.depart_time) timesSet.add(excursion.depart_time.slice(0, 5));
+              const times = Array.from(timesSet).sort();
+              if (times.length === 0) return null;
+              return (
+                <div className="detail-meta-item">
+                  <Sunrise size={14} color="#6B7280" />
+                  {times.length === 1
+                    ? <span>Départ à {times[0]}</span>
+                    : <span>Départs : {times.join(" · ")}</span>
+                  }
+                </div>
+              );
+            })()}
             {excursion.difficulty && (
               <div className="detail-meta-item">
                 {getDifficultyIcon(excursion.difficulty)}

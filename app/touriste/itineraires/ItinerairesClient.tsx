@@ -6,15 +6,26 @@ import {
   Map, Trash2, Pencil, ChevronDown, ChevronUp,
   MapPin, Clock, CalendarDays, Coins, Sunrise, Sun,
   Moon, Loader2, AlertCircle, FileText, ShoppingCart,
-  Bot, PenLine, Image as ImageIcon,
+  Bot, PenLine, Image as ImageIcon, ExternalLink,
+  Calendar, Flag,
 } from "lucide-react";
 import CheckoutModal from "@/app/components/excursions/CheckoutModal";
 
 type ActivityItem = {
   id: string;
-  excursion: { title: string; city: string; price_per_person: number; duration_hours: number; photos: string[] };
+  excursion: { 
+    title: string; 
+    city: string; 
+    price_per_person: number; 
+    duration_hours: number; 
+    photos: string[];
+    meeting_point?: string;  // Lieu de rendez-vous
+    start_date?: string;      // Date de début
+    start_time?: string;      // Heure de début
+  };
   note: string;
   time: "matin" | "aprem" | "soir";
+  date?: string;              // Date spécifique pour cette activité
 };
 type DayPlan = { city: string; activities: ActivityItem[] };
 type RawPlan = DayPlan[] | { title?: string; days?: unknown[] } | null | undefined;
@@ -48,13 +59,17 @@ function normalizePlan(raw: RawPlan): DayPlan[] {
         ? (dd.activities as Record<string, unknown>[]).map(a => ({
             id:   String(a.id || ""),
             note: String(a.description || ""),
-            time: "matin" as const,
+            time: (a.time as "matin" | "aprem" | "soir") || "matin",
+            date: String(a.date || dd.date || ""),
             excursion: {
-              title:            String(a.name  || ""),
-              city:             String(dd.city || ""),
-              price_per_person: Number(a.price) || 0,
+              title:            String(a.name  || a.title || ""),
+              city:             String(a.city || dd.city || ""),
+              price_per_person: Number(a.price) || Number(a.price_per_person) || 0,
               duration_hours:   parseFloat(String(a.duration || "2")) || 2,
               photos: Array.isArray(a.photos) ? (a.photos as string[]) : [],
+              meeting_point:    String(a.meeting_point || a.lieu_depart || ""),
+              start_date:       String(a.start_date || a.date || ""),
+              start_time:       String(a.start_time || a.time || ""),
             },
           }))
         : [];
@@ -62,6 +77,22 @@ function normalizePlan(raw: RawPlan): DayPlan[] {
     });
   }
   return [];
+}
+
+// Fonction pour formater la date
+function formatDate(dateStr: string) {
+  if (!dateStr) return "";
+  try {
+    const date = new Date(dateStr);
+    return date.toLocaleDateString("fr-FR", { 
+      weekday: "long", 
+      day: "numeric", 
+      month: "long", 
+      year: "numeric" 
+    });
+  } catch {
+    return dateStr;
+  }
 }
 
 export default function ItinerairesClient() {
@@ -72,8 +103,8 @@ export default function ItinerairesClient() {
   const [deleting,     setDeleting]     = useState<string | null>(null);
   const [expanded,     setExpanded]     = useState<string | null>(null);
   const [excPhotos,    setExcPhotos]    = useState<Record<string, string[]>>({});
+  const [excDetails,   setExcDetails]   = useState<Record<string, any>>({});
 
-  // ✅ Liste des excursions de l'itinéraire à ouvrir dans CheckoutModal
   const [checkoutExcs, setCheckoutExcs] = useState<ExcursionForCheckout[] | null>(null);
 
   useEffect(() => {
@@ -98,16 +129,26 @@ export default function ItinerairesClient() {
       );
 
       if (ids.size > 0) {
+        // Récupérer les photos
         const { data: excs } = await sb
           .from("excursions")
-          .select("id, photos, available_dates")
+          .select("id, photos, available_dates, meeting_point, start_date, start_time, city, title")
           .in("id", Array.from(ids));
         if (excs) {
-          const map: Record<string, string[]> = {};
-          excs.forEach((e: { id:string; photos:string[]; available_dates?: any[] }) => {
-            map[e.id] = e.photos || [];
+          const photoMap: Record<string, string[]> = {};
+          const detailsMap: Record<string, any> = {};
+          excs.forEach((e: any) => {
+            photoMap[e.id] = e.photos || [];
+            detailsMap[e.id] = {
+              meeting_point: e.meeting_point,
+              start_date: e.start_date,
+              start_time: e.start_time,
+              city: e.city,
+              title: e.title,
+            };
           });
-          setExcPhotos(map);
+          setExcPhotos(photoMap);
+          setExcDetails(detailsMap);
         }
       }
       setLoading(false);
@@ -129,7 +170,14 @@ export default function ItinerairesClient() {
   const fmt        = (iso: string) => new Date(iso).toLocaleDateString("fr-FR", { day:"2-digit", month:"short", year:"numeric" });
   const isAssisted = (raw: RawPlan) => !!raw && !Array.isArray(raw) && typeof raw === "object" && "days" in raw;
 
-  // ✅ Collecte toutes les excursions de l'itinéraire et ouvre CheckoutModal
+  // Ouvrir une excursion individuelle dans un nouvel onglet
+  const openExcursionDetails = (excursionId: string) => {
+    if (excursionId) {
+      window.open(`/excursions/${excursionId}`, "_blank");
+    }
+  };
+
+  // Ouvrir l'itinéraire complet dans CheckoutModal
   const openItineraryCheckout = (it: Itineraire) => {
     const plan = normalizePlan(it.plan);
     const seen = new Set<string>();
@@ -138,7 +186,7 @@ export default function ItinerairesClient() {
     plan.forEach(day => {
       (day.activities || []).forEach(act => {
         if (!act.excursion?.price_per_person) return;
-        if (seen.has(act.id)) return; // pas de doublons
+        if (seen.has(act.id)) return;
         seen.add(act.id);
         excursions.push({
           id:               act.id,
@@ -174,7 +222,7 @@ export default function ItinerairesClient() {
   );
 
   return (
-    <div style={{ fontFamily:"'DM Sans',system-ui,sans-serif", padding:"36px 48px 60px", maxWidth:1160, margin:"0 auto", width:"100%" }}>
+    <div style={{ fontFamily:"'DM Sans',system-ui,sans-serif", padding:"36px 48px 60px", maxWidth:1200, margin:"0 auto", width:"100%" }}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@400;500;600;700;800&display=swap');
         @keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
@@ -185,10 +233,13 @@ export default function ItinerairesClient() {
         .it-reserve-all-btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;background:linear-gradient(135deg,#2B96A8,#1e7a8a);color:white;border:none;border-radius:20px;font-size:12px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .18s;flex-shrink:0;white-space:nowrap}
         .it-reserve-all-btn:hover{transform:translateY(-1px);box-shadow:0 4px 14px rgba(43,150,168,.4)}
         .it-reserve-all-btn:disabled{background:#E5E7EB;color:#9CA3AF;cursor:not-allowed;transform:none;box-shadow:none}
-        .act-row{display:flex;align-items:center;gap:10px;padding:10px 14px;background:#F9FAFB;border-radius:14px;margin-bottom:8px;border:1.5px solid #F3F4F6;transition:border .15s}
-        .act-row:hover{border-color:#DCE5FF;background:#F8FAFF}
-        .act-photo{width:48px;height:48px;border-radius:10px;object-fit:cover;flex-shrink:0;border:1px solid #EEF2FF}
-        .act-photo-placeholder{width:48px;height:48px;border-radius:10px;flex-shrink:0;background:#EEF2FF;display:flex;align-items:center;justify-content:center;border:1px solid #DCE5FF}
+        .act-row{display:flex;align-items:flex-start;gap:10px;padding:12px 14px;background:#F9FAFB;border-radius:14px;margin-bottom:8px;border:1.5px solid #F3F4F6;transition:border .15s}
+        .act-row:hover{border-color:#2B96A8;background:#F8FAFF}
+        .act-photo{width:64px;height:64px;border-radius:12px;object-fit:cover;flex-shrink:0;border:1px solid #EEF2FF;cursor:pointer}
+        .act-photo-placeholder{width:64px;height:64px;border-radius:12px;flex-shrink:0;background:#EEF2FF;display:flex;align-items:center;justify-content:center;border:1px solid #DCE5FF}
+        .excursion-title{cursor:pointer;transition:color .15s}
+        .excursion-title:hover{color:#2B96A8}
+        .info-badge{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;background:white;border-radius:20px;font-size:10px;font-weight:600;color:#374151;border:1px solid #E5E7EB}
       `}</style>
 
       {/* Header */}
@@ -221,7 +272,6 @@ export default function ItinerairesClient() {
             const isOpen   = expanded === it.id;
             const assisted = isAssisted(it.plan);
 
-            // ✅ Vérifie qu'au moins une activité est réservable
             const hasBookable = plan.some(d =>
               (d.activities || []).some(a => a.excursion?.price_per_person > 0)
             );
@@ -270,7 +320,6 @@ export default function ItinerairesClient() {
                     </div>
                   </div>
 
-                  {/* ✅ Actions — plus de bouton Réserver individuel */}
                   <div style={{ display:"flex", gap:8, flexShrink:0, alignItems:"center" }}
                     onClick={e => e.stopPropagation()}>
 
@@ -289,7 +338,6 @@ export default function ItinerairesClient() {
                         : <Trash2 size={13}/>}
                     </button>
 
-                    {/* ✅ Unique bouton réservation pour tout l'itinéraire */}
                     <button
                       className="it-reserve-all-btn"
                       disabled={!hasBookable}
@@ -303,17 +351,17 @@ export default function ItinerairesClient() {
                   </div>
                 </div>
 
-                {/* ── Détail des jours ── */}
+                {/* ── Détail des jours avec infos de date et lieu de départ ── */}
                 {isOpen && (
                   <div style={{ padding:"0 24px 20px", borderTop:"1px solid #F3F4F6" }}>
                     <div style={{ paddingTop:18 }}>
                       {plan.length === 0 ? (
                         <p style={{ fontSize:13, color:"#C4C9D0", fontStyle:"italic" }}>Aucune activité planifiée</p>
                       ) : plan.map((day, di) => (
-                        <div key={di} style={{ borderLeft:"3px solid #EEF2FF", paddingLeft:14, marginBottom:18 }}>
-                          <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:10 }}>
+                        <div key={di} style={{ borderLeft:"3px solid #EEF2FF", paddingLeft:14, marginBottom:24 }}>
+                          <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:12 }}>
                             <MapPin size={12} color="#02AFCF"/>
-                            <p style={{ fontSize:12, fontWeight:700, color:"#053366", margin:0 }}>
+                            <p style={{ fontSize:13, fontWeight:800, color:"#053366", margin:0 }}>
                               Jour {di + 1} — {day.city}
                             </p>
                           </div>
@@ -322,49 +370,134 @@ export default function ItinerairesClient() {
                             <p style={{ fontSize:12, color:"#D1D5DB", fontStyle:"italic" }}>Journée libre</p>
                           ) : (day.activities || []).map((act, ai) => {
                             const photo = excPhotos[act.id]?.[0] || act.excursion?.photos?.[0];
+                            const details = excDetails[act.id];
+                            
+                            // Date et lieu de départ
+                            const startDate = act.date || details?.start_date || act.excursion?.start_date;
+                            const startTime = act.excursion?.start_time || details?.start_time;
+                            const meetingPoint = details?.meeting_point || act.excursion?.meeting_point;
+                            
                             return (
                               <div key={act.id || ai} className="act-row">
                                 {photo ? (
-                                  <img src={photo} alt={act.excursion?.title || ""} className="act-photo"
+                                  <img 
+                                    src={photo} 
+                                    alt={act.excursion?.title || ""} 
+                                    className="act-photo"
+                                    onClick={() => openExcursionDetails(act.id)}
+                                    style={{ cursor: "pointer" }}
                                     onError={e => { (e.target as HTMLImageElement).style.display="none"; }}/>
                                 ) : (
-                                  <div className="act-photo-placeholder">
-                                    <ImageIcon size={18} color="#9CA3AF" strokeWidth={1.5}/>
+                                  <div className="act-photo-placeholder" onClick={() => openExcursionDetails(act.id)} style={{ cursor: "pointer" }}>
+                                    <ImageIcon size={20} color="#9CA3AF" strokeWidth={1.5}/>
                                   </div>
                                 )}
 
-                                {/* ✅ Infos activité — bouton individuel supprimé */}
                                 <div style={{ flex:1, minWidth:0 }}>
-                                  <p style={{ fontSize:13, fontWeight:700, color:"#111827", margin:"0 0 4px", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
+                                  {/* Titre cliquable */}
+                                  <p 
+                                    className="excursion-title"
+                                    onClick={() => openExcursionDetails(act.id)}
+                                    style={{ 
+                                      fontSize:14, fontWeight:700, color:"#111827", margin:"0 0 6px", 
+                                      cursor:"pointer", display:"flex", alignItems:"center", gap:6,
+                                    }}>
                                     {act.excursion?.title || "—"}
+                                    <ExternalLink size={12} color="#9CA3AF"/>
                                   </p>
-                                  <div style={{ display:"flex", alignItems:"center", gap:8, flexWrap:"wrap" }}>
+                                  
+                                  {/* Infos de base */}
+                                  <div style={{ display:"flex", alignItems:"center", gap:8, flexWrap:"wrap", marginBottom:6 }}>
                                     {act.time && (
-                                      <span style={{ display:"flex", alignItems:"center", gap:3, fontSize:11, color:"#6B7280" }}>
+                                      <span className="info-badge">
                                         {TIME_ICON[act.time]} {TIME_LABEL[act.time]}
                                       </span>
                                     )}
                                     {act.excursion?.duration_hours && (
-                                      <span style={{ display:"flex", alignItems:"center", gap:3, fontSize:11, color:"#6B7280" }}>
+                                      <span className="info-badge">
                                         <Clock size={10}/> {act.excursion.duration_hours}h
                                       </span>
                                     )}
-                                    {act.excursion?.city && (
-                                      <span style={{ display:"flex", alignItems:"center", gap:3, fontSize:11, color:"#6B7280" }}>
-                                        <MapPin size={10}/> {act.excursion.city}
-                                      </span>
-                                    )}
                                     {act.excursion?.price_per_person > 0 && (
-                                      <span style={{ display:"flex", alignItems:"center", gap:3, fontSize:11, fontWeight:700, color:"#02AFCF" }}>
+                                      <span className="info-badge" style={{ color:"#02AFCF" }}>
                                         <Coins size={10}/> {act.excursion.price_per_person} TND
                                       </span>
                                     )}
                                   </div>
+
+                                  {/* 📍 Date de départ */}
+                                  {(startDate || startTime) && (
+                                    <div style={{ 
+                                      display:"flex", alignItems:"center", gap:8, flexWrap:"wrap", 
+                                      marginBottom:6, padding:"4px 8px", background:"#F0FDF4", 
+                                      borderRadius:8, border:"1px solid #D1FAE5"
+                                    }}>
+                                      <Calendar size={12} color="#059669"/>
+                                      <span style={{ fontSize:11, fontWeight:600, color:"#065F46" }}>
+                                        {startDate && formatDate(startDate)}
+                                        {startTime && startTime && ` à ${startTime}`}
+                                      </span>
+                                    </div>
+                                  )}
+
+                                  {/* 📍 Lieu de rendez-vous / départ */}
+                                  {meetingPoint && (
+                                    <div style={{ 
+                                      display:"flex", alignItems:"center", gap:8, flexWrap:"wrap", 
+                                      marginBottom:6, padding:"4px 8px", background:"#FFF7ED", 
+                                      borderRadius:8, border:"1px solid #FED7AA"
+                                    }}>
+                                      <Flag size={12} color="#EA580C"/>
+                                      <span style={{ fontSize:11, fontWeight:600, color:"#9A3412" }}>
+                                        Rendez-vous: {meetingPoint}
+                                      </span>
+                                    </div>
+                                  )}
+
+                                  {/* Ville */}
+                                  {act.excursion?.city && (
+                                    <div style={{ display:"flex", alignItems:"center", gap:4, marginBottom:4 }}>
+                                      <MapPin size={10} color="#9CA3AF"/>
+                                      <span style={{ fontSize:11, color:"#6B7280" }}>{act.excursion.city}</span>
+                                    </div>
+                                  )}
+
+                                  {/* Note */}
                                   {act.note && (
-                                    <p style={{ fontSize:10, color:"#9CA3AF", margin:"3px 0 0", fontStyle:"italic", display:"flex", alignItems:"center", gap:3 }}>
+                                    <p style={{ fontSize:10, color:"#9CA3AF", margin:"6px 0 0", fontStyle:"italic", display:"flex", alignItems:"center", gap:3 }}>
                                       <FileText size={9}/> {act.note}
                                     </p>
                                   )}
+
+                                  {/* Bouton réserver individuel */}
+                                  <button
+                                    onClick={() => openExcursionDetails(act.id)}
+                                    style={{
+                                      marginTop: 10,
+                                      padding: "6px 12px",
+                                      background: "white",
+                                      border: "1.5px solid #2B96A8",
+                                      borderRadius: 20,
+                                      fontSize: 11,
+                                      fontWeight: 600,
+                                      color: "#2B96A8",
+                                      cursor: "pointer",
+                                      display: "inline-flex",
+                                      alignItems: "center",
+                                      gap: 5,
+                                      transition: "all .15s"
+                                    }}
+                                    onMouseEnter={e => {
+                                      (e.currentTarget as HTMLElement).style.background = "#2B96A8";
+                                      (e.currentTarget as HTMLElement).style.color = "white";
+                                    }}
+                                    onMouseLeave={e => {
+                                      (e.currentTarget as HTMLElement).style.background = "white";
+                                      (e.currentTarget as HTMLElement).style.color = "#2B96A8";
+                                    }}
+                                  >
+                                    <ExternalLink size={11}/> Voir et réserver
+                                  </button>
                                 </div>
                               </div>
                             );
@@ -380,7 +513,6 @@ export default function ItinerairesClient() {
         </div>
       )}
 
-      {/* ✅ CheckoutModal — reçoit toutes les excursions de l'itinéraire */}
       {checkoutExcs && checkoutExcs.length > 0 && (
         <CheckoutModal
           excursion={checkoutExcs[0]}
