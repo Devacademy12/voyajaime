@@ -1630,4 +1630,91 @@ body {
   border-radius: 2rem;
   font-size: 0.75rem;
   cursor: pointer;
+}/* Styles additionnels pour la gestion des dates */
+
+.date-error {
+  font-size: 11px;
+  color: #EF4444;
+  margin-top: 8px;
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  background: #FEF2F2;
+  padding: 6px;
+  border-radius: 6px;
+}
+
+.exc-departure-time {
+  font-size: 9px;
+  background: #F3F4F6;
+  padding: 2px 6px;
+  border-radius: 20px;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  color: #6B7280;
+  margin-top: 4px;
+}
+
+.bl-date-badge {
+  font-size: 10px;
+  background: #E0F2FE;
+  padding: 2px 6px;
+  border-radius: 20px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: #0284C7;
+}
+
+.bl-day-tab.warning {
+  border-color: #F59E0B;
+  background: #FEF3C7;
+}
+
+.bl-day-tab-warning {
+  font-size: 10px;
+  margin-left: 4px;
+}
+
+.conflict-warning {
+  background: #FEF2F2;
+  border: 1px solid #FEE2E2;
+  border-radius: 6px;
+  padding: 6px 10px;
+  margin-bottom: 12px;
+  font-size: 11px;
+  color: #DC2626;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.exc-add-btn.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.bl-planner-empty {
+  text-align: center;
+  padding: 2rem;
+  color: #9CA3AF;
+}
+
+.bl-planner-empty p {
+  font-size: 0.82rem;
+  margin-top: 0.5rem;
+}
+
+.spinner {
+  animation: spin 1s linear infinite;
+  margin: 10px auto;
+  display: block;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }
