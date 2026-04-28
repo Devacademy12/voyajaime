@@ -33,20 +33,39 @@ export async function GET(request: NextRequest) {
   let movedCount = 0;
 
   for (const res of expiredReservations || []) {
+    // ✅ Solution simple et efficace : utiliser 'as any'
+    const excursionAny = res.excursion as any;
+    
+    let excursionTitle = null;
+    let excursionCity = null;
+    let excursionPhoto = null;
+    
+    if (excursionAny) {
+      if (Array.isArray(excursionAny) && excursionAny.length > 0) {
+        excursionTitle = excursionAny[0]?.title;
+        excursionCity = excursionAny[0]?.city;
+        excursionPhoto = excursionAny[0]?.photos?.[0];
+      } else if (!Array.isArray(excursionAny)) {
+        excursionTitle = excursionAny.title;
+        excursionCity = excursionAny.city;
+        excursionPhoto = excursionAny.photos?.[0];
+      }
+    }
+
     // Récupérer le touriste
     const { data: touriste } = await supabase
-      .from("users")
+      .from("profiles")
       .select("email, full_name")
-      .eq("id", res.touriste_id)
+      .eq("user_id", res.touriste_id)
       .single();
 
     // Copier dans historique
     await supabase.from("historique_reservations").insert({
       original_reservation_id: res.id,
       booking_code: res.booking_code,
-      excursion_title: res.excursion?.title,
-      excursion_city: res.excursion?.city,
-      excursion_photo: res.excursion?.photos?.[0],
+      excursion_title: excursionTitle,
+      excursion_city: excursionCity,
+      excursion_photo: excursionPhoto,
       date: res.date,
       time: res.time,
       people_count: res.people_count,
@@ -56,8 +75,8 @@ export async function GET(request: NextRequest) {
       status: "expired",
       cancellation_reason: "Délai de paiement dépassé (1h)",
       cancelled_at: now,
-      touriste_email: touriste?.email,
-      touriste_nom: touriste?.full_name,
+      touriste_email: touriste?.email || null,
+      touriste_nom: touriste?.full_name || null,
     });
 
     // Supprimer l'original

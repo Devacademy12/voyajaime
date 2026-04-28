@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { createClient } from "@/lib/supabaseClient";
 import { sanitizeText } from "@/app/lib/sanitize";
+import { useRouter } from "next/navigation";
 
 const CITIES = ["Tunis","Sfax","Sousse","Kairouan","Hammamet","Tozeur","Djerba","Tataouine","Gafsa","Douz"];
 type Mode = "login" | "register" | "prestataire";
@@ -15,6 +16,7 @@ interface AuthModalProps {
 
 export default function AuthModal({ isOpen, onClose, defaultMode = "login" }: AuthModalProps) {
   const supabase = createClient();
+  const router = useRouter();
   const [mode, setMode] = useState<Mode>(defaultMode);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -36,6 +38,8 @@ export default function AuthModal({ isOpen, onClose, defaultMode = "login" }: Au
       setEmail("");
       setPassword("");
       setFullName("");
+      setAgencyName("");
+      setCity("");
     }
   }, [isOpen, defaultMode]);
 
@@ -138,19 +142,41 @@ export default function AuthModal({ isOpen, onClose, defaultMode = "login" }: Au
   };
 
   const handleForgotPassword = async () => {
-    if (!email) { setError("Entrez votre email d'abord."); return; }
+    if (!email) { 
+      setError("Entrez votre email d'abord."); 
+      return; 
+    }
+    
     const cleanEmail = sanitizeText(email);
-    setLoading(true); setError(null);
+    setLoading(true); 
+    setError(null);
+    setSuccess(null);
+    
     try {
       const res = await fetch("/api/auth/forgot-password", {
-        method: "POST", headers: { "Content-Type": "application/json" },
+        method: "POST", 
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: cleanEmail }),
       });
-      if (!res.ok) throw new Error();
-      setSuccess("Email de réinitialisation envoyé ! Vérifiez votre boîte mail.");
-    } catch {
-      setError("Impossible d'envoyer l'email. Réessayez.");
-    } finally { setLoading(false); }
+      
+      const data = await res.json();
+      
+      if (!res.ok) {
+        throw new Error(data.error || "Erreur lors de l'envoi");
+      }
+      
+      // Message de succès (même si l'email n'existe pas, pour sécurité)
+      setSuccess("✅ Un lien de réinitialisation a été envoyé à votre adresse email. Vérifiez votre boîte de réception (et vos spams).");
+      
+      // Optionnel: vider l'email après envoi
+      setEmail("");
+      
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Impossible d'envoyer l'email. Réessayez.";
+      setError(msg);
+    } finally { 
+      setLoading(false); 
+    }
   };
 
   const isPresta = mode === "prestataire";
@@ -234,10 +260,13 @@ export default function AuthModal({ isOpen, onClose, defaultMode = "login" }: Au
         .auth-submit-btn:disabled { opacity:.55; cursor:not-allowed; transform:none; }
         .auth-arrow { width:20px; height:20px; background:rgba(255,255,255,0.12); border-radius:6px; display:flex; align-items:center; justify-content:center; font-size:13px; }
         .auth-forgot-row { text-align:right; margin-top:-2px; margin-bottom:2px; }
-        .auth-forgot-btn { background:none; border:none; font-size:12px; color:#2B96A8; cursor:pointer; font-family:'DM Sans',sans-serif; font-weight:600; padding:0; }
+        .auth-forgot-btn { background:none; border:none; font-size:12px; color:#2B96A8; cursor:pointer; font-family:'DM Sans',sans-serif; font-weight:600; padding:0; transition: all 0.2s; }
+        .auth-forgot-btn:hover { color:#1E7A8A; text-decoration: underline; }
         .auth-footer-row { font-size:12px; color:#9CA3AF; text-align:center; margin-top:18px; padding-top:16px; border-top:1px solid #F3F4F6; line-height:1.6; }
-        .auth-footer-row button { background:none; border:none; color:#2B96A8; font-weight:700; cursor:pointer; font-family:'DM Sans',sans-serif; font-size:12px; }
-        .auth-back-btn { background:none; border:none; color:#9CA3AF; cursor:pointer; font-family:'DM Sans',sans-serif; font-size:12px; font-weight:500; padding:0; margin-bottom:14px; display:flex; align-items:center; gap:4px; }
+        .auth-footer-row button { background:none; border:none; color:#2B96A8; font-weight:700; cursor:pointer; font-family:'DM Sans',sans-serif; font-size:12px; transition: all 0.2s; }
+        .auth-footer-row button:hover { color:#1E7A8A; text-decoration: underline; }
+        .auth-back-btn { background:none; border:none; color:#9CA3AF; cursor:pointer; font-family:'DM Sans',sans-serif; font-size:12px; font-weight:500; padding:0; margin-bottom:14px; display:flex; align-items:center; gap:4px; transition: all 0.2s; }
+        .auth-back-btn:hover { color:#6B7280; }
         @keyframes spin { to { transform:rotate(360deg); } }
         .auth-spin { width:15px; height:15px; border:2px solid rgba(255,255,255,.3); border-top-color:white; border-radius:50%; animation:spin .7s linear infinite; }
         .auth-spin-dark { width:15px; height:15px; border:2px solid rgba(0,0,0,.1); border-top-color:#374151; border-radius:50%; animation:spin .7s linear infinite; }

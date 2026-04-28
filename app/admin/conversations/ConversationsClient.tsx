@@ -15,13 +15,19 @@ import {
   Violation,
   Excursion
 } from "../../components/admin/ConversationsUI";
-import { Profile } from "../../../types";
+
+// Interface Profile simplifiée pour ce composant
+interface SimpleProfile {
+  user_id: string;
+  full_name: string;
+  avatar_url: string;
+}
 
 interface Props {
   conversations: Conv[];
   excursions: Excursion[];
   messages: Message[];
-  profiles: Profile[];
+  profiles: SimpleProfile[];  // Changé de Profile[] à SimpleProfile[]
   violations: Record<string, Violation[]>;
 }
 
@@ -33,7 +39,7 @@ export default function ConversationsClient({ conversations, excursions, message
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const excMap     = Object.fromEntries(excursions.map((e: Excursion) => [e.id, e.title]));
-  const profileMap = Object.fromEntries(profiles.map((p: Profile) => [p.user_id, p]));
+  const profileMap = Object.fromEntries(profiles.map((p: SimpleProfile) => [p.user_id, p]));
 
   const msgByConv: Record<string, Message[]> = {};
   for (const m of messages) {
@@ -173,5 +179,4 @@ export default function ConversationsClient({ conversations, excursions, message
       </div>
     </div>
   );
-
 }

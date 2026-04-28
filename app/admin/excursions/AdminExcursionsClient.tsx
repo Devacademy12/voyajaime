@@ -16,8 +16,6 @@ interface Excursion {
   photos: string[]; categories: string[];
 }
 
-const FALLBACK = "https://images.unsplash.com/photo-1568515387631-8b650bbcdb90?w=600&q=80&fit=crop";
-
 export default function AdminExcursionsClient({ excursions: initial }: { excursions: Excursion[] }) {
   const [excursions, setExcursions] = useState(initial);
   const [filter, setFilter]   = useState("all");
@@ -25,35 +23,49 @@ export default function AdminExcursionsClient({ excursions: initial }: { excursi
   const [loading, setLoading] = useState<string | null>(null);
   const { toast, showToast } = useToast();
   const [view, setView]       = useState<"grid" | "list">("grid");
-  const { performOperation } = useCrudOperation();
+  
+  const { execute } = useCrudOperation(initial, async (payload) => {
+    return apiPost("/api/admin/manage-excursion", payload);
+  });
 
   const toggleActive = async (id: string, current: boolean) => {
     setLoading(id);
     try {
-      await performOperation(
-        () => apiPost("/api/admin/manage-excursion", { excursionId: id, action: "toggle", value: !current }),
-        !current ? "Excursion activée" : "Excursion désactivée",
-        () => setExcursions(prev => prev.map(e => e.id === id ? { ...e, is_active: !current } : e))
-      );
+      await execute(id, {
+        action: "toggle",
+        id: id,
+        value: { is_active: !current }
+      }, {
+        successMessage: !current ? "Excursion activée" : "Excursion désactivée",
+        // ✅ Correction : onSuccess doit RETOURNER le nouveau tableau
+        onSuccess: (prev) => prev.map(e => e.id === id ? { ...e, is_active: !current } : e)
+      });
     } catch (e) {
       showToast(`Erreur : ${e instanceof Error ? e.message : "Erreur"}`, false);
+    } finally {
+      setLoading(null);
     }
-    setLoading(null);
   };
 
   const handleDelete = async (id: string, title: string) => {
     if (!confirm(`Supprimer "${title}" ?`)) return;
     setLoading(id);
     try {
-      await performOperation(
-        () => apiPost("/api/admin/manage-excursion", { excursionId: id, action: "delete" }),
-        "Excursion supprimée",
-        () => setExcursions(prev => prev.filter(e => e.id !== id))
-      );
+      await execute(id, {
+        action: "delete",
+        id: id,
+        value: { id }
+      }, {
+        confirmMessage: `Supprimer "${title}" ?`,
+        successMessage: "Excursion supprimée",
+        // ✅ Correction : onSuccess doit RETOURNER le nouveau tableau
+        onSuccess: (prev) => prev.filter(e => e.id !== id)
+      });
     } catch (e) {
       showToast(`Erreur : ${e instanceof Error ? e.message : "Erreur"}`, false);
+    } finally {
+      setLoading(null);
     }
-    setLoading(null);
   };
 
   const filtered = excursions.filter(e => {
@@ -63,27 +75,50 @@ export default function AdminExcursionsClient({ excursions: initial }: { excursi
     return mf && ms;
   });
 
-  const counts = { all: excursions.length, active: excursions.filter(e => e.is_active).length, draft: excursions.filter(e => !e.is_active).length };
+  const counts = { 
+    all: excursions.length, 
+    active: excursions.filter(e => e.is_active).length, 
+    draft: excursions.filter(e => !e.is_active).length 
+  };
 
   return (
     <>
       <Toast toast={toast} />
 
-      {/* Toolbar */}
-      <ExcursionToolbar search={search} setSearch={setSearch} filter={filter} setFilter={setFilter} view={view} setView={setView} counts={counts} />
+      <ExcursionToolbar 
+        search={search} 
+        setSearch={setSearch} 
+        filter={filter} 
+        setFilter={setFilter} 
+        view={view} 
+        setView={setView} 
+        counts={counts} 
+      />
 
       {filtered.length === 0 ? (
         <EmptyExcursions />
       ) : view === "grid" ? (
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 18 }}>
           {filtered.map(exc => (
-            <ExcursionGridCard key={exc.id} exc={exc} loading={loading} onToggle={toggleActive} onDelete={handleDelete} />
+            <ExcursionGridCard 
+              key={exc.id} 
+              exc={exc} 
+              loading={loading} 
+              onToggle={toggleActive} 
+              onDelete={handleDelete} 
+            />
           ))}
         </div>
       ) : (
         <div style={{ background: "white", borderRadius: 16, border: "1px solid #F3F4F6", overflow: "hidden" }}>
           {filtered.map(exc => (
-            <ExcursionRow key={exc.id} exc={exc} loading={loading} onToggle={toggleActive} onDelete={handleDelete} />
+            <ExcursionRow 
+              key={exc.id} 
+              exc={exc} 
+              loading={loading} 
+              onToggle={toggleActive} 
+              onDelete={handleDelete} 
+            />
           ))}
         </div>
       )}

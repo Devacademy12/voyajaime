@@ -648,15 +648,39 @@ export default function PrestatairePaiementsReservationsClient({
       )}
 
       {/* ════════════════════════════════════════
-          ONGLET PAIEMENTS
+          ONGLET PAIEMENTS - VERSION CORRIGÉE
       ════════════════════════════════════════ */}
       {activeTab === "paiements" && (
         <>
-          {/* KPIs */}
+          {/* KPIs - CORRIGÉS */}
           <div className="pp-stats pp-card" style={{ animationDelay: ".07s" }}>
-            <StatCard label="Total encaissé"       value={`${totalPaid} TND`}    icon={<TrendingUp size={20}/>} color="#02AFCF" bg="rgba(2,175,207,.1)"   border="rgba(2,175,207,.2)"   delay={0.07} />
-            <StatCard label="En attente versement" value={`${totalPending} TND`} icon={<Clock size={20}/>}      color="#A16207" bg="rgba(217,119,6,.1)"   border="rgba(217,119,6,.2)"   delay={0.12} />
-            <StatCard label="Commission prélevée"  value={`${totalFees} TND`}    icon={<Percent size={20}/>}   color="#6B7280" bg="rgba(107,114,128,.08)" border="rgba(107,114,128,.15)" delay={0.17} />
+            <StatCard 
+              label="Total encaissé (TND)"       
+              value={totalPaid}            
+              icon={<TrendingUp size={20}/>} 
+              color="#02AFCF" 
+              bg="rgba(2,175,207,.1)"   
+              border="rgba(2,175,207,.2)"   
+              delay={0.07} 
+            />
+            <StatCard 
+              label="En attente versement (TND)" 
+              value={totalPending}        
+              icon={<Clock size={20}/>}      
+              color="#A16207" 
+              bg="rgba(217,119,6,.1)"   
+              border="rgba(217,119,6,.2)"   
+              delay={0.12} 
+            />
+            <StatCard 
+              label="Commission prélevée (TND)"  
+              value={totalFees}           
+              icon={<Percent size={20}/>}   
+              color="#6B7280" 
+              bg="rgba(107,114,128,.08)" 
+              border="rgba(107,114,128,.15)" 
+              delay={0.17} 
+            />
           </div>
 
           {paiements.length === 0 ? (
@@ -714,7 +738,7 @@ export default function PrestatairePaiementsReservationsClient({
                                 {/* Nom + statut */}
                                 <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4, flexWrap: "wrap" }}>
                                   <span style={{ fontSize: 14, fontWeight: 800, color: "#053366" }}>{tour?.full_name || "Client inconnu"}</span>
-                                  <StatusBadge status={p.status} config={PAIEMENT_STATUS} size="sm" />
+                                  <StatusBadge status={p.status} size="sm" />
                                 </div>
                                 {/* Email */}
                                 {tour?.email && (

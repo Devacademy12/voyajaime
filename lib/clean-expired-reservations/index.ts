@@ -1,29 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import { NextRequest, NextResponse } from "next/server";
 
-// Types
-interface Excursion {
-  title: string;
-  city: string;
-  photos: string[];
-}
-
-interface Reservation {
-  id: string;
-  booking_code: string;
-  date: string;
-  time: string;
-  people_count: number;
-  total_price: number;
-  platform_fee: number;
-  status: string;
-  payment_status: string | null;
-  payment_deadline: string;
-  touriste_id: string;
-  excursion_id: string;
-  excursion: Excursion | null;
-}
-
 export async function GET(request: NextRequest) {
   // Vérification d'un token secret pour sécuriser l'endpoint
   const authHeader = request.headers.get("authorization");
@@ -83,13 +60,27 @@ export async function GET(request: NextRequest) {
   let movedCount = 0;
   const errors: string[] = [];
 
-  for (const res of expiredReservations as Reservation[]) {
+  for (const res of expiredReservations) {
     try {
+      // ✅ Extraction correcte avec typage explicite
+      const rawExcursion = res.excursion;
+      
+      // Déclarer le type pour excursionData
+      let excursionData: { title: string; city: string; photos: string[] } | null = null;
+      
+      if (rawExcursion) {
+        if (Array.isArray(rawExcursion) && rawExcursion.length > 0) {
+          excursionData = rawExcursion[0];
+        } else if (!Array.isArray(rawExcursion)) {
+          excursionData = rawExcursion;
+        }
+      }
+
       // 2. Récupérer les infos du touriste
       const { data: touriste, error: userError } = await supabase
-        .from("users")
+        .from("profiles")
         .select("email, full_name")
-        .eq("id", res.touriste_id)
+        .eq("user_id", res.touriste_id)
         .single();
 
       if (userError) {
@@ -104,9 +95,9 @@ export async function GET(request: NextRequest) {
         .insert({
           original_reservation_id: res.id,
           booking_code: res.booking_code,
-          excursion_title: res.excursion?.title,
-          excursion_city: res.excursion?.city,
-          excursion_photo: res.excursion?.photos?.[0],
+          excursion_title: excursionData?.title || null,
+          excursion_city: excursionData?.city || null,
+          excursion_photo: excursionData?.photos?.[0] || null,
           date: res.date,
           time: res.time,
           people_count: res.people_count,

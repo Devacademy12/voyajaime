@@ -1,5 +1,5 @@
 import React from 'react';
-import { ToastState } from '../../lib/useToast';
+import { ToastState } from '..useToast/../../lib/useToast';
 
 interface ToastProps {
   toast: ToastState | null;
