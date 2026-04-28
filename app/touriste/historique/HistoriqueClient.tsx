@@ -117,22 +117,12 @@ export default function HistoriqueClient({ reservations }: { reservations: HistE
       <style>{CSS}</style>
 
       {/* ── Header ── */}
-      <div style={{ background:"white", borderBottom:"1px solid #EBEBEB", padding:"28px 40px 24px" }}>
+      <div style={{  borderBottom:"1px solid #EBEBEB", padding:"28px 40px 24px" }}>
         <div style={{ maxWidth:1100, margin:"0 auto" }}>
-          <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:6 }}>
-            <Link href="/touriste/reservations"
-              style={{ display:"flex", alignItems:"center", gap:5, color:"#9CA3AF", fontSize:12, fontWeight:600, textDecoration:"none" }}>
-              <ArrowLeft size={13}/> Réservations
-            </Link>
-            <span style={{ color:"#E5E7EB" }}>/</span>
-            <span style={{ fontSize:12, fontWeight:700, color:"#053366" }}>Historique</span>
-          </div>
           <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-end", flexWrap:"wrap", gap:16 }}>
             <div>
               <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:4 }}>
-                <div style={{ width:38, height:38, borderRadius:12, background:"linear-gradient(135deg,#02AFCF,#053366)", display:"flex", alignItems:"center", justifyContent:"center" }}>
-                  <History size={18} color="white"/>
-                </div>
+                
                 <h1 style={{ fontFamily:"'Playfair Display',serif", fontSize:28, fontWeight:900, color:"#053366", margin:0 }}>
                   Historique
                 </h1>
@@ -147,26 +137,7 @@ export default function HistoriqueClient({ reservations }: { reservations: HistE
 
       <div style={{ maxWidth:1100, margin:"0 auto", padding:"32px 40px 80px" }}>
 
-        {/* ── Stats ── */}
-        <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:14, marginBottom:32 }}>
-          {[
-            { label:"Total",     value:stats.total,     color:"#053366", bg:"rgba(5,51,102,.08)",    icon:<Ticket size={18} color="#053366"/> },
-            { label:"Terminées", value:stats.completed, color:"#059669", bg:"rgba(5,150,105,.08)",   icon:<CheckCircle2 size={18} color="#059669"/> },
-            { label:"Passées",   value:stats.passed,    color:"#2563EB", bg:"rgba(37,99,235,.08)",   icon:<CalendarDays size={18} color="#2563EB"/> },
-            { label:"Annulées",  value:stats.cancelled, color:"#DC2626", bg:"rgba(220,38,38,.08)",   icon:<Ban size={18} color="#DC2626"/> },
-          ].map(s => (
-            <div key={s.label} className="stat-card">
-              <div style={{ width:44, height:44, borderRadius:13, background:s.bg, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
-                {s.icon}
-              </div>
-              <div>
-                <p style={{ fontSize:24, fontWeight:900, color:s.color, margin:0, lineHeight:1 }}>{s.value}</p>
-                <p style={{ fontSize:12, color:"#9CA3AF", margin:"3px 0 0", fontWeight:600 }}>{s.label}</p>
-              </div>
-            </div>
-          ))}
-        </div>
-
+       
         {/* ── Search + Filtres ── */}
         <div style={{ display:"flex", gap:14, marginBottom:28, flexWrap:"wrap", alignItems:"center" }}>
           {/* Search */}
