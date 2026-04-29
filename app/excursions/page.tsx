@@ -6,7 +6,7 @@ import { createClient } from "@/lib/supabaseClient";
 import { sanitizeText } from "@/app/lib/sanitize";
 import {
   Search, MapPin, Clock, Star, Heart,
-  Loader2, Mountain, UserPlus, LogIn, Calendar,
+  Loader2, Mountain, UserPlus, LogIn, Calendar, XCircle,
 } from "lucide-react";
 import TouristeNav from "@/app/components/touriste/TouristeNav";
 import styles from "@/public/style/excursions.module.css";
@@ -16,9 +16,14 @@ type Excursion = {
   price_per_person: number; duration_hours: number;
   rating: number; reviews_count: number;
   categories: string[]; photos: string[]; is_active: boolean;
+  max_people: number; available_dates: string[] | null;
 };
 
+// Map excursion_id -> Map<date, totalPeople>
+type ReservationsMap = Record<string, Record<string, number>>;
+
 const FALLBACK = "https://images.unsplash.com/photo-1568515387631-8b650bbcdb90?w=600&q=80&fit=crop";
+const TODAY    = new Date().toISOString().split("T")[0]; // "YYYY-MM-DD"
 
 const Skeleton = () => (
   <div className={styles.skeleton}>
@@ -31,11 +36,39 @@ const Skeleton = () => (
   </div>
 );
 
+/**
+ * Retourne true si l'excursion est indisponible.
+ *
+ * CAS 1 — is_active = false → indisponible
+ * CAS 2 — available_dates est vide / null / toutes les dates sont passées → indisponible
+ * CAS 3 — des dates futures existent mais toutes ont atteint max_people → indisponible
+ */
+function isFullyBooked(exc: Excursion, reservations: ReservationsMap): boolean {
+  // Cas 1 : prestataire a désactivé l'excursion
+  if (!exc.is_active) return true;
+
+  const allDates   = exc.available_dates || [];
+  const futureDates = allDates.filter(d => d >= TODAY);
+
+  // Cas 2 : aucune date future (soit pas de dates du tout, soit toutes passées)
+  if (futureDates.length === 0) return true;
+
+  // Cas 3 : toutes les dates futures sont complètes (places épuisées)
+  const excReservations = reservations[exc.id] || {};
+  const hasAvailableDate = futureDates.some(date => {
+    const booked = excReservations[date] || 0;
+    return booked < (exc.max_people || Infinity);
+  });
+
+  return !hasAvailableDate;
+}
+
 export default function ExcursionsPage() {
-  const [excursions, setExcursions] = useState<Excursion[]>([]);
-  const [filtered,   setFiltered]   = useState<Excursion[]>([]);
-  const [villes,     setVilles]     = useState<string[]>([]);
-  const [cats,       setCats]       = useState<string[]>([]);
+  const [excursions,    setExcursions]    = useState<Excursion[]>([]);
+  const [filtered,      setFiltered]      = useState<Excursion[]>([]);
+  const [villes,        setVilles]        = useState<string[]>([]);
+  const [cats,          setCats]          = useState<string[]>([]);
+  const [reservations,  setReservations]  = useState<ReservationsMap>({});
 
   const [selectedCities,     setSelectedCities]     = useState<string[]>([]);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
@@ -47,28 +80,59 @@ export default function ExcursionsPage() {
   const [favorites,  setFavorites]  = useState<Set<string>>(new Set());
   const [loadingFav, setLoadingFav] = useState<string | null>(null);
 
-  const [activeTab,      setActiveTab]      = useState<"ville" | "categorie" | "journee" | "heure" | null>(null);
-  const [filterJournee,  setFilterJournee]  = useState(false);
-  const [filterHeure,    setFilterHeure]    = useState(false);
+  const [activeTab,     setActiveTab]     = useState<"ville" | "categorie" | "journee" | "heure" | null>(null);
+  const [filterJournee, setFilterJournee] = useState(false);
+  const [filterHeure,   setFilterHeure]   = useState(false);
 
   const supabase = createClient();
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => {
-      if (data.user) {
-        setUser({ id: data.user.id });
-        supabase.from("favoris").select("excursion_id").eq("touriste_id", data.user.id)
-          .then(({ data: favs }) => {
-            if (favs) setFavorites(new Set(favs.map((f: { excursion_id: string }) => f.excursion_id)));
-          });
+    (async () => {
+      // Auth
+      const { data: authData } = await supabase.auth.getUser();
+      if (authData.user) {
+        setUser({ id: authData.user.id });
+        const { data: favs } = await supabase
+          .from("favoris").select("excursion_id").eq("touriste_id", authData.user.id);
+        if (favs) setFavorites(new Set(favs.map((f: { excursion_id: string }) => f.excursion_id)));
       }
-    });
-    supabase.from("excursions").select("*").eq("is_active", true)
-      .then(({ data }) => { setExcursions((data as Excursion[]) || []); setLoading(false); });
-    supabase.from("villes").select("nom").eq("active", true).order("nom")
-      .then(({ data }) => { if (data) setVilles(data.map((v: { nom: string }) => v.nom)); });
-    supabase.from("categories").select("nom").order("nom")
-      .then(({ data }) => { if (data) setCats(data.map((c: { nom: string }) => c.nom)); });
+
+      // Excursions
+      const { data: excsData } = await supabase
+        .from("excursions")
+        .select("id, title, city, price_per_person, duration_hours, rating, reviews_count, categories, photos, is_active, max_people, available_dates")
+        .eq("is_active", true);
+      const excs: Excursion[] = (excsData as Excursion[]) || [];
+      setExcursions(excs);
+
+      // Réservations groupées par excursion_id + date
+      // On récupère toutes les réservations futures pour les excursions chargées
+      if (excs.length > 0) {
+        const ids = excs.map(e => e.id);
+        const { data: resData } = await supabase
+          .from("reservations")
+          .select("excursion_id, date, people_count")
+          .in("excursion_id", ids);
+        // On garde toutes les dates — le filtrage futur/passé se fait dans isFullyBooked
+
+        // Construire la map excursion_id -> { date -> totalPeople }
+        const resMap: ReservationsMap = {};
+        (resData || []).forEach((r: { excursion_id: string; date: string; people_count: number }) => {
+          if (!resMap[r.excursion_id]) resMap[r.excursion_id] = {};
+          resMap[r.excursion_id][r.date] = (resMap[r.excursion_id][r.date] || 0) + (r.people_count || 0);
+        });
+        setReservations(resMap);
+      }
+
+      // Villes & catégories
+      const { data: villesData } = await supabase.from("villes").select("nom").eq("active", true).order("nom");
+      if (villesData) setVilles(villesData.map((v: { nom: string }) => v.nom));
+
+      const { data: catsData } = await supabase.from("categories").select("nom").order("nom");
+      if (catsData) setCats(catsData.map((c: { nom: string }) => c.nom));
+
+      setLoading(false);
+    })();
   }, []);
 
   useEffect(() => {
@@ -126,21 +190,16 @@ export default function ExcursionsPage() {
 
     return (
       <div className={styles.dropdown}>
-        {items.length === 0 && (
-          <p className={styles.dropdownEmpty}>Aucun élément</p>
-        )}
+        {items.length === 0 && <p className={styles.dropdownEmpty}>Aucun élément</p>}
         {items.map(item => {
           const checked = selected.includes(item);
           return (
-            <button
-              key={item}
-              onClick={e => { e.stopPropagation(); toggle(item); }}
-              className={`${styles.dropdownItem} ${checked ? styles.dropdownItemChecked : ""}`}
-            >
+            <button key={item} onClick={e => { e.stopPropagation(); toggle(item); }}
+              className={`${styles.dropdownItem} ${checked ? styles.dropdownItemChecked : ""}`}>
               <span className={`${styles.checkbox} ${checked ? styles.checkboxChecked : ""}`}>
                 {checked && (
                   <svg width="9" height="7" viewBox="0 0 9 7" fill="none">
-                    <path d="M1 3.5L3.5 6L8 1" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                    <path d="M1 3.5L3.5 6L8 1" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
                   </svg>
                 )}
               </span>
@@ -172,6 +231,52 @@ export default function ExcursionsPage() {
       <TouristeNav />
       <div className={styles.navSpacer} />
 
+      <style>{`
+        /* ── Badge Indisponible ── */
+        .badge-unavailable {
+          position: absolute;
+          top: 10px;
+          left: 10px;
+          display: flex;
+          align-items: center;
+          gap: 5px;
+          padding: 5px 10px;
+          background: rgba(107, 114, 128, 0.88);
+          backdrop-filter: blur(4px);
+          color: white;
+          font-size: 11px;
+          font-weight: 600;
+          border-radius: 20px;
+          letter-spacing: 0.3px;
+          z-index: 10;
+          box-shadow: 0 2px 8px rgba(0,0,0,.18);
+        }
+        /* Overlay grisé sur l'image si indisponible */
+        .img-unavailable-overlay {
+          position: absolute;
+          inset: 0;
+          background: rgba(0,0,0,0.25);
+          border-radius: inherit;
+          z-index: 5;
+          pointer-events: none;
+        }
+        /* Bouton Réserver désactivé */
+        .reserve-btn-disabled {
+          display: inline-flex;
+          align-items: center;
+          gap: 5px;
+          padding: 8px 14px;
+          background: #F3F4F6 !important;
+          color: #9CA3AF !important;
+          border: none;
+          border-radius: 20px;
+          font-size: 12px;
+          font-weight: 700;
+          cursor: not-allowed;
+          font-family: inherit;
+        }
+      `}</style>
+
       <div className={styles.root}>
         {/* ── HERO ── */}
         <div className={styles.hero}>
@@ -194,58 +299,39 @@ export default function ExcursionsPage() {
 
             {/* Filter tabs */}
             <div className={styles.filtersRow}>
-
-              {/* Ville */}
               <div className={styles.filterDropdownWrapper}>
                 <button
                   className={`${styles.tabBtn} ${selectedCities.length > 0 || activeTab === "ville" ? styles.tabBtnActive : ""}`}
-                  onClick={() => setActiveTab(prev => prev === "ville" ? null : "ville")}
-                >
+                  onClick={() => setActiveTab(prev => prev === "ville" ? null : "ville")}>
                   <MapPin size={13} />
                   {villeLabel}
-                  {selectedCities.length > 0 && (
-                    <span className={styles.tabBadge}>{selectedCities.length}</span>
-                  )}
+                  {selectedCities.length > 0 && <span className={styles.tabBadge}>{selectedCities.length}</span>}
                 </button>
                 {activeTab === "ville" && renderDropdown()}
               </div>
 
-              {/* Catégorie */}
               <div className={styles.filterDropdownWrapper}>
                 <button
                   className={`${styles.tabBtn} ${selectedCategories.length > 0 || activeTab === "categorie" ? styles.tabBtnActive : ""}`}
-                  onClick={() => setActiveTab(prev => prev === "categorie" ? null : "categorie")}
-                >
+                  onClick={() => setActiveTab(prev => prev === "categorie" ? null : "categorie")}>
                   {catLabel}
-                  {selectedCategories.length > 0 && (
-                    <span className={styles.tabBadge}>{selectedCategories.length}</span>
-                  )}
+                  {selectedCategories.length > 0 && <span className={styles.tabBadge}>{selectedCategories.length}</span>}
                 </button>
                 {activeTab === "categorie" && renderDropdown()}
               </div>
 
-              {/* Journée */}
-              <button
-                className={`${styles.tabBtn} ${filterJournee ? styles.tabBtnActive : ""}`}
-                onClick={() => setFilterJournee(prev => !prev)}
-              >
+              <button className={`${styles.tabBtn} ${filterJournee ? styles.tabBtnActive : ""}`}
+                onClick={() => setFilterJournee(prev => !prev)}>
                 Excursion d'une journée
               </button>
 
-              {/* Par heure */}
-              <button
-                className={`${styles.tabBtn} ${filterHeure ? styles.tabBtnActive : ""}`}
-                onClick={() => setFilterHeure(prev => !prev)}
-              >
+              <button className={`${styles.tabBtn} ${filterHeure ? styles.tabBtnActive : ""}`}
+                onClick={() => setFilterHeure(prev => !prev)}>
                 Par heure
               </button>
 
-              {/* Reset */}
               {hasFilters && (
-                <button
-                  className={`${styles.tabBtn} ${styles.tabBtnReset}`}
-                  onClick={resetAll}
-                >
+                <button className={`${styles.tabBtn} ${styles.tabBtnReset}`} onClick={resetAll}>
                   ✕ Réinitialiser
                 </button>
               )}
@@ -266,11 +352,7 @@ export default function ExcursionsPage() {
                 </>
               )}
             </p>
-            <select
-              className={styles.sortSelect}
-              value={sort}
-              onChange={e => setSort(e.target.value)}
-            >
+            <select className={styles.sortSelect} value={sort} onChange={e => setSort(e.target.value)}>
               <option value="popular">Plus populaires</option>
               <option value="rating">Meilleures notes</option>
               <option value="price_asc">Prix croissant</option>
@@ -298,9 +380,7 @@ export default function ExcursionsPage() {
                 {excursions.length === 0 ? "Revenez bientôt, de nouvelles aventures arrivent !" : "Essayez d'autres filtres"}
               </p>
               {hasFilters && (
-                <button className={styles.resetBtn} onClick={resetAll}>
-                  Réinitialiser les filtres
-                </button>
+                <button className={styles.resetBtn} onClick={resetAll}>Réinitialiser les filtres</button>
               )}
             </div>
           )}
@@ -308,87 +388,119 @@ export default function ExcursionsPage() {
           {/* Cards grid */}
           {!loading && filtered.length > 0 && (
             <div className={styles.excGrid}>
-              {filtered.map((exc, i) => (
-                <div
-                  key={exc.id}
-                  className={styles.card}
-                  style={{ animationDelay: `${i * 0.04}s` }}
-                  onClick={() => { window.location.href = `/excursions/${exc.id}`; }}
-                >
-                  {/* Image zone */}
-                  <div className={styles.cardImgZone}>
-                    <img
-                      className={styles.cardImg}
-                      src={exc.photos?.[0] || FALLBACK}
-                      alt={sanitizeText(exc.title)}
-                      onError={e => { (e.target as HTMLImageElement).src = FALLBACK; }}
-                    />
-                    {exc.categories?.[0] && (
-                      <div className={styles.categoryBadge}>
-                        {sanitizeText(exc.categories[0])}
-                      </div>
-                    )}
-                    <button
-                      className={styles.heartBtn}
-                      onClick={e => { e.stopPropagation(); toggleFav(exc.id); }}
-                    >
-                      {loadingFav === exc.id
-                        ? <Loader2 size={15} color="#9CA3AF" className={styles.spinIcon} />
-                        : user
-                          ? <Heart size={16} fill={favorites.has(exc.id) ? "#EF4444" : "none"} color={favorites.has(exc.id) ? "#EF4444" : "#374151"} strokeWidth={2.2} />
-                          : <Heart size={13} color="#9CA3AF" />
-                      }
-                    </button>
-                  </div>
+              {filtered.map((exc, i) => {
+                const unavailable = isFullyBooked(exc, reservations);
 
-                  {/* Card body */}
-                  <div className={styles.cardBody}>
-                    <div className={styles.cardRow1}>
-                      <h3 className={styles.cardTitle}>{sanitizeText(exc.title)}</h3>
-                      <div className={styles.cardPriceBox}>
-                        <span className={styles.cardPrice}>{exc.price_per_person}</span>
-                        <span className={styles.cardPriceCurrency}>TND</span>
-                        <div className={styles.cardPriceUnit}>/ personne</div>
-                      </div>
-                    </div>
+                return (
+                  <div
+                    key={exc.id}
+                    className={styles.card}
+                    style={{
+                      animationDelay: `${i * 0.04}s`,
+                      opacity: unavailable ? 0.82 : 1,
+                      cursor: unavailable ? "default" : "pointer",
+                    }}
+                    onClick={() => { if (!unavailable) window.location.href = `/excursions/${exc.id}`; }}
+                  >
+                    {/* Image zone */}
+                    <div className={styles.cardImgZone}>
+                      <img
+                        className={styles.cardImg}
+                        src={exc.photos?.[0] || FALLBACK}
+                        alt={sanitizeText(exc.title)}
+                        onError={e => { (e.target as HTMLImageElement).src = FALLBACK; }}
+                        style={{ filter: unavailable ? "grayscale(30%)" : "none" }}
+                      />
 
-                    <p className={styles.cardCity}>
-                      <MapPin size={12} color="#02AFCF" />
-                      {sanitizeText(exc.city)}
-                    </p>
+                      {/* Overlay grisé si indisponible */}
+                      {unavailable && <div className="img-unavailable-overlay" />}
 
-                    <div className={styles.cardRow3}>
-                      <div className={styles.cardMeta}>
-                        <span className={styles.cardMetaItem}>
-                          <Clock size={13} color="#9CA3AF" /> {exc.duration_hours}h
-                        </span>
-                        <span className={styles.cardMetaItem}>
-                          <Star size={14} fill="#F59E0B" color="#F59E0B" strokeWidth={1.5} />
-                          {exc.rating > 0
-                            ? <>{exc.rating.toFixed(1)} <span className={styles.cardMetaMuted}>({exc.reviews_count})</span></>
-                            : <span className={styles.cardMetaMuted}>Nouveau</span>
-                          }
-                        </span>
-                      </div>
+                      {/* Badge catégorie */}
+                      {exc.categories?.[0] && !unavailable && (
+                        <div className={styles.categoryBadge}>
+                          {sanitizeText(exc.categories[0])}
+                        </div>
+                      )}
 
+                      {/* Badge Indisponible — remplace le badge catégorie */}
+                      {unavailable && (
+                        <div className="badge-unavailable">
+                          <XCircle size={12} /> Indisponible
+                        </div>
+                      )}
+
+                      {/* Bouton favori */}
                       <button
-                        className={`${styles.reserveBtn} ${user ? styles.reserveBtnActive : styles.reserveBtnLocked}`}
-                        onClick={e => {
-                          e.stopPropagation();
-                          if (!user) {
-                            sessionStorage.setItem("redirect_after_login", `/excursions/${exc.id}`);
-                            window.location.href = "/auth";
-                          } else {
-                            window.location.href = `/excursions/${exc.id}`;
-                          }
-                        }}
+                        className={styles.heartBtn}
+                        onClick={e => { e.stopPropagation(); toggleFav(exc.id); }}
                       >
-                        <Calendar size={user ? 13 : 11} /> Réserver
+                        {loadingFav === exc.id
+                          ? <Loader2 size={15} color="#9CA3AF" className={styles.spinIcon} />
+                          : user
+                            ? <Heart size={16} fill={favorites.has(exc.id) ? "#EF4444" : "none"} color={favorites.has(exc.id) ? "#EF4444" : "#374151"} strokeWidth={2.2} />
+                            : <Heart size={13} color="#9CA3AF" />
+                        }
                       </button>
                     </div>
+
+                    {/* Card body */}
+                    <div className={styles.cardBody}>
+                      <div className={styles.cardRow1}>
+                        <h3 className={styles.cardTitle}>{sanitizeText(exc.title)}</h3>
+                        <div className={styles.cardPriceBox}>
+                          <span className={styles.cardPrice}>{exc.price_per_person}</span>
+                          <span className={styles.cardPriceCurrency}>TND</span>
+                          <div className={styles.cardPriceUnit}>/ personne</div>
+                        </div>
+                      </div>
+
+                      <p className={styles.cardCity}>
+                        <MapPin size={12} color="#02AFCF" />
+                        {sanitizeText(exc.city)}
+                      </p>
+
+                      <div className={styles.cardRow3}>
+                        <div className={styles.cardMeta}>
+                          <span className={styles.cardMetaItem}>
+                            <Clock size={13} color="#9CA3AF" /> {exc.duration_hours}h
+                          </span>
+                          <span className={styles.cardMetaItem}>
+                            <Star size={14} fill="#F59E0B" color="#F59E0B" strokeWidth={1.5} />
+                            {exc.rating > 0
+                              ? <>{exc.rating.toFixed(1)} <span className={styles.cardMetaMuted}>({exc.reviews_count})</span></>
+                              : <span className={styles.cardMetaMuted}>Nouveau</span>
+                            }
+                          </span>
+                        </div>
+
+                        {/* Bouton Réserver — désactivé si indisponible */}
+                        {unavailable ? (
+                          <button className="reserve-btn-disabled" disabled onClick={e => e.stopPropagation()}>
+                            <XCircle size={12} /> Complet
+                          </button>
+                        ) : (
+                          <button
+                            className={`${styles.reserveBtn} ${user ? styles.reserveBtnActive : styles.reserveBtnLocked}`}
+                            onClick={e => {
+                              e.stopPropagation();
+                              if (!user) {
+                                sessionStorage.setItem("redirect_after_login", `/excursions/${exc.id}`);
+                                window.location.href = "/auth";
+                              } else {
+                                window.location.href = `/excursions/${exc.id}`;
+                              }
+                            }}
+                          >
+                            <Calendar size={user ? 13 : 11} /> Réserver
+                          </button>
+                        )}
+                      </div>
+
+
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
 
@@ -400,22 +512,15 @@ export default function ExcursionsPage() {
                 <p className={styles.guestCtaSub}>Favoris, réservations et paiements nécessitent un compte gratuit</p>
               </div>
               <div className={styles.guestCtaBtns}>
-                <Link href="/auth" className={styles.btnRegister}>
-                  <UserPlus size={15} /> Créer un compte
-                </Link>
-                <Link href="/auth" className={styles.btnLogin}>
-                  <LogIn size={15} /> Se connecter
-                </Link>
+                <Link href="/auth" className={styles.btnRegister}><UserPlus size={15} /> Créer un compte</Link>
+                <Link href="/auth" className={styles.btnLogin}><LogIn size={15} /> Se connecter</Link>
               </div>
             </div>
           )}
         </div>
       </div>
 
-      {/* Overlay to close dropdowns on outside click */}
-      {activeTab && (
-        <div className={styles.overlay} onClick={() => setActiveTab(null)} />
-      )}
+      {activeTab && <div className={styles.overlay} onClick={() => setActiveTab(null)} />}
     </>
   );
 }

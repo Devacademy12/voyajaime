@@ -96,7 +96,7 @@ export default function ProfilClient({ profile, email }: Props) {
     if (!avatarFile || !userId) return avatarUrl || null;
     setAvatarLoading(true);
     const ext  = avatarFile.name.split(".").pop() || "jpg";
-    const path = `${User}/avatar-${Date.now()}.${ext}`;
+    const path = `${userId}/avatar-${Date.now()}.${ext}`;
     const { data, error } = await supabase.storage
       .from("avatars").upload(path, avatarFile, { upsert: true });
     setAvatarLoading(false);
@@ -110,7 +110,7 @@ export default function ProfilClient({ profile, email }: Props) {
     if (avatarUrl && userId) {
       const path = avatarUrl.split("/avatars/")[1];
       if (path) await supabase.storage.from("avatars").remove([path]);
-      await supabase.from("profiles").update({ avatar_url: null }).eq("user_id", User);
+      await supabase.from("profiles").update({ avatar_url: null }).eq("user_id", userId);
     }
     setAvatarUrl(""); setAvatarPreview(null); setAvatarFile(null);
     showToast("Photo supprimée");
@@ -121,6 +121,10 @@ export default function ProfilClient({ profile, email }: Props) {
     if (!userId) {
       showToast("Utilisateur non identifié", false);
       return;
+    }
+    if (fullName.trim().length < 2) { showToast("Veuillez entrer votre nom complet.", false); return; }
+    if (phone && !/^(\+216|0)[0-9\s]{7,11}$/.test(phone.replace(/\s/g, ""))) {
+      showToast("Format de téléphone invalide. Ex: +216 XX XXX XXX", false); return;
     }
     setLoading(true);
     let finalUrl = avatarUrl;

@@ -6,7 +6,7 @@ import TouristeNav from "@/app/components/touriste/TouristeNav";
 import ItineraireDisplay from "@/app/components/itineraire/ItineraireDisplay";
 import {
   MapPin, Sparkles, Bot, Loader2, ChevronLeft, ChevronRight, CalendarDays,
-  Heart, Compass, Trees, Utensils, Camera, Sun, ArrowRight, CheckCircle,
+  Heart, ArrowRight, CheckCircle,
 } from "lucide-react";
 import styles from "@/public/style/ModeAssiste.module.css";
 
@@ -49,7 +49,6 @@ const MONTHS_FULL = ["Janvier", "Février", "Mars", "Avril", "Mai", "Juin", "Jui
 const MONTHS_SHORT = ["Jan", "Fév", "Mar", "Avr", "Mai", "Juin", "Juil", "Aoû", "Sep", "Oct", "Nov", "Déc"];
 const DAYS_FR = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"];
 
-// Couleurs adaptées au thème du site - version épurée
 const THEME = {
   primary: "#2B96A8",
   primaryDark: "#1e7a8c",
@@ -81,7 +80,7 @@ function fmtLong(d: Date) {
   return `${d.getDate()} ${MONTHS_FULL[d.getMonth()]} ${d.getFullYear()}`;
 }
 
-/* ── Calendar Popover (corrigé) ── */
+/* ── Calendar Popover ── */
 function MiniCalPop({
   value,
   onChange,
@@ -95,33 +94,22 @@ function MiniCalPop({
 }) {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  
+
   const [cursor, setCursor] = useState(() => {
     const ref = value || minDate || today;
     return new Date(ref.getFullYear(), ref.getMonth(), 1);
   });
-  
+
   const year = cursor.getFullYear();
   const month = cursor.getMonth();
-  
-  // Obtenir le premier jour du mois (0 = dimanche, on convertit pour que lundi soit 0)
+
   let firstDayIndex = new Date(year, month, 1).getDay();
   firstDayIndex = firstDayIndex === 0 ? 6 : firstDayIndex - 1;
-  
+
   const daysInMonth = new Date(year, month + 1, 0).getDate();
-  
-  // Générer les cellules du calendrier
   const cells: (number | null)[] = [];
-  
-  // Jours vides avant le premier jour
-  for (let i = 0; i < firstDayIndex; i++) {
-    cells.push(null);
-  }
-  
-  // Jours du mois
-  for (let i = 1; i <= daysInMonth; i++) {
-    cells.push(i);
-  }
+  for (let i = 0; i < firstDayIndex; i++) cells.push(null);
+  for (let i = 1; i <= daysInMonth; i++) cells.push(i);
 
   const isDisabled = (day: number | null) => {
     if (!day) return true;
@@ -134,18 +122,10 @@ function MiniCalPop({
     }
     return false;
   };
-  
+
   const isSelected = (day: number | null) => {
     if (!day || !value) return false;
     return value.getDate() === day && value.getMonth() === month && value.getFullYear() === year;
-  };
-
-  const handlePrevMonth = () => {
-    setCursor(new Date(year, month - 1, 1));
-  };
-
-  const handleNextMonth = () => {
-    setCursor(new Date(year, month + 1, 1));
   };
 
   return (
@@ -165,21 +145,13 @@ function MiniCalPop({
       }}
       onClick={(e) => e.stopPropagation()}
     >
-      {/* Header */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
         <button
-          onClick={handlePrevMonth}
+          onClick={() => setCursor(new Date(year, month - 1, 1))}
           style={{
-            background: THEME.gray100,
-            border: "none",
-            cursor: "pointer",
-            color: THEME.gray600,
-            padding: "6px 10px",
-            borderRadius: 8,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            transition: "all 0.2s",
+            background: THEME.gray100, border: "none", cursor: "pointer",
+            color: THEME.gray600, padding: "6px 10px", borderRadius: 8,
+            display: "flex", alignItems: "center", justifyContent: "center",
           }}
         >
           <ChevronLeft size={16} />
@@ -188,48 +160,29 @@ function MiniCalPop({
           {MONTHS_FULL[month]} {year}
         </span>
         <button
-          onClick={handleNextMonth}
+          onClick={() => setCursor(new Date(year, month + 1, 1))}
           style={{
-            background: THEME.gray100,
-            border: "none",
-            cursor: "pointer",
-            color: THEME.gray600,
-            padding: "6px 10px",
-            borderRadius: 8,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            transition: "all 0.2s",
+            background: THEME.gray100, border: "none", cursor: "pointer",
+            color: THEME.gray600, padding: "6px 10px", borderRadius: 8,
+            display: "flex", alignItems: "center", justifyContent: "center",
           }}
         >
           <ChevronRight size={16} />
         </button>
       </div>
 
-      {/* Jours de la semaine */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 4, marginBottom: 8 }}>
         {DAYS_FR.map((day) => (
-          <div
-            key={day}
-            style={{
-              textAlign: "center",
-              fontSize: 11,
-              fontWeight: 600,
-              color: THEME.gray400,
-              padding: "6px 0",
-            }}
-          >
+          <div key={day} style={{ textAlign: "center", fontSize: 11, fontWeight: 600, color: THEME.gray400, padding: "6px 0" }}>
             {day}
           </div>
         ))}
       </div>
 
-      {/* Grille des jours */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 2 }}>
         {cells.map((day, index) => {
           const disabled = isDisabled(day);
           const selected = isSelected(day);
-          
           return (
             <button
               key={index}
@@ -241,11 +194,8 @@ function MiniCalPop({
                 }
               }}
               style={{
-                padding: "8px 4px",
-                borderRadius: 8,
-                border: "none",
-                fontSize: 12,
-                fontWeight: selected ? 600 : 400,
+                padding: "8px 4px", borderRadius: 8, border: "none",
+                fontSize: 12, fontWeight: selected ? 600 : 400,
                 cursor: disabled ? "default" : "pointer",
                 background: selected ? THEME.primary : "transparent",
                 color: selected ? THEME.white : disabled ? THEME.gray300 : THEME.gray700,
@@ -261,7 +211,7 @@ function MiniCalPop({
   );
 }
 
-/* ── City Date Row (simplifiée) ── */
+/* ── City Date Row ── */
 function CityDateRow({
   cdr,
   onStart,
@@ -278,7 +228,7 @@ function CityDateRow({
     : undefined;
 
   const rowRef = useRef<HTMLDivElement>(null);
-  
+
   useEffect(() => {
     if (!openPop) return;
     const handler = (e: MouseEvent) => {
@@ -305,9 +255,7 @@ function CityDateRow({
       }}
     >
       <div style={{ flex: 1 }}>
-        <span style={{ fontSize: 15, fontWeight: 600, color: THEME.gray800 }}>
-          {cdr.city}
-        </span>
+        <span style={{ fontSize: 15, fontWeight: 600, color: THEME.gray800 }}>{cdr.city}</span>
         {nights > 0 && (
           <span style={{ fontSize: 12, color: THEME.gray500, marginLeft: 8 }}>
             • {nights} jour{nights > 1 ? "s" : ""}
@@ -316,21 +264,15 @@ function CityDateRow({
       </div>
 
       <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-        {/* Date d'arrivée */}
         <div style={{ position: "relative" }}>
           <button
             onClick={() => setOpenPop(openPop === "start" ? null : "start")}
             style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 6,
+              display: "flex", alignItems: "center", gap: 6,
               background: cdr.start ? THEME.primary : THEME.white,
               border: `1px solid ${cdr.start ? THEME.primary : THEME.gray200}`,
-              borderRadius: 8,
-              padding: "6px 12px",
-              cursor: "pointer",
-              fontSize: 12,
-              fontWeight: 500,
+              borderRadius: 8, padding: "6px 12px", cursor: "pointer",
+              fontSize: 12, fontWeight: 500,
               color: cdr.start ? THEME.white : THEME.gray600,
               transition: "all 0.2s",
             }}
@@ -341,10 +283,7 @@ function CityDateRow({
           {openPop === "start" && (
             <MiniCalPop
               value={cdr.start}
-              onChange={(d) => {
-                onStart(d);
-                setOpenPop(null);
-              }}
+              onChange={(d) => { onStart(d); setOpenPop(null); }}
               onClose={() => setOpenPop(null)}
             />
           )}
@@ -352,23 +291,16 @@ function CityDateRow({
 
         <ArrowRight size={14} color={THEME.gray400} />
 
-        {/* Date de départ */}
         <div style={{ position: "relative" }}>
           <button
-            onClick={() => {
-              if (cdr.start) setOpenPop(openPop === "end" ? null : "end");
-            }}
+            onClick={() => { if (cdr.start) setOpenPop(openPop === "end" ? null : "end"); }}
             style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 6,
+              display: "flex", alignItems: "center", gap: 6,
               background: cdr.end ? THEME.primary : THEME.white,
               border: `1px solid ${cdr.end ? THEME.primary : THEME.gray200}`,
-              borderRadius: 8,
-              padding: "6px 12px",
+              borderRadius: 8, padding: "6px 12px",
               cursor: cdr.start ? "pointer" : "default",
-              fontSize: 12,
-              fontWeight: 500,
+              fontSize: 12, fontWeight: 500,
               color: cdr.end ? THEME.white : THEME.gray400,
               opacity: cdr.start ? 1 : 0.6,
               transition: "all 0.2s",
@@ -380,10 +312,7 @@ function CityDateRow({
           {openPop === "end" && cdr.start && (
             <MiniCalPop
               value={cdr.end}
-              onChange={(d) => {
-                onEnd(d);
-                setOpenPop(null);
-              }}
+              onChange={(d) => { onEnd(d); setOpenPop(null); }}
               minDate={minEnd}
               onClose={() => setOpenPop(null)}
             />
@@ -594,14 +523,8 @@ Format: { "title": "Titre", "days": [{ "day":1,"city":"Ville","date":"DD/MM/YYYY
     setSaving(true);
     setSaveStatus("idle");
     try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user) {
-        setSaveStatus("login");
-        setSaving(false);
-        return;
-      }
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) { setSaveStatus("login"); setSaving(false); return; }
       const catNames = selectedCats
         .map((id) => categories.find((c) => c.id === id)?.nom)
         .filter(Boolean) as string[];
@@ -646,474 +569,411 @@ Format: { "title": "Titre", "days": [{ "day":1,"city":"Ville","date":"DD/MM/YYYY
 
   /* ════════ RENDER ════════ */
   return (
-    <div
-      className={styles.root}
-      style={{
-        height: "100vh",
-        overflow: "hidden",
-        display: "flex",
-        flexDirection: "column",
-        background: THEME.gray50,
-      }}
-    >
-      <TouristeNav />
-
-      {step === "questions" && (
-        <div style={{ flexShrink: 0, paddingTop: 80, textAlign: "center" }}>
-          <div style={{ marginBottom: 16 }}>
-            <span
-              style={{
-                background: THEME.primaryLight,
-                display: "inline-flex",
-                padding: "8px 20px",
-                borderRadius: 100,
-                color: THEME.primary,
-                fontSize: 13,
-                fontWeight: 600,
-              }}
-            >
-              ✨ Planificateur de voyage intelligent
-            </span>
-          </div>
-          <h1 style={{ fontSize: 40, fontWeight: 700, color: THEME.gray800, marginBottom: 12 }}>
-            Composez votre{" "}
-            <span style={{ color: THEME.primary }}>voyage idéal</span>
-          </h1>
-          <p style={{ fontSize: 15, color: THEME.gray500, maxWidth: 600, margin: "0 auto" }}>
-            Sélectionnez vos préférences — l&apos;agent IA construit votre itinéraire personnalisé
-            jour par jour.
-          </p>
-        </div>
-      )}
-
-      <main
+    <>
+      {/* ── Global page wrapper : scroll naturel sur toute la page ── */}
+      <div
+        className={styles.root}
         style={{
-          flex: 1,
-          overflow: "hidden",
+          minHeight: "100vh",          /* ← plus de height fixe */
           display: "flex",
           flexDirection: "column",
-          padding: "24px 32px",
+          background: THEME.gray50,
+          /* pas de overflow: hidden ici */
         }}
       >
+        <TouristeNav />
+
+        {/* ── Hero header (step questions uniquement) ── */}
         {step === "questions" && (
-          <>
-            {genError && (
+          <div style={{ paddingTop: 80, paddingBottom: 8, textAlign: "center" }}>
+            <div style={{ marginBottom: 16 }}>
+              <span
+                style={{
+                  background: THEME.primaryLight,
+                  display: "inline-flex",
+                  padding: "8px 20px",
+                  borderRadius: 100,
+                  color: THEME.primary,
+                  fontSize: 13,
+                  fontWeight: 600,
+                }}
+              >
+                ✨ Planificateur de voyage intelligent
+              </span>
+            </div>
+            <h1 style={{ fontSize: 40, fontWeight: 700, color: THEME.gray800, marginBottom: 12 }}>
+              Composez votre{" "}
+              <span style={{ color: THEME.primary }}>voyage idéal</span>
+            </h1>
+            <p style={{ fontSize: 15, color: THEME.gray500, maxWidth: 600, margin: "0 auto" }}>
+              Sélectionnez vos préférences — l&apos;agent IA construit votre itinéraire personnalisé
+              jour par jour.
+            </p>
+          </div>
+        )}
+
+        {/* ── Main content ── */}
+        <main
+          style={{
+            flex: 1,
+            display: "flex",
+            flexDirection: "column",
+            padding: "24px 32px 40px",
+            /* pas de overflow: hidden */
+          }}
+        >
+          {/* ════ STEP : questions ════ */}
+          {step === "questions" && (
+            <>
+              {/* Bandeau d'erreur */}
+              {genError && (
+                <div
+                  style={{
+                    background: "#fef2f2",
+                    border: `1px solid ${THEME.error}30`,
+                    borderRadius: 12,
+                    padding: "12px 20px",
+                    marginBottom: 20,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                  }}
+                >
+                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                    <div style={{ width: 8, height: 8, borderRadius: "50%", background: THEME.error }} />
+                    <span style={{ color: "#991b1b", fontSize: 13 }}>
+                      <strong>Erreur :</strong> {genError}
+                    </span>
+                  </div>
+                  <button
+                    onClick={() => setGenError("")}
+                    style={{ background: "none", border: "none", cursor: "pointer", color: "#991b1b" }}
+                  >
+                    ✕
+                  </button>
+                </div>
+              )}
+
+              {/* ── 3 cards côte à côte ── */}
               <div
                 style={{
-                  background: "#fef2f2",
-                  border: `1px solid ${THEME.error}30`,
-                  borderRadius: 12,
-                  padding: "12px 20px",
-                  marginBottom: 20,
+                  display: "flex",
+                  gap: 24,
+                  alignItems: "flex-start",   /* ← les cards s'étendent selon leur contenu */
+                }}
+              >
+                {/* ── Card 1 : Villes ── */}
+                <div
+                  style={{
+                    flex: 1,
+                    background: THEME.white,
+                    borderRadius: 20,
+                    border: `1px solid ${THEME.gray200}`,
+                    display: "flex",
+                    flexDirection: "column",
+                    /* pas de overflow: hidden */
+                  }}
+                >
+                  {/* Header */}
+                  <div style={{ padding: "20px 24px", borderBottom: `1px solid ${THEME.gray100}` }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 12, justifyContent: "space-between" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                        <div
+                          style={{
+                            width: 36, height: 36, borderRadius: 10,
+                            background: THEME.primaryLight,
+                            display: "flex", alignItems: "center", justifyContent: "center",
+                          }}
+                        >
+                          <MapPin size={18} color={THEME.primary} />
+                        </div>
+                        <div>
+                          <p style={{ fontSize: 16, fontWeight: 600, margin: 0, color: THEME.gray800 }}>Destinations</p>
+                          <p style={{ fontSize: 12, color: THEME.gray500, margin: 0 }}>Choisissez vos villes</p>
+                        </div>
+                      </div>
+                      {selectedCities.length > 0 && (
+                        <span
+                          style={{
+                            background: `${THEME.primary}15`, padding: "4px 12px",
+                            borderRadius: 20, fontSize: 12, fontWeight: 500, color: THEME.primary,
+                          }}
+                        >
+                          {selectedCities.length} sélectionnée{selectedCities.length > 1 ? "s" : ""}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Body — pas de scroll */}
+                  <div style={{ padding: "20px 24px" }}>
+                    {dbLoading ? (
+                      <div style={{ display: "flex", alignItems: "center", gap: 10, justifyContent: "center", padding: 40 }}>
+                        <Loader2 size={18} className={styles.spin} />
+                        <span style={{ color: THEME.gray500 }}>Chargement des destinations...</span>
+                      </div>
+                    ) : (
+                      <div
+                        style={{
+                          display: "grid",
+                          gridTemplateColumns: "repeat(auto-fill, minmax(100px, 1fr))",
+                          gap: 10,
+                        }}
+                      >
+                        {villes.map((v) => {
+                          const nom = String(v.nom || v.name || "");
+                          const on = selectedCities.includes(nom);
+                          return (
+                            <button
+                              key={v.id}
+                              onClick={() => toggleCity(nom)}
+                              style={{
+                                background: on ? THEME.primary : THEME.white,
+                                border: on ? "none" : `1px solid ${THEME.gray200}`,
+                                borderRadius: 10, padding: "10px 8px",
+                                cursor: "pointer", transition: "all 0.2s", textAlign: "center",
+                              }}
+                            >
+                              <span style={{ fontSize: 13, fontWeight: 500, color: on ? THEME.white : THEME.gray700, display: "block" }}>
+                                {nom}
+                              </span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* ── Card 2 : Dates ── */}
+                <div
+                  style={{
+                    flex: 1,
+                    background: THEME.white,
+                    borderRadius: 20,
+                    border: `1px solid ${THEME.gray200}`,
+                    display: "flex",
+                    flexDirection: "column",
+                    opacity: selectedCities.length === 0 ? 0.5 : 1,
+                    pointerEvents: selectedCities.length === 0 ? "none" : "auto",
+                    transition: "opacity 0.35s",
+                  }}
+                >
+                  {/* Header */}
+                  <div style={{ padding: "20px 24px", borderBottom: `1px solid ${THEME.gray100}` }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 12, justifyContent: "space-between" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                        <div
+                          style={{
+                            width: 36, height: 36, borderRadius: 10,
+                            background: THEME.primaryLight,
+                            display: "flex", alignItems: "center", justifyContent: "center",
+                          }}
+                        >
+                          <CalendarDays size={18} color={THEME.primary} />
+                        </div>
+                        <div>
+                          <p style={{ fontSize: 16, fontWeight: 600, margin: 0, color: THEME.gray800 }}>Calendrier</p>
+                          <p style={{ fontSize: 12, color: THEME.gray500, margin: 0 }}>
+                            {selectedCities.length === 0
+                              ? "Sélectionnez d'abord une ville"
+                              : totalDays > 0
+                              ? `${totalDays} jours au total`
+                              : "Définissez les dates"}
+                          </p>
+                        </div>
+                      </div>
+                      {totalDays > 0 && (
+                        <span
+                          style={{
+                            background: `${THEME.warning}15`, padding: "4px 12px",
+                            borderRadius: 20, fontSize: 12, fontWeight: 500, color: THEME.warning,
+                          }}
+                        >
+                          🗓️ {totalDays}j
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Body */}
+                  <div style={{ padding: "20px 24px" }}>
+                    {selectedCities.length === 0 ? (
+                      <div
+                        style={{
+                          display: "flex", flexDirection: "column",
+                          alignItems: "center", justifyContent: "center",
+                          gap: 16, padding: "40px 20px",
+                        }}
+                      >
+                        <div
+                          style={{
+                            width: 56, height: 56, borderRadius: 16,
+                            background: THEME.gray100,
+                            display: "flex", alignItems: "center", justifyContent: "center",
+                          }}
+                        >
+                          <MapPin size={24} color={THEME.gray400} />
+                        </div>
+                        <p style={{ fontSize: 13, textAlign: "center", maxWidth: 200, lineHeight: 1.5, color: THEME.gray500 }}>
+                          Choisissez vos villes à gauche pour organiser votre calendrier
+                        </p>
+                      </div>
+                    ) : (
+                      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                        <p
+                          style={{
+                            fontSize: 11, fontWeight: 600, color: THEME.gray400,
+                            textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 4,
+                          }}
+                        >
+                          {cityDates.filter((c) => c.start && c.end).length}/{cityDates.length} étapes configurées
+                        </p>
+
+                        {cityDates.map((cdr) => (
+                          <CityDateRow
+                            key={cdr.city}
+                            cdr={cdr}
+                            onStart={(d) => updateCityStart(cdr.city, d)}
+                            onEnd={(d) => updateCityEnd(cdr.city, d)}
+                          />
+                        ))}
+
+                        {allDatesSet && (
+                          <div
+                            style={{
+                              marginTop: 16, padding: "12px 16px",
+                              borderRadius: 12, background: THEME.primaryLight,
+                              border: `1px solid ${THEME.primary}20`,
+                            }}
+                          >
+                            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+                              <CheckCircle size={14} color={THEME.primary} />
+                              <span style={{ fontSize: 12, fontWeight: 600, color: THEME.primaryDark }}>
+                                Récapitulatif du séjour
+                              </span>
+                            </div>
+                            <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                              {cityDates.map(
+                                (cdr) =>
+                                  cdr.start &&
+                                  cdr.end && (
+                                    <span
+                                      key={cdr.city}
+                                      style={{
+                                        fontSize: 11, color: THEME.gray600,
+                                        background: THEME.white, borderRadius: 20,
+                                        padding: "4px 12px",
+                                        display: "flex", alignItems: "center", gap: 4,
+                                      }}
+                                    >
+                                      <MapPin size={10} /> {cdr.city} · {fmtShort(cdr.start)} → {fmtShort(cdr.end)}
+                                    </span>
+                                  )
+                              )}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* ── Card 3 : Catégories ── */}
+                <div
+                  style={{
+                    flex: 1,
+                    background: THEME.white,
+                    borderRadius: 20,
+                    border: `1px solid ${THEME.gray200}`,
+                    display: "flex",
+                    flexDirection: "column",
+                    opacity: !allDatesSet ? 0.5 : 1,
+                    pointerEvents: !allDatesSet ? "none" : "auto",
+                    transition: "opacity 0.35s",
+                  }}
+                >
+                  {/* Header */}
+                  <div style={{ padding: "20px 24px", borderBottom: `1px solid ${THEME.gray100}` }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                      <div
+                        style={{
+                          width: 36, height: 36, borderRadius: 10,
+                          background: THEME.primaryLight,
+                          display: "flex", alignItems: "center", justifyContent: "center",
+                        }}
+                      >
+                        <Heart size={18} color={THEME.primary} />
+                      </div>
+                      <div>
+                        <p style={{ fontSize: 16, fontWeight: 600, margin: 0, color: THEME.gray800 }}>
+                          Centres d&apos;intérêt
+                        </p>
+                        <p style={{ fontSize: 12, color: THEME.gray500, margin: 0 }}>
+                          {!allDatesSet
+                            ? "Définissez d'abord les dates"
+                            : selectedCats.length === 0
+                            ? "Optionnel"
+                            : `${selectedCats.length} sélectionné${selectedCats.length > 1 ? "s" : ""}`}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Body */}
+                  <div style={{ padding: "20px 24px" }}>
+                    {dbLoading ? (
+                      <div style={{ display: "flex", alignItems: "center", gap: 10, justifyContent: "center", padding: 40 }}>
+                        <Loader2 size={18} className={styles.spin} />
+                        <span style={{ color: THEME.gray500 }}>Chargement des catégories...</span>
+                      </div>
+                    ) : (
+                      <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
+                        {categories.map((cat) => {
+                          const catName = String(cat.nom || cat.name || cat.label || "");
+                          const isSelected = selectedCats.includes(cat.id);
+                          return (
+                            <button
+                              key={cat.id}
+                              onClick={() => toggleCat(cat.id)}
+                              style={{
+                                display: "flex", alignItems: "center", gap: 8,
+                                background: isSelected ? THEME.primary : THEME.white,
+                                border: isSelected ? "none" : `1px solid ${THEME.gray200}`,
+                                borderRadius: 40, padding: "6px 16px",
+                                fontSize: 13, fontWeight: 500,
+                                color: isSelected ? THEME.white : THEME.gray700,
+                                cursor: "pointer", transition: "all 0.2s",
+                              }}
+                            >
+                              <Sparkles size={12} />
+                              {catName}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* ── Footer CTA ── */}
+              <div
+                style={{
+                  marginTop: 24,
+                  paddingTop: 20,
+                  borderTop: `1px solid ${THEME.gray200}`,
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "space-between",
                 }}
               >
-                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                  <div style={{ width: 8, height: 8, borderRadius: "50%", background: THEME.error }} />
-                  <span style={{ color: "#991b1b", fontSize: 13 }}>
-                    <strong>Erreur :</strong> {genError}
-                  </span>
-                </div>
-                <button
-                  onClick={() => setGenError("")}
-                  style={{ background: "none", border: "none", cursor: "pointer", color: "#991b1b" }}
-                >
-                  ✕
-                </button>
-              </div>
-            )}
-
-            <div style={{ flex: 1, overflow: "hidden", display: "flex", gap: 24 }}>
-              {/* Card 1 : Villes */}
-              <div
-                style={{
-                  flex: 1,
-                  background: THEME.white,
-                  borderRadius: 20,
-                  boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
-                  display: "flex",
-                  flexDirection: "column",
-                  overflow: "hidden",
-                  border: `1px solid ${THEME.gray200}`,
-                }}
-              >
-                <div style={{ padding: "20px 24px", borderBottom: `1px solid ${THEME.gray100}` }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 12, justifyContent: "space-between" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                      <div
-                        style={{
-                          width: 36,
-                          height: 36,
-                          borderRadius: 10,
-                          background: THEME.primaryLight,
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                        }}
-                      >
-                        <MapPin size={18} color={THEME.primary} />
-                      </div>
-                      <div>
-                        <p style={{ fontSize: 16, fontWeight: 600, margin: 0, color: THEME.gray800 }}>
-                          Destinations
-                        </p>
-                        <p style={{ fontSize: 12, color: THEME.gray500, margin: 0 }}>
-                          Choisissez vos villes
-                        </p>
-                      </div>
-                    </div>
-                    {selectedCities.length > 0 && (
-                      <span
-                        style={{
-                          background: `${THEME.primary}15`,
-                          padding: "4px 12px",
-                          borderRadius: 20,
-                          fontSize: 12,
-                          fontWeight: 500,
-                          color: THEME.primary,
-                        }}
-                      >
-                        {selectedCities.length} sélectionnée{selectedCities.length > 1 ? "s" : ""}
-                      </span>
-                    )}
-                  </div>
-                </div>
-                <div style={{ flex: 1, overflowY: "auto", padding: "20px 24px" }}>
-                  {dbLoading ? (
-                    <div
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 10,
-                        justifyContent: "center",
-                        padding: 40,
-                      }}
-                    >
-                      <Loader2 size={18} className={styles.spin} />
-                      <span style={{ color: THEME.gray500 }}>Chargement des destinations...</span>
-                    </div>
-                  ) : (
-                    <div
-                      style={{
-                        display: "grid",
-                        gridTemplateColumns: "repeat(auto-fill, minmax(100px, 1fr))",
-                        gap: 10,
-                      }}
-                    >
-                      {villes.map((v) => {
-                        const nom = String(v.nom || v.name || "");
-                        const on = selectedCities.includes(nom);
-                        return (
-                          <button
-                            key={v.id}
-                            onClick={() => toggleCity(nom)}
-                            style={{
-                              background: on ? THEME.primary : THEME.white,
-                              border: on ? "none" : `1px solid ${THEME.gray200}`,
-                              borderRadius: 10,
-                              padding: "10px 8px",
-                              cursor: "pointer",
-                              transition: "all 0.2s",
-                              textAlign: "center",
-                            }}
-                          >
-                            <span
-                              style={{
-                                fontSize: 13,
-                                fontWeight: 500,
-                                color: on ? THEME.white : THEME.gray700,
-                                display: "block",
-                              }}
-                            >
-                              {nom}
-                            </span>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Card 2 : Dates par ville */}
-              <div
-                style={{
-                  flex: 1,
-                  background: THEME.white,
-                  borderRadius: 20,
-                  boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
-                  display: "flex",
-                  flexDirection: "column",
-                  overflow: "hidden",
-                  border: `1px solid ${THEME.gray200}`,
-                  opacity: selectedCities.length === 0 ? 0.5 : 1,
-                  pointerEvents: selectedCities.length === 0 ? "none" : "auto",
-                  transition: "opacity 0.35s",
-                }}
-              >
-                <div style={{ padding: "20px 24px", borderBottom: `1px solid ${THEME.gray100}` }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 12, justifyContent: "space-between" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                      <div
-                        style={{
-                          width: 36,
-                          height: 36,
-                          borderRadius: 10,
-                          background: THEME.primaryLight,
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                        }}
-                      >
-                        <CalendarDays size={18} color={THEME.primary} />
-                      </div>
-                      <div>
-                        <p style={{ fontSize: 16, fontWeight: 600, margin: 0, color: THEME.gray800 }}>
-                          Calendrier
-                        </p>
-                        <p style={{ fontSize: 12, color: THEME.gray500, margin: 0 }}>
-                          {selectedCities.length === 0
-                            ? "Sélectionnez d'abord une ville"
-                            : totalDays > 0
-                            ? `${totalDays} jours au total`
-                            : "Définissez les dates"}
-                        </p>
-                      </div>
-                    </div>
-                    {totalDays > 0 && (
-                      <span
-                        style={{
-                          background: `${THEME.warning}15`,
-                          padding: "4px 12px",
-                          borderRadius: 20,
-                          fontSize: 12,
-                          fontWeight: 500,
-                          color: THEME.warning,
-                        }}
-                      >
-                        🗓️ {totalDays}j
-                      </span>
-                    )}
-                  </div>
-                </div>
-                <div style={{ flex: 1, overflowY: "auto", padding: "20px 24px" }}>
-                  {selectedCities.length === 0 ? (
-                    <div
-                      style={{
-                        display: "flex",
-                        flexDirection: "column",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        height: "100%",
-                        gap: 16,
-                        padding: "40px 20px",
-                      }}
-                    >
-                      <div
-                        style={{
-                          width: 56,
-                          height: 56,
-                          borderRadius: 16,
-                          background: THEME.gray100,
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                        }}
-                      >
-                        <MapPin size={24} color={THEME.gray400} />
-                      </div>
-                      <p
-                        style={{
-                          fontSize: 13,
-                          textAlign: "center",
-                          maxWidth: 200,
-                          lineHeight: 1.5,
-                          color: THEME.gray500,
-                        }}
-                      >
-                        Choisissez vos villes à gauche pour organiser votre calendrier
-                      </p>
-                    </div>
-                  ) : (
-                    <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                      <p
-                        style={{
-                          fontSize: 11,
-                          fontWeight: 600,
-                          color: THEME.gray400,
-                          textTransform: "uppercase",
-                          letterSpacing: "0.08em",
-                          marginBottom: 4,
-                        }}
-                      >
-                        {cityDates.filter((c) => c.start && c.end).length}/{cityDates.length}{" "}
-                        étapes configurées
-                      </p>
-
-                      {cityDates.map((cdr) => (
-                        <CityDateRow
-                          key={cdr.city}
-                          cdr={cdr}
-                          onStart={(d) => updateCityStart(cdr.city, d)}
-                          onEnd={(d) => updateCityEnd(cdr.city, d)}
-                        />
-                      ))}
-
-                      {allDatesSet && (
-                        <div
-                          style={{
-                            marginTop: 16,
-                            padding: "12px 16px",
-                            borderRadius: 12,
-                            background: THEME.primaryLight,
-                            border: `1px solid ${THEME.primary}20`,
-                          }}
-                        >
-                          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
-                            <CheckCircle size={14} color={THEME.primary} />
-                            <span style={{ fontSize: 12, fontWeight: 600, color: THEME.primaryDark }}>
-                              Récapitulatif du séjour
-                            </span>
-                          </div>
-                          <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-                            {cityDates.map(
-                              (cdr) =>
-                                cdr.start &&
-                                cdr.end && (
-                                  <span
-                                    key={cdr.city}
-                                    style={{
-                                      fontSize: 11,
-                                      color: THEME.gray600,
-                                      background: THEME.white,
-                                      borderRadius: 20,
-                                      padding: "4px 12px",
-                                      display: "flex",
-                                      alignItems: "center",
-                                      gap: 4,
-                                    }}
-                                  >
-                                    <MapPin size={10} /> {cdr.city} · {fmtShort(cdr.start)} →{" "}
-                                    {fmtShort(cdr.end)}
-                                  </span>
-                                )
-                            )}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Card 3 : Catégories */}
-              <div
-                style={{
-                  flex: 1,
-                  background: THEME.white,
-                  borderRadius: 20,
-                  boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
-                  display: "flex",
-                  flexDirection: "column",
-                  overflow: "hidden",
-                  border: `1px solid ${THEME.gray200}`,
-                  opacity: !allDatesSet ? 0.5 : 1,
-                  pointerEvents: !allDatesSet ? "none" : "auto",
-                  transition: "opacity 0.35s",
-                }}
-              >
-                <div style={{ padding: "20px 24px", borderBottom: `1px solid ${THEME.gray100}` }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                    <div
-                      style={{
-                        width: 36,
-                        height: 36,
-                        borderRadius: 10,
-                        background: THEME.primaryLight,
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                      }}
-                    >
-                      <Heart size={18} color={THEME.primary} />
-                    </div>
-                    <div>
-                      <p style={{ fontSize: 16, fontWeight: 600, margin: 0, color: THEME.gray800 }}>
-                        Centres d&apos;intérêt
-                      </p>
-                      <p style={{ fontSize: 12, color: THEME.gray500, margin: 0 }}>
-                        {!allDatesSet
-                          ? "Définissez d'abord les dates"
-                          : selectedCats.length === 0
-                          ? "Optionnel"
-                          : `${selectedCats.length} sélectionné${selectedCats.length > 1 ? "s" : ""}`}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-                <div style={{ flex: 1, overflowY: "auto", padding: "20px 24px" }}>
-                  {dbLoading ? (
-                    <div
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 10,
-                        justifyContent: "center",
-                        padding: 40,
-                      }}
-                    >
-                      <Loader2 size={18} className={styles.spin} />
-                      <span style={{ color: THEME.gray500 }}>Chargement des catégories...</span>
-                    </div>
-                  ) : (
-                    <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
-                      {categories.map((cat) => {
-                        const catName = String(cat.nom || cat.name || cat.label || "");
-                        const isSelected = selectedCats.includes(cat.id);
-                        return (
-                          <button
-                            key={cat.id}
-                            onClick={() => toggleCat(cat.id)}
-                            style={{
-                              display: "flex",
-                              alignItems: "center",
-                              gap: 8,
-                              background: isSelected ? THEME.primary : THEME.white,
-                              border: isSelected ? "none" : `1px solid ${THEME.gray200}`,
-                              borderRadius: 40,
-                              padding: "6px 16px",
-                              fontSize: 13,
-                              fontWeight: 500,
-                              color: isSelected ? THEME.white : THEME.gray700,
-                              cursor: "pointer",
-                              transition: "all 0.2s",
-                            }}
-                          >
-                            <Sparkles size={12} />
-                            {catName}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            {/* Footer CTA */}
-            <div style={{ flexShrink: 0, marginTop: 24, paddingTop: 20, borderTop: `1px solid ${THEME.gray200}` }}>
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                {pillParts.length > 0 && (
+                {pillParts.length > 0 ? (
                   <div
                     style={{
-                      background: THEME.gray100,
-                      borderRadius: 40,
+                      background: THEME.gray100, borderRadius: 40,
                       padding: "6px 16px",
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 8,
+                      display: "flex", alignItems: "center", gap: 8,
                     }}
                   >
                     <span style={{ fontSize: 12, color: THEME.gray500 }}>📋</span>
@@ -1121,21 +981,18 @@ Format: { "title": "Titre", "days": [{ "day":1,"city":"Ville","date":"DD/MM/YYYY
                       {pillParts.join(" · ")}
                     </span>
                   </div>
+                ) : (
+                  <div />
                 )}
                 <button
                   onClick={generate}
                   disabled={!canGenerate}
                   style={{
                     background: canGenerate ? THEME.primary : THEME.gray300,
-                    border: "none",
-                    borderRadius: 40,
+                    border: "none", borderRadius: 40,
                     padding: "10px 24px",
-                    color: THEME.white,
-                    fontWeight: 600,
-                    fontSize: 14,
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 8,
+                    color: THEME.white, fontWeight: 600, fontSize: 14,
+                    display: "flex", alignItems: "center", gap: 8,
                     cursor: canGenerate ? "pointer" : "default",
                     transition: "all 0.2s",
                   }}
@@ -1143,94 +1000,76 @@ Format: { "title": "Titre", "days": [{ "day":1,"city":"Ville","date":"DD/MM/YYYY
                   <Bot size={18} /> Générer mon itinéraire →
                 </button>
               </div>
-            </div>
-          </>
-        )}
+            </>
+          )}
 
-        {/* Génération */}
-        {step === "generation" && (
-          <div
-            style={{
-              flex: 1,
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: 24,
-            }}
-          >
+          {/* ════ STEP : génération ════ */}
+          {step === "generation" && (
             <div
               style={{
-                width: 72,
-                height: 72,
-                borderRadius: 36,
-                background: THEME.primary,
+                flex: 1,
                 display: "flex",
+                flexDirection: "column",
                 alignItems: "center",
                 justifyContent: "center",
-                animation: "pulse 1.5s ease-in-out infinite",
+                gap: 24,
+                minHeight: "60vh",
               }}
             >
-              <Bot size={32} color={THEME.white} strokeWidth={1.5} />
+              <div
+                style={{
+                  width: 72, height: 72, borderRadius: 36,
+                  background: THEME.primary,
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  animation: "pulse 1.5s ease-in-out infinite",
+                }}
+              >
+                <Bot size={32} color={THEME.white} strokeWidth={1.5} />
+              </div>
+              <h2 style={{ fontSize: 22, fontWeight: 600, color: THEME.gray800, margin: 0 }}>
+                L&apos;agent IA prépare votre voyage…
+              </h2>
+              <p style={{ fontSize: 14, color: THEME.gray500, margin: 0 }}>{loadingMsg}</p>
+              <div style={{ display: "flex", gap: 8 }}>
+                {[0, 0.2, 0.4].map((delay, i) => (
+                  <div
+                    key={i}
+                    style={{
+                      width: 6, height: 6, borderRadius: 3,
+                      background: THEME.primary,
+                      animation: `bounce 1.4s infinite ${delay}s`,
+                    }}
+                  />
+                ))}
+              </div>
             </div>
-            <h2 style={{ fontSize: 22, fontWeight: 600, color: THEME.gray800, margin: 0 }}>
-              L&apos;agent IA prépare votre voyage…
-            </h2>
-            <p style={{ fontSize: 14, color: THEME.gray500, margin: 0 }}>{loadingMsg}</p>
-            <div style={{ display: "flex", gap: 8 }}>
-              <div
-                style={{
-                  width: 6,
-                  height: 6,
-                  borderRadius: 3,
-                  background: THEME.primary,
-                  animation: "bounce 1.4s infinite",
-                }}
-              />
-              <div
-                style={{
-                  width: 6,
-                  height: 6,
-                  borderRadius: 3,
-                  background: THEME.primary,
-                  animation: "bounce 1.4s infinite 0.2s",
-                }}
-              />
-              <div
-                style={{
-                  width: 6,
-                  height: 6,
-                  borderRadius: 3,
-                  background: THEME.primary,
-                  animation: "bounce 1.4s infinite 0.4s",
-                }}
+          )}
+
+          {/* ════ STEP : itinéraire ════ */}
+          {step === "itineraire" && itinerary && (
+            /* Pas de overflow: auto — le contenu s'étire naturellement */
+            <div>
+              <ItineraireDisplay
+                itinerary={itinerary}
+                selectedCities={selectedCities}
+                selectedCats={selectedCats}
+                categories={categories as { id: string; nom?: string; name?: string }[]}
+                excursions={excursions}
+                totalPrice={totalPrice}
+                saving={saving}
+                saveStatus={saveStatus}
+                onBack={() => setStep("questions")}
+                onReset={resetAll}
+                onCheckout={() => setShowCheckout(true)}
+                onSave={saveItinerary}
+                onChangeActivity={handleChangeActivity}
               />
             </div>
-          </div>
-        )}
+          )}
+        </main>
+      </div>
 
-        {/* Itinéraire */}
-        {step === "itineraire" && itinerary && (
-          <div style={{ flex: 1, overflow: "auto" }}>
-            <ItineraireDisplay
-              itinerary={itinerary}
-              selectedCities={selectedCities}
-              selectedCats={selectedCats}
-              categories={categories as { id: string; nom?: string; name?: string }[]}
-              excursions={excursions}
-              totalPrice={totalPrice}
-              saving={saving}
-              saveStatus={saveStatus}
-              onBack={() => setStep("questions")}
-              onReset={resetAll}
-              onCheckout={() => setShowCheckout(true)}
-              onSave={saveItinerary}
-              onChangeActivity={handleChangeActivity}
-            />
-          </div>
-        )}
-      </main>
-
+      {/* ── Checkout modal ── */}
       {showCheckout && itineraryAsExc && (
         <CheckoutModal exc={itineraryAsExc} onClose={() => setShowCheckout(false)} />
       )}
@@ -1245,6 +1084,6 @@ Format: { "title": "Titre", "days": [{ "day":1,"city":"Ville","date":"DD/MM/YYYY
           30% { transform: translateY(-6px); }
         }
       `}</style>
-    </div>
+    </>
   );
 }
