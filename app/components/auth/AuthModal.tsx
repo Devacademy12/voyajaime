@@ -24,12 +24,23 @@ export default function AuthModal({ isOpen, onClose, defaultMode = "login" }: Au
   const [agencyName, setAgencyName] = useState("");
   const [city, setCity] = useState("");
   const [showPwd, setShowPwd] = useState(false);
+
+  const pwdStrength = (p: string) => {
+    if (p.length === 0) return null;
+    if (p.length < 6) return { level: 0, label: "Trop court", color: "#EF4444" };
+    if (p.length < 8) return { level: 1, label: "Faible", color: "#F59E0B" };
+    const has = (r: RegExp) => r.test(p);
+    const score = [has(/[A-Z]/), has(/[0-9]/), has(/[^A-Za-z0-9]/), p.length >= 12].filter(Boolean).length;
+    if (score <= 1) return { level: 2, label: "Moyen", color: "#F59E0B" };
+    if (score === 2) return { level: 3, label: "Bon", color: "#10B981" };
+    return { level: 4, label: "Excellent", color: "#059669" };
+  };
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
-  // Reset form when modal opens/closes or mode changes
+  // Reset form when modal opens/closes
   useEffect(() => {
     if (isOpen) {
       setMode(defaultMode);
@@ -65,12 +76,31 @@ export default function AuthModal({ isOpen, onClose, defaultMode = "login" }: Au
     "Invalid login credentials": "Email ou mot de passe incorrect.",
     "Email not confirmed": "Confirmez votre email avant de vous connecter.",
     "User already registered": "Un compte existe déjà avec cet email.",
-    "Password should be at least 6 characters": "Minimum 6 caractères.",
+    "Password should be at least 6 characters": "Minimum 8 caractères requis.",
   };
+
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true); setError(null); setSuccess(null);
+    setError(null); setSuccess(null);
+
+    // Validations client
+    if (!emailRegex.test(email.trim())) {
+      setError("Adresse email invalide."); return;
+    }
+    if (mode !== "login" && password.length < 8) {
+      setError("Le mot de passe doit contenir au moins 8 caractères."); return;
+    }
+    if (mode === "register" && fullName.trim().length < 2) {
+      setError("Veuillez entrer votre nom complet."); return;
+    }
+    if (mode === "prestataire") {
+      if (fullName.trim().length < 2) { setError("Veuillez entrer votre nom complet."); return; }
+      if (agencyName.trim().length < 2) { setError("Le nom de l'agence est trop court."); return; }
+    }
+
+    setLoading(true);
     try {
       if (mode === "login") {
         const cleanEmail = sanitizeText(email);
@@ -145,6 +175,11 @@ export default function AuthModal({ isOpen, onClose, defaultMode = "login" }: Au
     if (!email) { 
       setError("Entrez votre email d'abord."); 
       return; 
+    }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email.trim())) {
+      setError("Veuillez entrer une adresse email valide.");
+      return;
     }
     
     const cleanEmail = sanitizeText(email);
@@ -247,6 +282,10 @@ export default function AuthModal({ isOpen, onClose, defaultMode = "login" }: Au
         .auth-field-pwd input { padding-right:44px; }
         .auth-eye-btn { position:absolute; right:13px; top:50%; transform:translateY(-50%); background:none; border:none; cursor:pointer; color:#9CA3AF; display:flex; align-items:center; padding:0; transition:color .15s; }
         .auth-eye-btn:hover { color:#6B7280; }
+        .auth-pwd-strength { margin-top:7px; }
+        .auth-pwd-bars { display:flex; gap:3px; margin-bottom:4px; }
+        .auth-pwd-bar { flex:1; height:3px; border-radius:2px; background:#E5E7EB; transition:background .25s; }
+        .auth-pwd-label { font-size:11px; font-weight:600; }
         .auth-field-row { display:grid; grid-template-columns:1fr 1fr; gap:9px; }
         .auth-alert { padding:10px 13px; border-radius:10px; font-size:12px; line-height:1.5; font-weight:500; margin-bottom:14px; display:flex; align-items:flex-start; gap:7px; }
         .auth-alert-err { background:#FEF2F2; border:1px solid #FECACA; color:#DC2626; }
@@ -384,7 +423,7 @@ export default function AuthModal({ isOpen, onClose, defaultMode = "login" }: Au
                     <label>Mot de passe</label>
                     <div className="auth-field-pwd">
                       <input type={showPwd ? "text" : "password"}
-                        placeholder={mode === "login" ? "Votre mot de passe" : "Minimum 6 caractères"}
+                        placeholder={mode === "login" ? "Votre mot de passe" : "Minimum 8 caractères"}
                         value={password} onChange={e => setPassword(e.target.value)} required
                         autoComplete={mode === "login" ? "current-password" : "new-password"} />
                       <button type="button" className="auth-eye-btn" onClick={() => setShowPwd(!showPwd)}>
@@ -393,6 +432,20 @@ export default function AuthModal({ isOpen, onClose, defaultMode = "login" }: Au
                           : <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>}
                       </button>
                     </div>
+                    {mode !== "login" && password.length > 0 && (() => {
+                      const s = pwdStrength(password);
+                      if (!s) return null;
+                      return (
+                        <div className="auth-pwd-strength">
+                          <div className="auth-pwd-bars">
+                            {[1,2,3,4].map(i => (
+                              <div key={i} className="auth-pwd-bar" style={{ background: i <= s.level ? s.color : "#E5E7EB" }}/>
+                            ))}
+                          </div>
+                          <span className="auth-pwd-label" style={{ color: s.color }}>{s.label}</span>
+                        </div>
+                      );
+                    })()}
                   </div>
                 </>
               )}

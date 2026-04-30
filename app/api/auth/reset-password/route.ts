@@ -5,9 +5,9 @@ export async function POST(req: Request) {
   try {
     const { newPassword } = await req.json();
 
-    if (!newPassword || newPassword.length < 6) {
+    if (!newPassword || newPassword.length < 8) {
       return NextResponse.json(
-        { error: "Le mot de passe doit contenir au moins 6 caractères" },
+        { error: "Le mot de passe doit contenir au moins 8 caractères" },
         { status: 400 }
       );
     }

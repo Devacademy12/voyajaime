@@ -53,7 +53,7 @@ function useValidation(s: {
   price: number; duration: number; maxPeople: number;
 }) {
   const v = {
-    title:       s.title.trim().length >= 5,
+    title:       s.title.trim().length >= 10,
     city:        s.city.trim().length > 0,
     description: s.description.trim().length >= 30,
     languages:   s.languages.length > 0,
@@ -205,13 +205,18 @@ export default function NouvelleExcursionClient({
     if (!newDate) return;
     const times = newTimes.filter(t => t.trim());
     const mainTime = times.length > 0 ? times[0] : "09:00";
+    const cappedSlots = Math.min(newSlots, maxPeople);
+    if (newSlots > maxPeople) {
+      setError(`Les places par créneau (${newSlots}) ne peuvent pas dépasser la capacité max de l'excursion (${maxPeople}).`);
+      setNewSlots(maxPeople);
+      return;
+    }
     const existing = dates.find(d => d.date === newDate);
     if (existing) {
-      // Fusionner les heures si la date existe déjà
       const merged = Array.from(new Set([...(existing.departure_times || [existing.departure_time]), ...times])).sort();
-      setDates(p => p.map(x => x.date === newDate ? { ...x, departure_time: merged[0], departure_times: merged, slots: newSlots } : x));
+      setDates(p => p.map(x => x.date === newDate ? { ...x, departure_time: merged[0], departure_times: merged, slots: cappedSlots } : x));
     } else {
-      setDates(p => [...p, { date: newDate, slots: newSlots, departure_time: mainTime, departure_times: times.length > 0 ? times : [mainTime] }]
+      setDates(p => [...p, { date: newDate, slots: cappedSlots, departure_time: mainTime, departure_times: times.length > 0 ? times : [mainTime] }]
         .sort((a, b) => a.date.localeCompare(b.date)));
     }
     setNewDate("");
@@ -234,6 +239,7 @@ export default function NouvelleExcursionClient({
 
   const genRecurring = () => {
     if (!recurFrom || !recurTo || recurDays.length===0) return;
+    if (recurTo < recurFrom) { setError("La date de fin doit être après la date de début."); return; }
     const from=new Date(recurFrom), to=new Date(recurTo), added:DateDispo[]=[], cur=new Date(from);
     while (cur <= to) {
       if (recurDays.includes(cur.getDay())) {
@@ -242,6 +248,7 @@ export default function NouvelleExcursionClient({
       }
       cur.setDate(cur.getDate()+1);
     }
+    if (added.length === 0) { setError("Aucune date générée. Vérifiez les jours sélectionnés et la période."); return; }
     setDates(p => [...p, ...added].sort((a,b) => a.date.localeCompare(b.date)));
   };
 
@@ -551,7 +558,8 @@ export default function NouvelleExcursionClient({
                           style={{ borderColor:title.length>0&&!v.title?"#FCA5A5":v.title?"#86EFAC":"#E2E8F0" }}
                         />
                       </div>
-                      {title.length>0&&!v.title&&<p style={{ fontSize:11, color:"#EF4444", marginTop:5, fontWeight:600 }}>Minimum 5 caractères ({5-title.trim().length} restants)</p>}
+                      {title.length>0&&!v.title&&<p style={{ fontSize:11, color:"#EF4444", marginTop:5, fontWeight:600 }}>Minimum 10 caractères ({Math.max(0, 10-title.trim().length)} restants)</p>}
+                      {title.length>0&&v.title&&<p style={{ fontSize:11, color:"#94A3B8", marginTop:5 }}>{title.length}/100 caractères</p>}
                     </Field>
 
                     <Field label="Ville" required hint="La ville où se déroule l'excursion">
@@ -596,7 +604,7 @@ export default function NouvelleExcursionClient({
                     </Field>
                     <Field label="Prix par personne (TND)">
                       <div className="nf-field">
-                        <input type="number" min={1} step={1} value={price} onChange={e=>setPrice(Number(e.target.value))}/>
+                        <input type="number" min={1} max={9999} step={0.5} value={price} onChange={e=>setPrice(Number(e.target.value))}/>
                       </div>
                     </Field>
                     <Field label="Personnes max" hint="Capacité du groupe">
@@ -661,7 +669,7 @@ export default function NouvelleExcursionClient({
                     <Field label="Âge minimum" hint="Laisser vide si aucune restriction d'âge">
                       <div className="nf-field" style={{ position:"relative" }}>
                         <Users size={13} color="#94A3B8" style={{ position:"absolute", left:11, top:"50%", transform:"translateY(-50%)", pointerEvents:"none" }}/>
-                        <input type="number" min={0} max={99} style={{ paddingLeft:30 }} placeholder="Ex : 12" value={minAge} onChange={e=>setMinAge(e.target.value?Number(e.target.value):"")}/>
+                        <input type="number" min={3} max={80} style={{ paddingLeft:30 }} placeholder="Ex : 12" value={minAge} onChange={e=>setMinAge(e.target.value?Number(e.target.value):"")}/>
                       </div>
                     </Field>
                   </div>

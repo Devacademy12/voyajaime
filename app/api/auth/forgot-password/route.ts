@@ -2,7 +2,10 @@ import { NextResponse } from "next/server";
 import nodemailer from "nodemailer";
 import { createClient } from "@supabase/supabase-js";
 
-// ✅ Configuration Ethereal - à mettre ICI, après les imports
+// ⚠️ ATTENTION PRODUCTION : Ethereal est un service de test uniquement.
+// Les emails ne sont PAS réellement envoyés aux utilisateurs.
+// Pour la production, remplacer par un vrai service (Resend, SendGrid, Mailgun, etc.)
+// et mettre à jour les variables d'environnement correspondantes.
 const transporter = nodemailer.createTransport({
   host: 'smtp.ethereal.email',
   port: 587,
