@@ -31,7 +31,6 @@ export type SummaryDayPlan = {
   city: string;
   date?: string;
   theme?: string;
-  emoji?: string;
   activities: SummaryActivity[];
 };
 
@@ -199,7 +198,6 @@ export default function ItinerarySummary({
                   {/* day header */}
                   <div className="its-day-header">
                     <div className="its-day-left">
-                      <span className="its-day-emoji">{day.emoji || "📍"}</span>
                       <div>
                         <div className="its-day-title">
                           Jour {day.day ?? i + 1}
