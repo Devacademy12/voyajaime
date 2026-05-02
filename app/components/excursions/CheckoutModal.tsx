@@ -7,7 +7,7 @@ import {
   X, Users, MapPin, Clock,
   Check, Minus, Plus, ShieldCheck, RefreshCcw, Lock,
   Loader2, CheckCircle, AlertCircle, ChevronLeft, ChevronRight,
-  MessageSquare,
+  MessageSquare, Route,
 } from "lucide-react";
 
 /* ─── Types ─────────────────────────────────────────────────────────── */
@@ -37,6 +37,7 @@ interface Props {
   excursion?: Excursion;
   excursions?: Excursion[];   // mode itinéraire
   userId?: string;
+  itineraireId?: string;      // ID d'un itinéraire existant (optionnel)
   onClose: () => void;
 }
 
@@ -57,7 +58,6 @@ function buildDateMap(exc: Excursion): Map<string, TimeSlot[]> {
     const d = item.date; if (!d) return;
     if (!map.has(d)) map.set(d, []);
 
-    // Support departure_times (array) OR single departure_time/time
     const depTimes: string[] = (item.departure_times && Array.isArray(item.departure_times) && item.departure_times.length > 0)
       ? item.departure_times
       : [item.departure_time || item.time || item.start_time || "09:00"];
@@ -228,6 +228,26 @@ const CSS = `
   }
   .co2-textarea:focus{border-color:#2B96A8;background:white}
 
+  /* Itineraire badge */
+  .itin-badge{
+    display:inline-flex;align-items:center;gap:5px;
+    background:rgba(255,255,255,.15);
+    border:1px solid rgba(255,255,255,.25);
+    border-radius:20px;padding:4px 10px;
+    font-size:11px;font-weight:700;color:white;
+    letter-spacing:.5px;text-transform:uppercase;
+  }
+
+  /* Progress steps */
+  .itin-progress{
+    display:flex;align-items:center;gap:4px;
+    margin-bottom:6px;
+  }
+  .itin-step{
+    height:3px;border-radius:3px;flex:1;
+    transition:background .3s;
+  }
+
   @keyframes co2Fade{from{opacity:0}to{opacity:1}}
   @keyframes co2Up{from{opacity:0;transform:translateY(22px)}to{opacity:1;transform:translateY(0)}}
   @keyframes coSpin{to{transform:rotate(360deg)}}
@@ -235,7 +255,6 @@ const CSS = `
 
 /* ─── Sub-components ─────────────────────────────────────────────────── */
 
-/** Mini calendar for one excursion */
 function MiniCalendar({
   dateMap,
   selectedDate,
@@ -246,15 +265,13 @@ function MiniCalendar({
   onSelect: (d: string) => void;
 }) {
   const today = new Date(); today.setHours(0,0,0,0);
-
-  // Determine displayed month
   const firstAvailable = Array.from(dateMap.keys()).sort()[0];
   const initDate = firstAvailable ? new Date(firstAvailable) : today;
   const [viewYear,  setViewYear]  = useState(initDate.getFullYear());
   const [viewMonth, setViewMonth] = useState(initDate.getMonth());
 
   const daysInMonth   = new Date(viewYear, viewMonth + 1, 0).getDate();
-  const firstWeekday  = (new Date(viewYear, viewMonth, 1).getDay() + 6) % 7; // Mon=0
+  const firstWeekday  = (new Date(viewYear, viewMonth, 1).getDay() + 6) % 7;
 
   const cells: (number | null)[] = [
     ...Array(firstWeekday).fill(null),
@@ -265,7 +282,6 @@ function MiniCalendar({
 
   return (
     <div>
-      {/* Month nav */}
       <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:10 }}>
         <button
           onClick={() => { const d = new Date(viewYear, viewMonth - 1); setViewYear(d.getFullYear()); setViewMonth(d.getMonth()); }}
@@ -282,18 +298,15 @@ function MiniCalendar({
         </button>
       </div>
 
-      {/* Day headers */}
       <div className="cal-grid" style={{ marginBottom:4 }}>
         {DAYS_FR.map(d => (
           <div key={d} style={{ textAlign:"center", fontSize:11, fontWeight:700, color:"rgba(255,255,255,.5)", padding:"4px 0" }}>{d}</div>
         ))}
       </div>
 
-      {/* Day cells */}
       <div className="cal-grid">
         {cells.map((day, i) => {
           if (!day) return <div key={i} className="cal-day-btn empty"/>;
-
           const dateStr   = `${viewYear}-${pad(viewMonth + 1)}-${pad(day)}`;
           const cellDate  = new Date(viewYear, viewMonth, day);
           const isPast    = cellDate < today;
@@ -325,7 +338,6 @@ function MiniCalendar({
         })}
       </div>
 
-      {/* Legend */}
       <div style={{ display:"flex", gap:14, marginTop:12, flexWrap:"wrap" }}>
         {[
           { color:"#10B981", label:"Disponible" },
@@ -345,7 +357,6 @@ function MiniCalendar({
   );
 }
 
-/** Slot list for a selected date */
 function SlotList({
   slots,
   selected,
@@ -417,15 +428,13 @@ function SlotList({
 
 /* ─── Main modal ─────────────────────────────────────────────────────── */
 
-export default function CheckoutModal({ exc, excursion, excursions, onClose }: Props) {
+export default function CheckoutModal({ exc, excursion, excursions, itineraireId: propItineraireId, onClose }: Props) {
   const supabase = createClient();
 
-  // Determine if itinerary mode or single mode
   const isItinerary = !!(excursions && excursions.length > 1);
   const singleData  = exc ?? excursion ?? excursions?.[0];
   const allExc      = isItinerary ? excursions! : (singleData ? [singleData] : []);
 
-  // Per-excursion state
   const [perExc, setPerExc] = useState(() =>
     allExc.map(e => ({
       exc: e,
@@ -437,13 +446,11 @@ export default function CheckoutModal({ exc, excursion, excursions, onClose }: P
     }))
   );
 
-  // For single mode, we work on perExc[0]
   const [activeIdx, setActiveIdx] = useState(0);
 
   const patch = (idx: number, p: Partial<typeof perExc[0]>) =>
     setPerExc(prev => prev.map((x, i) => i === idx ? { ...x, ...p } : x));
 
-  // Derived totals
   const lineItems = perExc.map(p => ({
     title:    p.exc.title,
     subtotal: (p.selectedSlot?.price || 0) * p.people,
@@ -453,16 +460,22 @@ export default function CheckoutModal({ exc, excursion, excursions, onClose }: P
   const platformFee = Math.round(subtotal * 0.1);
   const grandTotal  = subtotal + platformFee;
 
-  const [status,      setStatus]      = useState<"idle"|"loading"|"success"|"error">("idle");
-  const [errorMsg,    setErrorMsg]    = useState("");
-  const [bookingCodes,setBookingCodes]= useState<string[]>([]);
+  const [status,        setStatus]        = useState<"idle"|"loading"|"success"|"error">("idle");
+  const [errorMsg,      setErrorMsg]      = useState("");
+  const [bookingCodes,  setBookingCodes]  = useState<string[]>([]);
+  const [savedItinId,   setSavedItinId]   = useState<string | null>(null);
+
+  // Nombre d'excursions configurées (date + créneau choisis)
+  const configuredCount = perExc.filter(p => !!p.selectedSlot).length;
+  const progressPct     = isItinerary ? configuredCount / allExc.length : 0;
+
+  const isLoading = status === "loading";
 
   const canSubmit =
     perExc.some(p => !!p.selectedSlot) &&
     perExc.every(p => !p.selectedSlot || p.selectedSlot.slots >= p.people) &&
-    status === "idle";
+    !isLoading;
 
-  // Keep people within slot capacity
   useEffect(() => {
     perExc.forEach((p, i) => {
       const max = p.selectedSlot?.slots || p.exc.max_people || 1;
@@ -470,18 +483,70 @@ export default function CheckoutModal({ exc, excursion, excursions, onClose }: P
     });
   }, [perExc.map(p => p.selectedSlot).join(",")]);
 
+  /* ── Réservation ── */
   const handleReserve = async () => {
     if (!canSubmit) return;
     setStatus("loading"); setErrorMsg("");
+
     try {
       const { data: { user }, error: authErr } = await supabase.auth.getUser();
-      if (authErr || !user) { setErrorMsg("Vous devez être connecté."); setStatus("error"); return; }
+      if (authErr || !user) {
+        setErrorMsg("Vous devez être connecté.");
+        setStatus("error");
+        return;
+      }
 
+      // ── En mode itinéraire : créer ou réutiliser un enregistrement itineraires ──
+      let itineraireId: string | null = propItineraireId ?? null;
+
+      if (isItinerary) {
+        if (!itineraireId) {
+          // Créer un nouvel itinéraire regroupant toutes les excursions sélectionnées
+          const villes    = [...new Set(perExc.map(p => p.exc.city))];
+          const planItems = perExc
+            .filter(p => p.selectedSlot)
+            .map((p, idx) => ({
+              jour:         idx + 1,
+              excursion_id: p.exc.id,
+              titre:        p.exc.title,
+              ville:        p.exc.city,
+              date:         p.selectedDate,
+              heure:        p.selectedSlot!.time,
+              personnes:    p.people,
+              prix_total:   (p.selectedSlot!.price * p.people) + Math.round(p.selectedSlot!.price * p.people * 0.1),
+            }));
+
+          const { data: newItin, error: itinErr } = await supabase
+            .from("itineraires")
+            .insert([{
+              user_id:                  user.id,
+              nb_jours:                 planItems.length,
+              villes_selectionnees:     villes,
+              categories_selectionnees: [],
+              plan:                     planItems,
+            }])
+            .select("id")
+            .single();
+
+          if (itinErr || !newItin) {
+            setErrorMsg(`Erreur création itinéraire : ${itinErr?.message ?? "inconnue"}`);
+            setStatus("error");
+            return;
+          }
+          itineraireId = newItin.id;
+          setSavedItinId(newItin.id);
+        } else {
+          setSavedItinId(itineraireId);
+        }
+      }
+
+      // ── Insérer les réservations ──
       const codes: string[] = [];
+
       for (const p of perExc) {
         if (!p.selectedSlot) continue;
 
-        // ── Vérification doublon : même excursion + même date + même touriste ──
+        // Vérification doublon
         const { data: existing, error: checkErr } = await supabase
           .from("reservations")
           .select("id")
@@ -490,7 +555,12 @@ export default function CheckoutModal({ exc, excursion, excursions, onClose }: P
           .eq("date", p.selectedDate)
           .not("status", "eq", "cancelled")
           .maybeSingle();
-        if (checkErr) { setErrorMsg(`Erreur de vérification : ${checkErr.message}`); setStatus("error"); return; }
+
+        if (checkErr) {
+          setErrorMsg(`Erreur de vérification : ${checkErr.message}`);
+          setStatus("error");
+          return;
+        }
         if (existing) {
           setErrorMsg(`Vous avez déjà une réservation pour "${p.exc.title}" à cette date. Veuillez choisir une autre date.`);
           setStatus("error");
@@ -500,44 +570,77 @@ export default function CheckoutModal({ exc, excursion, excursions, onClose }: P
         const code = genBookingCode();
         const tot  = p.selectedSlot.price * p.people;
         const fee  = Math.round(tot * 0.1);
+
         const { error: insErr } = await supabase.from("reservations").insert([{
-          touriste_id: user.id, excursion_id: p.exc.id,
-          date: p.selectedDate, time: p.selectedSlot.time,
-          people_count: p.people, total_price: tot + fee,
-          platform_fee: fee, status: "pending",
+          touriste_id:   user.id,
+          excursion_id:  p.exc.id,
+          itineraire_id: itineraireId,   // ← nouveau champ
+          date:          p.selectedDate,
+          time:          p.selectedSlot.time,
+          people_count:  p.people,
+          total_price:   tot + fee,
+          platform_fee:  fee,
+          status:        "pending",
           special_needs: p.specialNeeds.trim() || null,
-          booking_code: code, payment_status: "unpaid",
-          payment_method: null, special_notes: null,
+          booking_code:  code,
+          payment_status:"unpaid",
+          payment_method:null,
+          special_notes: null,
         }]);
-        if (insErr) { setErrorMsg(`Erreur : ${insErr.message}`); setStatus("error"); return; }
-        await supabase.rpc("decrement_slot", { exc_id: p.exc.id, date_str: p.selectedDate, qty: p.people });
+
+        if (insErr) {
+          setErrorMsg(`Erreur : ${insErr.message}`);
+          setStatus("error");
+          return;
+        }
+
+        await supabase.rpc("decrement_slot", {
+          exc_id:   p.exc.id,
+          date_str: p.selectedDate,
+          qty:      p.people,
+        });
+
         codes.push(code);
       }
+
       setBookingCodes(codes);
       setStatus("success");
+
     } catch (err) {
       setErrorMsg(err instanceof Error ? err.message : "Erreur inconnue.");
       setStatus("error");
     }
   };
 
-  /* ── Success screen ── */
+  /* ── Écran succès ── */
   if (status === "success") {
+    const confirmedItems = perExc.filter(p => p.selectedSlot);
     return (
       <>
         <style>{CSS}</style>
         <div className="co2-overlay" onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
-          <div className="co2-shell" style={{ maxWidth:480, display:"block", padding:"40px 36px", textAlign:"center" }}>
+          <div className="co2-shell" style={{ maxWidth:500, display:"block", padding:"40px 36px", textAlign:"center" }}>
             <div style={{ width:72, height:72, borderRadius:"50%", background:"linear-gradient(135deg,#D1FAE5,#A7F3D0)", display:"flex", alignItems:"center", justifyContent:"center", margin:"0 auto 20px", boxShadow:"0 8px 24px rgba(5,150,105,.2)" }}>
               <CheckCircle size={36} color="#059669"/>
             </div>
+
             <h2 style={{ fontFamily:"'Cormorant Garamond',serif", fontSize:28, fontWeight:700, color:"#111827", marginBottom:8 }}>
               {isItinerary ? "Itinéraire réservé !" : "Réservation confirmée !"}
             </h2>
-            <p style={{ fontSize:13, color:"#6B7280", marginBottom:22 }}>
-              {perExc.filter(p => p.selectedSlot).length} excursion{perExc.filter(p=>p.selectedSlot).length>1?"s":""} confirmée{perExc.filter(p=>p.selectedSlot).length>1?"s":""}
+            <p style={{ fontSize:13, color:"#6B7280", marginBottom: savedItinId ? 10 : 22 }}>
+              {confirmedItems.length} excursion{confirmedItems.length > 1 ? "s" : ""} confirmée{confirmedItems.length > 1 ? "s" : ""}
             </p>
-            {perExc.filter(p => p.selectedSlot).map((p, i) => (
+
+            {/* Badge itinéraire si mode itinéraire */}
+            {isItinerary && savedItinId && (
+              <div style={{ display:"inline-flex", alignItems:"center", gap:6, background:"linear-gradient(135deg,#EFF9FB,#D0F0F5)", border:"1px solid rgba(43,150,168,.3)", borderRadius:10, padding:"8px 14px", marginBottom:20, fontSize:12 }}>
+                <Route size={13} color="#2B96A8"/>
+                <span style={{ fontWeight:700, color:"#2B96A8" }}>Itinéraire</span>
+                <span style={{ color:"#6B7280", fontFamily:"monospace", fontSize:11 }}>#{savedItinId.slice(0,8).toUpperCase()}</span>
+              </div>
+            )}
+
+            {confirmedItems.map((p, i) => (
               <div key={i} style={{ background:"linear-gradient(135deg,#EFF9FB,#D0F0F5)", border:"1px solid rgba(43,150,168,.25)", borderRadius:14, padding:"14px 18px", marginBottom:10, textAlign:"left" }}>
                 <p style={{ margin:"0 0 2px", fontSize:13, fontWeight:700, color:"#111827" }}>{sanitizeText(p.exc.title)}</p>
                 <p style={{ margin:"0 0 6px", fontSize:12, color:"#6B7280" }}>
@@ -548,14 +651,17 @@ export default function CheckoutModal({ exc, excursion, excursions, onClose }: P
                 </p>
               </div>
             ))}
-            <button className="co2-cta on" style={{ marginTop:16 }} onClick={onClose}><Check size={15}/> Fermer</button>
+
+            <button className="co2-cta on" style={{ marginTop:16 }} onClick={onClose}>
+              <Check size={15}/> Fermer
+            </button>
           </div>
         </div>
       </>
     );
   }
 
-  const cur = perExc[activeIdx];
+  const cur          = perExc[activeIdx];
   const slotsForDate = cur.selectedDate ? (cur.dateMap.get(cur.selectedDate) || []) : [];
   const maxPeople    = cur.selectedSlot?.slots || cur.exc.max_people || 1;
   const curPrice     = cur.selectedSlot?.price || cur.exc.price_per_person || 0;
@@ -563,22 +669,26 @@ export default function CheckoutModal({ exc, excursion, excursions, onClose }: P
   const curFee       = Math.round(curTotal * 0.1);
   const curGrand     = curTotal + curFee;
 
-  /* ── Main layout ── */
   return (
     <>
       <style>{CSS}</style>
       <div className="co2-overlay" onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
         <div className="co2-shell">
 
-          {/* ── LEFT : calendar + info ── */}
+          {/* ── LEFT ── */}
           <div className="co2-left">
             {/* Header */}
             <div style={{ position:"relative", zIndex:1 }}>
+              {isItinerary && (
+                <div className="itin-badge" style={{ marginBottom:10 }}>
+                  <Route size={10}/> Itinéraire · {allExc.length} excursions
+                </div>
+              )}
               <p style={{ fontSize:11, fontWeight:700, color:"rgba(255,255,255,.5)", textTransform:"uppercase", letterSpacing:"1.5px", margin:"0 0 6px" }}>
-                {isItinerary ? "Itinéraire" : "Excursion"}
+                {isItinerary ? `Étape ${activeIdx + 1} / ${allExc.length}` : "Excursion"}
               </p>
               <h2 style={{ fontFamily:"'Cormorant Garamond',serif", fontSize:22, fontWeight:700, color:"white", margin:"0 0 10px", lineHeight:1.3 }}>
-                {sanitizeText(isItinerary ? `${allExc.length} excursions` : cur.exc.title)}
+                {sanitizeText(isItinerary ? cur.exc.title : cur.exc.title)}
               </h2>
               <div style={{ display:"flex", flexWrap:"wrap", gap:8 }}>
                 <span style={{ fontSize:12, color:"rgba(255,255,255,.7)", display:"flex", alignItems:"center", gap:4 }}>
@@ -590,9 +700,28 @@ export default function CheckoutModal({ exc, excursion, excursions, onClose }: P
               </div>
             </div>
 
-            {/* Excursion tabs (itinerary mode) */}
+            {/* Barre de progression itinéraire */}
             {isItinerary && (
-              <div style={{ display:"flex", flexDirection:"column", gap:6, position:"relative", zIndex:1 }}>
+              <div style={{ position:"relative", zIndex:1 }}>
+                <div style={{ display:"flex", justifyContent:"space-between", fontSize:11, color:"rgba(255,255,255,.5)", marginBottom:6 }}>
+                  <span>Progression</span>
+                  <span style={{ fontWeight:700, color:"white" }}>{configuredCount}/{allExc.length} configurée{configuredCount>1?"s":""}</span>
+                </div>
+                <div className="itin-progress">
+                  {allExc.map((_, i) => (
+                    <div
+                      key={i}
+                      className="itin-step"
+                      style={{ background: perExc[i].selectedSlot ? "#10B981" : i===activeIdx ? "rgba(255,255,255,.5)" : "rgba(255,255,255,.15)" }}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Tabs excursions (itinéraire) */}
+            {isItinerary && (
+              <div style={{ display:"flex", flexDirection:"column", gap:6, position:"relative", zIndex:1, overflowY:"auto", maxHeight:180 }}>
                 {allExc.map((e, i) => (
                   <button
                     key={e.id}
@@ -603,14 +732,17 @@ export default function CheckoutModal({ exc, excursion, excursions, onClose }: P
                       borderRadius:10, padding:"8px 12px", cursor:"pointer",
                       display:"flex", alignItems:"center", justifyContent:"space-between",
                       color:"white", fontFamily:"'DM Sans',sans-serif", fontSize:12, fontWeight:600,
-                      transition:"all .15s",
+                      transition:"all .15s", flexShrink:0,
                     }}>
-                    <span style={{ overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", maxWidth:"75%" }}>
-                      {sanitizeText(e.title)}
-                    </span>
+                    <div style={{ display:"flex", alignItems:"center", gap:6, overflow:"hidden" }}>
+                      <span style={{ flexShrink:0, width:18, height:18, borderRadius:"50%", background: i===activeIdx ? "rgba(255,255,255,.25)" : "rgba(255,255,255,.1)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:10, fontWeight:800 }}>{i+1}</span>
+                      <span style={{ overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
+                        {sanitizeText(e.title)}
+                      </span>
+                    </div>
                     {perExc[i].selectedSlot
-                      ? <Check size={13} color="#10B981"/>
-                      : <div style={{ width:13, height:13, borderRadius:"50%", border:"1.5px solid rgba(255,255,255,.35)" }}/>
+                      ? <Check size={13} color="#10B981" style={{ flexShrink:0 }}/>
+                      : <div style={{ width:13, height:13, borderRadius:"50%", border:"1.5px solid rgba(255,255,255,.35)", flexShrink:0 }}/>
                     }
                   </button>
                 ))}
@@ -629,7 +761,7 @@ export default function CheckoutModal({ exc, excursion, excursions, onClose }: P
               />
             </div>
 
-            {/* Price summary on left */}
+            {/* Price summary */}
             {subtotal > 0 && (
               <div style={{ marginTop:"auto", background:"rgba(255,255,255,.1)", borderRadius:14, padding:"14px 16px", position:"relative", zIndex:1 }}>
                 {isItinerary ? (
@@ -641,6 +773,10 @@ export default function CheckoutModal({ exc, excursion, excursions, onClose }: P
                       </div>
                     ))}
                     <div style={{ height:1, background:"rgba(255,255,255,.2)", margin:"8px 0" }}/>
+                    <div style={{ display:"flex", justifyContent:"space-between", fontSize:12, color:"rgba(255,255,255,.6)", marginBottom:4 }}>
+                      <span>Frais de service (10%)</span>
+                      <span>{platformFee} TND</span>
+                    </div>
                     <div style={{ display:"flex", justifyContent:"space-between", fontSize:15, fontWeight:800, color:"white" }}>
                       <span>Total</span><span>{grandTotal} TND</span>
                     </div>
@@ -656,10 +792,10 @@ export default function CheckoutModal({ exc, excursion, excursions, onClose }: P
             )}
           </div>
 
-          {/* ── RIGHT : slots + options ── */}
+          {/* ── RIGHT ── */}
           <div className="co2-right">
             <div className="co2-right-scroll">
-              {/* Close btn */}
+              {/* Header */}
               <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:22 }}>
                 <div>
                   <h3 style={{ fontFamily:"'Cormorant Garamond',serif", fontSize:20, fontWeight:700, color:"#111827", margin:"0 0 2px" }}>
@@ -725,6 +861,26 @@ export default function CheckoutModal({ exc, excursion, excursions, onClose }: P
                 </div>
               )}
 
+              {/* Navigation itinéraire */}
+              {isItinerary && (
+                <div style={{ display:"flex", gap:8, marginBottom:20 }}>
+                  {activeIdx > 0 && (
+                    <button
+                      onClick={() => setActiveIdx(activeIdx - 1)}
+                      style={{ flex:1, padding:"10px 14px", borderRadius:12, border:"1.5px solid #E5E7EB", background:"white", cursor:"pointer", fontSize:12, fontWeight:700, color:"#374151", display:"flex", alignItems:"center", justifyContent:"center", gap:5, fontFamily:"'DM Sans',sans-serif" }}>
+                      <ChevronLeft size={13}/> Précédent
+                    </button>
+                  )}
+                  {activeIdx < allExc.length - 1 && (
+                    <button
+                      onClick={() => setActiveIdx(activeIdx + 1)}
+                      style={{ flex:1, padding:"10px 14px", borderRadius:12, border:"1.5px solid #2B96A8", background:"#EFF9FB", cursor:"pointer", fontSize:12, fontWeight:700, color:"#2B96A8", display:"flex", alignItems:"center", justifyContent:"center", gap:5, fontFamily:"'DM Sans',sans-serif" }}>
+                      Suivant <ChevronRight size={13}/>
+                    </button>
+                  )}
+                </div>
+              )}
+
               {/* Special needs */}
               <div style={{ marginBottom:8 }}>
                 <label style={{ fontSize:11, fontWeight:700, color:"#374151", display:"flex", alignItems:"center", gap:5, marginBottom:6, textTransform:"uppercase", letterSpacing:".5px" }}>
@@ -743,7 +899,7 @@ export default function CheckoutModal({ exc, excursion, excursions, onClose }: P
 
             {/* Footer */}
             <div className="co2-right-footer">
-              {/* Single mode price recap */}
+              {/* Récap prix mode simple */}
               {!isItinerary && cur.selectedSlot && (
                 <div style={{ background:"#F9FAFB", borderRadius:12, padding:"12px 14px", marginBottom:14, border:"1px solid #F0F0F0" }}>
                   <div style={{ display:"flex", justifyContent:"space-between", fontSize:12, color:"#6B7280", marginBottom:5 }}>
@@ -761,17 +917,25 @@ export default function CheckoutModal({ exc, excursion, excursions, onClose }: P
                 </div>
               )}
 
+              {/* Récap itinéraire compact */}
+              {isItinerary && configuredCount > 0 && configuredCount < allExc.length && (
+                <div style={{ background:"#FFFBEB", border:"1px solid #FDE68A", borderRadius:10, padding:"9px 12px", marginBottom:12, fontSize:12, color:"#92400E", display:"flex", alignItems:"center", gap:7 }}>
+                  <AlertCircle size={13} color="#F59E0B"/>
+                  {allExc.length - configuredCount} excursion{allExc.length - configuredCount > 1 ? "s" : ""} encore sans créneau — vous pouvez quand même réserver les excursions configurées.
+                </div>
+              )}
+
               <button
-                className={`co2-cta ${!canSubmit ? "off" : status==="loading" ? "spin" : "on"}`}
-                disabled={!canSubmit}
+                className={`co2-cta ${isLoading ? "spin" : !canSubmit ? "off" : "on"}`}
+                disabled={!canSubmit || isLoading}
                 onClick={handleReserve}
               >
-                {status === "loading"
+                {isLoading
                   ? <><Loader2 size={15} style={{ animation:"coSpin .7s linear infinite" }}/> Réservation en cours…</>
                   : !canSubmit
                   ? "Choisissez un créneau"
                   : isItinerary
-                  ? <><Check size={15}/> Réserver l'itinéraire — {grandTotal} TND</>
+                  ? <><Route size={15}/> Réserver l'itinéraire ({configuredCount} exc.) — {grandTotal} TND</>
                   : <><Check size={15}/> Réserver — {curGrand} TND</>
                 }
               </button>
