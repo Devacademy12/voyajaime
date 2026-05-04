@@ -326,21 +326,6 @@ export default function HomeSlider() {
           transform: scale(1.02);
         }
 
-        .play-overlay {
-          position: absolute; inset: 0;
-          display: flex; align-items: center; justify-content: center;
-          pointer-events: none;
-          z-index: 5;
-        }
-        .play-circle {
-          width: 88px; height: 88px; border-radius: 50%;
-          background: rgba(255,255,255,.12);
-          border: 2px solid rgba(255,255,255,.5);
-          display: flex; align-items: center; justify-content: center;
-          backdrop-filter: blur(8px);
-          transition: all 0.3s;
-        }
-
         .skeleton-shimmer {
           background: linear-gradient(90deg, #1a2332 0%, #243447 50%, #1a2332 100%);
           background-size: 200% 100%;
@@ -450,16 +435,9 @@ export default function HomeSlider() {
               background: "linear-gradient(to top, rgba(0,0,0,.7) 0%, transparent 60%)" 
             }}/>
 
-            {/* YouTube play cue */}
-            {slide.type === "video" && slide.videoUrl && isYouTube(slide.videoUrl) && (
-              <div className="play-overlay">
-                <div className="play-circle">
-                  <Play size={36} color="white" fill="white"/>
-                </div>
-              </div>
-            )}
-
-            {/* Mute button */}
+            {/* PAS DE BOUTON PLAY POUR LES VIDÉOS - SUPPRIMÉ */}
+            
+            {/* Mute button - uniquement pour les vidéos non-YouTube */}
             {slide.type === "video" && slide.videoUrl && !isYouTube(slide.videoUrl) && (
               <button className="mute-btn" onClick={() => setMuted(m => !m)}>
                 {muted ? <VolumeX size={16}/> : <Volume2 size={16}/>}
