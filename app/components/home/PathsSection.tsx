@@ -51,13 +51,18 @@ export default function PathsSection({ slides, user, openAuth }: PathsSectionPro
               <Sparkles size={11} color="#7EDCED" />
               <span style={{ fontSize: 10, fontWeight: 800, color: "#7EDCED", letterSpacing: 1 }}>IA · RAPIDE</span>
             </div>
-            <Bot size={40} color="rgba(255,255,255,0.88)" style={{ marginTop: 4 }} />
-            <div>
-              <h3 style={{ fontFamily: "'Playfair Display',serif", fontSize: 26, fontWeight: 900, color: "white", marginBottom: 4, letterSpacing: "-0.5px" }}>
-                Mode Assisté
-              </h3>
-              <p style={{ fontSize: 13, color: "#7EDCED", fontWeight: 600 }}>Itinéraire généré par IA en 1 minute</p>
+
+            {/* ✅ Icône + Titre sur la même ligne */}
+            <div style={{ display: "flex", alignItems: "center", gap: 14, marginTop: 4 }}>
+              <Bot size={40} color="rgba(255,255,255,0.88)" style={{ flexShrink: 0 }} />
+              <div>
+                <h3 style={{ fontFamily: "'Playfair Display',serif", fontSize: 26, fontWeight: 900, color: "white", marginBottom: 4, letterSpacing: "-0.5px" }}>
+                  Mode Assisté
+                </h3>
+                <p style={{ fontSize: 13, color: "#7EDCED", fontWeight: 600 }}>Itinéraire généré par IA en 1 minute</p>
+              </div>
             </div>
+
             <p style={{ fontSize: 14, color: "rgba(255,255,255,0.7)", lineHeight: 1.7 }}>
               Répondez à 3 questions simples. Notre IA génère votre itinéraire jour par jour, avec des alternatives locales.
             </p>
@@ -82,13 +87,18 @@ export default function PathsSection({ slides, user, openAuth }: PathsSectionPro
               <Map size={11} color="rgba(255,255,255,0.65)" />
               <span style={{ fontSize: 10, fontWeight: 800, color: "rgba(255,255,255,0.65)", letterSpacing: 1 }}>BUILDER · FLEXIBLE</span>
             </div>
-            <ClipboardList size={40} color="rgba(255,255,255,0.88)" style={{ marginTop: 4 }} />
-            <div>
-              <h3 style={{ fontFamily: "'Playfair Display',serif", fontSize: 26, fontWeight: 900, color: "white", marginBottom: 4, letterSpacing: "-0.5px" }}>
-                Mode Libre
-              </h3>
-              <p style={{ fontSize: 13, color: "rgba(255,255,255,0.5)", fontWeight: 600 }}>Chaque détail, à votre main</p>
+
+            {/* ✅ Icône + Titre sur la même ligne */}
+            <div style={{ display: "flex", alignItems: "center", gap: 14, marginTop: 4 }}>
+              <ClipboardList size={40} color="rgba(255,255,255,0.88)" style={{ flexShrink: 0 }} />
+              <div>
+                <h3 style={{ fontFamily: "'Playfair Display',serif", fontSize: 26, fontWeight: 900, color: "white", marginBottom: 4, letterSpacing: "-0.5px" }}>
+                  Mode Libre
+                </h3>
+                <p style={{ fontSize: 13, color: "rgba(255,255,255,0.5)", fontWeight: 600 }}>Chaque détail, à votre main</p>
+              </div>
             </div>
+
             <p style={{ fontSize: 14, color: "rgba(255,255,255,0.68)", lineHeight: 1.7 }}>
               Construisez votre voyage de A à Z — choisissez chaque excursion, chaque jour, dans l&apos;ordre qui vous plaît.
             </p>
@@ -113,13 +123,18 @@ export default function PathsSection({ slides, user, openAuth }: PathsSectionPro
               <Search size={11} color="rgba(255,255,255,0.52)" />
               <span style={{ fontSize: 10, fontWeight: 800, color: "rgba(255,255,255,0.52)", letterSpacing: 1 }}>SANS COMPTE</span>
             </div>
-            <Mountain size={40} color="rgba(255,255,255,0.88)" style={{ marginTop: 4 }} />
-            <div>
-              <h3 style={{ fontFamily: "'Playfair Display',serif", fontSize: 26, fontWeight: 900, color: "white", marginBottom: 4, letterSpacing: "-0.5px" }}>
-                Juste Explorer
-              </h3>
-              <p style={{ fontSize: 13, color: "rgba(255,255,255,0.42)", fontWeight: 600 }}>Parcourez librement le catalogue</p>
+
+            {/* ✅ Icône + Titre sur la même ligne */}
+            <div style={{ display: "flex", alignItems: "center", gap: 14, marginTop: 4 }}>
+              <Mountain size={40} color="rgba(255,255,255,0.88)" style={{ flexShrink: 0 }} />
+              <div>
+                <h3 style={{ fontFamily: "'Playfair Display',serif", fontSize: 26, fontWeight: 900, color: "white", marginBottom: 4, letterSpacing: "-0.5px" }}>
+                  Juste Explorer
+                </h3>
+                <p style={{ fontSize: 13, color: "rgba(255,255,255,0.42)", fontWeight: 600 }}>Parcourez librement le catalogue</p>
+              </div>
             </div>
+
             <p style={{ fontSize: 14, color: "rgba(255,255,255,0.62)", lineHeight: 1.7 }}>
               Pas besoin de compte pour regarder. Parcourez toutes les excursions disponibles en Tunisie.
             </p>

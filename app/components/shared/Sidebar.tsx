@@ -39,6 +39,7 @@ const NAV: Record<Role, NavItem[]> = {
     { label: "Avis & Modération",  href: ROUTES.admin.avis,          icon: <Shield size={18} /> },
     { label: "Conversations",      href: ROUTES.admin.conversations, icon: <MessageCircle size={18} /> },
     { label: "Catalogue & Villes", href: ROUTES.admin.catalogue,     icon: <FolderOpen size={18} /> },
+    { label :"Slider",             href: ROUTES.admin.slider,          icon: <Mountain size={18} /> }
   ],
 };
 

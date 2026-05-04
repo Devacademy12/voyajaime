@@ -27,7 +27,7 @@ export default function PopularExcursions({
         }}>
           <div>
             <h2 className="section-title">
-              Excursions<br />populaires
+              Excursions  populaires
             </h2>
           </div>
           <Link href={ROUTES.excursions} className="btn-outline" style={{ marginBottom: 8 }}>

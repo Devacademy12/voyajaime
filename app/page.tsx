@@ -138,16 +138,9 @@ export default function HomePage() {
         favCount={favCount}
         isLoggedIn={!!user}
       />
-      <div style={{ paddingTop: 10 }} />
+      
 
-      <HeroSlider
-        slides={slides}
-        slidesLoading={slidesLoading}
-        current={current}
-        fading={fading}
-        progress={progress}
-        goTo={goTo}
-      />
+      <HeroSlider/>
 
       <PathsSection
         slides={slides}

@@ -46,6 +46,7 @@ export const ROUTES = {
     avis:          "/admin/avis",
     conversations: "/admin/conversations",
     catalogue:     "/admin/catalogue",
+    slider:       "/admin/slider",
   },
 
 } as const;
