@@ -1,0 +1,760 @@
+@import url('https://fonts.googleapis.com/css2?family=Clash+Display:wght@500;600;700&family=Satoshi:wght@400;500;600;700&display=swap');
+@import url('https://api.fontshare.com/v2/css?f[]=clash-display@500,600,700&f[]=satoshi@400,500,600,700&display=swap');
+
+/* ─── Global reset (wrapped for CSS Modules compatibility) ───────────── */
+:global(*) {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+:global(*::before),
+:global(*::after) {
+    box-sizing: border-box;
+}
+
+/* ─── Animations (global scope) ──────────────────────────────────────── */
+@keyframes spin {
+    to {
+        transform: rotate(360deg)
+    }
+}
+
+@keyframes fadeUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px)
+    }
+
+    to {
+        opacity: 1;
+        transform: none
+    }
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0
+    }
+
+    to {
+        opacity: 1
+    }
+}
+
+@keyframes pulse {
+
+    0%,
+    100% {
+        opacity: 1
+    }
+
+    50% {
+        opacity: .5
+    }
+}
+
+@keyframes blink {
+
+    0%,
+    100% {
+        opacity: 1
+    }
+
+    49% {
+        opacity: 1
+    }
+
+    50% {
+        opacity: 0
+    }
+
+    99% {
+        opacity: 0
+    }
+}
+
+/* ─── Root ───────────────────────────────────────────────────────────── */
+.rp-root {
+    font-family: 'Satoshi', 'DM Sans', system-ui, sans-serif;
+    background: linear-gradient(135deg, #F8FAFC 0%, #F1F5F9 100%);
+    min-height: 100vh;
+    padding: 48px 40px 80px;
+    max-width: 1280px;
+    margin: 0 auto;
+    color: #1E293B;
+}
+
+/* ─── Header ─────────────────────────────────────────────────────────── */
+.rp-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 48px;
+    flex-wrap: wrap;
+    gap: 20px;
+}
+
+.rp-eyebrow {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: #0D9488;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.rp-eyebrow::before {
+    content: '';
+    display: inline-block;
+    width: 20px;
+    height: 2px;
+    background: #0D9488;
+    border-radius: 2px;
+}
+
+.rp-title {
+    font-family: 'Clash Display', 'Syne', sans-serif;
+    font-size: 48px;
+    font-weight: 700;
+    color: #0F172A;
+    letter-spacing: -2.5px;
+    line-height: 1;
+    margin-bottom: 8px;
+}
+
+.rp-subtitle {
+    font-size: 14px;
+    color: #64748B;
+    font-weight: 500;
+}
+
+/* ─── Refresh button ─────────────────────────────────────────────────── */
+.rp-refresh-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 22px;
+    background: #FFFFFF;
+    border: 1px solid #E2E8F0;
+    border-radius: 10px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #475569;
+    cursor: pointer;
+    font-family: inherit;
+    transition: all .2s;
+    margin-top: 6px;
+}
+
+.rp-refresh-btn:hover {
+    border-color: #CBD5E1;
+    color: #1E293B;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, .04);
+}
+
+/* ─── Stats ──────────────────────────────────────────────────────────── */
+.rp-stats {
+    display: flex;
+    gap: 1px;
+    margin-bottom: 40px;
+    background: #E2E8F0;
+    border-radius: 14px;
+    overflow: hidden;
+    border: 1px solid #E2E8F0;
+}
+
+.rp-stat {
+    flex: 1;
+    padding: 20px 24px;
+    background: #FFFFFF;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+.rp-stat-icon {
+    font-size: 20px;
+    line-height: 1;
+}
+
+.rp-stat-num {
+    font-family: 'Clash Display', sans-serif;
+    font-size: 28px;
+    font-weight: 700;
+    line-height: 1;
+}
+
+.rp-stat-label {
+    font-size: 11px;
+    color: #64748B;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .8px;
+    margin-top: 3px;
+}
+
+/* ─── Grid ───────────────────────────────────────────────────────────── */
+.rp-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+    gap: 20px;
+}
+
+/* ─── Card ───────────────────────────────────────────────────────────── */
+.rp-card {
+    background: #FFFFFF;
+    border: 1px solid #E2E8F0;
+    border-radius: 20px;
+    overflow: hidden;
+    animation: fadeUp .4s cubic-bezier(.22, 1, .36, 1) both;
+    transition: border-color .2s, box-shadow .2s;
+    position: relative;
+}
+
+.rp-card:hover {
+    border-color: #CBD5E1;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, .08), 0 0 0 1px rgba(13, 148, 136, .06);
+}
+
+/* ─── Card image ─────────────────────────────────────────────────────── */
+.rp-img-wrap {
+    position: relative;
+    height: 200px;
+    overflow: hidden;
+    background: linear-gradient(135deg, #F0FDF4, #CCFBF1);
+}
+
+.rp-img-wrap img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    transition: transform .5s ease;
+}
+
+.rp-card:hover .rp-img-wrap img {
+    transform: scale(1.04);
+}
+
+.rp-img-gradient {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to bottom, rgba(0, 0, 0, .05) 0%, rgba(0, 0, 0, .4) 100%);
+}
+
+.rp-img-info {
+    position: absolute;
+    bottom: 16px;
+    left: 18px;
+    right: 18px;
+}
+
+.rp-img-title {
+    font-family: 'Clash Display', sans-serif;
+    font-size: 20px;
+    font-weight: 700;
+    color: #FFFFFF;
+    letter-spacing: -.5px;
+    margin-bottom: 6px;
+    line-height: 1.2;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, .3);
+}
+
+.rp-img-meta {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 12px;
+    color: rgba(255, 255, 255, .9);
+    text-shadow: 0 1px 2px rgba(0, 0, 0, .2);
+}
+
+/* ─── Status pill ────────────────────────────────────────────────────── */
+.rp-status {
+    position: absolute;
+    top: 14px;
+    left: 14px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 12px;
+    border-radius: 99px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: .3px;
+    backdrop-filter: blur(12px);
+}
+
+.rp-status-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+}
+
+/* ─── Badges (paid / days) ───────────────────────────────────────────── */
+.rp-paid-tag {
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 5px 10px;
+    background: rgba(16, 185, 129, .95);
+    border-radius: 99px;
+    font-size: 10px;
+    font-weight: 700;
+    color: white;
+    backdrop-filter: blur(8px);
+}
+
+.rp-days-tag {
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 5px 11px;
+    background: rgba(15, 23, 42, .85);
+    border: 1px solid rgba(13, 148, 136, .5);
+    border-radius: 99px;
+    font-size: 11px;
+    font-weight: 700;
+    color: #0D9488;
+    backdrop-filter: blur(8px);
+}
+
+/* ─── Card body ──────────────────────────────────────────────────────── */
+.rp-body {
+    padding: 20px 20px 0;
+}
+
+.rp-details {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr 1fr;
+    gap: 8px;
+    margin-bottom: 16px;
+}
+
+.rp-detail {
+    padding: 10px 12px;
+    background: #F8FAFC;
+    border: 1px solid #E2E8F0;
+    border-radius: 10px;
+}
+
+.rp-detail-lbl {
+    font-size: 9px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .8px;
+    color: #94A3B8;
+    margin-bottom: 4px;
+}
+
+.rp-detail-val {
+    font-size: 12px;
+    font-weight: 700;
+    color: #334155;
+}
+
+/* ─── Timer bar ──────────────────────────────────────────────────────── */
+.rp-timer-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 14px;
+    border-radius: 10px;
+    margin-bottom: 16px;
+    border: 1px solid;
+}
+
+.rp-timer-normal {
+    background: #F0FDF4;
+    border-color: #D1FAE5;
+}
+
+.rp-timer-urgent {
+    background: #FEF2F2;
+    border-color: #FEE2E2;
+    animation: pulse .9s ease infinite;
+}
+
+/* ─── Card footer ────────────────────────────────────────────────────── */
+.rp-footer {
+    border-top: 1px solid #F1F5F9;
+    padding: 16px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.rp-price-amount {
+    font-family: 'Clash Display', sans-serif;
+    font-size: 26px;
+    font-weight: 700;
+    color: #0F172A;
+    line-height: 1;
+}
+
+.rp-price-label {
+    font-size: 10px;
+    color: #64748B;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .5px;
+    margin-bottom: 4px;
+}
+
+.rp-booking-code {
+    font-family: 'Courier New', monospace;
+    font-size: 10px;
+    color: #94A3B8;
+    margin-top: 4px;
+}
+
+/* ─── Pay button ─────────────────────────────────────────────────────── */
+.rp-pay-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 20px;
+    background: #0D9488;
+    color: #FFFFFF;
+    border: none;
+    border-radius: 12px;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    font-family: inherit;
+    transition: all .2s;
+}
+
+.rp-pay-btn:hover {
+    background: #0F766E;
+    transform: translateY(-1px);
+    box-shadow: 0 8px 24px rgba(13, 148, 136, .3);
+}
+
+/* ─── Empty state ────────────────────────────────────────────────────── */
+.rp-empty {
+    text-align: center;
+    padding: 100px 24px;
+    background: #FFFFFF;
+    border-radius: 24px;
+    border: 1px solid #E2E8F0;
+}
+
+.rp-empty-ring {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    border: 2px solid #E2E8F0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 28px;
+    background: #F8FAFC;
+}
+
+.rp-empty-title {
+    font-family: 'Clash Display', sans-serif;
+    font-size: 24px;
+    font-weight: 700;
+    color: #0F172A;
+    margin-bottom: 10px;
+    letter-spacing: -.5px;
+}
+
+/* ─── Toast ──────────────────────────────────────────────────────────── */
+.rp-toast {
+    position: fixed;
+    bottom: 28px;
+    right: 28px;
+    background: #FFFFFF;
+    color: #475569;
+    border: 1px solid #E2E8F0;
+    padding: 11px 18px;
+    border-radius: 40px;
+    font-size: 12px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    z-index: 1000;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, .1);
+    animation: fadeUp .2s ease;
+}
+
+/* ─── Modal overlay ──────────────────────────────────────────────────── */
+.rp-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, .6);
+    backdrop-filter: blur(12px);
+    z-index: 2000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    animation: fadeIn .15s ease;
+}
+
+/* ─── Modal box ──────────────────────────────────────────────────────── */
+.rp-modal {
+    background: #FFFFFF;
+    border: 1px solid #E2E8F0;
+    border-radius: 24px;
+    width: 100%;
+    max-width: 480px;
+    max-height: 92vh;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 40px 100px rgba(0, 0, 0, .2);
+    overflow: hidden;
+}
+
+.rp-modal-head {
+    padding: 24px 26px 20px;
+    border-bottom: 1px solid #F1F5F9;
+    flex-shrink: 0;
+}
+
+.rp-modal-body {
+    padding: 26px;
+    overflow-y: auto;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+}
+
+/* ─── Progress steps ─────────────────────────────────────────────────── */
+.rp-steps {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 16px;
+}
+
+.rp-step-seg {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+}
+
+.rp-step-bar {
+    height: 2px;
+    width: 100%;
+    border-radius: 99px;
+    transition: background .3s;
+}
+
+.rp-step-active {
+    background: #0D9488;
+}
+
+.rp-step-done {
+    background: #0D9488;
+}
+
+.rp-step-inactive {
+    background: #E2E8F0;
+}
+
+.rp-step-label {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .8px;
+}
+
+/* ─── Modal timer ────────────────────────────────────────────────────── */
+.rp-modal-timer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 14px;
+    border-radius: 10px;
+    border: 1px solid;
+}
+
+.rp-modal-timer-ok {
+    background: #F0FDF4;
+    border-color: #D1FAE5;
+}
+
+.rp-modal-timer-urgent {
+    background: #FEF2F2;
+    border-color: #FEE2E2;
+    animation: pulse .8s ease infinite;
+}
+
+/* ─── Payment method button ──────────────────────────────────────────── */
+.rp-method-btn {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 16px;
+    border-radius: 14px;
+    border: 1px solid;
+    cursor: pointer;
+    font-family: inherit;
+    text-align: left;
+    transition: all .15s;
+    width: 100%;
+}
+
+.rp-method-active {
+    background: #F0FDF4;
+    border-color: #0D9488;
+}
+
+.rp-method-inactive {
+    background: #F8FAFC;
+    border-color: #E2E8F0;
+}
+
+.rp-method-inactive:hover {
+    border-color: #CBD5E1;
+    background: #FFFFFF;
+}
+
+/* ─── Modal buttons ──────────────────────────────────────────────────── */
+.rp-btn-primary {
+    width: 100%;
+    padding: 16px;
+    background: #0D9488;
+    color: #FFFFFF;
+    border: none;
+    border-radius: 14px;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    font-family: inherit;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    transition: all .2s;
+}
+
+.rp-btn-primary:hover:not(:disabled) {
+    background: #0F766E;
+    box-shadow: 0 8px 24px rgba(13, 148, 136, .3);
+}
+
+.rp-btn-primary:disabled {
+    opacity: .5;
+    cursor: not-allowed;
+}
+
+.rp-btn-secondary {
+    flex: 1;
+    padding: 14px;
+    background: #F8FAFC;
+    color: #475569;
+    border: 1px solid #E2E8F0;
+    border-radius: 14px;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    font-family: inherit;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: all .2s;
+}
+
+.rp-btn-secondary:hover {
+    background: #F1F5F9;
+    color: #1E293B;
+}
+
+/* ─── Modal info row ─────────────────────────────────────────────────── */
+.rp-info-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+}
+
+.rp-info-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    background: #F8FAFC;
+    border: 1px solid #E2E8F0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.rp-info-lbl {
+    font-size: 9px;
+    color: #94A3B8;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .6px;
+    margin-bottom: 3px;
+}
+
+.rp-info-val {
+    font-size: 14px;
+    font-weight: 700;
+    color: #1E293B;
+}
+
+/* ─── Ticket tear ────────────────────────────────────────────────────── */
+.rp-ticket-tear {
+    display: flex;
+    align-items: center;
+    border-top: 1px dashed #E2E8F0;
+    border-bottom: 1px dashed #E2E8F0;
+}
+
+.rp-tear-circle {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: #FFFFFF;
+    border: 1px solid #E2E8F0;
+    flex-shrink: 0;
+}
+
+.rp-tear-line {
+    flex: 1;
+    border-top: 1.5px dashed #E2E8F0;
+}
+
+/* ─── Spin utility ───────────────────────────────────────────────────── */
+.spin {
+    animation: spin 1s linear infinite;
+}
+
+/* ─── Responsive ─────────────────────────────────────────────────────── */
+@media (max-width: 860px) {
+    .rp-root {
+        padding: 28px 20px 60px;
+    }
+
+    .rp-title {
+        font-size: 32px;
+    }
+
+    .rp-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .rp-stats {
+        flex-direction: column;
+    }
+}
