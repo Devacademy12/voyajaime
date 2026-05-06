@@ -3,7 +3,7 @@ import Stripe from "stripe";
 import { createAdminClient } from "@/lib/supabaseAdmin";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: "2026-04-22.dahlia",
+  apiVersion: "2025-02-24.acacia",
 });
 
 export async function POST(req: NextRequest) {
@@ -48,6 +48,19 @@ export async function POST(req: NextRequest) {
     const amount = reservation.total_price;
     const platform_fee = reservation.platform_fee;
     const net_amount = amount - platform_fee;
+
+    // Idempotence : vérifier si déjà traité
+    const { data: existingPaiement } = await supabase
+      .from("paiements")
+      .select("id")
+      .eq("reservation_id", reservation_id)
+      .eq("status", "paid")
+      .single();
+
+    if (existingPaiement) {
+      console.log(`⚠️ Paiement déjà traité pour réservation ${reservation_id}`);
+      return NextResponse.json({ received: true });
+    }
 
     // Mettre à jour le statut de la réservation
     const { error: reservationError } = await supabase
