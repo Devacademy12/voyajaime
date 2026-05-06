@@ -3,11 +3,10 @@ import Stripe from "stripe";
 import { createAdminClient } from "@/lib/supabaseAdmin";
 import { createServerSupabaseClient } from "@/lib/supabaseServer";
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: "2026-04-22.dahlia",
-});
-
 export async function POST(req: NextRequest) {
+  const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+    apiVersion: "2026-04-22.dahlia",
+  });
   try {
     const body = await req.json();
     const { reservation_id, special_notes, amount } = body;
