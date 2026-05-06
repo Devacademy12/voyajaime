@@ -46,12 +46,12 @@ export async function POST(req: NextRequest) {
       line_items: [
         {
           price_data: {
-            currency: "tnd",
+            currency: "eur",
             product_data: {
               name: reservation.excursions.title,
               description: `Excursion du ${reservation.date} à ${reservation.time} pour ${reservation.people_count} personne(s)`,
             },
-            unit_amount: Math.round(serverAmount * 1000),
+            unit_amount: Math.round(serverAmount * 100), // centimes EUR
           },
           quantity: 1,
         },
