@@ -1,7 +1,7 @@
 "use client";
 import React, { useState, useEffect, useRef } from "react";
 import { createClient } from "@/lib/supabaseClient";
-import CheckoutModal from "@/app/components/excursions/CheckoutModal";
+import ExcursionClient from "@/app/excursions/[id]/ExcursionClient";
 import TouristeNav from "@/app/components/touriste/TouristeNav";
 import ItineraireDisplay from "@/app/components/itineraire/ItineraireDisplay";
 import {
@@ -748,7 +748,7 @@ Format: { "title": "Titre", "days": [{ "day":1,"city":"Ville","date":"DD/MM/YYYY
 
       {/* ── Checkout Modal ── */}
       {showCheckout && itineraryAsExc && (
-        <CheckoutModal exc={itineraryAsExc} onClose={() => setShowCheckout(false)} />
+        <ExcursionClient exc={itineraryAsExc} onClose={() => setShowCheckout(false)} />
       )}
     </div>
   );

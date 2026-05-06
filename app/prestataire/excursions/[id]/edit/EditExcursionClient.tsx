@@ -212,7 +212,7 @@ export default function EditExcursionClient({
   /* ── Dates ── */
   const addDate = () => {
     if (!newDate || dates.find(d => d.date === newDate)) return;
-    setDates(p => [...p, { date:newDate, slots:newSlots, departure_time:newTime }]
+    setDates(p => [...p, { date:newDate, slots:newSlots, departure_time:newTimes[0] }]
       .sort((a,b) => a.date.localeCompare(b.date)));
     setNewDate("");
   };

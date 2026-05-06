@@ -32,13 +32,38 @@ interface Excursion {
   available_dates?: any[] | null;
 }
 
+interface Prestataire {
+  user_id: string;
+  full_name: string | null;
+  agency_name: string | null;
+  avatar_url: string | null;
+  city: string | null;
+  description: string | null;
+  phone: string | null;
+}
+
+interface AvisItem {
+  id: string;
+  rating: number;
+  comment: string;
+  created_at: string;
+  prestataire_response: string | null;
+  likes_count: number;
+  touriste_name: string;
+  touriste_avatar: string | null;
+}
+
 interface Props {
   exc?: Excursion;
   excursion?: Excursion;
   excursions?: Excursion[];
   userId?: string;
   itineraireId?: string;
-  onClose: () => void;
+  onClose?: () => void;
+  prestataire?: Prestataire | null;
+  initialAvis?: AvisItem[];
+  myLikedIds?: string[];
+  categories?: unknown[];
 }
 
 /* ─── Helpers ────────────────────────────────────────────────────────── */
@@ -534,7 +559,7 @@ export default function CheckoutModal({
     return (
       <>
         <style>{CSS}</style>
-        <div className="co2-overlay" onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
+        <div className="co2-overlay" onClick={e => { if (e.target === e.currentTarget) onClose?.(); }}>
           <div className="co2-shell" style={{ maxWidth:500, display:"block", padding:"40px 36px", textAlign:"center" }}>
             <div style={{ width:72, height:72, borderRadius:"50%", background:"linear-gradient(135deg,#D1FAE5,#A7F3D0)", display:"flex", alignItems:"center", justifyContent:"center", margin:"0 auto 20px", boxShadow:"0 8px 24px rgba(5,150,105,.2)" }}>
               <CheckCircle size={36} color="#059669"/>
@@ -573,7 +598,7 @@ export default function CheckoutModal({
               </p>
             </div>
 
-            <button className="co2-cta on" onClick={onClose}>
+            <button className="co2-cta on" onClick={() => onClose?.()}>
               <Check size={15}/> Fermer
             </button>
           </div>
@@ -594,7 +619,7 @@ export default function CheckoutModal({
   return (
     <>
       <style>{CSS}</style>
-      <div className="co2-overlay" onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
+      <div className="co2-overlay" onClick={e => { if (e.target === e.currentTarget) onClose?.(); }}>
         <div className="co2-shell">
 
           {/* ── LEFT PANEL ── */}
@@ -722,7 +747,7 @@ export default function CheckoutModal({
                     {cur.selectedDate ? `${slotsForDate.length} créneau${slotsForDate.length>1?"x":""}` : "← sur le calendrier"}
                   </p>
                 </div>
-                <button onClick={onClose}
+                <button onClick={() => onClose?.()}
                   style={{ width:34, height:34, borderRadius:"50%", border:"none", background:"#F3F4F6", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", color:"#9CA3AF", flexShrink:0 }}>
                   <X size={16}/>
                 </button>

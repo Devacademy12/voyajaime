@@ -9,7 +9,7 @@ import {
   Bot, PenLine, Image as ImageIcon, ExternalLink,
   Calendar, Flag,
 } from "lucide-react";
-import CheckoutModal from "@/app/components/excursions/CheckoutModal";
+import ExcursionClient from "@/app/excursions/[id]/ExcursionClient";
 
 type ActivityItem = {
   id: string;
@@ -514,8 +514,8 @@ export default function ItinerairesClient() {
       )}
 
       {checkoutExcs && checkoutExcs.length > 0 && (
-        <CheckoutModal
-          excursion={checkoutExcs[0]}
+        <ExcursionClient
+          exc={checkoutExcs[0]}
           excursions={checkoutExcs}
           onClose={() => setCheckoutExcs(null)}
         />
