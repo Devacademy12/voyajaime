@@ -212,7 +212,7 @@ export default function EditExcursionClient({
   /* ── Dates ── */
   const addDate = () => {
     if (!newDate || dates.find(d => d.date === newDate)) return;
-    setDates(p => [...p, { date:newDate, slots:newSlots, departure_time:newTime }]
+    setDates(p => [...p, { date:newDate, slots:newSlots, departure_time:newTimes[0] }]
       .sort((a,b) => a.date.localeCompare(b.date)));
     setNewDate("");
   };
@@ -465,7 +465,7 @@ export default function EditExcursionClient({
                   <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:12 }}>
                     {[
                       { label:"Durée (h)",        val:duration,  min:0.5, max:24,  step:0.5, set:setDuration  },
-                      { label:"Prix/pers. (TND)",  val:price,     min:1,           step:1,   set:setPrice     },
+                      { label:"Prix/pers. (EUR)",  val:price,     min:1,           step:1,   set:setPrice     },
                       { label:"Personnes max",     val:maxPeople, min:1,   max:100, step:1,   set:setMaxPeople },
                     ].map(f=>(
                       <Field key={f.label} label={f.label}>
@@ -813,8 +813,8 @@ export default function EditExcursionClient({
                 <span style={{ fontWeight:700, fontSize:12, color:"#059669" }}>Aperçu des gains</span>
               </div>
               {[
-                { l:"Prix affiché",     v:`${price} TND`,                  c:"#0F172A" },
-                { l:"Commission (10%)", v:`−${Math.round(price*.1)} TND`,  c:"#DC2626" },
+                { l:"Prix affiché",     v:`${price} EUR`,                  c:"#0F172A" },
+                { l:"Commission (10%)", v:`−${Math.round(price*.1)} EUR`,  c:"#DC2626" },
               ].map(r=>(
                 <div key={r.l} style={{ display:"flex", justifyContent:"space-between", fontSize:12, marginBottom:6 }}>
                   <span style={{ color:"#64748B" }}>{r.l}</span><strong style={{ color:r.c }}>{r.v}</strong>
@@ -822,7 +822,7 @@ export default function EditExcursionClient({
               ))}
               <div style={{ borderTop:"1px dashed rgba(5,150,105,.25)", paddingTop:10, marginTop:4, display:"flex", justifyContent:"space-between", alignItems:"center" }}>
                 <span style={{ fontSize:12, fontWeight:700, color:"#0F172A" }}>Vous recevez</span>
-                <strong style={{ color:"#059669", fontSize:18, letterSpacing:"-.02em" }}>{Math.round(price*.9)} TND</strong>
+                <strong style={{ color:"#059669", fontSize:18, letterSpacing:"-.02em" }}>{Math.round(price*.9)} EUR</strong>
               </div>
             </div>
 

@@ -32,13 +32,38 @@ interface Excursion {
   available_dates?: any[] | null;
 }
 
+interface Prestataire {
+  user_id: string;
+  full_name: string | null;
+  agency_name: string | null;
+  avatar_url: string | null;
+  city: string | null;
+  description: string | null;
+  phone: string | null;
+}
+
+interface AvisItem {
+  id: string;
+  rating: number;
+  comment: string;
+  created_at: string;
+  prestataire_response: string | null;
+  likes_count: number;
+  touriste_name: string;
+  touriste_avatar: string | null;
+}
+
 interface Props {
   exc?: Excursion;
   excursion?: Excursion;
   excursions?: Excursion[];
   userId?: string;
   itineraireId?: string;
-  onClose: () => void;
+  onClose?: () => void;
+  prestataire?: Prestataire | null;
+  initialAvis?: AvisItem[];
+  myLikedIds?: string[];
+  categories?: unknown[];
 }
 
 /* ─── Helpers ────────────────────────────────────────────────────────── */
@@ -367,7 +392,7 @@ function SlotList({ slots, selected, onSelect }: {
               {avail ? (
                 <>
                   <div style={{ fontSize:16, fontWeight:900, color:"#2B96A8" }}>
-                    {slot.price} TND <span style={{ fontSize:11, color:"#9CA3AF", fontWeight:500 }}>/pers.</span>
+                    {slot.price} EUR <span style={{ fontSize:11, color:"#9CA3AF", fontWeight:500 }}>/pers.</span>
                   </div>
                   <div style={{ fontSize:11, color: lowStock ? "#F59E0B" : "#9CA3AF", fontWeight: lowStock ? 700 : 400 }}>
                     {slot.slots} place{slot.slots > 1 ? "s" : ""}
@@ -534,7 +559,7 @@ export default function CheckoutModal({
     return (
       <>
         <style>{CSS}</style>
-        <div className="co2-overlay" onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
+        <div className="co2-overlay" onClick={e => { if (e.target === e.currentTarget) onClose?.(); }}>
           <div className="co2-shell" style={{ maxWidth:500, display:"block", padding:"40px 36px", textAlign:"center" }}>
             <div style={{ width:72, height:72, borderRadius:"50%", background:"linear-gradient(135deg,#D1FAE5,#A7F3D0)", display:"flex", alignItems:"center", justifyContent:"center", margin:"0 auto 20px", boxShadow:"0 8px 24px rgba(5,150,105,.2)" }}>
               <CheckCircle size={36} color="#059669"/>
@@ -573,7 +598,7 @@ export default function CheckoutModal({
               </p>
             </div>
 
-            <button className="co2-cta on" onClick={onClose}>
+            <button className="co2-cta on" onClick={() => onClose?.()}>
               <Check size={15}/> Fermer
             </button>
           </div>
@@ -594,7 +619,7 @@ export default function CheckoutModal({
   return (
     <>
       <style>{CSS}</style>
-      <div className="co2-overlay" onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
+      <div className="co2-overlay" onClick={e => { if (e.target === e.currentTarget) onClose?.(); }}>
         <div className="co2-shell">
 
           {/* ── LEFT PANEL ── */}
@@ -686,20 +711,20 @@ export default function CheckoutModal({
                     {lineItems.filter(l=>l.selected).map((l,i)=>(
                       <div key={i} style={{ display:"flex", justifyContent:"space-between", fontSize:12, color:"rgba(255,255,255,.75)", marginBottom:4 }}>
                         <span style={{ overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", maxWidth:"65%" }}>{sanitizeText(l.title)}</span>
-                        <span>{l.subtotal} TND</span>
+                        <span>{l.subtotal} EUR</span>
                       </div>
                     ))}
                     <div style={{ height:1, background:"rgba(255,255,255,.2)", margin:"8px 0" }}/>
                     <div style={{ display:"flex", justifyContent:"space-between", fontSize:12, color:"rgba(255,255,255,.6)", marginBottom:4 }}>
-                      <span>Frais de service (10%)</span><span>{platformFee} TND</span>
+                      <span>Frais de service (10%)</span><span>{platformFee} EUR</span>
                     </div>
                     <div style={{ display:"flex", justifyContent:"space-between", fontSize:15, fontWeight:800, color:"white" }}>
-                      <span>Total</span><span>{grandTotal} TND</span>
+                      <span>Total</span><span>{grandTotal} EUR</span>
                     </div>
                   </>
                 ) : cur.selectedSlot && (
                   <div style={{ display:"flex", justifyContent:"space-between", fontSize:15, fontWeight:800, color:"white" }}>
-                    <span>Total</span><span>{curGrand} TND</span>
+                    <span>Total</span><span>{curGrand} EUR</span>
                   </div>
                 )}
               </div>
@@ -722,7 +747,7 @@ export default function CheckoutModal({
                     {cur.selectedDate ? `${slotsForDate.length} créneau${slotsForDate.length>1?"x":""}` : "← sur le calendrier"}
                   </p>
                 </div>
-                <button onClick={onClose}
+                <button onClick={() => onClose?.()}
                   style={{ width:34, height:34, borderRadius:"50%", border:"none", background:"#F3F4F6", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", color:"#9CA3AF", flexShrink:0 }}>
                   <X size={16}/>
                 </button>
@@ -818,16 +843,16 @@ export default function CheckoutModal({
               {!isItinerary && cur.selectedSlot && (
                 <div style={{ background:"#F9FAFB", borderRadius:12, padding:"12px 14px", marginBottom:14, border:"1px solid #F0F0F0" }}>
                   <div style={{ display:"flex", justifyContent:"space-between", fontSize:12, color:"#6B7280", marginBottom:5 }}>
-                    <span>{curPrice} TND × {cur.people} pers.</span>
-                    <span style={{ fontWeight:600, color:"#374151" }}>{curTotal} TND</span>
+                    <span>{curPrice} EUR × {cur.people} pers.</span>
+                    <span style={{ fontWeight:600, color:"#374151" }}>{curTotal} EUR</span>
                   </div>
                   <div style={{ display:"flex", justifyContent:"space-between", fontSize:12, color:"#6B7280", paddingBottom:10, borderBottom:"1px dashed #E5E7EB", marginBottom:10 }}>
                     <span>Frais de service (10%)</span>
-                    <span style={{ fontWeight:600, color:"#374151" }}>{curFee} TND</span>
+                    <span style={{ fontWeight:600, color:"#374151" }}>{curFee} EUR</span>
                   </div>
                   <div style={{ display:"flex", justifyContent:"space-between", fontSize:16, fontWeight:900, color:"#111827" }}>
                     <span>Total</span>
-                    <span style={{ color:"#2B96A8", fontFamily:"'Cormorant Garamond',serif" }}>{curGrand} TND</span>
+                    <span style={{ color:"#2B96A8", fontFamily:"'Cormorant Garamond',serif" }}>{curGrand} EUR</span>
                   </div>
                 </div>
               )}
@@ -850,8 +875,8 @@ export default function CheckoutModal({
                   : !canSubmit
                   ? "Choisissez un créneau"
                   : isItinerary
-                  ? <><Route size={15}/> Réserver l'itinéraire ({configuredCount} exc.) — {grandTotal} TND</>
-                  : <><Check size={15}/> Réserver — {curGrand} TND</>
+                  ? <><Route size={15}/> Réserver l'itinéraire ({configuredCount} exc.) — {grandTotal} EUR</>
+                  : <><Check size={15}/> Réserver — {curGrand} EUR</>
                 }
               </button>
 

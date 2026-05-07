@@ -449,7 +449,7 @@ export default function ExcursionsPage() {
                         <h3 className={styles.cardTitle}>{sanitizeText(exc.title)}</h3>
                         <div className={styles.cardPriceBox}>
                           <span className={styles.cardPrice}>{exc.price_per_person}</span>
-                          <span className={styles.cardPriceCurrency}>TND</span>
+                          <span className={styles.cardPriceCurrency}>EUR</span>
                           <div className={styles.cardPriceUnit}>/ personne</div>
                         </div>
                       </div>

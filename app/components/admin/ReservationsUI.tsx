@@ -363,7 +363,7 @@ export function ReservationRow({ r }: { r: ResRow }) {
               </p>
               <p style={{ fontSize: 17, fontWeight: 900, color: "#111827", lineHeight: 1 }}>
                 {r.total_price.toLocaleString("fr-FR")}
-                <span style={{ fontSize: 11, color: "#9CA3AF", marginLeft: 3, fontWeight: 500 }}>TND</span>
+                <span style={{ fontSize: 11, color: "#9CA3AF", marginLeft: 3, fontWeight: 500 }}>EUR</span>
               </p>
             </div>
 
@@ -414,8 +414,8 @@ export function ReservationRow({ r }: { r: ResRow }) {
                 { icon: CalendarDays, label: "Date excursion", value: fmtDate(r.date) },
                 { icon: Clock,        label: "Heure départ",  value: r.time },
                 { icon: Users,        label: "Voyageurs",     value: `${r.people_count} pers.` },
-                { icon: CreditCard,   label: "Total",         value: `${r.total_price.toLocaleString("fr-FR")} TND` },
-                { icon: CreditCard,   label: "Commission",    value: `${fee.toLocaleString("fr-FR")} TND` },
+                { icon: CreditCard,   label: "Total",         value: `${r.total_price.toLocaleString("fr-FR")} EUR` },
+                { icon: CreditCard,   label: "Commission",    value: `${fee.toLocaleString("fr-FR")} EUR` },
               ].map(({ icon: Icon, label, value }) => (
                 <div key={label}>
                   <div style={{ display: "flex", alignItems: "center", gap: 5, marginBottom: 4 }}>
@@ -432,17 +432,17 @@ export function ReservationRow({ r }: { r: ResRow }) {
             {/* Barre de décomposition */}
             <div style={{ marginTop: 4 }}>
               <div style={{ display: "flex", height: 7, borderRadius: 99, overflow: "hidden", gap: 1 }}>
-                <div style={{ flex: net, background: "#2B96A8" }} title={`Net: ${net} TND`} />
-                <div style={{ flex: fee, background: "#F59E0B", opacity: .85 }} title={`Commission: ${fee} TND`} />
+                <div style={{ flex: net, background: "#2B96A8" }} title={`Net: ${net} EUR`} />
+                <div style={{ flex: fee, background: "#F59E0B", opacity: .85 }} title={`Commission: ${fee} EUR`} />
               </div>
               <div style={{ display: "flex", gap: 16, marginTop: 6 }}>
                 <span style={{ fontSize: 11, color: "#2B96A8", fontWeight: 700, display: "flex", alignItems: "center", gap: 4 }}>
                   <span style={{ width: 8, height: 8, borderRadius: 2, background: "#2B96A8" }} />
-                  Net prestataire : {net.toLocaleString("fr-FR")} TND
+                  Net prestataire : {net.toLocaleString("fr-FR")} EUR
                 </span>
                 <span style={{ fontSize: 11, color: "#D97706", fontWeight: 700, display: "flex", alignItems: "center", gap: 4 }}>
                   <span style={{ width: 8, height: 8, borderRadius: 2, background: "#F59E0B" }} />
-                  Commission : {fee.toLocaleString("fr-FR")} TND
+                  Commission : {fee.toLocaleString("fr-FR")} EUR
                 </span>
               </div>
             </div>

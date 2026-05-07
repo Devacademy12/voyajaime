@@ -602,7 +602,7 @@ export default function NouvelleExcursionClient({
                         <input type="number" min={0.5} max={24} step={0.5} value={duration} onChange={e=>setDuration(Number(e.target.value))}/>
                       </div>
                     </Field>
-                    <Field label="Prix par personne (TND)">
+                    <Field label="Prix par personne (EUR)">
                       <div className="nf-field">
                         <input type="number" min={1} max={9999} step={0.5} value={price} onChange={e=>setPrice(Number(e.target.value))}/>
                       </div>
@@ -1048,14 +1048,14 @@ export default function NouvelleExcursionClient({
                 <Banknote size={13} color="#059669"/>
                 <span style={{ fontWeight:700, fontSize:12, color:"#059669" }}>Aperçu des gains</span>
               </div>
-              {[{l:"Prix affiché",v:`${price} TND`,c:"#0F172A"},{l:"Commission (10%)",v:`−${Math.round(price*.1)} TND`,c:"#DC2626"}].map(r=>(
+              {[{l:"Prix affiché",v:`${price} EUR`,c:"#0F172A"},{l:"Commission (10%)",v:`−${Math.round(price*.1)} EUR`,c:"#DC2626"}].map(r=>(
                 <div key={r.l} style={{ display:"flex", justifyContent:"space-between", fontSize:12, marginBottom:6 }}>
                   <span style={{ color:"#64748B" }}>{r.l}</span><strong style={{ color:r.c }}>{r.v}</strong>
                 </div>
               ))}
               <div style={{ borderTop:"1px dashed rgba(5,150,105,.25)", paddingTop:10, marginTop:4, display:"flex", justifyContent:"space-between", alignItems:"center" }}>
                 <span style={{ fontSize:12, fontWeight:700, color:"#0F172A" }}>Vous recevez</span>
-                <strong style={{ color:"#059669", fontSize:18, letterSpacing:"-.02em" }}>{Math.round(price*.9)} TND</strong>
+                <strong style={{ color:"#059669", fontSize:18, letterSpacing:"-.02em" }}>{Math.round(price*.9)} EUR</strong>
               </div>
             </div>
 

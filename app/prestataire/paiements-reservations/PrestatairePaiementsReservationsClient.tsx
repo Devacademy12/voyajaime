@@ -458,7 +458,7 @@ export default function PrestatairePaiementsReservationsClient({
       const resa = resaPayMap[p.reservation_id] || {} as any;
       const exc  = excPayMap[String(resa.excursion_id)] || {} as ExcursionInfo;
       const tour = tourMap[String(resa.touriste_id)];
-      return { Date: fmtDate(p.created_at), Excursion: exc.title || "—", Ville: (exc as any).city || "—", Touriste: tour?.full_name || "—", Email: tour?.email || "—", Code: String(resa.booking_code || "—"), "Montant TND": Number(p.amount), "Commission TND": Number(p.platform_fee), "Net TND": Number(p.net_amount), Statut: PAIEMENT_STATUS[p.status as PaiementStatus]?.label ?? p.status };
+      return { Date: fmtDate(p.created_at), Excursion: exc.title || "—", Ville: (exc as any).city || "—", Touriste: tour?.full_name || "—", Email: tour?.email || "—", Code: String(resa.booking_code || "—"), "Montant EUR": Number(p.amount), "Commission EUR": Number(p.platform_fee), "Net EUR": Number(p.net_amount), Statut: PAIEMENT_STATUS[p.status as PaiementStatus]?.label ?? p.status };
     });
     exportCSV(rows, `mes_paiements_${new Date().toISOString().slice(0, 10)}.csv`);
     showToast(`${rows.length} paiement(s) exporté(s)`);
@@ -622,8 +622,8 @@ export default function PrestatairePaiementsReservationsClient({
                 {/* Droite */}
                 <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 10, flexShrink: 0, marginLeft: 12 }}>
                   <div style={{ textAlign: "right" }}>
-                    <p style={{ fontSize: 18, fontWeight: 900, color: "#053366", margin: 0 }}>{r.total_price} <span style={{ fontSize: 11, fontWeight: 500, color: "#9CA3AF" }}>TND</span></p>
-                    <p style={{ fontSize: 11, color: "#02AFCF", fontWeight: 600, marginTop: 3, display: "flex", alignItems: "center", gap: 3 }}><Banknote size={10} /> Net : {net} TND</p>
+                    <p style={{ fontSize: 18, fontWeight: 900, color: "#053366", margin: 0 }}>{r.total_price} <span style={{ fontSize: 11, fontWeight: 500, color: "#9CA3AF" }}>EUR</span></p>
+                    <p style={{ fontSize: 11, color: "#02AFCF", fontWeight: 600, marginTop: 3, display: "flex", alignItems: "center", gap: 3 }}><Banknote size={10} /> Net : {net} EUR</p>
                   </div>
                   {r.status === "pending" && (
                     <div style={{ display: "flex", gap: 6 }}>
@@ -655,7 +655,7 @@ export default function PrestatairePaiementsReservationsClient({
           {/* KPIs - CORRIGÉS */}
           <div className="pp-stats pp-card" style={{ animationDelay: ".07s" }}>
             <StatCard 
-              label="Total encaissé (TND)"       
+              label="Total encaissé (EUR)"       
               value={totalPaid}            
               icon={<TrendingUp size={20}/>} 
               color="#02AFCF" 
@@ -664,7 +664,7 @@ export default function PrestatairePaiementsReservationsClient({
               delay={0.07} 
             />
             <StatCard 
-              label="En attente versement (TND)" 
+              label="En attente versement (EUR)" 
               value={totalPending}        
               icon={<Clock size={20}/>}      
               color="#A16207" 
@@ -673,7 +673,7 @@ export default function PrestatairePaiementsReservationsClient({
               delay={0.12} 
             />
             <StatCard 
-              label="Commission prélevée (TND)"  
+              label="Commission prélevée (EUR)"  
               value={totalFees}           
               icon={<Percent size={20}/>}   
               color="#6B7280" 
@@ -715,7 +715,7 @@ export default function PrestatairePaiementsReservationsClient({
                           <span style={{ fontSize: 13, fontWeight: 800, color: "#053366", textTransform: "capitalize" }}>{month}</span>
                           <span style={{ fontSize: 12, color: "#9CA3AF", fontWeight: 500 }}>{items.length} transaction{items.length > 1 ? "s" : ""}</span>
                         </div>
-                        <span style={{ fontSize: 13, fontWeight: 800, color: "#02AFCF" }}>{monthNet} TND net</span>
+                        <span style={{ fontSize: 13, fontWeight: 800, color: "#02AFCF" }}>{monthNet} EUR net</span>
                       </div>
 
                       {items.map((p, i) => {
@@ -759,9 +759,9 @@ export default function PrestatairePaiementsReservationsClient({
                               {/* Montant + bouton détails */}
                               <div style={{ textAlign: "right", flexShrink: 0 }}>
                                 <p style={{ fontSize: 20, fontWeight: 900, color: "#053366", margin: 0 }}>
-                                  {Number(p.net_amount)} <span style={{ fontSize: 11, fontWeight: 500, color: "#9CA3AF" }}>TND</span>
+                                  {Number(p.net_amount)} <span style={{ fontSize: 11, fontWeight: 500, color: "#9CA3AF" }}>EUR</span>
                                 </p>
-                                <p style={{ fontSize: 11, color: "#9CA3AF", marginTop: 2 }}>sur {Number(p.amount)} TND</p>
+                                <p style={{ fontSize: 11, color: "#9CA3AF", marginTop: 2 }}>sur {Number(p.amount)} EUR</p>
                                 <button onClick={() => setExpandedPay(isOpen ? null : p.id)}
                                   style={{ marginTop: 6, display: "inline-flex", alignItems: "center", gap: 4, padding: "4px 10px", borderRadius: 8, border: "1.5px solid #DCE5FF", background: "white", color: "#02AFCF", fontSize: 11, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
                                   {isOpen ? <><ChevronUp size={11} /> Moins</> : <><ChevronDown size={11} /> Détails</>}
@@ -775,7 +775,7 @@ export default function PrestatairePaiementsReservationsClient({
                                 <div style={{ height: "100%", width: `${(Number(p.net_amount) / Number(p.amount)) * 100}%`, background: "linear-gradient(90deg,#02AFCF,#259FFC)", borderRadius: 2 }} />
                               </div>
                               <span style={{ fontSize: 11, color: "#9CA3AF", whiteSpace: "nowrap" }}>
-                                Commission {Number(p.platform_fee)} TND ({Math.round((Number(p.platform_fee) / Number(p.amount)) * 100)}%)
+                                Commission {Number(p.platform_fee)} EUR ({Math.round((Number(p.platform_fee) / Number(p.amount)) * 100)}%)
                               </span>
                             </div>
 
@@ -794,11 +794,11 @@ export default function PrestatairePaiementsReservationsClient({
                                 {/* Grille détails */}
                                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(130px, 1fr))", gap: 8, marginBottom: 12 }}>
                                   {[
-                                    { label: "Montant payé",    value: `${Number(p.amount)} TND`,       color: "#053366" },
-                                    { label: "Votre part",      value: `${Number(p.net_amount)} TND`,   color: "#059669" },
-                                    { label: "Commission",      value: `${Number(p.platform_fee)} TND`, color: "#D97706" },
+                                    { label: "Montant payé",    value: `${Number(p.amount)} EUR`,       color: "#053366" },
+                                    { label: "Votre part",      value: `${Number(p.net_amount)} EUR`,   color: "#059669" },
+                                    { label: "Commission",      value: `${Number(p.platform_fee)} EUR`, color: "#D97706" },
                                     { label: "Places",          value: `${resa.people_count ?? "—"} pers.`, color: "#02AFCF" },
-                                    ...(exc.price_per_person    ? [{ label: "Prix/pers.", value: `${exc.price_per_person} TND`, color: "#6B7280" }] : []),
+                                    ...(exc.price_per_person    ? [{ label: "Prix/pers.", value: `${exc.price_per_person} EUR`, color: "#6B7280" }] : []),
                                     ...(exc.max_people          ? [{ label: "Capacité",   value: `${exc.max_people} places`,   color: "#6B7280" }] : []),
                                   ].map((item, idx) => (
                                     <div key={idx} style={{ background: "white", border: "1px solid #EEF2FF", borderRadius: 10, padding: "8px 10px" }}>

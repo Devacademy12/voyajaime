@@ -110,7 +110,7 @@ export function ExcursionGridCard({ exc, loading, onToggle, onDelete }: any) {
 
         <div className="admin-card-stats">
           <span style={{ display: "flex", alignItems: "center", gap: 4 }}><Clock size={11} strokeWidth={1.5} />{exc.duration_hours}h</span>
-          <span style={{ display: "flex", alignItems: "center", gap: 4 }}><Wallet size={11} strokeWidth={1.5} />{exc.price_per_person} TND</span>
+          <span style={{ display: "flex", alignItems: "center", gap: 4 }}><Wallet size={11} strokeWidth={1.5} />{exc.price_per_person} EUR</span>
           <span style={{ display: "flex", alignItems: "center", gap: 4 }}><Users size={11} strokeWidth={1.5} />{exc.max_people}</span>
           {exc.rating > 0 && <span style={{ display: "flex", alignItems: "center", gap: 4 }}><Star size={11} fill="#F59E0B" color="#F59E0B" />{exc.rating}</span>}
         </div>
@@ -155,7 +155,7 @@ export function ExcursionRow({ exc, loading, onToggle, onDelete }: any) {
         <p style={{ fontSize: 12, color: "#6B7280", display: "flex", alignItems: "center", gap: 8 }}>
           <span style={{ display: "inline-flex", alignItems: "center", gap: 3 }}><MapPin size={11} color="#9CA3AF" strokeWidth={1.5} />{exc.city}</span>
           <span style={{ display: "inline-flex", alignItems: "center", gap: 3 }}><Clock size={11} color="#9CA3AF" strokeWidth={1.5} />{exc.duration_hours}h</span>
-          <span style={{ display: "inline-flex", alignItems: "center", gap: 3 }}><Wallet size={11} color="#9CA3AF" strokeWidth={1.5} />{exc.price_per_person} TND</span>
+          <span style={{ display: "inline-flex", alignItems: "center", gap: 3 }}><Wallet size={11} color="#9CA3AF" strokeWidth={1.5} />{exc.price_per_person} EUR</span>
           <span style={{ display: "inline-flex", alignItems: "center", gap: 3 }}><Users size={11} color="#9CA3AF" strokeWidth={1.5} />{exc.prestataire_name}</span>
         </p>
       </div>

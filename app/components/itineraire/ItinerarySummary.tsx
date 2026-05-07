@@ -151,7 +151,7 @@ export default function ItinerarySummary({
             <div className="its-kpis">
               {[
                 { icon: <Layers size={15} />,    label: "Activités",    val: `${totAct}`,        color: "#2B96A8", bg: "rgba(43,150,168,.12)" },
-                { icon: <PiggyBank size={15} />, label: "Budget total", val: `${totBudget} TND`, color: "#059669", bg: "rgba(5,150,105,.12)"  },
+                { icon: <PiggyBank size={15} />, label: "Budget total", val: `${totBudget} EUR`, color: "#059669", bg: "rgba(5,150,105,.12)"  },
                 { icon: <Calendar size={15} />,  label: "Durée",        val: `${nbJours} jours`, color: "#8B5CF6", bg: "rgba(139,92,246,.12)" },
               ].map(kpi => (
                 <div key={kpi.label} className="its-kpi">
@@ -217,7 +217,7 @@ export default function ItinerarySummary({
                     </div>
                     {day.activities.length > 0 && (
                       <div className="its-day-badge">
-                        <span><PiggyBank size={10} /> {dayPrice} TND</span>
+                        <span><PiggyBank size={10} /> {dayPrice} EUR</span>
                         <span className="its-sep">·</span>
                         <span><Clock size={9} /> {dayHours}h</span>
                       </div>
@@ -273,7 +273,7 @@ export default function ItinerarySummary({
                             {/* price */}
                             {price > 0 && (
                               <div className="its-act-price" style={{ color: slotColor }}>
-                                {price} TND
+                                {price} EUR
                               </div>
                             )}
                           </div>

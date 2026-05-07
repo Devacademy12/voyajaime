@@ -124,7 +124,7 @@ export default function TouristeDashboardClient({ profile, reservations, favoris
                       </p>
                     </div>
                     <div className="flex items-center gap-3 shrink-0 sm:ml-3 self-end sm:self-auto">
-                      <span className="font-extrabold text-gray-900 text-base">{Number(r.total_price)} <span className="text-xs font-medium text-gray-400">TND</span></span>
+                      <span className="font-extrabold text-gray-900 text-base">{Number(r.total_price)} <span className="text-xs font-medium text-gray-400">EUR</span></span>
                       <span className="badge !rounded-full px-2.5 py-1 text-xs font-bold whitespace-nowrap" style={{ background: sc.bg, color: sc.color }}>
                         {STATUS_LABEL[status] || status}
                       </span>

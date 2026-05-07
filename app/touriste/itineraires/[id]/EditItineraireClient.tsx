@@ -416,7 +416,7 @@ export default function EditItineraireClient({ itineraireId }: { itineraireId: s
         </div>
         <div className="ed-top-right">
           <span className="ed-stat"><CalendarDays size={12}/> {plan.length} jour{plan.length>1?"s":""}</span>
-          <span className="ed-stat" style={{ color:"#059669" }}>{totBudget} TND</span>
+          <span className="ed-stat" style={{ color:"#059669" }}>{totBudget} EUR</span>
           <button
             className={`ed-save-btn ${saveOk?"ok":""}`}
             onClick={save}
@@ -491,7 +491,7 @@ export default function EditItineraireClient({ itineraireId }: { itineraireId: s
             </div>
             <div className="ed-day-stats">
               <span className="ed-day-stat"><Clock size={11}/> {dayHours}h</span>
-              <span className="ed-day-stat" style={{ color:"#059669", fontWeight:700 }}>{dayBudget} TND</span>
+              <span className="ed-day-stat" style={{ color:"#059669", fontWeight:700 }}>{dayBudget} EUR</span>
               <span className="ed-day-stat">{currentDay?.activities.length || 0} activité{(currentDay?.activities.length||0)>1?"s":""}</span>
               {plan.length > 1 && (
                 <button className="ed-remove-day" onClick={() => removeDay(activeDay)}>
@@ -511,7 +511,7 @@ export default function EditItineraireClient({ itineraireId }: { itineraireId: s
                   {slot.icon}
                   <span className="ed-slot-label" style={{ color:slot.color }}>{slot.label}</span>
                   <span className="ed-slot-hint">{slot.hint}</span>
-                  {acts.length > 0 && <span className="ed-slot-budget">{slotBudget} TND</span>}
+                  {acts.length > 0 && <span className="ed-slot-budget">{slotBudget} EUR</span>}
                 </div>
                 <div className="ed-slot-body">
                   {acts.length === 0 ? (
@@ -527,7 +527,7 @@ export default function EditItineraireClient({ itineraireId }: { itineraireId: s
                         <div className="act-meta">
                           <span className="act-meta-item"><MapPin size={9}/>{act.excursion.city}</span>
                           <span className="act-meta-item"><Clock size={9}/>{act.excursion.duration_hours}h</span>
-                          {act.excursion.price_per_person > 0 && <span className="act-meta-item" style={{ color:"#02AFCF", fontWeight:700 }}>{act.excursion.price_per_person} TND</span>}
+                          {act.excursion.price_per_person > 0 && <span className="act-meta-item" style={{ color:"#02AFCF", fontWeight:700 }}>{act.excursion.price_per_person} EUR</span>}
                           {act.note && <span className="act-note-badge"><FileText size={8}/>{act.note.slice(0,24)}{act.note.length>24?"…":""}</span>}
                         </div>
                       </div>
@@ -601,7 +601,7 @@ export default function EditItineraireClient({ itineraireId }: { itineraireId: s
                         {exc.rating > 0 && <span style={{ fontSize:11, color:"#9CA3AF", display:"flex", alignItems:"center", gap:3 }}><Star size={9} fill="#F59E0B" color="#F59E0B" strokeWidth={0}/>{exc.rating}</span>}
                       </div>
                       <div className="cat-card-meta">
-                        <span className="cat-card-price">{exc.price_per_person} TND</span>
+                        <span className="cat-card-price">{exc.price_per_person} EUR</span>
                         <button
                           className={`cat-card-add ${added?"done":"idle"}`}
                           onClick={() => { if (!added) openSlotPicker(exc); }}
@@ -623,7 +623,7 @@ export default function EditItineraireClient({ itineraireId }: { itineraireId: s
         <div className="slot-overlay" onClick={e=>{if(e.target===e.currentTarget)setPendingExc(null);}}>
           <div className="slot-box">
             <div className="slot-box-title">Choisir le créneau</div>
-            <p className="slot-box-sub">{pendingExc.title} · {pendingExc.price_per_person} TND</p>
+            <p className="slot-box-sub">{pendingExc.title} · {pendingExc.price_per_person} EUR</p>
             {SLOTS.map(slot=>(
               <div key={slot.key} className={`slot-option ${pickSlot===slot.key?"sel":""}`}
                 onClick={()=>{setPickSlot(slot.key);setPickTime(slot.defaultTime);}}>

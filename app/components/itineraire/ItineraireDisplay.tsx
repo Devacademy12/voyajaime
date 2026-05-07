@@ -57,7 +57,7 @@ function parsePhotos(val?: string | string[]): string[] {
 }
 function formatPrice(price?: number): string {
   if (!price) return "Gratuit";
-  return `${price} TND`;
+  return `${price} EUR`;
 }
 
 /* ─── Styles ─── */
@@ -656,7 +656,7 @@ export default function ItineraireDisplay({
           <span style={css.recapLabel}>TOTAL ESTIMÉ</span>
           <div style={{ display: "flex", alignItems: "baseline", gap: 4 }}>
             <span style={css.recapAmount}>{totalPrice}</span>
-            <span style={css.recapSuffix}>TND</span>
+            <span style={css.recapSuffix}>EUR</span>
           </div>
           <span style={css.recapNote}>*Par personne, hors options</span>
         </div>
