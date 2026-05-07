@@ -6,10 +6,8 @@ import { usePathname, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabaseClient";
 import { ROUTES } from "@/app/lib/routes";
 import {
-  Mountain, Map, Heart, CalendarDays, User,
-  LogOut, Plane, Menu, X, MessageCircle,
-  Compass, LogIn, UserPlus, HelpCircle,
-  Wand2, Navigation, ChevronDown,
+  Heart, LogOut, Menu, X, MessageCircle,
+  User, Plane, Wand2, Navigation, ChevronDown,
 } from "lucide-react";
 
 const Logo = () => (
@@ -89,14 +87,18 @@ export default function TouristeNav({
   };
 
   const touristeLinks = [
-    { href: ROUTES.excursions, icon: <Compass size={15} />, label: "Explorer" },
-    { href: ROUTES.touriste.itineraires, icon: <Map size={15} />, label: "Mes itinéraires" },
-    { href: ROUTES.touriste.reservations, icon: <CalendarDays size={15} />, label: "Réservations" },
+    { href: ROUTES.excursions,            icon: "ti-compass",   label: "Explorer" },
+    { href: ROUTES.touriste.itineraires,  icon: "ti-map",       label: "Mes itinéraires" },
+    { href: ROUTES.touriste.reservations, icon: "ti-calendar",  label: "Réservations" },
+    { href: ROUTES.about,                 icon: "ti-help-circle", label: "À propos" },
+    { href: ROUTES.blog,                  icon: "ti-book",      label: "Blog" },
   ];
 
   const publicLinks = [
-    { href: ROUTES.excursions, icon: <Compass size={15} />, label: "Excursions", anchor: false },
-    { href: "#chemins", icon: <Map size={15} />, label: "Comment ça marche", anchor: true },
+    { href: ROUTES.excursions, icon: "ti-compass",      label: "Excursions",        anchor: false },
+    { href: "#chemins",        icon: "ti-map",          label: "Comment ça marche", anchor: true  },
+    { href: ROUTES.about,      icon: "ti-help-circle",  label: "À propos",          anchor: false },
+    { href: ROUTES.blog,       icon: "ti-book",         label: "Blog",              anchor: false },
   ];
 
   const isActive = (href: string) => {
@@ -118,42 +120,72 @@ export default function TouristeNav({
     <>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap');
-        .gnav *{box-sizing:border-box;margin:0;padding:0}
-        .gnav{font-family:'DM Sans',sans-serif}
+        @import url('https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css');
 
-        .glink{
-          display:flex;align-items:center;gap:7px;padding:10px 16px;
-          font-size:17px;font-weight:700;color:#2B96A8;text-decoration:none;
-          border-bottom:2px solid transparent;white-space:nowrap;
-          transition:color 0.15s,border-color 0.15s,border-width 0.15s;
-          
-        }
-        .glink:hover{color:#02AFCF)}
-        .glink.on{color:#053366;border-bottom-color:#053366;font-weight:800}
+        .gnav * { box-sizing: border-box; margin: 0; padding: 0; }
+        .gnav    { font-family: 'DM Sans', sans-serif; }
 
-        /* ── Planning dropdown trigger ── */
-        .glink-plan{
-          display:flex;align-items:center;gap:7px;padding:10px 16px;
-          font-size:17px;font-weight:700;color:#2B96A8;
-          border-bottom:2px solid transparent;white-space:nowrap;
-          transition:color 0.15s,border-color 0.15s;
-          cursor:pointer;background:none;border-top:none;border-left:none;border-right:none;
-          font-family:'DM Sans',sans-serif;
+        /* ── Nav link ── */
+        .glink {
+          display: flex; align-items: center; gap: 6px;
+          padding: 8px 13px; border-radius: 8px;
+          font-size: 15px; font-weight: 600;
+          color: #6B7A8D;
+          text-decoration: none; white-space: nowrap;
+          border: 1px solid transparent;
+          transition: color 0.15s, background 0.15s, border-color 0.15s;
+          font-family: 'DM Sans', sans-serif;
         }
-        .glink-plan:hover { color: var(--nav-accent); background: rgba(43, 150, 168, 0.06); }
-        .glink-plan.on    { color: var(--nav-accent); border-bottom-color: var(--nav-accent); font-weight: 700; }
-        .glink-plan .chevron { transition: transform 0.2s ease; opacity: 0.5; }
-        .glink-plan.open .chevron { transform: rotate(180deg); opacity: 1; }
- 
+        .glink i { font-size: 15px; opacity: 0.7; }
+        .glink:hover {
+          color: #2B96A8;
+          background: rgba(43, 150, 168, 0.07);
+          border-color: rgba(43, 150, 168, 0.12);
+        }
+        .glink:hover i { opacity: 1; }
+        .glink.on {
+          color: #053366; font-weight: 700;
+          background: rgba(5, 51, 102, 0.05);
+          border-color: rgba(5, 51, 102, 0.10);
+        }
+        .glink.on i { opacity: 1; }
+
+        /* ── Planifier button ── */
+        .glink-plan {
+          display: flex; align-items: center; gap: 6px;
+          padding: 8px 13px; border-radius: 8px;
+          font-size: 15px; font-weight: 600;
+          color: #6B7A8D; white-space: nowrap;
+          cursor: pointer; background: none;
+          border: 1px solid transparent;
+          font-family: 'DM Sans', sans-serif;
+          transition: color 0.15s, background 0.15s, border-color 0.15s;
+        }
+        .glink-plan i.main-icon { font-size: 15px; opacity: 0.7; }
+        .glink-plan .chevron    { font-size: 15px; opacity: 0.4; transition: transform 0.2s ease, opacity 0.2s; }
+        .glink-plan:hover {
+          color: #2B96A8;
+          background: rgba(43, 150, 168, 0.07);
+          border-color: rgba(43, 150, 168, 0.12);
+        }
+        .glink-plan:hover i { opacity: 1; }
+        .glink-plan.on {
+          color: #053366; font-weight: 700;
+          background: rgba(5, 51, 102, 0.05);
+          border-color: rgba(5, 51, 102, 0.10);
+        }
+        .glink-plan.on i { opacity: 1; }
+        .glink-plan.open .chevron { transform: rotate(180deg); opacity: 0.8; }
+
         /* ── Dropdown Planifier ── */
         .plan-drop {
           position: absolute; top: calc(100% + 8px); left: 50%;
           transform: translateX(-50%);
           background: #FFFFFF;
-          border: 1px solid var(--nav-border);
-          border-radius: 16px; padding: 8px;
-          min-width: 340px;
-          box-shadow: 0 12px 40px rgba(5, 51, 102, 0.12), 0 2px 8px rgba(5, 51, 102, 0.06);
+          border: 1px solid rgba(5, 51, 102, 0.10);
+          border-radius: 14px; padding: 8px;
+          min-width: 330px;
+          box-shadow: 0 10px 32px rgba(5, 51, 102, 0.10), 0 2px 8px rgba(5, 51, 102, 0.05);
           z-index: 400;
           animation: dropIn 0.18s ease;
         }
@@ -161,91 +193,90 @@ export default function TouristeNav({
           from { opacity: 0; transform: translateX(-50%) translateY(-6px); }
           to   { opacity: 1; transform: translateX(-50%) translateY(0); }
         }
- 
+
         .plan-card {
-          display: flex; align-items: flex-start; gap: 12px;
-          padding: 12px 14px; border-radius: 10px;
+          display: flex; align-items: flex-start; gap: 11px;
+          padding: 11px 12px; border-radius: 9px;
           text-decoration: none; cursor: pointer;
           border: 1px solid transparent;
           transition: background 0.15s, border-color 0.15s;
         }
-        .plan-card:hover        { background: rgba(43, 150, 168, 0.06); border-color: rgba(43, 150, 168, 0.15); }
-        .plan-card.active-mode  { background: rgba(43, 150, 168, 0.08); border-color: rgba(43, 150, 168, 0.2); }
- 
+        .plan-card:hover       { background: rgba(43,150,168,0.06); border-color: rgba(43,150,168,0.14); }
+        .plan-card.active-mode { background: rgba(43,150,168,0.08); border-color: rgba(43,150,168,0.20); }
+
         .plan-icon {
-          width: 36px; height: 36px; border-radius: 9px;
+          width: 34px; height: 34px; border-radius: 8px;
           display: flex; align-items: center; justify-content: center;
           flex-shrink: 0; margin-top: 1px;
         }
-        .plan-icon.assiste { background: rgba(2, 175, 207, 0.10); border: 1px solid rgba(2, 175, 207, 0.25); }
-        .plan-icon.libre   { background: rgba(43, 150, 168, 0.10); border: 1px solid rgba(43, 150, 168, 0.25); }
- 
-        .plan-title { font-size: 13px; font-weight: 700; color: var(--nav-primary); margin-bottom: 2px; font-family: 'DM Sans', sans-serif; }
-        .plan-desc  { font-size: 11.5px; color: var(--nav-muted); font-weight: 500; line-height: 1.5; font-family: 'DM Sans', sans-serif; }
+        .plan-icon i { font-size: 16px; }
+        .plan-icon.assiste { background: rgba(2,175,207,0.10); border: 1px solid rgba(2,175,207,0.22); }
+        .plan-icon.libre   { background: rgba(43,150,168,0.10); border: 1px solid rgba(43,150,168,0.22); }
+
+        .plan-title { font-size: 15px; font-weight: 700; color: #053366; margin-bottom: 2px; font-family: 'DM Sans', sans-serif; }
+        .plan-desc  { font-size: 15px;   color: #6B7A8D;   font-weight: 500; line-height: 1.45; font-family: 'DM Sans', sans-serif; }
         .plan-badge {
-          display: inline-flex; align-items: center; gap: 4px; margin-top: 5px;
-          padding: 2px 8px; border-radius: 20px;
+          display: inline-flex; align-items: center; gap: 3px; margin-top: 4px;
+          padding: 2px 7px; border-radius: 20px;
           font-size: 10px; font-weight: 700; font-family: 'DM Sans', sans-serif;
         }
-        .plan-badge.ai   { background: rgba(2, 175, 207, 0.10); color: #0891A8; border: 1px solid rgba(2, 175, 207, 0.25); }
-        .plan-badge.free { background: rgba(43, 150, 168, 0.10); color: #1E7A8A; border: 1px solid rgba(43, 150, 168, 0.25); }
-        .plan-divider { height: 1px; background: var(--nav-divider); margin: 4px 0; }
-.g-btn {
+        .plan-badge i { font-size: 9px; }
+        .plan-badge.ai   { background: rgba(2,175,207,0.09);   color: #0891A8; border: 1px solid rgba(2,175,207,0.22); }
+        .plan-badge.free { background: rgba(43,150,168,0.09);  color: #1E7A8A; border: 1px solid rgba(43,150,168,0.22); }
+        .plan-divider    { height: 1px; background: rgba(5,51,102,0.08); margin: 3px 0; }
+
+        /* ── Right actions ── */
+        .g-btn {
           display: inline-flex; align-items: center; gap: 6px;
           padding: 8px 16px; border-radius: 8px;
-          border: 1.5px solid var(--nav-accent);
-          background: transparent;
-          font-size: 13px; font-weight: 700; color: var(--nav-accent);
+          border: 1.5px solid #2B96A8; background: transparent;
+          font-size: 15px; font-weight: 700; color: #2B96A8;
           cursor: pointer; font-family: 'DM Sans', sans-serif;
           white-space: nowrap; text-decoration: none;
           transition: background 0.15s, color 0.15s;
         }
-        .g-btn:hover { background: rgba(43, 150, 168, 0.08); }
- 
-        /* ── Favori ── */
+        .g-btn i { font-size: 14px; }
+        .g-btn:hover { background: rgba(43,150,168,0.08); }
+
         .g-fav {
           width: 36px; height: 36px; border-radius: 50%;
-          border: 1.5px solid rgba(5, 51, 102, 0.05);
-          color: var(--nav-muted);
+          border: 1px solid rgba(5,51,102,0.10);
+          color: #6B7A8D; background: transparent;
           display: flex; align-items: center; justify-content: center;
-          cursor: pointer; position: relative;
-          text-decoration: none;
-          transition: background 0.15s, border-color 0.15s;
+          cursor: pointer; position: relative; text-decoration: none;
+          transition: background 0.15s, border-color 0.15s, color 0.15s;
         }
-        .g-fav:hover { background: rgba(5, 51, 102, 0.05); border-color:rgba(5, 51, 102, 0.05) ; color: rgba(5, 51, 102, 0.05); }
+        .g-fav i { font-size: 17px; }
+        .g-fav:hover { background: rgba(5,51,102,0.05); color: #053366; border-color: rgba(5,51,102,0.15); }
         .nb {
           position: absolute; top: -3px; right: -3px;
-          background: #DC2626; color: white;
-          border-radius: 50%; width: 14px; height: 14px;
-          font-size: 9px; font-weight: 700;
+          background: #DC2626; color: white; border-radius: 50%;
+          width: 14px; height: 14px; font-size: 9px; font-weight: 700;
           display: flex; align-items: center; justify-content: center;
           border: 1.5px solid white;
         }
- 
-        /* ── Séparateur ── */
-        .g-sep { width: 1px; height: 20px; background: var(--nav-divider); flex-shrink: 0; }
- 
-        /* ── Avatar ── */
+
+        .g-sep { width: 1px; height: 20px; background: rgba(5,51,102,0.08); flex-shrink: 0; }
+
         .av {
           width: 36px; height: 36px; border-radius: 50%;
-          background: linear-gradient(135deg, var(--nav-accent2), var(--nav-primary));
-          color: white; border: 2px solid var(--nav-border);
+          background: linear-gradient(135deg, #02AFCF, #053366);
+          color: white; border: 2px solid rgba(5,51,102,0.10);
           cursor: pointer; font-size: 13px; font-weight: 700;
           font-family: 'DM Sans', sans-serif;
           display: flex; align-items: center; justify-content: center;
           transition: border-color 0.15s, box-shadow 0.15s;
-          flex-shrink: 0; overflow: hidden; padding: 0;
+          flex-shrink: 0; overflow: hidden; padding: 0; background-color: unset;
         }
-        .av:hover { border-color: var(--nav-accent); box-shadow: 0 0 0 3px rgba(43, 150, 168, 0.15); }
-        .av img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
- 
+        .av:hover { border-color: #2B96A8; box-shadow: 0 0 0 3px rgba(43,150,168,0.15); }
+        .av img   { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
+
         /* ── Dropdown avatar ── */
         .drop {
           position: absolute; top: calc(100% + 10px); right: 0;
-          background: #FFFFFF;
-          border: 1px solid var(--nav-border);
+          background: #FFFFFF; border: 1px solid rgba(5,51,102,0.10);
           border-radius: 14px; padding: 6px; min-width: 220px;
-          box-shadow: 0 12px 36px rgba(5, 51, 102, 0.12);
+          box-shadow: 0 12px 36px rgba(5,51,102,0.12);
           z-index: 400;
           animation: dropInRight 0.18s ease;
         }
@@ -257,61 +288,57 @@ export default function TouristeNav({
           display: flex; align-items: center; gap: 9px;
           padding: 9px 12px; border-radius: 8px;
           text-decoration: none; font-size: 13px; font-weight: 600;
-          color: var(--nav-primary); cursor: pointer;
+          color: #053366; cursor: pointer;
           border: none; background: none;
           font-family: 'DM Sans', sans-serif; width: 100%; text-align: left;
           transition: background 0.15s, color 0.15s;
         }
-        .ddi:hover      { background: rgba(5, 51, 102, 0.05); color: var(--nav-accent); }
-        .ddi.red        { color: #DC2626; }
-        .ddi.red:hover  { background: #FEF2F2; color: #B91C1C; }
- 
+        .ddi:hover     { background: rgba(5,51,102,0.05); color: #2B96A8; }
+        .ddi.red       { color: #DC2626; }
+        .ddi.red:hover { background: #FEF2F2; color: #B91C1C; }
+
         /* ── Burger ── */
         .g-burger {
           display: none;
-          background: rgba(5, 51, 102, 0.06);
-          border: 1px solid var(--nav-border);
+          background: rgba(5,51,102,0.06); border: 1px solid rgba(5,51,102,0.10);
           cursor: pointer; padding: 8px; border-radius: 8px;
-          color: var(--nav-primary);
+          color: #053366;
           align-items: center; justify-content: center;
           transition: background 0.15s;
         }
-        .g-burger:hover { background: rgba(5, 51, 102, 0.10); }
- 
+        .g-burger:hover { background: rgba(5,51,102,0.10); }
+
         /* ── Drawer mobile ── */
         .g-drawer {
           position: fixed; top: 72px; left: 0; right: 0;
-          background: #FFFFFF;
-          border-bottom: 1px solid var(--nav-border);
-          box-shadow: 0 8px 24px rgba(5, 51, 102, 0.10);
+          background: #FFFFFF; border-bottom: 1px solid rgba(5,51,102,0.08);
+          box-shadow: 0 8px 24px rgba(5,51,102,0.10);
           z-index: 199;
           display: flex; flex-direction: column; gap: 2px;
           padding: 10px 12px 14px;
         }
         .g-drawer.closed { display: none; }
- 
+
         .g-mlink {
           display: flex; align-items: center; gap: 8px;
           padding: 11px 14px; border-radius: 8px;
-          font-size: 15px; font-weight: 600;
-          color: var(--nav-primary); text-decoration: none;
+          font-size: 14px; font-weight: 600;
+          color: #053366; text-decoration: none;
           transition: background 0.15s, color 0.15s;
         }
+        .g-mlink i { font-size: 16px; opacity: 0.7; }
         .g-mlink:hover, .g-mlink.on {
-          background: rgba(43, 150, 168, 0.08);
-          color: var(--nav-accent); font-weight: 700;
+          background: rgba(43,150,168,0.08); color: #2B96A8; font-weight: 700;
         }
- 
-        .g-plan-section {
-          border-top: 1px solid var(--nav-divider);
-          margin-top: 4px; padding-top: 8px;
-        }
+        .g-mlink:hover i, .g-mlink.on i { opacity: 1; }
+
+        .g-plan-section { border-top: 1px solid rgba(5,51,102,0.08); margin-top: 4px; padding-top: 8px; }
         .g-plan-label {
-          font-size: 10px; font-weight: 700; color: var(--nav-muted);
+          font-size: 10px; font-weight: 700; color: #6B7A8D;
           text-transform: uppercase; letter-spacing: 1px;
           padding: 2px 14px 8px; font-family: 'DM Sans', sans-serif;
         }
- 
+
         /* ── Responsive ── */
         @media (max-width: 1000px) {
           .g-center  { display: none !important; }
@@ -322,51 +349,50 @@ export default function TouristeNav({
         }
       `}</style>
 
-      <header className="gnav gnav-header" style={{
-        position: "fixed",
-        top: 0, left: 0, right: 0,
-        zIndex: 200,
-        height: 76,
-        background: scrolled ? "rgba(250, 250, 252, 0.99)" : "rgba(0,.0,0,0,0)",
-        backdropFilter: "blur(18px)",
-        WebkitBackdropFilter: "blur(18px)",
-        borderBottom: scrolled ? "1px solid rgba(47, 46, 46, 0.08)" : "1px solid transparent",
-        boxShadow: scrolled ? "0 6px 30px rgba(0,0,0,0.25)" : "none",
-        transition: "all 0.35s ease",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "space-between",
-        padding: "0 32px",
-        gap: 16,
-      }}>
+      <header
+        className="gnav gnav-header"
+        style={{
+          position: "fixed", top: 0, left: 0, right: 0,
+          zIndex: 200, height: 72,
+          background: scrolled ? "rgba(250,250,252,0.99)" : "rgba(0,0,0,0)",
+          backdropFilter: "blur(18px)",
+          WebkitBackdropFilter: "blur(18px)",
+          borderBottom: scrolled ? "1px solid rgba(5,51,102,0.08)" : "1px solid transparent",
+          boxShadow: scrolled ? "0 4px 24px rgba(5,51,102,0.08)" : "none",
+          transition: "all 0.35s ease",
+          display: "flex", alignItems: "center", justifyContent: "space-between",
+          padding: "0 32px", gap: 16,
+        }}
+      >
         {/* Logo */}
         <Link href={ROUTES.home}
           style={{ display: "flex", alignItems: "center", textDecoration: "none", flexShrink: 0 }}>
           <Logo />
         </Link>
 
-       {/* Liens centre */}
-        <nav className="g-center" style={{ display: "flex", alignItems: "center", flex: 1, justifyContent: "center" }}>
+        {/* Centre */}
+        <nav className="g-center" style={{ display: "flex", alignItems: "center", flex: 1, justifyContent: "center", gap: 2 }}>
           {isUserLoggedIn ? (
             <>
               {touristeLinks.map(l => (
                 <Link key={l.href} href={l.href}
                   className={`glink ${isActive(l.href) ? "on" : ""}`}>
-                  {l.icon} {l.label}
+                  <i className={`ti ${l.icon}`} aria-hidden="true" />
+                  {l.label}
                 </Link>
               ))}
- 
+
               {/* Dropdown Planifier */}
               <div style={{ position: "relative" }}>
                 <button
                   className={`glink-plan ${isPlanActive ? "on" : ""} ${planOpen ? "open" : ""}`}
                   onClick={() => setPlanOpen(o => !o)}
                 >
-                  <Map size={15} />
+                  <i className="ti ti-route main-icon" aria-hidden="true" />
                   Planifier
-                  <ChevronDown size={13} className="chevron" />
+                  <i className="ti ti-chevron-down chevron" aria-hidden="true" />
                 </button>
- 
+
                 {planOpen && (
                   <>
                     <div style={{ position: "fixed", inset: 0, zIndex: 399 }}
@@ -374,33 +400,43 @@ export default function TouristeNav({
                     <div className="plan-drop">
                       <Link
                         href={ROUTES.touriste.ModeAssiste}
-                        className={`plan-card ${pathname === ROUTES.touriste.ModeAssiste || pathname.startsWith("/touriste/modeAssister") ? "active-mode" : ""}`}
+                        className={`plan-card ${
+                          pathname === ROUTES.touriste.ModeAssiste ||
+                          pathname.startsWith("/touriste/modeAssister") ? "active-mode" : ""
+                        }`}
                         onClick={() => setPlanOpen(false)}
                       >
                         <div className="plan-icon assiste">
-                          <Wand2 size={17} color="#02AFCF" />
+                          <i className="ti ti-wand" style={{ color: "#02AFCF" }} aria-hidden="true" />
                         </div>
                         <div>
                           <p className="plan-title">Mode Assisté</p>
                           <p className="plan-desc">Laissez notre IA concevoir votre itinéraire idéal selon vos préférences.</p>
-                          <span className="plan-badge ai"><Wand2 size={8} /> Propulsé par l'IA</span>
+                          <span className="plan-badge ai">
+                            <i className="ti ti-wand" aria-hidden="true" /> Propulsé par l'IA
+                          </span>
                         </div>
                       </Link>
- 
+
                       <div className="plan-divider" />
- 
+
                       <Link
                         href={ROUTES.touriste.modeLibre}
-                        className={`plan-card ${pathname === ROUTES.touriste.modeLibre || pathname.startsWith("/touriste/modeLibre") ? "active-mode" : ""}`}
+                        className={`plan-card ${
+                          pathname === ROUTES.touriste.modeLibre ||
+                          pathname.startsWith("/touriste/modeLibre") ? "active-mode" : ""
+                        }`}
                         onClick={() => setPlanOpen(false)}
                       >
                         <div className="plan-icon libre">
-                          <Navigation size={17} color="#2B96A8" />
+                          <i className="ti ti-navigation" style={{ color: "#2B96A8" }} aria-hidden="true" />
                         </div>
                         <div>
                           <p className="plan-title">Mode Libre</p>
                           <p className="plan-desc">Construisez votre voyage étape par étape, selon vos propres choix.</p>
-                          <span className="plan-badge free"><Navigation size={8} /> Personnalisé</span>
+                          <span className="plan-badge free">
+                            <i className="ti ti-navigation" aria-hidden="true" /> Personnalisé
+                          </span>
                         </div>
                       </Link>
                     </div>
@@ -411,45 +447,46 @@ export default function TouristeNav({
           ) : (
             publicLinks.map(l =>
               l.anchor
-                ? <a key={l.href} href={l.href} className="glink">{l.icon} {l.label}</a>
+                ? <a key={l.href} href={l.href} className="glink">
+                    <i className={`ti ${l.icon}`} aria-hidden="true" /> {l.label}
+                  </a>
                 : <Link key={l.href} href={l.href}
                     className={`glink ${isActive(l.href) ? "on" : ""}`}>
-                    {l.icon} {l.label}
+                    <i className={`ti ${l.icon}`} aria-hidden="true" /> {l.label}
                   </Link>
             )
           )}
         </nav>
- 
-        {/* Actions droite */}
+
+        {/* Droite */}
         <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
           <button className="g-burger" onClick={() => setMobileOpen(o => !o)}>
             {mobileOpen ? <X size={20} /> : <Menu size={20} />}
           </button>
- 
+
           {isUserLoggedIn ? (
             <>
               <Link href={ROUTES.touriste.favoris} className="g-fav">
-                <Heart size={16} />
+                <i className="ti ti-heart" aria-hidden="true" />
                 {favCount > 0 && <span className="nb">{favCount > 9 ? "9+" : favCount}</span>}
               </Link>
- 
+
               <div className="g-sep" />
- 
-              {/* Avatar + dropdown */}
+
               <div style={{ position: "relative" }}>
                 <button className="av" onClick={() => setMenuOpen(o => !o)}>
                   {avatarUrl ? <img src={avatarUrl} alt={initial} /> : initial}
                 </button>
- 
+
                 {menuOpen && (
                   <>
                     <div style={{ position: "fixed", inset: 0, zIndex: 399 }}
                       onClick={() => setMenuOpen(false)} />
                     <div className="drop">
-                      {/* En-tête profil */}
+                      {/* Header profil */}
                       <div style={{
                         padding: "10px 12px 12px",
-                        borderBottom: "1px solid rgba(5, 51, 102, 0.08)",
+                        borderBottom: "1px solid rgba(5,51,102,0.08)",
                         marginBottom: 4,
                       }}>
                         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
@@ -461,7 +498,8 @@ export default function TouristeNav({
                             flexShrink: 0, overflow: "hidden",
                           }}>
                             {avatarUrl
-                              ? <img src={avatarUrl} alt={initial} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                              ? <img src={avatarUrl} alt={initial}
+                                  style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                               : initial}
                           </div>
                           <div>
@@ -477,7 +515,7 @@ export default function TouristeNav({
                           </div>
                         </div>
                       </div>
- 
+
                       <Link href={ROUTES.touriste.profil} className="ddi" onClick={() => setMenuOpen(false)}>
                         <User size={15} /> Mon profil
                       </Link>
@@ -489,8 +527,8 @@ export default function TouristeNav({
                           <MessageCircle size={15} /> Historique
                         </Link>
                       )}
- 
-                      <div style={{ borderTop: "1px solid rgba(5, 51, 102, 0.08)", marginTop: 4, paddingTop: 4 }}>
+
+                      <div style={{ borderTop: "1px solid rgba(5,51,102,0.08)", marginTop: 4, paddingTop: 4 }}>
                         <button className="ddi red" onClick={handleSignOut}>
                           <LogOut size={15} /> Se déconnecter
                         </button>
@@ -503,17 +541,17 @@ export default function TouristeNav({
           ) : (
             <>
               <Link href={ROUTES.touriste.favoris} className="g-fav">
-                <Heart size={16} />
+                <i className="ti ti-heart" aria-hidden="true" />
               </Link>
               <div className="g-sep" />
               <Link href={ROUTES.auth} className="g-btn">
-                <User size={15} /> Connexion
+                <i className="ti ti-user" aria-hidden="true" /> Connexion
               </Link>
             </>
           )}
         </div>
       </header>
- 
+
       {/* ── Drawer mobile ── */}
       <div className={`g-drawer ${mobileOpen ? "" : "closed"}`}>
         {isUserLoggedIn ? (
@@ -522,10 +560,11 @@ export default function TouristeNav({
               <Link key={l.href} href={l.href}
                 className={`g-mlink ${isActive(l.href) ? "on" : ""}`}
                 onClick={() => setMobileOpen(false)}>
-                {l.icon} {l.label}
+                <i className={`ti ${l.icon}`} aria-hidden="true" />
+                {l.label}
               </Link>
             ))}
- 
+
             <div className="g-plan-section">
               <p className="g-plan-label">Planifier mon voyage</p>
               <Link
@@ -533,18 +572,20 @@ export default function TouristeNav({
                 className={`g-mlink ${pathname.startsWith("/touriste/modeAssister") ? "on" : ""}`}
                 onClick={() => setMobileOpen(false)}
               >
-                <Wand2 size={15} /> Mode Assisté
+                <i className="ti ti-wand" style={{ color: "#02AFCF" }} aria-hidden="true" />
+                Mode Assisté
               </Link>
               <Link
                 href={ROUTES.touriste.modeLibre}
                 className={`g-mlink ${pathname.startsWith("/touriste/modeLibre") ? "on" : ""}`}
                 onClick={() => setMobileOpen(false)}
               >
-                <Navigation size={15} /> Mode Libre
+                <i className="ti ti-navigation" style={{ color: "#2B96A8" }} aria-hidden="true" />
+                Mode Libre
               </Link>
             </div>
- 
-            <div style={{ borderTop: "1px solid rgba(5, 51, 102, 0.08)", marginTop: 6, paddingTop: 6 }}>
+
+            <div style={{ borderTop: "1px solid rgba(5,51,102,0.08)", marginTop: 6, paddingTop: 6 }}>
               <button
                 className="ddi red"
                 style={{ width: "100%", borderRadius: 8, fontSize: 14 }}
@@ -558,18 +599,19 @@ export default function TouristeNav({
           <>
             {publicLinks.map(l => (
               l.anchor ? (
-                <a key={l.href} href={l.href} className="g-mlink" onClick={() => setMobileOpen(false)}>
-                  {l.icon} {l.label}
+                <a key={l.href} href={l.href} className="g-mlink"
+                  onClick={() => setMobileOpen(false)}>
+                  <i className={`ti ${l.icon}`} aria-hidden="true" /> {l.label}
                 </a>
               ) : (
                 <Link key={l.href} href={l.href}
                   className={`g-mlink ${isActive(l.href) ? "on" : ""}`}
                   onClick={() => setMobileOpen(false)}>
-                  {l.icon} {l.label}
+                  <i className={`ti ${l.icon}`} aria-hidden="true" /> {l.label}
                 </Link>
               )
             ))}
-            <div style={{ borderTop: "1px solid rgba(5, 51, 102, 0.08)", marginTop: 6, paddingTop: 6 }}>
+            <div style={{ borderTop: "1px solid rgba(5,51,102,0.08)", marginTop: 6, paddingTop: 6 }}>
               <Link href={ROUTES.auth} onClick={() => setMobileOpen(false)}
                 style={{
                   display: "flex", alignItems: "center", gap: 8,
@@ -578,7 +620,7 @@ export default function TouristeNav({
                   color: "white", borderRadius: 8,
                   textDecoration: "none", fontSize: 14, fontWeight: 700,
                 }}>
-                <LogIn size={15} /> Se connecter
+                <i className="ti ti-login" aria-hidden="true" /> Se connecter
               </Link>
             </div>
           </>
