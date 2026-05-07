@@ -314,7 +314,7 @@ export default function ItinerairesClient() {
                       </span>
                       {budget > 0 && (
                         <span style={{ color:"#059669", fontWeight:600, display:"flex", alignItems:"center", gap:4 }}>
-                          <Coins size={11}/> {budget} TND
+                          <Coins size={11}/> {budget} EUR
                         </span>
                       )}
                     </div>
@@ -420,7 +420,7 @@ export default function ItinerairesClient() {
                                     )}
                                     {act.excursion?.price_per_person > 0 && (
                                       <span className="info-badge" style={{ color:"#02AFCF" }}>
-                                        <Coins size={10}/> {act.excursion.price_per_person} TND
+                                        <Coins size={10}/> {act.excursion.price_per_person} EUR
                                       </span>
                                     )}
                                   </div>

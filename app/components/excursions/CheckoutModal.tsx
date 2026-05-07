@@ -921,20 +921,20 @@ export default function CheckoutModal({
                       <div className="cm-price-body">
                         <div className="cm-price-row">
                           <span>
-                            {exc?.price_per_person} TND ×{" "}
+                            {exc?.price_per_person} EUR ×{" "}
                             {reservation.people_count} pers.
                           </span>
-                          <span>{base} TND</span>
+                          <span>{base} EUR</span>
                         </div>
                         <div className="cm-price-row">
                           <span>Frais de service</span>
-                          <span>{fee} TND</span>
+                          <span>{fee} EUR</span>
                         </div>
                         <div className="cm-price-divider" />
                         <div className="cm-price-total">
                           <span>Total</span>
                           <span className="cm-price-total-num">
-                            {total} TND
+                            {total} EUR
                           </span>
                         </div>
                       </div>
@@ -1045,7 +1045,7 @@ export default function CheckoutModal({
                             color: "#334155",
                           }}
                         >
-                          TND
+                          EUR
                         </span>
                       </p>
                     </div>
@@ -1149,11 +1149,11 @@ export default function CheckoutModal({
                             marginLeft: 8,
                           }}
                         >
-                          TND
+                          EUR
                         </span>
                       </p>
                       <p style={{ fontSize: 11, color: "#334155" }}>
-                        dont {fee} TND de frais de service
+                        dont {fee} EUR de frais de service
                       </p>
                     </div>
 
@@ -1316,7 +1316,7 @@ export default function CheckoutModal({
                       ) : (
                         <>
                           <CheckCircle size={15} />
-                          Confirmer la réservation · {total} TND
+                          Confirmer la réservation · {total} EUR
                         </>
                       )}
                     </button>
@@ -1448,7 +1448,7 @@ export default function CheckoutModal({
                                 color: "#3DD6AC",
                               }}
                             >
-                              {total} TND
+                              {total} EUR
                             </p>
                           </div>
                         </div>

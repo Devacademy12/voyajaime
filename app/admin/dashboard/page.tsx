@@ -211,8 +211,8 @@ const topVilles = Object.entries(villeCount)
       {/* ─────────────── Revenus ─────────────── */}
       <div className="db-rev fa fa2">
         {[
-          { label: "Volume encaissé", value: totalRevenue, color: "#259FFC", bg: "rgba(37,159,252,.07)", Icon: TrendingUp, suffix: "TND" },
-          { label: "Commissions",     value: totalFees,    color: "#02AFCF", bg: "rgba(2,175,207,.07)",  Icon: Coins,      suffix: "TND" },
+          { label: "Volume encaissé", value: totalRevenue, color: "#259FFC", bg: "rgba(37,159,252,.07)", Icon: TrendingUp, suffix: "EUR" },
+          { label: "Commissions",     value: totalFees,    color: "#02AFCF", bg: "rgba(2,175,207,.07)",  Icon: Coins,      suffix: "EUR" },
         ].map(r => (
           <div key={r.label} style={{
             background: r.bg,

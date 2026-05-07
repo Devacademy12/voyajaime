@@ -109,7 +109,7 @@ export default function PopularExcursions({
                         <p style={{ fontSize: 20, fontWeight: 800, color: "#111827", lineHeight: 1 }}>
                           {exc.price_per_person}
                         </p>
-                        <p style={{ fontSize: 11, color: "#9CA3AF", marginTop: 2 }}>TND / pers.</p>
+                        <p style={{ fontSize: 11, color: "#9CA3AF", marginTop: 2 }}>EUR / pers.</p>
                       </div>
                     </div>
 

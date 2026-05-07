@@ -246,17 +246,17 @@ export default function CheckoutModal({ reservation, onClose, onPaid, autoStart 
                     </div>
                     <div style={{ padding: 16, display: "flex", flexDirection: "column", gap: 10 }}>
                       <div style={{ display: "flex", justifyContent: "space-between" }}>
-                        <span style={{ fontSize: 14, color: "#64748B" }}>{exc?.price_per_person} TND × {reservation.people_count} pers.</span>
-                        <span style={{ fontSize: 14, fontWeight: 700, color: "#334155" }}>{base} TND</span>
+                        <span style={{ fontSize: 14, color: "#64748B" }}>{exc?.price_per_person} EUR × {reservation.people_count} pers.</span>
+                        <span style={{ fontSize: 14, fontWeight: 700, color: "#334155" }}>{base} EUR</span>
                       </div>
                       <div style={{ display: "flex", justifyContent: "space-between" }}>
                         <span style={{ fontSize: 14, color: "#64748B" }}>🎯 Frais de service</span>
-                        <span style={{ fontSize: 14, fontWeight: 700, color: "#334155" }}>{fee} TND</span>
+                        <span style={{ fontSize: 14, fontWeight: 700, color: "#334155" }}>{fee} EUR</span>
                       </div>
                       <div style={{ height: 1, background: "#E2E8F0" }} />
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                         <span style={{ fontFamily: "'Clash Display',sans-serif", fontSize: 14, fontWeight: 700, color: "#0F172A" }}>Total</span>
-                        <span style={{ fontFamily: "'Clash Display',sans-serif", fontSize: 24, fontWeight: 700, color: "#0D9488" }}>{total} TND</span>
+                        <span style={{ fontFamily: "'Clash Display',sans-serif", fontSize: 24, fontWeight: 700, color: "#0D9488" }}>{total} EUR</span>
                       </div>
                     </div>
                   </div>
@@ -278,7 +278,7 @@ export default function CheckoutModal({ reservation, onClose, onPaid, autoStart 
                       <p style={{ fontSize: 12, color: "#64748B" }}>{fmtDate(reservation.date)} · {reservation.people_count} pers.</p>
                     </div>
                     <p style={{ fontFamily: "'Clash Display',sans-serif", fontSize: 18, fontWeight: 700, color: "#0D9488" }}>
-                      {total} <span style={{ fontSize: 11, fontWeight: 500, color: "#94A3B8" }}>TND</span>
+                      {total} <span style={{ fontSize: 11, fontWeight: 500, color: "#94A3B8" }}>EUR</span>
                     </p>
                   </div>
 
@@ -307,9 +307,9 @@ export default function CheckoutModal({ reservation, onClose, onPaid, autoStart 
                   <div style={{ background: "linear-gradient(135deg, #0F172A 0%, #1E293B 100%)", borderRadius: 16, padding: 22, textAlign: "center" }}>
                     <p style={{ fontSize: 10, fontWeight: 700, color: "#94A3B8", textTransform: "uppercase", letterSpacing: 2, marginBottom: 8 }}>Montant à payer</p>
                     <p style={{ fontFamily: "'Clash Display',sans-serif", fontSize: 46, fontWeight: 700, color: "#FFFFFF", letterSpacing: "-2px", lineHeight: 1, marginBottom: 6 }}>
-                      {total}<span style={{ fontSize: 18, fontWeight: 500, color: "#94A3B8", marginLeft: 6 }}>TND</span>
+                      {total}<span style={{ fontSize: 18, fontWeight: 500, color: "#94A3B8", marginLeft: 6 }}>EUR</span>
                     </p>
-                    <p style={{ fontSize: 11, color: "#94A3B8" }}>dont {fee} TND de frais de service</p>
+                    <p style={{ fontSize: 11, color: "#94A3B8" }}>dont {fee} EUR de frais de service</p>
                   </div>
 
                   <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
@@ -368,7 +368,7 @@ export default function CheckoutModal({ reservation, onClose, onPaid, autoStart 
                         </div>
                         <div>
                           <p style={{ fontSize: 9, color: "rgba(15,23,42,.5)", fontWeight: 700, textTransform: "uppercase" }}>Payé</p>
-                          <p style={{ fontFamily: "'Clash Display',sans-serif", fontSize: 24, fontWeight: 700, color: "#0D9488" }}>{total} TND</p>
+                          <p style={{ fontFamily: "'Clash Display',sans-serif", fontSize: 24, fontWeight: 700, color: "#0D9488" }}>{total} EUR</p>
                         </div>
                       </div>
                     </div>

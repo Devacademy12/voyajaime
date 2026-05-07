@@ -163,7 +163,7 @@ export default function ExcursionsListClient({
 
               {/* Prix */}
               <div style={{ position: "absolute", bottom: 10, right: 12, padding: "5px 12px", background: "rgba(0,0,0,.62)", backdropFilter: "blur(8px)", borderRadius: 20, fontSize: 14, fontWeight: 800, color: "white" }}>
-                {exc.price_per_person} TND
+                {exc.price_per_person} EUR
               </div>
 
               {/* Nb photos */}

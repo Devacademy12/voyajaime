@@ -180,7 +180,7 @@ export function ReviewCard({ avis, myLikes, toggleLike, loadingId, approveAvis, 
 // ─── STATS CARD ───
 export function StatsCard({ exc, reservations, avgRating }: any) {
   const stats = [
-    { label: "Prix / pers.", val: `${exc.price_per_person} TND`, Icon: Wallet },
+    { label: "Prix / pers.", val: `${exc.price_per_person} EUR`, Icon: Wallet },
     { label: "Durée", val: `${exc.duration_hours}h`, Icon: Clock },
     { label: "Capacité", val: `${exc.max_people} pers.`, Icon: Users },
     { label: "Note moy.", val: avgRating ? `${avgRating}/5` : "—", Icon: Star },

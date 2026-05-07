@@ -140,7 +140,7 @@ export default function ReservationCard({ r, onPay, onRefresh, onExpired }: Prop
         <div>
           <p className={styles["rp-price-label"]}>Total</p>
           <p className={styles["rp-price-amount"]}>
-            {r.total_price} <span style={{ fontSize: 12, fontWeight: 500, color: "#94A3B8" }}>TND</span>
+            {r.total_price} <span style={{ fontSize: 12, fontWeight: 500, color: "#94A3B8" }}>EUR</span>
           </p>
           <p className={styles["rp-booking-code"]}>#{r.booking_code}</p>
         </div>

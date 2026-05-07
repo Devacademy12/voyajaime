@@ -261,7 +261,7 @@ export default function FavorisClient({
                 )}
 
                 <div style={{ position: "absolute", bottom: 12, left: 12, padding: "5px 12px", background: "linear-gradient(135deg,#02AFCF,#259FFC)", borderRadius: 20, fontSize: 14, fontWeight: 800, color: "white", boxShadow: "0 4px 12px rgba(2,175,207,0.4)", pointerEvents: "none" }}>
-                  {exc.price_per_person} <span style={{ fontSize: 11, fontWeight: 500 }}>TND</span>
+                  {exc.price_per_person} <span style={{ fontSize: 11, fontWeight: 500 }}>EUR</span>
                 </div>
               </div>
 

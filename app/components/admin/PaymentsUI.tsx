@@ -46,7 +46,7 @@ export function RevenueChart({ data }: { data: { month: string; amount: number; 
       <style>{PAYMENTS_CSS}</style>
       <div style={{ marginBottom: 16 }}>
         <h3 style={{ fontSize: 15, fontWeight: 800, color: "#111827", margin: 0 }}>Revenus par mois</h3>
-        <p style={{ fontSize: 12, color: "#9CA3AF", margin: "4px 0 0" }}>6 derniers mois · en TND</p>
+        <p style={{ fontSize: 12, color: "#9CA3AF", margin: "4px 0 0" }}>6 derniers mois · en EUR</p>
       </div>
 
       <div style={{ background: "white", borderRadius: 20, border: "1px solid #E5E7EB", padding: 20 }}>
@@ -64,7 +64,7 @@ export function RevenueChart({ data }: { data: { month: string; amount: number; 
                         background: "#02AFCF",
                         borderRadius: 12,
                       }}
-                      title={`Volume ${fmtAmount(item.amount)} TND`}
+                      title={`Volume ${fmtAmount(item.amount)} EUR`}
                     />
                     <span style={{ fontSize: 10, color: "#FFFFFF", opacity: 0 }}>&nbsp;</span>
                   </div>
@@ -75,7 +75,7 @@ export function RevenueChart({ data }: { data: { month: string; amount: number; 
                         background: "#053366",
                         borderRadius: 12,
                       }}
-                      title={`Commission ${fmtAmount(item.fees)} TND`}
+                      title={`Commission ${fmtAmount(item.fees)} EUR`}
                     />
                     <span style={{ fontSize: 10, color: "#FFFFFF", opacity: 0 }}>&nbsp;</span>
                   </div>
@@ -332,19 +332,19 @@ export function PaymentRow({
               <div style={{ textAlign: "right" }}>
                 <p style={{ fontSize: 11, color: "#9CA3AF", fontWeight: 600, textTransform: "uppercase", letterSpacing: .6, marginBottom: 2 }}>Montant</p>
                 <p style={{ fontSize: 16, fontWeight: 900, color: "#111827" }}>
-                  {fmtAmount(amount)} <span style={{ fontSize: 11, color: "#9CA3AF" }}>TND</span>
+                  {fmtAmount(amount)} <span style={{ fontSize: 11, color: "#9CA3AF" }}>EUR</span>
                 </p>
               </div>
               <div style={{ textAlign: "right" }}>
                 <p style={{ fontSize: 11, color: "#9CA3AF", fontWeight: 600, textTransform: "uppercase", letterSpacing: .6, marginBottom: 2 }}>Commission</p>
                 <p style={{ fontSize: 13, fontWeight: 700, color: "#02AFCF" }}>
-                  +{fmtAmount(fee)} TND
+                  +{fmtAmount(fee)} EUR
                 </p>
               </div>
               <div style={{ textAlign: "right" }}>
                 <p style={{ fontSize: 11, color: "#9CA3AF", fontWeight: 600, textTransform: "uppercase", letterSpacing: .6, marginBottom: 2 }}>Net prestataire</p>
                 <p style={{ fontSize: 13, fontWeight: 700, color: "#053366" }}>
-                  {fmtAmount(net)} TND
+                  {fmtAmount(net)} EUR
                 </p>
               </div>
             </div>
@@ -401,17 +401,17 @@ export function PaymentRow({
             {/* Barre de décomposition des montants */}
             <div style={{ gridColumn: "1 / -1", marginTop: 4 }}>
               <div style={{ display: "flex", height: 8, borderRadius: 99, overflow: "hidden", gap: 1 }}>
-                <div style={{ flex: net,    background: "#053366" }} title={`Net: ${net} TND`} />
-                <div style={{ flex: fee,    background: "#02AFCF" }} title={`Commission: ${fee} TND`} />
+                <div style={{ flex: net,    background: "#053366" }} title={`Net: ${net} EUR`} />
+                <div style={{ flex: fee,    background: "#02AFCF" }} title={`Commission: ${fee} EUR`} />
               </div>
               <div style={{ display: "flex", gap: 16, marginTop: 6 }}>
                 <span style={{ fontSize: 11, color: "#053366", fontWeight: 700, display: "flex", alignItems: "center", gap: 4 }}>
                   <span style={{ width: 8, height: 8, borderRadius: 2, background: "#053366" }} />
-                  Net prestataire : {fmtAmount(net)} TND
+                  Net prestataire : {fmtAmount(net)} EUR
                 </span>
                 <span style={{ fontSize: 11, color: "#02AFCF", fontWeight: 700, display: "flex", alignItems: "center", gap: 4 }}>
                   <span style={{ width: 8, height: 8, borderRadius: 2, background: "#02AFCF" }} />
-                  Commission : {fmtAmount(fee)} TND
+                  Commission : {fmtAmount(fee)} EUR
                 </span>
               </div>
             </div>

@@ -210,7 +210,7 @@ export default function AdminExcursionsClient({ excursions: initial }: { excursi
 
                 {/* Prix */}
                 <div style={{ position: "absolute", bottom: 10, right: 12, padding: "5px 12px", background: "rgba(0,0,0,.62)", backdropFilter: "blur(8px)", borderRadius: 20, fontSize: 14, fontWeight: 800, color: "white" }}>
-                  {exc.price_per_person} TND
+                  {exc.price_per_person} EUR
                 </div>
 
                 {/* Catégorie */}
@@ -288,7 +288,7 @@ export default function AdminExcursionsClient({ excursions: initial }: { excursi
                   </div>
                 </div>
                 <div style={{ fontSize: 14, fontWeight: 700, color: "#2B96A8", minWidth: 70 }}>
-                  {exc.price_per_person} TND
+                  {exc.price_per_person} EUR
                 </div>
               </div>
 

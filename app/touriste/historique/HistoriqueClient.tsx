@@ -254,7 +254,7 @@ export default function HistoriqueClient({ reservations }: { reservations: HistE
                       {/* Prix + status paiement */}
                       <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", paddingTop:10, borderTop:"1px solid #F3F4F6" }}>
                         <div>
-                          <p style={{ fontSize:18, fontWeight:900, color:"#053366", margin:0 }}>{r.total_price} <span style={{ fontSize:11, fontWeight:500, color:"#9CA3AF" }}>TND</span></p>
+                          <p style={{ fontSize:18, fontWeight:900, color:"#053366", margin:0 }}>{r.total_price} <span style={{ fontSize:11, fontWeight:500, color:"#9CA3AF" }}>EUR</span></p>
                           {r.payment_status && (
                             <p style={{ fontSize:10, color: r.payment_status==="paid" ? "#059669" : "#9CA3AF", fontWeight:600, margin:0 }}>
                               {r.payment_status === "paid" ? "✓ Payée" : r.payment_status === "expired" ? "Expirée" : r.payment_status}

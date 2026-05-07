@@ -292,13 +292,13 @@ function TransactionCard({ payment, reservation, touriste, excursion, prestatair
         <div style={{ flexShrink: 0, minWidth: 160, textAlign: "right" }}>
           <p style={{ fontSize: 26, fontWeight: 900, color: "#0F172A", margin: "0 0 2px", lineHeight: 1 }}>
             {n(payment.amount).toLocaleString("fr-FR")}
-            <span style={{ fontSize: 13, fontWeight: 500, color: "#94A3B8" }}> TND</span>
+            <span style={{ fontSize: 13, fontWeight: 500, color: "#94A3B8" }}> EUR</span>
           </p>
           <p style={{ fontSize: 12, color: "#10B981", fontWeight: 700, margin: "4px 0 2px" }}>
-            Net : {n(payment.net_amount).toLocaleString("fr-FR")} TND
+            Net : {n(payment.net_amount).toLocaleString("fr-FR")} EUR
           </p>
           <p style={{ fontSize: 11, color: "#94A3B8", margin: 0 }}>
-            Commission : {n(payment.platform_fee).toLocaleString("fr-FR")} TND
+            Commission : {n(payment.platform_fee).toLocaleString("fr-FR")} EUR
           </p>
 
           {/* Barre net/total */}
@@ -375,12 +375,12 @@ function TransactionCard({ payment, reservation, touriste, excursion, prestatair
 
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))", gap: 8, marginBottom: 14 }}>
                 {[
-                  { label: "Montant total",   value: `${n(payment.amount)} TND`,       color: "#0F172A" },
-                  { label: "Commission",      value: `${n(payment.platform_fee)} TND`,  color: "#F59E0B" },
-                  { label: "Net prestataire", value: `${n(payment.net_amount)} TND`,   color: "#059669" },
+                  { label: "Montant total",   value: `${n(payment.amount)} EUR`,       color: "#0F172A" },
+                  { label: "Commission",      value: `${n(payment.platform_fee)} EUR`,  color: "#F59E0B" },
+                  { label: "Net prestataire", value: `${n(payment.net_amount)} EUR`,   color: "#059669" },
                   { label: "Nombre de places",value: `${reservation?.people_count ?? "—"}`, color: "#0EA5E9" },
                   ...(excursion.max_people ? [{ label: "Capacité max", value: `${excursion.max_people} pers.`, color: "#64748B" }] : []),
-                  ...(excursion.price_per_person ? [{ label: "Prix / pers.", value: `${excursion.price_per_person} TND`, color: "#64748B" }] : []),
+                  ...(excursion.price_per_person ? [{ label: "Prix / pers.", value: `${excursion.price_per_person} EUR`, color: "#64748B" }] : []),
                 ].map((item, i) => (
                   <div key={i} style={{ background: "white", borderRadius: 10, padding: "9px 12px", border: "1px solid #E0F2FE" }}>
                     <p style={{ fontSize: 10, color: "#94A3B8", fontWeight: 700, margin: 0, textTransform: "uppercase", letterSpacing: .4 }}>{item.label}</p>
@@ -536,9 +536,9 @@ export default function AdminPaiementsReservationsClient({
       {/* ══ KPIs ══ */}
       <div className="apr-kpis">
         {[
-          { label: "Volume total",          value: kpis.volume,      suffix: "TND", icon: <TrendingUp size={20} />,  color: "#0EA5E9", shade: "#F0F9FF", border: "#BAE6FD" },
-          { label: "Commissions",           value: kpis.commission,  suffix: "TND", icon: <Coins size={20} />,       color: "#8B5CF6", shade: "#F5F3FF", border: "#DDD6FE" },
-          { label: "Reversé prestataires",  value: kpis.net,         suffix: "TND", icon: <ArrowUpRight size={20} />,color: "#059669", shade: "#ECFDF5", border: "#A7F3D0" },
+          { label: "Volume total",          value: kpis.volume,      suffix: "EUR", icon: <TrendingUp size={20} />,  color: "#0EA5E9", shade: "#F0F9FF", border: "#BAE6FD" },
+          { label: "Commissions",           value: kpis.commission,  suffix: "EUR", icon: <Coins size={20} />,       color: "#8B5CF6", shade: "#F5F3FF", border: "#DDD6FE" },
+          { label: "Reversé prestataires",  value: kpis.net,         suffix: "EUR", icon: <ArrowUpRight size={20} />,color: "#059669", shade: "#ECFDF5", border: "#A7F3D0" },
           { label: "Transactions",          value: paiements.length, suffix: "",    icon: <Layers size={20} />,      color: "#F59E0B", shade: "#FFFBEB", border: "#FDE68A" },
         ].map((k, i) => (
           <div key={i} className="apr-kpi-card" style={{ borderColor: k.border, background: k.shade }}>

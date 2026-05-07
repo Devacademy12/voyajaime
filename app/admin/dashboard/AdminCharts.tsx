@@ -244,7 +244,7 @@ export default function AdminCharts({ reservationsParJour, topVilles, revenusPar
             <p style={{ fontSize: 12, color: "#6B7280", margin: 0 }}>
               Total :{" "}
               <strong style={{ color: "#02AFCF" }}>
-                {totalComm.toLocaleString("fr-FR")} TND
+                {totalComm.toLocaleString("fr-FR")} EUR
               </strong>
             </p>
           </div>

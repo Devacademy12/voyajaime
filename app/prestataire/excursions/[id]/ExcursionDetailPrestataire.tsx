@@ -268,7 +268,7 @@ export default function ExcursionDetailPrestataire({
 
           {/* Chiffres clés */}
           <DetailSection icon={DollarSign} title="Informations pratiques">
-            <InfoRow label="Prix par personne"   value={<strong style={{ color: "#2B96A8", fontSize: 15 }}>{exc.price_per_person} TND</strong>} />
+            <InfoRow label="Prix par personne"   value={<strong style={{ color: "#2B96A8", fontSize: 15 }}>{exc.price_per_person} EUR</strong>} />
             <InfoRow label="Durée"               value={`${exc.duration_hours} heure${exc.duration_hours > 1 ? "s" : ""}`} />
             <InfoRow label="Capacité maximale"   value={`${exc.max_people} personnes`} />
             {exc.depart_time && (
@@ -566,9 +566,9 @@ export default function ExcursionDetailPrestataire({
           {/* Prix mis en avant */}
           <div style={{ background: "linear-gradient(135deg,#EFF9FB,#E0F5F8)", borderRadius: 20, border: "1px solid rgba(43,150,168,.2)", padding: "18px 20px", marginBottom: 14, textAlign: "center" }}>
             <p style={{ fontSize: 12, fontWeight: 700, color: "#2B96A8", textTransform: "uppercase", letterSpacing: ".5px", marginBottom: 4 }}>Prix par personne</p>
-            <p style={{ fontSize: 32, fontWeight: 800, color: "#111827", margin: "0 0 4px", letterSpacing: "-1px" }}>{exc.price_per_person} <span style={{ fontSize: 16 }}>TND</span></p>
+            <p style={{ fontSize: 32, fontWeight: 800, color: "#111827", margin: "0 0 4px", letterSpacing: "-1px" }}>{exc.price_per_person} <span style={{ fontSize: 16 }}>EUR</span></p>
             <p style={{ fontSize: 12, color: "#6B7280", margin: 0 }}>
-              Commission 10% → vous recevez <strong style={{ color: "#059669" }}>{Math.round(exc.price_per_person * .9)} TND</strong>
+              Commission 10% → vous recevez <strong style={{ color: "#059669" }}>{Math.round(exc.price_per_person * .9)} EUR</strong>
             </p>
           </div>
 
