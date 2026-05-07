@@ -1,5 +1,9 @@
 import { createBrowserClient } from "@supabase/ssr";
 
+/**
+ * Client Supabase pour les Client Components ("use client").
+ * Instance unique par onglet navigateur.
+ */
 export function createClient() {
   return createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
