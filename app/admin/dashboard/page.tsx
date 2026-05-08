@@ -1,5 +1,5 @@
 // app/admin/dashboard/page.tsx
-import { createAdminClient } from "@/lib/supabaseAdmin";
+import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import {
   Luggage, Building2, Mountain, CalendarDays,
   TrendingUp, Coins, Clock, ChevronRight,
@@ -8,7 +8,7 @@ import {
 import AdminCharts from "./AdminCharts";
 
 export default async function AdminDashboard() {
-  const supabase = createAdminClient();
+  const supabase = supabaseAdmin;
 
   // ── Compteurs KPI ──────────────────────────────────────────────────────────
   const { count: totalTouristes }    = await supabase.from("profiles").select("*", { count: "exact", head: true }).eq("role", "touriste");
@@ -33,11 +33,11 @@ export default async function AdminDashboard() {
 
   // ✅ Fix — totalRevenue et totalFees filtrés sur status = "paid" uniquement
   const totalRevenue = paiements
-    ?.filter(p => p.status === "paid")
-    .reduce((s, p) => s + Number(p.amount), 0) || 0;
+    ?.filter((p: any) => p.status === "paid")
+    .reduce((s: number, p: any) => s + Number(p.amount), 0) || 0;
   const totalFees = paiements
-    ?.filter(p => p.status === "paid")
-    .reduce((s, p) => s + Number(p.platform_fee), 0) || 0;
+    ?.filter((p: any) => p.status === "paid")
+    .reduce((s: number, p: any) => s + Number(p.platform_fee), 0) || 0;
 
   // ── Réservations par jour (30 j) ───────────────────────────────────────────
   const since30 = new Date();
@@ -56,7 +56,7 @@ export default async function AdminDashboard() {
     d.setDate(d.getDate() - 29 + i);
     resaByDay[d.toISOString().split("T")[0]] = { total: 0, assiste: 0 };
   }
-  (resaRaw || []).forEach(r => {
+  (resaRaw || []).forEach((r: any) => {
     const key = String(r.created_at).split("T")[0];
     if (resaByDay[key]) {
       resaByDay[key].total++;
@@ -76,7 +76,7 @@ const { data: villesRaw } = await supabase
   .eq("is_active", true);
 
 const villeCount: Record<string, number> = {};
-(villesRaw || []).forEach(r => {
+(villesRaw || []).forEach((r: any) => {
   if (r.city) villeCount[r.city] = (villeCount[r.city] || 0) + 1;
 });
 const topVilles = Object.entries(villeCount)
@@ -97,7 +97,7 @@ const topVilles = Object.entries(villeCount)
     const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
     commByMonth[`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`] = 0;
   }
-  (paiementsAll || []).forEach(p => {
+  (paiementsAll || []).forEach((p: any) => {
     const key = String(p.created_at).slice(0, 7);
     if (key in commByMonth) commByMonth[key] += Number(p.platform_fee) || 0;
   });
@@ -264,7 +264,7 @@ const topVilles = Object.entries(villeCount)
             </p>
           ) : (
             <>
-              {pendingPrestataires.slice(0, 3).map(p => (
+              {pendingPrestataires.slice(0, 3).map((p: any) => (
                 <div key={String(p.id)} className="list-row">
                   <div style={{ minWidth: 0 }}>
                     <p style={{ fontSize: 13, fontWeight: 700, color: "#053366", margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
@@ -313,7 +313,7 @@ const topVilles = Object.entries(villeCount)
             </p>
           ) : (
             <>
-              {pendingAvis.map(a => {
+              {pendingAvis.map((a: any) => {
                 const touriste  = a.touriste  as Record<string, unknown> | null;
                 const excursion = a.excursion as Record<string, unknown> | null;
                 return (

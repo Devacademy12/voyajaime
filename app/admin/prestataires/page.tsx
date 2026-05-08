@@ -1,8 +1,8 @@
-import { createAdminClient } from "@/lib/supabaseAdmin";
+import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import PrestatairesClient from "./PrestatairesClient";
 
 export default async function AdminPrestataires() {
-  const supabase = createAdminClient();
+  const supabase = supabaseAdmin;
 
   const { data: prestataires, error } = await supabase
     .from("profiles")

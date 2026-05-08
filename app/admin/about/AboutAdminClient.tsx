@@ -7,7 +7,8 @@ import {
   Loader2, AlertCircle, LayoutTemplate, Type, BarChart2,
   Heart, Users, Megaphone, Edit3, Image as ImageIcon, RefreshCw,
   Bold, Italic, List, Link as LinkIcon, AlignLeft, AlignCenter,
-  Quote, Heading1, Heading2, Minus, Trash2, GripVertical, Plus,
+  Quote, Heading1, Heading2, Minus, Trash2, Plus,
+  Upload, X,
 } from "lucide-react";
 
 /* ══ TYPES ══ */
@@ -42,6 +43,55 @@ const SECTION_META: Record<string, {
 
 const ICON_OPTIONS = ["heart","shield","globe","star","map","users","award","zap","compass","camera"];
 
+/* ══ IMAGE UTILS ══ */
+
+/** Compresse et convertit un File en base64 (max ~800px, qualité 0.82) */
+function fileToBase64(file: File, maxPx = 1200, quality = 0.82): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error("Lecture du fichier échouée"));
+    reader.onload = (e) => {
+      const src = e.target?.result as string;
+      const img = new Image();
+      img.onerror = () => reject(new Error("Image invalide"));
+      img.onload = () => {
+        // Calcul des dimensions réduites
+        let { width, height } = img;
+        if (width > maxPx || height > maxPx) {
+          if (width >= height) {
+            height = Math.round((height * maxPx) / width);
+            width  = maxPx;
+          } else {
+            width  = Math.round((width * maxPx) / height);
+            height = maxPx;
+          }
+        }
+        const canvas = document.createElement("canvas");
+        canvas.width  = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d")!;
+        ctx.drawImage(img, 0, 0, width, height);
+        // JPEG pour les photos, PNG si transparence
+        const isTransparent = file.type === "image/png" || file.type === "image/gif";
+        const dataUrl = isTransparent
+          ? canvas.toDataURL("image/png")
+          : canvas.toDataURL("image/jpeg", quality);
+        resolve(dataUrl);
+      };
+      img.src = src;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+/** Retourne un résumé de la taille d'une chaîne base64 */
+function base64Size(b64: string): string {
+  const bytes = Math.round((b64.length * 3) / 4);
+  return bytes > 1024 * 1024
+    ? `${(bytes / (1024 * 1024)).toFixed(1)} Mo`
+    : `${Math.round(bytes / 1024)} Ko`;
+}
+
 /* ══ STYLES ══ */
 const CSS = `
   @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@400;500;600;700;800&display=swap');
@@ -53,7 +103,6 @@ const CSS = `
   @keyframes fadeUp  { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
   @keyframes slideIn { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: translateY(0); } }
 
-  /* ── Cards ── */
   .sec-card {
     background: white;
     border-radius: 16px;
@@ -66,7 +115,6 @@ const CSS = `
   .sec-card.inactive { opacity: .55; }
   .sec-card.open { border-color: #C7D2E8; box-shadow: 0 6px 28px rgba(5,51,102,.10); }
 
-  /* ── Topbar ── */
   .topbar {
     background: white;
     border-bottom: 1px solid #E8ECF4;
@@ -81,7 +129,6 @@ const CSS = `
     box-shadow: 0 1px 0 #E8ECF4;
   }
 
-  /* ── Buttons ── */
   .save-btn {
     display: inline-flex; align-items: center; gap: 8px;
     padding: 10px 22px;
@@ -123,7 +170,6 @@ const CSS = `
   }
   .add-btn:hover { border-color: #02AFCF; color: #02AFCF; background: #F0FAFF; }
 
-  /* ── Inputs ── */
   .field {
     width: 100%; padding: 10px 14px;
     border: 1.5px solid #E8ECF4; border-radius: 11px;
@@ -148,7 +194,6 @@ const CSS = `
     margin-bottom: 6px;
   }
 
-  /* ── Toggle ── */
   .toggle {
     position: relative; width: 42px; height: 23px;
     border-radius: 12px; border: none; cursor: pointer;
@@ -161,7 +206,6 @@ const CSS = `
     box-shadow: 0 1px 4px rgba(0,0,0,.22);
   }
 
-  /* ── WYSIWYG ── */
   .wy-wrap { border: 1.5px solid #E8ECF4; border-radius: 12px; overflow: hidden; }
   .wy-wrap:focus-within { border-color: #02AFCF; box-shadow: 0 0 0 3px rgba(2,175,207,.10); }
 
@@ -200,7 +244,6 @@ const CSS = `
   .wy-editor em { font-style:italic; }
   .wy-editor hr { border:none; border-top:1px solid #E8ECF4; margin:13px 0; }
 
-  /* ── Sub-item cards ── */
   .item-card {
     background: #F8FAFF; border-radius: 12px; padding: 14px;
     border: 1.5px solid #E8ECF4; margin-bottom: 10px;
@@ -208,14 +251,12 @@ const CSS = `
     animation: slideIn .18s ease both;
   }
 
-  /* ── Badge ── */
   .badge {
     display: inline-flex; align-items: center; gap: 4px;
     padding: 3px 9px; border-radius: 20px;
     font-size: 11px; font-weight: 700;
   }
 
-  /* ── Error / toast ── */
   .error-banner {
     display: flex; align-items: center; gap: 7px;
     padding: 8px 14px; background: #FEF2F2;
@@ -223,7 +264,6 @@ const CSS = `
     font-size: 12px; color: #DC2626;
   }
 
-  /* ── Icon picker ── */
   .icon-picker {
     display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px;
   }
@@ -231,15 +271,209 @@ const CSS = `
     padding: 4px 10px; border-radius: 8px;
     border: 1.5px solid #E8ECF4; background: white;
     font-size: 11px; font-weight: 700; cursor: pointer;
-    color: #374151; font-family: inherit; transition: all .13s;
+    color: #374151; font-family: inherit; transition: all .13px;
   }
   .icon-chip:hover    { border-color: #02AFCF; color: #02AFCF; }
   .icon-chip.selected { background: #053366; color: white; border-color: #053366; }
 
-  /* ── Scrollbar ── */
+  /* ── Upload zone ── */
+  .upload-zone {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 8px; padding: 20px; margin-top: 10px;
+    border: 2px dashed #C7D2E8; border-radius: 12px;
+    background: #F8FAFF; cursor: pointer; transition: all .18s;
+    text-align: center;
+  }
+  .upload-zone:hover { border-color: #02AFCF; background: #F0FAFF; }
+  .upload-zone.dragging { border-color: #02AFCF; background: #E8F9FC; }
+
+  .img-preview {
+    position: relative; margin-top: 10px;
+    border-radius: 10px; overflow: hidden;
+    border: 1.5px solid #E8ECF4; background: #F4F6FB;
+  }
+  .img-preview img { width: 100%; display: block; object-fit: cover; }
+  .img-preview-remove {
+    position: absolute; top: 7px; right: 7px;
+    background: rgba(0,0,0,.55); border: none; border-radius: 8px;
+    color: white; cursor: pointer; padding: 5px 8px;
+    display: flex; align-items: center; gap: 4px;
+    font-size: 11px; font-weight: 700; font-family: inherit;
+    transition: background .15s;
+  }
+  .img-preview-remove:hover { background: rgba(220,38,38,.85); }
+
+  .img-size-badge {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 2px 8px; background: #F0FDF4;
+    border: 1px solid #BBF7D0; border-radius: 6px;
+    font-size: 10px; font-weight: 700; color: #166534;
+  }
+
   *::-webkit-scrollbar { width: 4px; }
   *::-webkit-scrollbar-thumb { background: #E2E6F0; border-radius: 2px; }
 `;
+
+/* ══ IMAGE UPLOAD FIELD ══
+ * Stocke l'image en base64 directement dans image_url.
+ * Aucun bucket Supabase requis.
+ */
+function ImageUploadField({
+  value,
+  onChange,
+  label = "Image",
+  maxHeight = 180,
+}: {
+  value: string | null;
+  onChange: (v: string | null) => void;
+  label?: string;
+  maxHeight?: number;
+}) {
+  const [loading, setLoading]   = useState(false);
+  const [dragging, setDragging] = useState(false);
+  const [error, setError]       = useState<string | null>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const isBase64 = (v: string) => v.startsWith("data:");
+  const isUrl    = (v: string) => v.startsWith("http") || v.startsWith("/");
+
+  const processFile = async (file: File) => {
+    if (!file.type.startsWith("image/")) {
+      setError("Seules les images sont acceptées (jpg, png, gif, webp…)");
+      return;
+    }
+    // Limite soft : avertir si > 5 Mo avant compression
+    if (file.size > 5 * 1024 * 1024) {
+      setError("Fichier trop volumineux (max recommandé : 5 Mo). Compression en cours…");
+    } else {
+      setError(null);
+    }
+    setLoading(true);
+    try {
+      const b64 = await fileToBase64(file);
+      onChange(b64);
+      setError(null);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Erreur de conversion");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleFiles = (files: FileList | null) => {
+    if (files && files[0]) processFile(files[0]);
+  };
+
+  return (
+    <div>
+      <label className="field-label" style={{ display: "flex", alignItems: "center", gap: 5 }}>
+        <ImageIcon size={10} /> {label}
+      </label>
+
+      {/* URL manuelle */}
+      <input
+        className="field"
+        value={value && !isBase64(value) ? value : ""}
+        placeholder="https://example.com/image.jpg  (ou glissez / chargez une image ci-dessous)"
+        onChange={e => onChange(e.target.value || null)}
+      />
+
+      {/* Zone de dépôt */}
+      {!value && (
+        <div
+          className={`upload-zone ${dragging ? "dragging" : ""}`}
+          onClick={() => inputRef.current?.click()}
+          onDragOver={e => { e.preventDefault(); setDragging(true); }}
+          onDragLeave={() => setDragging(false)}
+          onDrop={e => {
+            e.preventDefault();
+            setDragging(false);
+            handleFiles(e.dataTransfer.files);
+          }}
+        >
+          {loading
+            ? <>
+                <Loader2 size={20} style={{ animation: "spin .8s linear infinite", color: "#02AFCF" }} />
+                <span style={{ fontSize: 12, color: "#6B7280" }}>Compression en cours…</span>
+              </>
+            : <>
+                <Upload size={20} style={{ color: "#02AFCF" }} />
+                <span style={{ fontSize: 13, fontWeight: 700, color: "#374151" }}>
+                  Glissez une image ou cliquez pour choisir
+                </span>
+                <span style={{ fontSize: 11, color: "#9CA3AF" }}>
+                  JPG, PNG, GIF, WebP — compressée automatiquement
+                </span>
+              </>
+          }
+        </div>
+      )}
+
+      {/* Input caché */}
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/*"
+        style={{ display: "none" }}
+        onChange={e => handleFiles(e.target.files)}
+      />
+
+      {/* Message d'erreur */}
+      {error && (
+        <div style={{ marginTop: 6, display: "flex", alignItems: "center", gap: 5, fontSize: 11, color: "#DC2626" }}>
+          <AlertCircle size={12} /> {error}
+        </div>
+      )}
+
+      {/* Aperçu */}
+      {value && !loading && (
+        <div className="img-preview" style={{ maxHeight }}>
+          <img
+            src={value}
+            alt="Aperçu"
+            style={{ maxHeight }}
+            onError={e => { (e.target as HTMLImageElement).style.display = "none"; }}
+          />
+          <div style={{ position: "absolute", bottom: 7, left: 7, display: "flex", gap: 6, alignItems: "center" }}>
+            {isBase64(value) && (
+              <span className="img-size-badge">
+                ✓ locale · {base64Size(value)}
+              </span>
+            )}
+            {isUrl(value) && (
+              <span className="img-size-badge" style={{ background: "#EFF6FF", borderColor: "#BFDBFE", color: "#1D4ED8" }}>
+                🔗 URL externe
+              </span>
+            )}
+          </div>
+          <button
+            className="img-preview-remove"
+            onClick={() => { onChange(null); setError(null); }}
+          >
+            <X size={11} /> Supprimer
+          </button>
+        </div>
+      )}
+
+      {/* Bouton "changer" quand image présente */}
+      {value && !loading && (
+        <button
+          style={{
+            marginTop: 8,
+            display: "inline-flex", alignItems: "center", gap: 6,
+            padding: "7px 14px", fontSize: 12, fontWeight: 600,
+            background: "#F3F4F6", border: "1px solid #D1D5DB",
+            borderRadius: 8, cursor: "pointer", color: "#374151",
+            fontFamily: "inherit",
+          }}
+          onClick={() => inputRef.current?.click()}
+        >
+          <Upload size={11} /> Changer l'image
+        </button>
+      )}
+    </div>
+  );
+}
 
 /* ══ WYSIWYG EDITOR ══ */
 function WysiwygEditor({ value, onChange, placeholder = "Commencez à écrire…" }: {
@@ -343,7 +577,6 @@ function SectionCard({
   const upd     = (p: Partial<Section>) => onUpdate({ ...sec, ...p });
   const updMeta = (p: Record<string, unknown>) => onUpdate({ ...sec, meta: { ...meta, ...p } });
 
-  /* ── helpers typed arrays ── */
   type StatItem   = { value: string; label: string };
   type ValueItem  = { icon: string; title: string; text: string };
   type TeamMember = { name: string; role: string; photo: string; bio: string };
@@ -360,12 +593,10 @@ function SectionCard({
         style={{ display:"flex", alignItems:"center", gap:12, padding:"14px 18px", cursor:"pointer", userSelect:"none" }}
         onClick={() => setOpen(o => !o)}
       >
-        {/* Icon */}
         <div style={{ width:38, height:38, borderRadius:11, background:info?.bg, display:"flex", alignItems:"center", justifyContent:"center", color:info?.color, flexShrink:0 }}>
           {info?.icon}
         </div>
 
-        {/* Info */}
         <div style={{ flex:1, minWidth:0 }}>
           <div style={{ display:"flex", alignItems:"center", gap:8, flexWrap:"wrap" }}>
             <span style={{ fontSize:14, fontWeight:800, color:"#111827" }}>{info?.label ?? sec.section}</span>
@@ -384,7 +615,6 @@ function SectionCard({
           <p style={{ fontSize:11.5, color:"#9CA3AF", marginTop:2 }}>{info?.desc}</p>
         </div>
 
-        {/* Controls */}
         <div style={{ display:"flex", alignItems:"center", gap:10, flexShrink:0 }}>
           <button
             className="toggle"
@@ -427,31 +657,17 @@ function SectionCard({
             />
           </div>
 
-          {/* Image URL — hero & team */}
-          {["hero","team"].includes(sec.section) && (
-            <div>
-              <label className="field-label" style={{ display:"flex", alignItems:"center", gap:5 }}>
-                <ImageIcon size={10}/> URL de l'image
-              </label>
-              <input
-                className="field"
-                value={sec.image_url ?? ""}
-                placeholder="https://example.com/image.jpg"
-                onChange={e => upd({ image_url: e.target.value })}
-              />
-              {sec.image_url && (
-                <div style={{ marginTop:8, height:72, borderRadius:10, overflow:"hidden", border:"1.5px solid #E8ECF4", background:"#F4F6FB" }}>
-                  <img
-                    src={sec.image_url} alt=""
-                    style={{ width:"100%", height:"100%", objectFit:"cover" }}
-                    onError={e => { (e.target as HTMLImageElement).style.display = "none"; }}
-                  />
-                </div>
-              )}
-            </div>
+          {/* ── IMAGE (hero & team) — base64, pas de bucket ── */}
+          {["hero", "team"].includes(sec.section) && (
+            <ImageUploadField
+              value={sec.image_url}
+              onChange={v => upd({ image_url: v })}
+              label={sec.section === "hero" ? "Image de fond (Hero)" : "Image de l'équipe"}
+              maxHeight={sec.section === "hero" ? 200 : 140}
+            />
           )}
 
-          {/* WYSIWYG — hero, mission, team, cta */}
+          {/* WYSIWYG */}
           {["hero","mission","team","cta"].includes(sec.section) && (
             <div>
               <label className="field-label" style={{ display:"flex", alignItems:"center", gap:5 }}>
@@ -529,8 +745,6 @@ function SectionCard({
                       }}
                     ><Trash2 size={13}/></button>
                   </div>
-
-                  {/* Titre */}
                   <input
                     className="meta-field"
                     value={item.title}
@@ -541,8 +755,6 @@ function SectionCard({
                       updMeta({ items });
                     }}
                   />
-
-                  {/* Description */}
                   <textarea
                     className="meta-field"
                     value={item.text}
@@ -554,8 +766,6 @@ function SectionCard({
                       updMeta({ items });
                     }}
                   />
-
-                  {/* Icon picker */}
                   <div>
                     <p style={{ fontSize:10.5, fontWeight:700, color:"#9CA3AF", textTransform:"uppercase", letterSpacing:".5px", marginBottom:6 }}>Icône</p>
                     <div className="icon-picker">
@@ -626,22 +836,17 @@ function SectionCard({
                     />
                   </div>
 
-                  <input
-                    className="meta-field"
-                    value={m.photo}
-                    placeholder="URL de la photo"
-                    onChange={e => {
+                  {/* Photo du membre — base64 aussi */}
+                  <ImageUploadField
+                    value={m.photo || null}
+                    onChange={v => {
                       const members = [...teamMembers];
-                      members[i] = { ...members[i], photo: e.target.value };
+                      members[i] = { ...members[i], photo: v ?? "" };
                       updMeta({ members });
                     }}
+                    label="Photo du membre"
+                    maxHeight={80}
                   />
-                  {m.photo && (
-                    <div style={{ height:60, width:60, borderRadius:10, overflow:"hidden", border:"1.5px solid #E8ECF4" }}>
-                      <img src={m.photo} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }}
-                        onError={e => { (e.target as HTMLImageElement).style.display="none"; }}/>
-                    </div>
-                  )}
 
                   <textarea
                     className="meta-field"
@@ -665,7 +870,7 @@ function SectionCard({
             </div>
           )}
 
-          {/* ── CTA fields ── */}
+          {/* ── CTA ── */}
           {sec.section === "cta" && (
             <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
               <div>
@@ -719,7 +924,7 @@ export default function AboutAdminClient({ initialSections }: { initialSections:
           title:      sec.title,
           subtitle:   sec.subtitle,
           content:    sec.content,
-          image_url:  sec.image_url,
+          image_url:  sec.image_url,   // base64 ou URL — stocké tel quel dans TEXT
           is_active:  sec.is_active,
           meta:       sec.meta,
           updated_at: new Date().toISOString(),
@@ -782,7 +987,6 @@ export default function AboutAdminClient({ initialSections }: { initialSections:
       {/* ── Content ── */}
       <div style={{ maxWidth:820, margin:"0 auto", padding:"28px 24px 100px", display:"flex", flexDirection:"column", gap:10 }}>
 
-        {/* Sections vides */}
         {sections.length === 0 && (
           <div style={{ textAlign:"center", padding:"80px 20px", color:"#94A3B8" }}>
             <LayoutTemplate size={40} style={{ margin:"0 auto 16px", opacity:.4 }}/>
@@ -795,11 +999,9 @@ export default function AboutAdminClient({ initialSections }: { initialSections:
           <SectionCard key={sec.id} sec={sec} onUpdate={updateSection} />
         ))}
 
-        {/* Tip */}
         {sections.length > 0 && (
           <div style={{ padding:"12px 16px", background:"#FFFBEB", border:"1.5px solid #FDE68A", borderRadius:12, fontSize:12, color:"#92400E", lineHeight:1.6 }}>
-            <strong>💡 Astuce :</strong> Cliquez sur une section pour l'ouvrir et modifier son contenu.
-            Le toggle active ou masque la section sur la page publique.
+            <strong>💡 Astuce :</strong> Les images sont compressées et stockées directement en base — aucun bucket Storage requis.
             Pensez à <strong>Enregistrer tout</strong> avant de quitter.
           </div>
         )}

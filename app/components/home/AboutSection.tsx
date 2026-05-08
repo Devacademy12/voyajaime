@@ -1,5 +1,9 @@
+"use client";
+
+import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { ArrowRight, Heart, ShieldCheck, Globe, Star, MapPin, Users } from "lucide-react";
+import { createClient } from "@/lib/supabaseClient";
 
 const ICON_MAP: Record<string, React.ReactNode> = {
   heart:  <Heart  size={20} strokeWidth={1.8} />,
@@ -11,10 +15,36 @@ const ICON_MAP: Record<string, React.ReactNode> = {
 };
 const COLORS = ["#02AFCF", "#7C3AED", "#059669", "#E11D48"];
 
+interface MissionData {
+  title: string | null;
+  subtitle: string | null;
+  content: string | null;
+}
+
+interface StatItem {
+  value: string;
+  label: string;
+}
+
+interface StatsData {
+  meta: { items?: StatItem[] };
+}
+
+interface ValueItem {
+  icon: string;
+  title: string;
+  text: string;
+}
+
+interface ValuesData {
+  title: string | null;
+  meta: { items?: ValueItem[] };
+}
+
 interface AboutSectionProps {
-  mission?: { title: string | null; subtitle: string | null; content: string | null } | null;
-  stats?:   { meta: { items?: { value: string; label: string }[] } } | null;
-  values?:  { title: string | null; meta: { items?: { icon: string; title: string; text: string }[] } } | null;
+  mission?: MissionData | null;
+  stats?: StatsData | null;
+  values?: ValuesData | null;
 }
 
 const CSS = `
@@ -60,7 +90,32 @@ const CSS = `
   }
 `;
 
-export default function AboutSection({ mission, stats, values }: AboutSectionProps) {
+export default function AboutSection() {
+  const [mission, setMission] = useState<MissionData | null>(null);
+  const [stats, setStats] = useState<StatsData | null>(null);
+  const [values, setValues] = useState<ValuesData | null>(null);
+  const supabase = useMemo(() => createClient(), []);
+
+  useEffect(() => {
+    const fetchAboutContent = async () => {
+      try {
+        const [missionRes, statsRes, valuesRes] = await Promise.all([
+          supabase.from("about_content").select("*").eq("section", "mission").single(),
+          supabase.from("about_content").select("*").eq("section", "stats").single(),
+          supabase.from("about_content").select("*").eq("section", "values").single(),
+        ]);
+
+        if (missionRes.data) setMission(missionRes.data);
+        if (statsRes.data) setStats(statsRes.data);
+        if (valuesRes.data) setValues(valuesRes.data);
+      } catch (error) {
+        console.error("Error fetching about content:", error);
+      }
+    };
+
+    fetchAboutContent();
+  }, [supabase]);
+
   const hasStats  = (stats?.meta?.items?.length  ?? 0) > 0;
   const hasValues = (values?.meta?.items?.length ?? 0) > 0;
 

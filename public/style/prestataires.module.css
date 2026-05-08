@@ -17,7 +17,7 @@
   color: #6B7280;
 }
 
-.ptab_on {
+.ptab.on {
   background: #2B96A8;
   color: white;
   border-color: #2B96A8;
@@ -67,40 +67,40 @@
   cursor: not-allowed;
 }
 
-.pbtn_green {
+.pbtn-green {
   background: #F0FDF4;
   color: #15803D;
 }
 
-.pbtn_green:hover:not(:disabled) {
+.pbtn-green:hover:not(:disabled) {
   background: #DCFCE7;
 }
 
-.pbtn_gray {
+.pbtn-gray {
   background: #F9FAFB;
   color: #374151;
   border: 1px solid #E5E7EB;
 }
 
-.pbtn_gray:hover:not(:disabled) {
+.pbtn-gray:hover:not(:disabled) {
   background: #F3F4F6;
 }
 
-.pbtn_red {
+.pbtn-red {
   background: #FEF2F2;
   color: #DC2626;
 }
 
-.pbtn_red:hover:not(:disabled) {
+.pbtn-red:hover:not(:disabled) {
   background: #FEE2E2;
 }
 
-.pbtn_teal {
+.pbtn-teal {
   background: rgba(43, 150, 168, 0.1);
   color: #2B96A8;
 }
 
-.pbtn_teal:hover:not(:disabled) {
+.pbtn-teal:hover:not(:disabled) {
   background: rgba(43, 150, 168, 0.18);
 }
 

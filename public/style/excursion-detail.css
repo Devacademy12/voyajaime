@@ -1,0 +1,144 @@
+/* Styles pour ExcursionDetailModal — UX améliorée */
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  padding: 1.25rem;
+}
+
+.excursion-detail-modal {
+  width: 100%;
+  max-width: 1024px;
+  max-height: 90vh;
+  background: #ffffff;
+  border-radius: 14px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 30px 80px rgba(2,6,23,0.2);
+  transform: translateY(0);
+  animation: modal-in .18s ease;
+}
+
+@keyframes modal-in { from { opacity: 0; transform: translateY(8px) scale(.995); } to { opacity: 1; transform: translateY(0) scale(1);} }
+
+/* Header (image) */
+.detail-header {
+  position: relative;
+  min-height: 220px;
+  background: linear-gradient(180deg, rgba(0,0,0,0.02), rgba(0,0,0,0.04));
+}
+
+.detail-image-slider {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.detail-main-image {
+  width: 100%;
+  height: 260px;
+  object-fit: cover;
+  display: block;
+}
+
+@media (max-width: 800px) {
+  .detail-main-image { height: 180px; }
+}
+
+.detail-thumbnails {
+  display: flex;
+  gap: 8px;
+  padding: 10px;
+  overflow-x: auto;
+  background: linear-gradient(180deg, rgba(255,255,255,0.9), rgba(255,255,255,0.95));
+}
+
+.detail-thumbnail {
+  width: 64px;
+  height: 44px;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 2px solid transparent;
+  cursor: pointer;
+  opacity: 0.85;
+  transition: transform .15s, border-color .15s, opacity .15s;
+}
+.detail-thumbnail:hover { transform: translateY(-4px); opacity: 1; }
+.detail-thumbnail.active { border-color: #2B96A8; box-shadow: 0 6px 18px rgba(43,150,168,0.12); opacity: 1; }
+
+.detail-no-image { height: 260px; display:flex; align-items:center; justify-content:center; color:#9CA3AF; }
+
+.detail-close-btn {
+  position: absolute;
+  right: 14px;
+  top: 14px;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: rgba(255,255,255,0.9);
+  border: 1px solid rgba(10,10,10,0.04);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 6px 18px rgba(2,6,23,0.06);
+}
+
+/* Body */
+.detail-body {
+  padding: 18px 20px;
+  overflow-y: auto;
+}
+
+.detail-title-section { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+.detail-title { margin:0; font-size:20px; font-weight:800; color:#0F172A; }
+.detail-rating { display:flex; align-items:center; gap:8px; color:#374151; font-weight:700; }
+.detail-reviews { color:#9CA3AF; font-weight:600; }
+
+.detail-meta-grid {
+  display:flex;
+  flex-wrap:wrap;
+  gap:10px 16px;
+  margin-top:12px;
+}
+.detail-meta-item { display:flex; gap:8px; align-items:center; color:#475569; font-size:0.92rem; }
+
+.detail-price-section { margin-top:14px; display:flex; align-items:baseline; gap:8px; }
+.detail-price { font-size:22px; color:#2B96A8; font-weight:900; }
+.detail-price-unit { color:#94A3B8; font-weight:700; font-size:0.9rem; }
+
+.detail-section { margin-top:18px; }
+.detail-section-title { display:flex; align-items:center; gap:8px; font-size:1rem; margin:0 0 8px; font-weight:800; color:#111827; }
+.detail-description, .detail-text { color:#374151; line-height:1.6; margin:0; }
+
+.detail-tags { display:flex; gap:8px; flex-wrap:wrap; }
+.detail-tag { background:#F1F9FA; border:1px solid #E6F3F1; color:#09524A; padding:6px 10px; border-radius:999px; font-weight:700; display:flex; gap:6px; align-items:center; }
+.detail-tag-lang { background:#FFF7ED; border:1px solid #FCE7B2; color:#7A4C03; padding:6px 10px; border-radius:999px; font-weight:700; }
+
+.detail-list { margin:0; padding-left:1.1rem; color:#374151; }
+.detail-list li { margin-bottom:6px; }
+
+.detail-important { background: #FFFBEB; border: 1px solid #FDE68A; padding: 12px; border-radius: 10px; }
+
+/* Footer */
+.detail-footer { display:flex; gap:10px; padding:14px 20px; border-top:1px solid #F1F5F9; background:#fff; justify-content:flex-end; }
+.detail-close-footer { padding:10px 14px; background:#fff; border:1px solid #E5E7EB; border-radius:10px; cursor:pointer; font-weight:700; }
+.detail-add-btn { padding:10px 14px; background:#2B96A8; color:#fff; border-radius:10px; border:none; cursor:pointer; display:flex; gap:8px; align-items:center; font-weight:800; box-shadow:0 6px 18px rgba(43,150,168,0.18); }
+
+/* Responsive */
+@media (max-width: 900px) {
+  .excursion-detail-modal { max-width: 720px; }
+  .detail-body { padding: 14px; }
+  .detail-meta-grid { gap:8px 10px; }
+}
+
+@media (max-width: 520px) {
+  .excursion-detail-modal { width: 100%; height: 100%; border-radius: 0; max-height: 100vh; }
+  .detail-main-image { height: 140px; }
+  .detail-thumbnails { padding: 8px; }
+  .detail-footer { position: sticky; bottom: 0; left: 0; right: 0; }
+}

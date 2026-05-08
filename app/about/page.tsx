@@ -26,167 +26,413 @@ interface Section {
   content: string | null; image_url: string | null; is_active: boolean;
   position: number; meta: Record<string, unknown>;
 }
-interface BlogPost {
-  id: string; title: string; slug: string; excerpt: string | null;
-  cover_image: string | null; category: string | null; published_at: string | null;
-}
 
 const ICON_MAP: Record<string, React.ReactNode> = {
-  heart:  <Heart  size={20} color="#374151" strokeWidth={1.8} />,
-  shield: <ShieldCheck size={20} color="#374151" strokeWidth={1.8} />,
-  globe:  <Globe  size={20} color="#374151" strokeWidth={1.8} />,
-  star:   <Star   size={20} color="#374151" strokeWidth={1.8} />,
-  map:    <MapPin size={20} color="#374151" strokeWidth={1.8} />,
-  users:  <Users  size={20} color="#374151" strokeWidth={1.8} />,
+  heart:  <Heart  size={20} color="#fff" strokeWidth={1.8} />,
+  shield: <ShieldCheck size={20} color="#fff" strokeWidth={1.8} />,
+  globe:  <Globe  size={20} color="#fff" strokeWidth={1.8} />,
+  star:   <Star   size={20} color="#fff" strokeWidth={1.8} />,
+  map:    <MapPin size={20} color="#fff" strokeWidth={1.8} />,
+  users:  <Users  size={20} color="#fff" strokeWidth={1.8} />,
 };
-
-const PLACEHOLDER_POSTS: BlogPost[] = [
-  { id:"1", slug:"hidden-gems",  title:'Top 10 Hidden Gems: Uncover Top Secret Destinations Off the Beaten Path"', excerpt:"Browse through our handpicked selection of destinations and tour packages, each designed to inspire and delight.", cover_image:null, category:"Solo Travel", published_at:null },
-  { id:"2", slug:"beach-1", title:"Unveiling the Best Beach Destinations", excerpt:"Browse through our handpicked selection of destinations", cover_image:null, category:"Solo Travel", published_at:null },
-  { id:"3", slug:"beach-2", title:"Unveiling the Best Beach Destinations", excerpt:"Browse through our handpicked selection of destinations", cover_image:null, category:"Solo Travel", published_at:null },
-  { id:"4", slug:"beach-3", title:"Unveiling the Best Beach Destinations", excerpt:"Browse through our handpicked selection of destinations", cover_image:null, category:"Solo Travel", published_at:null },
-  { id:"5", slug:"beach-4", title:"Unveiling the Best Beach Destinations", excerpt:"Browse through our handpicked selection of destinations", cover_image:null, category:"Solo Travel", published_at:null },
-];
 
 const CSS = `
   @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=DM+Sans:wght@400;500;600;700;800&display=swap');
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: 'DM Sans', system-ui, sans-serif; background: #ffffff; color: #111827; }
 
-  @keyframes fadeUp { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:translateY(0); } }
-  .fu  { animation: fadeUp .6s ease both; }
-  .fu1 { animation-delay: .05s; } .fu2 { animation-delay: .15s; } .fu3 { animation-delay: .25s; } .fu4 { animation-delay: .35s; }
+  /* ══════════════════════════════
+     ANIMATIONS
+  ══════════════════════════════ */
 
-  /* ── Rich content ── */
+  /* Hero d'entrée */
+  @keyframes heroFadeUp {
+    from { opacity:0; transform:translateY(36px); }
+    to   { opacity:1; transform:translateY(0); }
+  }
+  @keyframes heroSlideRight {
+    from { opacity:0; transform:translateX(-28px); }
+    to   { opacity:1; transform:translateX(0); }
+  }
+  @keyframes heroImgReveal {
+    from { opacity:0; transform:translateY(24px) scale(.96); }
+    to   { opacity:1; transform:translateY(0) scale(1); }
+  }
+  @keyframes heroBadgeIn {
+    from { opacity:0; transform:translateX(-16px) scale(.9); }
+    to   { opacity:1; transform:translateX(0) scale(1); }
+  }
+
+  /* Points clignotants */
+  @keyframes dotPulse   { 0%,100%{opacity:1;transform:scale(1);}  50%{opacity:.4;transform:scale(.75);} }
+  @keyframes dotPulse2  { 0%,100%{opacity:.4;transform:scale(.75);} 50%{opacity:1;transform:scale(1);}  }
+
+  /* Pulse bouton CTA */
+  @keyframes ctaPulse {
+    0%,100% { box-shadow:0 4px 20px rgba(2,175,207,.35); }
+    50%     { box-shadow:0 8px 36px rgba(2,175,207,.6); }
+  }
+
+  /* Stats pop-in */
+  @keyframes countUp {
+    from { opacity:0; transform:translateY(16px) scale(.85); }
+    to   { opacity:1; transform:translateY(0) scale(1); }
+  }
+
+  /* Scroll reveal générique */
+  @keyframes revealUp {
+    from { opacity:0; transform:translateY(28px); }
+    to   { opacity:1; transform:translateY(0); }
+  }
+
+  /* Trait décoratif */
+  @keyframes lineGrow {
+    from { transform:scaleX(0); }
+    to   { transform:scaleX(1); }
+  }
+
+  /* Shimmer (carte équipe) */
+  @keyframes shimmer {
+    0%   { background-position:-400px 0; }
+    100% { background-position:400px 0; }
+  }
+
+  /* ══════════════════════════════
+     SCROLL REVEAL
+  ══════════════════════════════ */
+  .reveal {
+    opacity:0;
+    transform:translateY(28px);
+    transition:opacity .65s ease, transform .65s ease;
+  }
+  .reveal.visible {
+    opacity:1;
+    transform:translateY(0);
+  }
+  .reveal-delay-1 { transition-delay:.08s; }
+  .reveal-delay-2 { transition-delay:.16s; }
+  .reveal-delay-3 { transition-delay:.24s; }
+  .reveal-delay-4 { transition-delay:.32s; }
+
+  /* ══════════════════════════════
+     HERO
+  ══════════════════════════════ */
+  .hero-badge {
+    display:inline-flex; align-items:center; gap:8px;
+    padding:7px 16px;
+    background:linear-gradient(135deg,#EFF9FC,#D6F3FA);
+    border:1px solid #A7E3F0; border-radius:24px;
+    font-size:11px; font-weight:700; color:#053366;
+    letter-spacing:.6px; text-transform:uppercase; margin-bottom:18px;
+    animation:heroBadgeIn .55s cubic-bezier(.34,1.56,.64,1) both;
+  }
+  .hero-badge-dot {
+    width:7px; height:7px; border-radius:50%; background:#02AFCF;
+    animation:dotPulse 1.8s infinite;
+    display:inline-block;
+  }
+  .hero-badge-dot2 {
+    width:5px; height:5px; border-radius:50%; background:#02AFCF; opacity:.5;
+    animation:dotPulse2 1.8s infinite;
+    display:inline-block; margin-left:-2px;
+  }
+
+  .hero-title {
+    font-family:'Playfair Display',serif;
+    font-size:clamp(36px,5vw,64px);
+    font-weight:900; color:#053366;
+    letter-spacing:-2px; line-height:1.04;
+    margin-bottom:20px;
+    animation:heroFadeUp .7s .1s ease both;
+  }
+  .hero-sub {
+    font-size:17px; color:#6B7280; line-height:1.72;
+    max-width:480px; margin-bottom:24px;
+    animation:heroFadeUp .7s .22s ease both;
+  }
+  .hero-content-wrap {
+    animation:heroSlideRight .7s .05s ease both;
+  }
+  .hero-img-frame {
+    border-radius:18px; overflow:hidden;
+    border:1px solid #E5E7EB;
+    box-shadow:0 28px 72px rgba(5,51,102,.10),0 6px 20px rgba(5,51,102,.07);
+    animation:heroImgReveal .8s .15s cubic-bezier(.34,1.56,.64,1) both;
+    transition:transform .4s cubic-bezier(.34,1.56,.64,1), box-shadow .4s;
+  }
+  .hero-img-frame:hover {
+    transform:translateY(-7px) scale(1.012);
+    box-shadow:0 36px 80px rgba(5,51,102,.14),0 10px 28px rgba(5,51,102,.09);
+  }
+  .hero-img-frame img {
+    display:block; width:100%; object-fit:cover;
+    transition:transform .5s ease;
+  }
+  .hero-img-frame:hover img { transform:scale(1.04); }
+
+  /* ══════════════════════════════
+     RICH CONTENT
+  ══════════════════════════════ */
   .rich-content p          { margin-bottom:14px; line-height:1.85; font-size:16px; color:#4B5563; }
   .rich-content h1         { font-family:'Playfair Display',serif; font-size:28px; font-weight:900; color:#111827; margin-bottom:14px; }
   .rich-content h2         { font-family:'Playfair Display',serif; font-size:21px; font-weight:700; color:#111827; margin-bottom:10px; }
   .rich-content ul         { padding-left:20px; margin-bottom:14px; }
   .rich-content ul li      { margin-bottom:6px; line-height:1.75; color:#4B5563; }
-  .rich-content blockquote { border-left:3px solid #D1D5DB; padding:12px 18px; background:#F9FAFB; border-radius:0 8px 8px 0; margin:16px 0; font-style:italic; color:#6B7280; }
-  .rich-content a          { color:#111827; text-decoration:underline; text-underline-offset:2px; }
-  .rich-content strong     { font-weight:700; color:#111827; }
+  .rich-content blockquote { border-left:3px solid #02AFCF; padding:12px 18px; background:#EFF9FC; border-radius:0 8px 8px 0; margin:16px 0; font-style:italic; color:#6B7280; }
+  .rich-content a          { color:#02AFCF; text-decoration:underline; text-underline-offset:2px; }
+  .rich-content strong     { font-weight:700; color:#053366; }
   .rich-content hr         { border:none; border-top:1px solid #E5E7EB; margin:20px 0; }
 
-  /* ── Divider accent ── */
-  .divider { width:32px; height:2px; background:#111827; border-radius:2px; }
+  /* ══════════════════════════════
+     DIVIDER ACCENT
+  ══════════════════════════════ */
+  .divider {
+    width:32px; height:2px; background:#111827; border-radius:2px;
+    display:inline-block;
+  }
+  .divider-accent {
+    width:32px; height:2px; border-radius:2px;
+    background:linear-gradient(90deg,#02AFCF,#053366);
+    display:inline-block;
+    transform-origin:left;
+    animation:lineGrow .5s ease both;
+  }
 
-  /* ── Stat cards ── */
+  /* ══════════════════════════════
+     STAT CARDS
+  ══════════════════════════════ */
   .stat-card {
     text-align:center; padding:32px 20px;
-    border-radius:12px; background:#F9FAFB;
-    border:1px solid #E5E7EB; transition:all .2s;
+    border-radius:14px; background:#ffffff;
+    border:1px solid #E5E7EB;
+    position:relative; overflow:hidden;
+    cursor:default;
+    transition:transform .35s cubic-bezier(.34,1.56,.64,1), border-color .3s, box-shadow .3s;
   }
-  .stat-card:hover { background:#F3F4F6; border-color:#D1D5DB; }
+  .stat-card::before {
+    content:''; position:absolute; top:0; left:0; right:0; height:3px;
+    background:linear-gradient(90deg,#02AFCF,#053366);
+    transform:scaleX(0); transform-origin:left;
+    transition:transform .4s ease;
+  }
+  .stat-card::after {
+    content:''; position:absolute; bottom:-60px; right:-60px;
+    width:120px; height:120px; border-radius:50%;
+    background:rgba(2,175,207,.05);
+    transition:all .5s ease;
+  }
+  .stat-card:hover {
+    transform:translateY(-8px);
+    border-color:#02AFCF;
+    box-shadow:0 18px 44px rgba(2,175,207,.13),0 4px 14px rgba(2,175,207,.08);
+  }
+  .stat-card:hover::before { transform:scaleX(1); }
+  .stat-card:hover::after  { width:280px; height:280px; bottom:-110px; right:-110px; }
 
-  /* ── Value cards ── */
+  .stat-card:nth-child(1) { animation:countUp .55s .10s ease both; }
+  .stat-card:nth-child(2) { animation:countUp .55s .20s ease both; }
+  .stat-card:nth-child(3) { animation:countUp .55s .30s ease both; }
+  .stat-card:nth-child(4) { animation:countUp .55s .40s ease both; }
+
+  /* ══════════════════════════════
+     VALUE CARDS
+  ══════════════════════════════ */
   .value-card {
-    padding:28px; border-radius:12px;
-    background:white; border:1px solid #E5E7EB;
-    transition:all .2s;
+    padding:28px; border-radius:14px;
+    background:white; border:1.5px solid #E5E7EB;
+    position:relative; overflow:hidden;
+    cursor:default;
+    transition:transform .35s cubic-bezier(.34,1.56,.64,1), border-color .3s, box-shadow .3s;
   }
-  .value-card:hover { border-color:#9CA3AF; box-shadow:0 4px 16px rgba(0,0,0,.06); }
+  .value-card::after {
+    content:''; position:absolute; bottom:-50px; right:-50px;
+    width:100px; height:100px; border-radius:50%;
+    background:rgba(2,175,207,.06);
+    transition:all .5s ease;
+  }
+  .value-card:hover {
+    border-color:#02AFCF;
+    transform:translateY(-6px) scale(1.018);
+    box-shadow:0 14px 38px rgba(2,175,207,.12);
+  }
+  .value-card:hover::after { width:260px; height:260px; bottom:-100px; right:-100px; }
 
-  /* ── Team cards ── */
+  .value-icon-wrap {
+    width:46px; height:46px; border-radius:11px;
+    background:#02AFCF;
+    display:flex; align-items:center; justify-content:center; margin-bottom:16px;
+    transition:transform .35s cubic-bezier(.34,1.56,.64,1), background .3s;
+    box-shadow:0 4px 12px rgba(2,175,207,.28);
+  }
+  .value-card:hover .value-icon-wrap {
+    background:#053366;
+    transform:scale(1.14) rotate(-7deg);
+    box-shadow:0 6px 18px rgba(5,51,102,.22);
+  }
+
+  /* ══════════════════════════════
+     TEAM CARDS
+  ══════════════════════════════ */
   .team-card {
-    background:white; border-radius:12px;
-    overflow:hidden; border:1px solid #E5E7EB;
-    transition:all .2s;
+    background:white; border-radius:14px; overflow:hidden;
+    border:1px solid #E5E7EB;
+    transition:transform .35s cubic-bezier(.34,1.56,.64,1), box-shadow .35s, border-color .3s;
   }
-  .team-card:hover { border-color:#9CA3AF; box-shadow:0 4px 16px rgba(0,0,0,.06); }
+  .team-card:hover {
+    transform:translateY(-10px);
+    box-shadow:0 28px 64px rgba(5,51,102,.12),0 6px 18px rgba(5,51,102,.07);
+    border-color:#C8EDF5;
+  }
+  .team-card .photo-wrap { overflow:hidden; }
+  .team-card .photo-wrap img { transition:transform .5s ease; display:block; }
+  .team-card:hover .photo-wrap img { transform:scale(1.06); }
+  .team-card-avatar {
+    width:100%; display:flex; align-items:center; justify-content:center;
+    background:linear-gradient(135deg,#E0F7FC,#EEF2FF);
+    transition:background .3s;
+  }
+  .team-card:hover .team-card-avatar { background:linear-gradient(135deg,#D0F2F9,#E0E7FF); }
 
-  /* ── CTA button ── */
+  /* ══════════════════════════════
+     CTA BUTTON
+  ══════════════════════════════ */
   .cta-btn {
     display:inline-flex; align-items:center; gap:10px;
     padding:16px 32px; background:#02AFCF; color:white;
-    border-radius:10px; font-size:15px; font-weight:700;
-    text-decoration:none; transition:all .2s; letter-spacing:-.1px;
+    border-radius:12px; font-size:15px; font-weight:700;
+    text-decoration:none;
+    transition:all .3s cubic-bezier(.34,1.56,.64,1);
+    letter-spacing:-.1px;
+    animation:ctaPulse 2.8s infinite;
   }
-  .cta-btn:hover { background:#053366; transform:translateY(-1px); gap:14px; }
-
-  /* ── Blog ── */
-  .blog-layout {
-    display:grid;
-    grid-template-columns:1fr 1fr;
-    gap:40px;
-    align-items:start;
-  }
-  .blog-featured {
-    display:flex; flex-direction:column;
-    text-decoration:none; color:inherit;
-  }
-  .blog-featured-img-wrap {
-    width:100%; overflow:hidden; background:#F3F4F6;
-  }
-  .blog-featured-img {
-    width:100%; height:260px; object-fit:cover; display:block;
-    transition:transform .3s;
-  }
-  .blog-featured:hover .blog-featured-img { transform:scale(1.02); }
-
-  .blog-featured-body { padding:20px 0 0; }
-  .blog-featured-title {
-    font-family:'Playfair Display',serif;
-    font-size:20px; font-weight:900; color:#111827;
-    line-height:1.28; margin-bottom:10px; letter-spacing:-.2px;
+  .cta-btn:hover {
+    background:#053366;
+    transform:translateY(-3px) scale(1.04);
+    gap:16px;
+    box-shadow:0 10px 30px rgba(5,51,102,.28);
+    animation:none;
   }
 
-  .blog-small-grid {
-    display:grid; grid-template-columns:1fr 1fr; gap:20px;
-  }
-  .blog-small-card {
-    display:flex; flex-direction:column;
-    text-decoration:none; color:inherit;
-  }
-  .blog-small-img-wrap { width:100%; overflow:hidden; background:#F3F4F6; }
-  .blog-small-img {
-    width:100%; height:136px; object-fit:cover; display:block;
-    transition:transform .3s;
-  }
-  .blog-small-card:hover .blog-small-img { transform:scale(1.03); }
-  .blog-small-body { padding:10px 0 0; }
-  .blog-small-title {
-    font-family:'Playfair Display',serif;
-    font-size:14px; font-weight:800; color:#111827;
-    line-height:1.32; margin-bottom:6px;
-  }
-
-  .blog-tag    { display:block; font-size:11px; font-weight:700; color:#6B7280; letter-spacing:.4px; margin-bottom:7px; text-transform:uppercase; }
-  .blog-excerpt { font-size:13px; color:#6B7280; line-height:1.65; }
-
-  /* ── Section label ── */
+  /* ══════════════════════════════
+     SECTION LABEL
+  ══════════════════════════════ */
   .section-label {
     font-size:11px; font-weight:800; color:#9CA3AF;
     text-transform:uppercase; letter-spacing:2.5px;
   }
 
-  /* ── Responsive ── */
+  /* ══════════════════════════════
+     HERO TEXT CARD
+  ══════════════════════════════ */
+  .hero-text-card {
+    background:#ffffff;
+    border:1.5px solid #E5E7EB;
+    border-radius:20px;
+    padding:44px 44px 40px;
+    position:relative;
+    overflow:hidden;
+    box-shadow:0 8px 32px rgba(5,51,102,.07),0 2px 8px rgba(5,51,102,.04);
+    animation:heroSlideRight .7s .05s ease both;
+  }
+  /* Coin dégradé décoratif */
+  .hero-text-card::before {
+    content:'';
+    position:absolute; top:0; left:0;
+    width:80px; height:80px;
+    background:linear-gradient(135deg,rgba(2,175,207,.12),transparent);
+    border-radius:0 0 80px 0;
+    pointer-events:none;
+  }
+  /* Trait accent en haut */
+  .hero-text-card::after {
+    content:'';
+    position:absolute; top:0; left:0; right:0; height:3px;
+    background:linear-gradient(90deg,#02AFCF,#053366,transparent);
+    border-radius:20px 20px 0 0;
+  }
+
+  /* ══════════════════════════════
+     MISSION CARD
+  ══════════════════════════════ */
+  .mission-card {
+    background:#ffffff;
+    border:1.5px solid #E5E7EB;
+    border-radius:20px;
+    padding:52px 52px 48px;
+    position:relative;
+    overflow:hidden;
+    box-shadow:0 10px 36px rgba(5,51,102,.07),0 2px 10px rgba(5,51,102,.04);
+    transition:box-shadow .3s, border-color .3s;
+  }
+  .mission-card:hover {
+    border-color:#C8EDF5;
+    box-shadow:0 16px 48px rgba(2,175,207,.10),0 4px 16px rgba(2,175,207,.06);
+  }
+  /* Accent gauche */
+  .mission-card::before {
+    content:'';
+    position:absolute; top:0; bottom:0; left:0; width:4px;
+    background:linear-gradient(180deg,#02AFCF,#053366);
+    border-radius:20px 0 0 20px;
+  }
+  /* Cercle décoratif fond */
+  .mission-card::after {
+    content:'';
+    position:absolute; bottom:-80px; right:-80px;
+    width:220px; height:220px; border-radius:50%;
+    background:radial-gradient(circle,rgba(2,175,207,.07) 0%,transparent 70%);
+    pointer-events:none;
+    transition:all .5s ease;
+  }
+  .mission-card:hover::after {
+    width:300px; height:300px; bottom:-120px; right:-120px;
+  }
+
+  /* ══════════════════════════════
+     MISSION ACCENT LINE
+  ══════════════════════════════ */
+  .mission-line {
+    width:48px; height:3px; border-radius:2px;
+    background:linear-gradient(90deg,#02AFCF,#053366);
+    margin-bottom:20px;
+    transform-origin:left;
+  }
+  .mission-line.visible { animation:lineGrow .6s .1s ease both; }
+
+  /* ══════════════════════════════
+     RESPONSIVE
+  ══════════════════════════════ */
   @media(max-width:900px){
-    .blog-layout      { grid-template-columns:1fr!important; gap:28px; }
-    .stats-grid       { grid-template-columns:1fr 1fr!important; }
-    .values-grid      { grid-template-columns:1fr 1fr!important; }
-    .team-grid        { grid-template-columns:1fr 1fr!important; }
+    .stats-grid  { grid-template-columns:1fr 1fr!important; }
+    .values-grid { grid-template-columns:1fr 1fr!important; }
+    .team-grid   { grid-template-columns:1fr 1fr!important; }
+    .hero-grid   { grid-template-columns:1fr!important; }
   }
   @media(max-width:560px){
-    .blog-small-grid  { grid-template-columns:1fr; }
-    .values-grid      { grid-template-columns:1fr!important; }
-    .team-grid        { grid-template-columns:1fr!important; }
-    .stats-grid       { grid-template-columns:1fr!important; }
+    .values-grid { grid-template-columns:1fr!important; }
+    .team-grid   { grid-template-columns:1fr!important; }
+    .stats-grid  { grid-template-columns:1fr!important; }
   }
 `;
 
-/* ── Image placeholder ── */
-function BlogImgPlaceholder({ style }: { style?: React.CSSProperties }) {
-  return (
-    <div style={{ background:"#F3F4F6", display:"flex", alignItems:"center", justifyContent:"center", width:"100%", ...style }}>
-      <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
-        <rect width="32" height="32" rx="6" fill="#E5E7EB"/>
-        <path d="M4 24l8-9 5 5 4-4 7 8H4z" fill="#D1D5DB"/>
-        <circle cx="22" cy="10" r="3.5" fill="#D1D5DB"/>
-      </svg>
-    </div>
-  );
-}
+const SCROLL_REVEAL_SCRIPT = `
+(function(){
+  var els = document.querySelectorAll('.reveal');
+  if(!('IntersectionObserver' in window)){
+    els.forEach(function(e){ e.classList.add('visible'); });
+    return;
+  }
+  var io = new IntersectionObserver(function(entries){
+    entries.forEach(function(entry){
+      if(entry.isIntersecting){
+        entry.target.classList.add('visible');
+        io.unobserve(entry.target);
+      }
+    });
+  },{ threshold:0.13, rootMargin:'0px 0px -40px 0px' });
+  els.forEach(function(e){ io.observe(e); });
+})();
+`;
 
 export default async function AboutPage() {
   const supabase = await createServerSupabaseClient();
@@ -197,17 +443,6 @@ export default async function AboutPage() {
     .eq("is_active", true)
     .order("position", { ascending: true });
 
-  let posts: BlogPost[] = PLACEHOLDER_POSTS;
-  try {
-    const { data: blogData } = await supabase
-      .from("blog_posts")
-      .select("id,title,slug,excerpt,cover_image,category,published_at")
-      .eq("published", true)
-      .order("published_at", { ascending: false })
-      .limit(5);
-    if (blogData && blogData.length > 0) posts = blogData as BlogPost[];
-  } catch { /* table inexistante */ }
-
   const get = (s: string) => sections?.find((x: Section) => x.section === s) as Section | undefined;
   const hero    = get("hero");
   const mission = get("mission");
@@ -215,9 +450,6 @@ export default async function AboutPage() {
   const values  = get("values");
   const team    = get("team");
   const cta     = get("cta");
-
-  const featured   = posts[0];
-  const smallCards = posts.slice(1, 5);
 
   const jsonLd = {
     "@context":"https://schema.org","@type":"TravelAgency",
@@ -233,48 +465,59 @@ export default async function AboutPage() {
       <TouristeNav />
       <div style={{ paddingTop:64 }} />
 
-      {/* ══ HERO ══ */}
+      {/* ══════════════════════════════
+          HERO  — Animation d'entrée
+      ══════════════════════════════ */}
       {hero && (
         <section
           aria-label="Présentation"
-          style={{ background:"#F9FAFB", borderBottom:"1px solid #E5E7EB", padding:"80px 40px" }}
+          style={{ background:"#F9FAFB", borderBottom:"1px solid #E5E7EB", padding:"88px 40px" }}
         >
           <div style={{ maxWidth:1100, margin:"0 auto" }}>
-           
+            <div
+              className="hero-grid"
+              style={{
+                display:"grid",
+                gridTemplateColumns: hero.image_url ? "1fr 1fr" : "1fr",
+                gap:72,
+                alignItems:"center",
+                maxWidth: hero.image_url ? "100%" : 720,
+              }}
+            >
+              {/* Texte — carte animée depuis la gauche */}
+              <div className="hero-text-card">
+                <div className="hero-badge">
+                  <span className="hero-badge-dot" />
+                  <span className="hero-badge-dot2" />
+                  À propos de VoyajAime
+                </div>
 
-            <div style={{ display:"grid", gridTemplateColumns: hero.image_url ? "1fr 1fr" : "1fr", gap:64, alignItems:"center", maxWidth: hero.image_url ? "100%" : 720 }}>
-              <div>
-                <p className="fu fu1 section-label" style={{ marginBottom:16 }}>À propos de VoyajAime</p>
-                <h1
-                  className="fu fu2"
-                  style={{
-                    fontFamily:"'Playfair Display',serif",
-                    fontSize:"clamp(36px,5vw,60px)",
-                    fontWeight:900,
-                    color:"#053366",
-                    letterSpacing:"-2px",
-                    lineHeight:1.06,
-                    marginBottom:20,
-                  }}
-                >
+                <h1 className="hero-title">
                   {hero.title}
                 </h1>
+
                 {hero.subtitle && (
-                  <p className="fu fu3" style={{ fontSize:17, color:"#6B7280", lineHeight:1.7, marginBottom:24, maxWidth:480 }}>
+                  <p className="hero-sub">
                     {hero.subtitle}
                   </p>
                 )}
+
                 {hero.content && (
-                  <div className="fu fu4 rich-content" dangerouslySetInnerHTML={{ __html: hero.content }} />
+                  <div
+                    className="rich-content"
+                    style={{ animation:"heroFadeUp .7s .34s ease both", opacity:0, animationFillMode:"forwards" }}
+                    dangerouslySetInnerHTML={{ __html: hero.content }}
+                  />
                 )}
               </div>
 
+              {/* Image — pop depuis le bas */}
               {hero.image_url && (
-                <div style={{ borderRadius:12, overflow:"hidden", border:"1px solid #E5E7EB" }}>
+                <div className="hero-img-frame" style={{ height:400 }}>
                   <img
                     src={hero.image_url}
                     alt={hero.title ?? "VoyajAime"}
-                    style={{ width:"100%", height:380, objectFit:"cover", display:"block" }}
+                    style={{ height:400, width:"100%" }}
                   />
                 </div>
               )}
@@ -283,45 +526,87 @@ export default async function AboutPage() {
         </section>
       )}
 
-      {/* ══ MISSION ══ */}
+      {/* ══════════════════════════════
+          MISSION
+      ══════════════════════════════ */}
       {mission && (
-        <section aria-labelledby="mission-heading" style={{ padding:"80px 40px", background:"#ffffff" }}>
+        <section
+          aria-labelledby="mission-heading"
+          className="reveal"
+          style={{ padding:"88px 40px", background:"#F9FAFB" }}
+        >
           <div style={{ maxWidth:860, margin:"0 auto" }}>
-            <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:14 }}>
-              <div className="divider" />
-              <p className="section-label">Notre mission</p>
+            <div className="mission-card">
+              {/* Trait dégradé animé */}
+              <div className="mission-line reveal" style={{ marginBottom:14 }} />
+
+              <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:14 }}>
+                <p className="section-label">Notre mission</p>
+              </div>
+
+              {mission.title && (
+                <h2
+                  id="mission-heading"
+                  style={{
+                    fontFamily:"'Playfair Display',serif",
+                    fontSize:"clamp(24px,3vw,40px)",
+                    fontWeight:900, color:"#053366",
+                    letterSpacing:"-1px", marginBottom:12, lineHeight:1.12,
+                  }}
+                >
+                  {mission.title}
+                </h2>
+              )}
+              {mission.subtitle && (
+                <p style={{ fontSize:17, color:"#6B7280", marginBottom:24, lineHeight:1.65 }}>
+                  {mission.subtitle}
+                </p>
+              )}
+              {mission.content && (
+                <div className="rich-content" dangerouslySetInnerHTML={{ __html: mission.content }} />
+              )}
             </div>
-            {mission.title && (
-              <h2 id="mission-heading" style={{ fontFamily:"'Playfair Display',serif", fontSize:"clamp(24px,3vw,40px)", fontWeight:900, color:"#053366", letterSpacing:"-1px", marginBottom:12, lineHeight:1.12 }}>
-                {mission.title}
-              </h2>
-            )}
-            {mission.subtitle && (
-              <p style={{ fontSize:17, color:"#6B7280", marginBottom:24, lineHeight:1.65 }}>{mission.subtitle}</p>
-            )}
-            {mission.content && (
-              <div className="rich-content" dangerouslySetInnerHTML={{ __html: mission.content }} />
-            )}
           </div>
         </section>
       )}
 
-      {/* ══ STATS ══ */}
+      {/* ══════════════════════════════
+          STATS
+      ══════════════════════════════ */}
       {stats && (stats.meta?.items as { value:string; label:string }[])?.length > 0 && (
-        <section aria-labelledby="stats-heading" style={{ padding:"72px 40px", background:"#F9FAFB", borderTop:"1px solid #E5E7EB", borderBottom:"1px solid #E5E7EB" }}>
+        <section
+          aria-labelledby="stats-heading"
+          className="reveal"
+          style={{ padding:"80px 40px", background:"#F9FAFB", borderTop:"1px solid #E5E7EB", borderBottom:"1px solid #E5E7EB" }}
+        >
           <div style={{ maxWidth:1100, margin:"0 auto" }}>
             {stats.title && (
-              <h2 id="stats-heading" style={{ fontFamily:"'Playfair Display',serif", fontSize:30, fontWeight:900, color:"#053366", textAlign:"center", marginBottom:40, letterSpacing:"-.5px" }}>
+              <h2
+                id="stats-heading"
+                style={{
+                  fontFamily:"'Playfair Display',serif",
+                  fontSize:30, fontWeight:900, color:"#053366",
+                  textAlign:"center", marginBottom:44, letterSpacing:"-.5px",
+                }}
+              >
                 {stats.title}
               </h2>
             )}
             <div
               className="stats-grid"
-              style={{ display:"grid", gridTemplateColumns:`repeat(${Math.min((stats.meta.items as []).length,4)},1fr)`, gap:18 }}
+              style={{
+                display:"grid",
+                gridTemplateColumns:`repeat(${Math.min((stats.meta.items as []).length,4)},1fr)`,
+                gap:18,
+              }}
             >
               {(stats.meta.items as { value:string; label:string }[]).map((item, i) => (
                 <div key={i} className="stat-card">
-                  <p style={{ fontFamily:"'Playfair Display',serif", fontSize:42, fontWeight:900, color:"#053366", marginBottom:8, lineHeight:1 }}>
+                  <p style={{
+                    fontFamily:"'Playfair Display',serif",
+                    fontSize:44, fontWeight:900, color:"#053366",
+                    marginBottom:8, lineHeight:1,
+                  }}>
                     {item.value}
                   </p>
                   <p style={{ fontSize:13, fontWeight:600, color:"#6B7280" }}>{item.label}</p>
@@ -332,38 +617,67 @@ export default async function AboutPage() {
         </section>
       )}
 
-      {/* ══ VALEURS ══ */}
+      {/* ══════════════════════════════
+          VALEURS
+      ══════════════════════════════ */}
       {values && (values.meta?.items as { icon:string; title:string; text:string }[])?.length > 0 && (
-        <section aria-labelledby="values-heading" style={{ padding:"80px 40px", background:"#ffffff" }}>
+        <section
+          aria-labelledby="values-heading"
+          className="reveal"
+          style={{ padding:"88px 40px", background:"#ffffff" }}
+        >
           <div style={{ maxWidth:1100, margin:"0 auto" }}>
-            <div style={{ textAlign:"center", marginBottom:52 }}>
+            {/* Header centré */}
+            <div style={{ textAlign:"center", marginBottom:56 }}>
               <div style={{ display:"flex", alignItems:"center", gap:10, justifyContent:"center", marginBottom:14 }}>
                 <div className="divider" />
                 <p className="section-label">Ce qui nous guide</p>
                 <div className="divider" />
               </div>
               {values.title && (
-                <h2 id="values-heading" style={{ fontFamily:"'Playfair Display',serif", fontSize:"clamp(24px,3vw,40px)", fontWeight:900, color:"#053366", letterSpacing:"-1px", lineHeight:1.1, marginBottom:10 }}>
+                <h2
+                  id="values-heading"
+                  style={{
+                    fontFamily:"'Playfair Display',serif",
+                    fontSize:"clamp(24px,3vw,40px)",
+                    fontWeight:900, color:"#053366",
+                    letterSpacing:"-1px", lineHeight:1.1, marginBottom:10,
+                  }}
+                >
                   {values.title}
                 </h2>
               )}
               {values.subtitle && (
-                <p style={{ fontSize:16, color:"#6B7280", maxWidth:480, margin:"0 auto", lineHeight:1.65 }}>{values.subtitle}</p>
+                <p style={{ fontSize:16, color:"#6B7280", maxWidth:480, margin:"0 auto", lineHeight:1.65 }}>
+                  {values.subtitle}
+                </p>
               )}
             </div>
+
+            {/* Grille */}
             <div
               className="values-grid"
-              style={{ display:"grid", gridTemplateColumns:`repeat(${Math.min((values.meta.items as []).length,4)},1fr)`, gap:16 }}
+              style={{
+                display:"grid",
+                gridTemplateColumns:`repeat(${Math.min((values.meta.items as []).length,4)},1fr)`,
+                gap:18,
+              }}
             >
               {(values.meta.items as { icon:string; title:string; text:string }[]).map((item, i) => (
-                <div key={i} className="value-card">
-                  <div style={{ width:44, height:44, borderRadius:10, background:"#F3F4F6", display:"flex", alignItems:"center", justifyContent:"center", marginBottom:16 }}>
-                    {ICON_MAP[item.icon] ?? <Star size={20} color="#374151" strokeWidth={1.8} />}
+                <div
+                  key={i}
+                  className={`value-card reveal reveal-delay-${(i % 4) + 1}`}
+                >
+                  <div className="value-icon-wrap">
+                    {ICON_MAP[item.icon] ?? <Star size={20} color="#fff" strokeWidth={1.8} />}
                   </div>
-                  <h3 style={{ fontFamily:"'Playfair Display',serif", fontSize:17, fontWeight:800, color:"#053366", marginBottom:8 }}>
+                  <h3 style={{
+                    fontFamily:"'Playfair Display',serif",
+                    fontSize:17, fontWeight:800, color:"#053366", marginBottom:8,
+                  }}>
                     {item.title}
                   </h3>
-                  <p style={{ fontSize:14, color:"#6B7280", lineHeight:1.72 }}>{item.text}</p>
+                  <p style={{ fontSize:14, color:"#6B7280", lineHeight:1.75 }}>{item.text}</p>
                 </div>
               ))}
             </div>
@@ -371,46 +685,93 @@ export default async function AboutPage() {
         </section>
       )}
 
-      {/* ══ ÉQUIPE ══ */}
+      {/* ══════════════════════════════
+          ÉQUIPE
+      ══════════════════════════════ */}
       {team && (
-        <section aria-labelledby="team-heading" style={{ padding:"80px 40px", background:"#F9FAFB", borderTop:"1px solid #E5E7EB" }}>
+        <section
+          aria-labelledby="team-heading"
+          className="reveal"
+          style={{ padding:"88px 40px", background:"#F9FAFB", borderTop:"1px solid #E5E7EB" }}
+        >
           <div style={{ maxWidth:1100, margin:"0 auto" }}>
-            <div style={{ textAlign:"center", marginBottom:52 }}>
+            {/* Header centré */}
+            <div style={{ textAlign:"center", marginBottom:56 }}>
               <div style={{ display:"flex", alignItems:"center", gap:10, justifyContent:"center", marginBottom:14 }}>
                 <div className="divider" />
                 <p className="section-label">Notre équipe</p>
                 <div className="divider" />
               </div>
               {team.title && (
-                <h2 id="team-heading" style={{ fontFamily:"'Playfair Display',serif", fontSize:"clamp(24px,3vw,40px)", fontWeight:900, color:"#053366", letterSpacing:"-1px", lineHeight:1.1, marginBottom:10 }}>
+                <h2
+                  id="team-heading"
+                  style={{
+                    fontFamily:"'Playfair Display',serif",
+                    fontSize:"clamp(24px,3vw,40px)",
+                    fontWeight:900, color:"#053366",
+                    letterSpacing:"-1px", lineHeight:1.1, marginBottom:10,
+                  }}
+                >
                   {team.title}
                 </h2>
               )}
-              {team.subtitle && <p style={{ fontSize:16, color:"#6B7280", lineHeight:1.6 }}>{team.subtitle}</p>}
+              {team.subtitle && (
+                <p style={{ fontSize:16, color:"#6B7280", lineHeight:1.6 }}>{team.subtitle}</p>
+              )}
               {team.content && (
-                <div className="rich-content" style={{ maxWidth:580, margin:"14px auto 0" }} dangerouslySetInnerHTML={{ __html: team.content }} />
+                <div
+                  className="rich-content"
+                  style={{ maxWidth:580, margin:"14px auto 0" }}
+                  dangerouslySetInnerHTML={{ __html: team.content }}
+                />
               )}
             </div>
 
+            {/* Membres */}
             {((team.meta?.members ?? []) as { name:string; role:string; photo:string; bio:string }[]).length > 0 && (
-              <div className="team-grid" style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:22 }}>
+              <div
+                className="team-grid"
+                style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:22 }}
+              >
                 {(team.meta.members as { name:string; role:string; photo:string; bio:string }[]).map((m, i) => (
-                  <article key={i} className="team-card">
-                    <div style={{ height:200, overflow:"hidden", background:"#E5E7EB" }}>
-                      {m.photo
-                        ? <img src={m.photo} alt={`${m.name} — ${m.role} chez VoyajAime`} style={{ width:"100%", height:"100%", objectFit:"cover" }} />
-                        : (
-                          <div style={{ width:"100%", height:"100%", display:"flex", alignItems:"center", justifyContent:"center", background:"#F3F4F6" }}>
-                            <span style={{ fontFamily:"'Playfair Display',serif", fontSize:52, fontWeight:900, color:"#D1D5DB" }}>
-                              {m.name?.[0]?.toUpperCase()}
-                            </span>
-                          </div>
-                        )}
+                  <article
+                    key={i}
+                    className={`team-card reveal reveal-delay-${(i % 3) + 1}`}
+                  >
+                    <div className="photo-wrap" style={{ height:220 }}>
+                      {m.photo ? (
+                        <img
+                          src={m.photo}
+                          alt={`${m.name} — ${m.role} chez VoyajAime`}
+                          style={{ width:"100%", height:220, objectFit:"cover" }}
+                        />
+                      ) : (
+                        <div
+                          className="team-card-avatar"
+                          style={{ height:220 }}
+                        >
+                          <span style={{
+                            fontFamily:"'Playfair Display',serif",
+                            fontSize:56, fontWeight:900, color:"#053366", opacity:.25,
+                          }}>
+                            {m.name?.[0]?.toUpperCase()}
+                          </span>
+                        </div>
+                      )}
                     </div>
-                    <div style={{ padding:"20px" }}>
-                      <h3 style={{ fontSize:15, fontWeight:800, color:"#053366", marginBottom:4 }}>{m.name}</h3>
-                      <p style={{ fontSize:12, fontWeight:700, color:"#6B7280", marginBottom:10, textTransform:"uppercase", letterSpacing:".5px" }}>{m.role}</p>
-                      {m.bio && <p style={{ fontSize:13, color:"#6B7280", lineHeight:1.65 }}>{m.bio}</p>}
+                    <div style={{ padding:"22px" }}>
+                      <h3 style={{ fontSize:15, fontWeight:800, color:"#053366", marginBottom:4 }}>
+                        {m.name}
+                      </h3>
+                      <p style={{
+                        fontSize:11, fontWeight:700, color:"#02AFCF",
+                        marginBottom:10, textTransform:"uppercase", letterSpacing:".6px",
+                      }}>
+                        {m.role}
+                      </p>
+                      {m.bio && (
+                        <p style={{ fontSize:13, color:"#6B7280", lineHeight:1.68 }}>{m.bio}</p>
+                      )}
                     </div>
                   </article>
                 ))}
@@ -420,41 +781,98 @@ export default async function AboutPage() {
         </section>
       )}
 
-         
-      {/* ══ CTA ══ */}
+      {/* ══════════════════════════════
+          CTA
+      ══════════════════════════════ */}
       {cta && (
         <section
           aria-labelledby="cta-heading"
-          style={{ padding:"80px 40px", background:"#F9FAFB", borderTop:"1px solid #E5E7EB", textAlign:"center" }}
+          className="reveal"
+          style={{
+            padding:"96px 40px",
+            background:"linear-gradient(135deg,#F0F9FB 0%,#F9FAFB 50%,#EEF2FF 100%)",
+            borderTop:"1px solid #E5E7EB",
+            textAlign:"center",
+            position:"relative",
+            overflow:"hidden",
+          }}
         >
-          <div style={{ maxWidth:580, margin:"0 auto" }}>
+          {/* Cercle décoratif */}
+          <div style={{
+            position:"absolute", top:"-100px", left:"50%", transform:"translateX(-50%)",
+            width:500, height:500, borderRadius:"50%",
+            background:"radial-gradient(circle,rgba(2,175,207,.07) 0%,transparent 70%)",
+            pointerEvents:"none",
+          }} />
+
+          <div style={{ maxWidth:580, margin:"0 auto", position:"relative" }}>
+            <div style={{ display:"flex", alignItems:"center", gap:10, justifyContent:"center", marginBottom:14 }}>
+              <div className="divider" />
+              <p className="section-label">Prêt à partir ?</p>
+              <div className="divider" />
+            </div>
+
             {cta.title && (
-              <h2 id="cta-heading" style={{ fontFamily:"'Playfair Display',serif", fontSize:"clamp(26px,3.5vw,44px)", fontWeight:900, color:"#053366", letterSpacing:"-1px", lineHeight:1.1, marginBottom:14 }}>
+              <h2
+                id="cta-heading"
+                style={{
+                  fontFamily:"'Playfair Display',serif",
+                  fontSize:"clamp(26px,3.5vw,48px)",
+                  fontWeight:900, color:"#053366",
+                  letterSpacing:"-1.5px", lineHeight:1.08, marginBottom:14,
+                }}
+              >
                 {cta.title}
               </h2>
             )}
             {cta.subtitle && (
-              <p style={{ fontSize:17, color:"#6B7280", marginBottom:12, lineHeight:1.65 }}>{cta.subtitle}</p>
+              <p style={{ fontSize:17, color:"#6B7280", marginBottom:14, lineHeight:1.65 }}>
+                {cta.subtitle}
+              </p>
             )}
             {cta.content && (
-              <div className="rich-content" style={{ marginBottom:32 }} dangerouslySetInnerHTML={{ __html: cta.content }} />
+              <div
+                className="rich-content"
+                style={{ marginBottom:36 }}
+                dangerouslySetInnerHTML={{ __html: cta.content }}
+              />
             )}
-            <Link href={(cta.meta?.button_url as string) ?? "/excursions"} className="cta-btn">
+
+            <Link
+              href={(cta.meta?.button_url as string) ?? "/excursions"}
+              className="cta-btn"
+            >
               {(cta.meta?.button_text as string) ?? "Commencer l'aventure"}
-              <ArrowRight size={16} />
+              <ArrowRight size={17} />
             </Link>
           </div>
         </section>
       )}
 
-      {/* ══ FOOTER ══ */}
-      <footer style={{ background:"#F3F4F6", borderTop:"1px solid #E5E7EB", padding:"24px 40px", display:"flex", justifyContent:"space-between", alignItems:"center", flexWrap:"wrap", gap:12 }}>
-        <p style={{ color:"#9CA3AF", fontSize:13 }}>© 2026 VoyajAime — Tourisme authentique en Tunisie</p>
+      {/* ══════════════════════════════
+          FOOTER
+      ══════════════════════════════ */}
+      <footer style={{
+        background:"#F3F4F6", borderTop:"1px solid #E5E7EB",
+        padding:"24px 40px",
+        display:"flex", justifyContent:"space-between", alignItems:"center",
+        flexWrap:"wrap", gap:12,
+      }}>
+        <p style={{ color:"#9CA3AF", fontSize:13 }}>
+          © 2026 VoyajAime — Tourisme authentique en Tunisie
+        </p>
         <div style={{ display:"flex", gap:24 }}>
-          <Link href="/excursions" style={{ color:"#6B7280", fontSize:13, textDecoration:"none", fontWeight:500 }}>Excursions →</Link>
-          <Link href="/contact"    style={{ color:"#6B7280", fontSize:13, textDecoration:"none", fontWeight:500 }}>Contact →</Link>
+          <Link href="/excursions" style={{ color:"#6B7280", fontSize:13, textDecoration:"none", fontWeight:500 }}>
+            Excursions →
+          </Link>
+          <Link href="/contact" style={{ color:"#6B7280", fontSize:13, textDecoration:"none", fontWeight:500 }}>
+            Contact →
+          </Link>
         </div>
       </footer>
+
+      {/* ══ Script scroll reveal ══ */}
+      <script dangerouslySetInnerHTML={{ __html: SCROLL_REVEAL_SCRIPT }} />
     </>
   );
 }

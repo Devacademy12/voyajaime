@@ -8,16 +8,21 @@ import { ROUTES } from "@/app/lib/routes";
 import {
   LayoutDashboard, Map, CalendarDays, Heart, MessageCircle,
   Mountain, Wallet, Star, UserCircle, Users, Shield,
-  FolderOpen, LogOut, Menu, X, History,
+  FolderOpen, LogOut, Menu, X, History, ChevronDown, Settings,
 } from "lucide-react";
 
 type Role = "touriste" | "prestataire" | "admin";
 interface NavItem { label: string; href: string; icon: React.ReactNode; }
+interface NavGroup { label: string; icon: React.ReactNode; items: NavItem[]; }
+type NavElement = NavItem | NavGroup;
 
-const NAV: Record<Role, NavItem[]> = {
+const isGroup = (item: NavElement): item is NavGroup => "items" in item;
+const isItem = (item: NavElement): item is NavItem => !("items" in item);
+
+const NAV: Record<Role, NavElement[]> = {
   touriste: [
     { label: "Accueil",          href: ROUTES.touriste.dashboard,    icon: <LayoutDashboard size={18} /> },
-    { label: "Mon itinéraire",   href: ROUTES.touriste.itineraires,   icon: <Map size={18} /> },  // ✅ Corrigé : itineraires
+    { label: "Mon itinéraire",   href: ROUTES.touriste.itineraires,   icon: <Map size={18} /> },
     { label: "Mes réservations", href: ROUTES.touriste.reservations, icon: <CalendarDays size={18} /> },
     { label: "Mes favoris",      href: ROUTES.touriste.favoris,      icon: <Heart size={18} /> },
     { label: "Messages",         href: ROUTES.touriste.messages,     icon: <MessageCircle size={18} /> },
@@ -35,13 +40,19 @@ const NAV: Record<Role, NavItem[]> = {
     { label: "Dashboard",          href: ROUTES.admin.dashboard,     icon: <LayoutDashboard size={18} /> },
     { label: "Prestataires",       href: ROUTES.admin.prestataires,  icon: <Users size={18} /> },
     { label: "Excursions",         href: ROUTES.admin.excursions,    icon: <Mountain size={18} /> },
-    { label: "Réservations et paiements",       href: ROUTES.admin.reservations,  icon: <CalendarDays size={18} /> },
+    { label: "Réservations et paiements", href: ROUTES.admin.reservations, icon: <CalendarDays size={18} /> },
     { label: "Avis & Modération",  href: ROUTES.admin.avis,          icon: <Shield size={18} /> },
     { label: "Conversations",      href: ROUTES.admin.conversations, icon: <MessageCircle size={18} /> },
-    { label: "Catalogue & Villes", href: ROUTES.admin.catalogue,     icon: <FolderOpen size={18} /> },
-    { label :"Slider",             href: ROUTES.admin.slider,          icon: <Mountain size={18} /> },
-      { label :"Blog",               href: ROUTES.admin.blog,            icon: <Star size={18} /> },
-      { label :"À propos",           href: ROUTES.admin.about,           icon: <UserCircle size={18} /> },
+    {
+      label: "Configuration",
+      icon: <Settings size={18} />,
+      items: [
+        { label: "Catalogue & Villes", href: ROUTES.admin.catalogue,     icon: <FolderOpen size={18} /> },
+        { label: "Slider",             href: ROUTES.admin.slider,        icon: <Mountain size={18} /> },
+        { label: "Blog",               href: ROUTES.admin.blog,          icon: <Star size={18} /> },
+        { label: "À propos",           href: ROUTES.admin.about,         icon: <UserCircle size={18} /> },
+      ],
+    },
   ],
 };
 
@@ -65,6 +76,7 @@ export default function Sidebar({ role, userName, userEmail }: SidebarProps) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [isMobile,   setIsMobile]   = useState(false);
   const [avatarUrl,  setAvatarUrl]  = useState<string | null>(null);
+  const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 768);
@@ -138,32 +150,114 @@ export default function Sidebar({ role, userName, userEmail }: SidebarProps) {
         {/* ── Navigation ── */}
         <nav style={{ flex: 1, padding: "10px 8px", overflowY: "auto" }}>
           {items.map((item) => {
-            const active = pathname === item.href || pathname.startsWith(item.href + "/");
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                prefetch={true}
-                onClick={onLinkClick}
-                style={{
-                  display: "flex", alignItems: "center", gap: 10,
-                  padding: "9px 12px", borderRadius: 10,
-                  fontSize: 14, fontWeight: 500,
-                  color: active ? "#2B96A8" : "#6B7280",
-                  background: active ? "rgba(43,150,168,.1)" : "transparent",
-                  textDecoration: "none",
-                  marginBottom: 2,
-                  transition: "all 0.15s",
-                }}
-                onMouseEnter={e => { if (!active) (e.currentTarget as HTMLElement).style.background = "rgba(43,150,168,.06)"; }}
-                onMouseLeave={e => { if (!active) (e.currentTarget as HTMLElement).style.background = active ? "rgba(43,150,168,.1)" : "transparent"; }}
-              >
-                <span style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 20, flexShrink: 0, color: active ? "#2B96A8" : "#9CA3AF" }}>
-                  {item.icon}
-                </span>
-                <span>{item.label}</span>
-              </Link>
-            );
+            if (isItem(item)) {
+              const active = pathname === item.href || pathname.startsWith(item.href + "/");
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  prefetch={true}
+                  onClick={onLinkClick}
+                  style={{
+                    display: "flex", alignItems: "center", gap: 10,
+                    padding: "9px 12px", borderRadius: 10,
+                    fontSize: 14, fontWeight: 500,
+                    color: active ? "#2B96A8" : "#6B7280",
+                    background: active ? "rgba(43,150,168,.1)" : "transparent",
+                    textDecoration: "none",
+                    marginBottom: 2,
+                    transition: "all 0.15s",
+                  }}
+                  onMouseEnter={e => { if (!active) (e.currentTarget as HTMLElement).style.background = "rgba(43,150,168,.06)"; }}
+                  onMouseLeave={e => { if (!active) (e.currentTarget as HTMLElement).style.background = active ? "rgba(43,150,168,.1)" : "transparent"; }}
+                >
+                  <span style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 20, flexShrink: 0, color: active ? "#2B96A8" : "#9CA3AF" }}>
+                    {item.icon}
+                  </span>
+                  <span>{item.label}</span>
+                </Link>
+              );
+            }
+
+            if (isGroup(item)) {
+              const expanded = expandedGroups[item.label] ?? false;
+              const groupActive = item.items.some(subItem => 
+                pathname === subItem.href || pathname.startsWith(subItem.href + "/")
+              );
+
+              return (
+                <div key={item.label}>
+                  <button
+                    onClick={() => {
+                      setExpandedGroups(prev => ({
+                        ...prev,
+                        [item.label]: !prev[item.label]
+                      }));
+                    }}
+                    style={{
+                      width: "100%", display: "flex", alignItems: "center", gap: 10,
+                      padding: "9px 12px", borderRadius: 10,
+                      fontSize: 14, fontWeight: 500,
+                      color: groupActive ? "#2B96A8" : "#6B7280",
+                      background: groupActive ? "rgba(43,150,168,.1)" : "transparent",
+                      border: "none", cursor: "pointer",
+                      textAlign: "left", marginBottom: 2,
+                      transition: "all 0.15s", fontFamily: "inherit",
+                    }}
+                    onMouseEnter={e => { if (!groupActive) (e.currentTarget as HTMLElement).style.background = "rgba(43,150,168,.06)"; }}
+                    onMouseLeave={e => { if (!groupActive) (e.currentTarget as HTMLElement).style.background = groupActive ? "rgba(43,150,168,.1)" : "transparent"; }}
+                  >
+                    <span style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 20, flexShrink: 0, color: groupActive ? "#2B96A8" : "#9CA3AF" }}>
+                      {item.icon}
+                    </span>
+                    <span style={{ flex: 1 }}>{item.label}</span>
+                    <ChevronDown 
+                      size={16} 
+                      style={{ 
+                        transform: expanded ? "rotate(180deg)" : "rotate(0deg)",
+                        transition: "transform 0.2s",
+                        color: groupActive ? "#2B96A8" : "#9CA3AF"
+                      }} 
+                    />
+                  </button>
+
+                  {expanded && (
+                    <div style={{ paddingLeft: 8 }}>
+                      {item.items.map((subItem) => {
+                        const active = pathname === subItem.href || pathname.startsWith(subItem.href + "/");
+                        return (
+                          <Link
+                            key={subItem.href}
+                            href={subItem.href}
+                            prefetch={true}
+                            onClick={onLinkClick}
+                            style={{
+                              display: "flex", alignItems: "center", gap: 10,
+                              padding: "7px 12px", borderRadius: 8,
+                              fontSize: 13, fontWeight: 400,
+                              color: active ? "#2B96A8" : "#6B7280",
+                              background: active ? "rgba(43,150,168,.08)" : "transparent",
+                              textDecoration: "none",
+                              marginBottom: 2,
+                              transition: "all 0.15s",
+                              marginLeft: 4,
+                              borderLeft: active ? "2px solid #2B96A8" : "2px solid transparent",
+                            }}
+                            onMouseEnter={e => { if (!active) (e.currentTarget as HTMLElement).style.background = "rgba(43,150,168,.05)"; }}
+                            onMouseLeave={e => { if (!active) (e.currentTarget as HTMLElement).style.background = active ? "rgba(43,150,168,.08)" : "transparent"; }}
+                          >
+                            <span style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 18, flexShrink: 0, color: active ? "#2B96A8" : "#9CA3AF" }}>
+                              {subItem.icon}
+                            </span>
+                            <span>{subItem.label}</span>
+                          </Link>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              );
+            }
           })}
         </nav>
 

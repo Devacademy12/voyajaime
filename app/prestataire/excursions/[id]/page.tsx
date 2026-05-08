@@ -1,4 +1,4 @@
-import { createAdminClient } from "@/lib/supabaseAdmin";
+import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { createServerSupabaseClient } from "@/lib/supabaseServer";
 import { notFound } from "next/navigation";
 import ExcursionDetailPrestataire from "./ExcursionDetailPrestataire";
@@ -14,7 +14,7 @@ export default async function PrestataireExcursionDetail({ params }: PageProps) 
   const { data: { user } } = await serverSupabase.auth.getUser();
   if (!user) notFound();
 
-  const admin = createAdminClient();
+  const admin = supabaseAdmin;
 
   // Excursion
   const { data: exc } = await admin
