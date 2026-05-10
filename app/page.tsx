@@ -13,6 +13,7 @@ import HeroSlider        from "@/app/components/home/HeroSlider";
 import PathsSection      from "@/app/components/home/PathsSection";
 import PopularExcursions from "@/app/components/home/PopularExcursions";
 import HomeFooter        from "@/app/components/home/HomeFooter";
+import AboutSection from "./components/home/AboutSection";
 
 // Shared types & utils
 import { SlideExcursion, Excursion, SLIDE_COLORS, FALLBACK_IMG } from "@/lib/homeUtils";
@@ -154,6 +155,8 @@ export default function HomePage() {
         user={user}
         openAuth={openAuth}
       />
+
+      <AboutSection />
 
       <HomeFooter
         user={user}

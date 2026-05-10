@@ -11,14 +11,15 @@ import {
   Plus, CalendarDays, Edit3, X, Camera, Mountain,
   MapPinned, LocateFixed, Landmark, Compass, Building2,
   Trees, Waves, UtensilsCrossed, Tent, Bike, Ship,
-  ShoppingBag, Sparkles, Music, AlertCircle, Heart,
-  CalendarCheck, SlidersHorizontal,
+  ShoppingBag, Sparkles, Music, AlertCircle, Heart, HelpCircle,
+  CalendarCheck,
 } from "lucide-react";
 
 import { ExcursionDetailModal } from "@/app/components/excursions/ExcursionDetailModal";
 import { LoadingSpinner } from "@/app/components/excursions/LoadingSpinner";
 import { ErrorDisplay } from "@/app/components/excursions/ErrorDisplay";
 import ItinerarySummary, { SummaryDayPlan } from "@/app/components/itineraire/ItinerarySummary";
+import { HelpPanel } from "@/app/components/itineraire/HelpPanel";
 
 import s from "@/public/style/builder.module.css";
 
@@ -191,10 +192,9 @@ function BuilderInner() {
   const [errExc,     setErrExc]     = useState<string | null>(null);
 
   const [search,         setSearch]         = useState("");
-  const [filterDuration, setFilterDuration] = useState<"all" | "long">("all");
   const [showDatePicker, setShowDatePicker] = useState(false);
+  const [showHelpPanel, setShowHelpPanel] = useState(false);
   const [showSuccessMsg, setShowSuccessMsg] = useState<string | null>(null);
-  const [likedExc,       setLikedExc]       = useState<Set<string>>(new Set());
 
   const [itin,      setItin]      = useState<DayPlan[]>([]);
   const [activeDay, setActiveDay] = useState(0);
@@ -374,10 +374,9 @@ function BuilderInner() {
     return allExc.filter(e => {
       const matchSearch   = !q || e.title.toLowerCase().includes(q) || e.city.toLowerCase().includes(q);
       const matchCity     = !currentDayCity || e.city.toLowerCase() === currentDayCity.toLowerCase();
-      const matchDuration = filterDuration === "all" || e.duration_hours > 6;
-      return matchSearch && matchCity && matchDuration;
+      return matchSearch && matchCity;
     });
-  }, [allExc, currentDayCity, search, filterDuration]);
+  }, [allExc, currentDayCity, search]);
 
   const availableCount = useMemo(
     () => currentDayDate
@@ -396,14 +395,7 @@ function BuilderInner() {
     setTimeout(() => setShowSuccessMsg(null), 3000);
   };
 
-  const toggleLike = (e: React.MouseEvent, id: string) => {
-    e.stopPropagation();
-    setLikedExc(prev => {
-      const next = new Set(prev);
-      next.has(id) ? next.delete(id) : next.add(id);
-      return next;
-    });
-  };
+  // favorite button removed — no-op
 
   const openSlotPicker = (exc: Excursion) => {
     if (currentDayDate) {
@@ -624,15 +616,26 @@ function BuilderInner() {
               </div>
               <div className={`${s.statChip} ${s.statChipBudget}`}>
                 <PiggyBank size={12} color={BRAND} />
-                <span>{totBudget} EUR</span>
+                <span>{totBudget} TND</span>
               </div>
             </>
           )}
+          <button
+            className={`${s.helpBtn} ${showHelpPanel ? s.helpBtnActive : ""}`}
+            onClick={() => setShowHelpPanel(v => !v)}
+          >
+            <HelpCircle size={13} />
+            <span>Aide</span>
+          </button>
           <button className={s.summaryBtn} onClick={() => setView("result")}>
             Voir le résumé <ArrowRight size={13} />
           </button>
         </div>
       </div>
+
+      {showHelpPanel && (
+        <HelpPanel onClose={() => setShowHelpPanel(false)} />
+      )}
 
       {/* ══ DAY TABS ══ */}
       <div className={s.dayTabs}>
@@ -702,17 +705,6 @@ function BuilderInner() {
                   value={search} onChange={e => setSearch(e.target.value)}
                 />
               </div>
-              <div className={s.filterGroup}>
-                <SlidersHorizontal size={12} color="#6B7280" />
-                <button
-                  className={`${s.filterPill} ${filterDuration === "all" ? s.filterPillActive : ""}`}
-                  onClick={() => setFilterDuration("all")}
-                >Toutes</button>
-                <button
-                  className={`${s.filterPill} ${filterDuration === "long" ? s.filterPillActive : ""}`}
-                  onClick={() => setFilterDuration("long")}
-                >+ 6h</button>
-              </div>
             </div>
 
             {currentDayDate && !ldExc && palette.length > 0 && (
@@ -744,7 +736,6 @@ function BuilderInner() {
                 const added         = isAdded(exc.id);
                 const isAvail       = currentDayDate ? isExcursionAvailableOnDate(exc, currentDayDate) : true;
                 const isUnavailable = currentDayDate && !isAvail;
-                const liked         = likedExc.has(exc.id);
                 const depTime       = currentDayDate
                   ? getDepartureTimeForDate(exc, currentDayDate)
                   : exc.departure_time;
@@ -780,13 +771,7 @@ function BuilderInner() {
                         </span>
                       )}
 
-                      {/* Heart */}
-                      <button
-                        className={`${s.heartBtn} ${liked ? s.heartBtnLiked : ""}`}
-                        onClick={e => toggleLike(e, exc.id)}
-                      >
-                        <Heart size={15} fill={liked ? "#EF4444" : "none"} color={liked ? "#EF4444" : "#fff"} />
-                      </button>
+                      {/* favorite button removed */}
                     </div>
 
                     {/* Body */}
@@ -795,7 +780,7 @@ function BuilderInner() {
                         <h3 className={s.cardTitle}>{exc.title}</h3>
                         <div className={s.cardPriceBlock}>
                           <span className={s.cardPrice}>{exc.price_per_person}</span>
-                          <span className={s.cardPriceSuffix}>EUR<br />/personne</span>
+                          <span className={s.cardPriceSuffix}>TND<br />/personne</span>
                         </div>
                       </div>
 
@@ -907,7 +892,7 @@ function BuilderInner() {
               <div className={s.plannerRight}>
                 <div className={s.dayTotals}>
                   <div className={s.dayBudget}>
-                    {dayBudget} <span className={s.dayBudgetUnit}>EUR</span>
+                    {dayBudget} <span className={s.dayBudgetUnit}>TND</span>
                   </div>
                   <div className={s.dayCount}>{dayActs.length} activité{dayActs.length !== 1 ? "s" : ""}</div>
                 </div>
@@ -963,7 +948,7 @@ function BuilderInner() {
                       {acts.length > 0 && (
                         <span className={s.slotTotal}>
                           <PiggyBank size={10} color="#6B7280" />
-                          {slotBudget} EUR · {acts.reduce((acc, a) => acc + a.excursion.duration_hours, 0)}h
+                          {slotBudget} TND · {acts.reduce((acc, a) => acc + a.excursion.duration_hours, 0)}h
                         </span>
                       )}
                     </div>
@@ -990,7 +975,7 @@ function BuilderInner() {
                             )}
                           </div>
                           <span className={s.actPrice}>
-                            {act.excursion.price_per_person}<small> EUR</small>
+                            {act.excursion.price_per_person}<small> TND</small>
                           </span>
                           <div className={s.actActions}>
                             <button className={s.actActionNote}
@@ -1022,7 +1007,7 @@ function BuilderInner() {
             <p className={s.slotBoxMeta}>
               <Clock size={11} /> {pendingExc.duration_hours}h
               <span style={{ margin: "0 .35rem", color: "#D1D5DB" }}>·</span>
-              <PiggyBank size={11} /> {pendingExc.price_per_person} EUR
+              <PiggyBank size={11} /> {pendingExc.price_per_person} TND
             </p>
             {currentDayDate && (
               <div className={s.slotDateConfirm}>

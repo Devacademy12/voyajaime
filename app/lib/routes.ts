@@ -2,9 +2,6 @@
 //  routes.ts  —  toutes les URLs de l'application
 //  Emplacement : /lib/routes.ts
 // ─────────────────────────────────────────────
-
-import ModeAssiste from "../touriste/modeAssister/page";
-
 export const ROUTES = {
 
   // ── Public ──────────────────────────────────
@@ -13,6 +10,11 @@ export const ROUTES = {
   excursions: "/excursions",
   excursion:  (id: string) => `/excursions/${id}`,
   ModeAssiste : "/modeAssister",
+  about:      "/about",
+  blog:       "/blog",
+  blogCat:    (cat: string) => `/blog?cat=${encodeURIComponent(cat)}`,
+  blogSearch: (q: string)   => `/blog?q=${encodeURIComponent(q)}`,
+  contact:    "/contact",
 
   // ── Touriste ────────────────────────────────
   touriste: {
@@ -47,6 +49,8 @@ export const ROUTES = {
     conversations: "/admin/conversations",
     catalogue:     "/admin/catalogue",
     slider:       "/admin/slider",
+    blog:         "/admin/blog",
+    about:        "/admin/about",
   },
 
 } as const;

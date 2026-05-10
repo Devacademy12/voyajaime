@@ -285,7 +285,8 @@ export function PrestastaireCard({
               className="pbtn pbtn-gray"
               onClick={onRevoke}
               disabled={isLoading}
-style={{ padding: "7px 12px", borderRadius: 9, cursor: "pointer", fontSize: 12, fontWeight: 700, fontFamily: "inherit", transition: "all .2s", whiteSpace: "nowrap", display: "inline-flex", alignItems: "center", gap: 5, background: "#F9FAFB", color: "#374151", border: "1px solid #E5E7EB" }}            >
+              style={{ padding: "7px 12px", borderRadius: 9, cursor: "pointer", fontSize: 12, fontWeight: 700, fontFamily: "inherit", transition: "all .2s", whiteSpace: "nowrap", display: "inline-flex", alignItems: "center", gap: 5, background: "#F9FAFB", color: "#374151", border: "1px solid #E5E7EB" }}
+            >
               <AlertTriangle size={12} />
               {isLoading ? "..." : "Révoquer"}
             </button>

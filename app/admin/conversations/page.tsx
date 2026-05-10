@@ -1,4 +1,4 @@
-import { createAdminClient } from "@/lib/supabaseAdmin";
+import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import ConversationsClient from "./ConversationsClient";
 
 const BLOCKED_PATTERNS = [
@@ -20,7 +20,7 @@ function detectViolations(contenu: string) {
 }
 
 export default async function AdminConversations() {
-  const supabase = createAdminClient();
+  const supabase = supabaseAdmin;
 
   const { data: convs } = await supabase
     .from("conversations")

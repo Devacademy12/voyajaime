@@ -32,8 +32,8 @@
 .root {
   display: flex;
   flex-direction: column;
+  padding: 0 6rem;
   height: 100vh;
-  Padding:1.25rem 10rem;
   background: #F8FAFC;
   overflow: hidden;
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
@@ -155,6 +155,60 @@
 }
 .summaryBtn:hover {
   background: #237f90;
+}
+
+.helpBtn {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.42rem 0.8rem;
+  background: #F8FAFC;
+  border: 1px solid #E5E7EB;
+  border-radius: 9px;
+  cursor: pointer;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #374151;
+  transition: all 0.15s;
+}
+
+.helpBtn:hover {
+  background: #EFF9FB;
+  border-color: #2B96A8;
+  color: #2B96A8;
+}
+
+.helpBtnActive {
+  background: #EFF9FB;
+  border-color: #2B96A8;
+  color: #2B96A8;
+}
+
+.helpPanel {
+  margin: 0.6rem 0.75rem 0.5rem;
+  padding: 0.75rem 0.9rem;
+  border-radius: 12px;
+  border: 1px solid #BAE6FD;
+  background: linear-gradient(135deg, #F0F9FF 0%, #ECFEFF 100%);
+  box-shadow: 0 4px 14px rgba(2, 132, 199, 0.08);
+}
+
+.helpPanelTitle {
+  font-size: 0.84rem;
+  font-weight: 800;
+  color: #0F172A;
+  margin-bottom: 0.45rem;
+}
+
+.helpList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 0.8rem;
+}
+
+.helpItem {
+  font-size: 0.78rem;
+  color: #334155;
 }
 
 /* ─────────────────────────────────────────────────────
@@ -534,38 +588,7 @@
   backdrop-filter: blur(4px);
 }
 
-.heartBtn {
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  width: 34px;
-  height: 34px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.9);
-  border: none;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
-  transition: all 0.2s;
-}
-.heartBtn:hover {
-  transform: scale(1.1);
-  background: #fff;
-}
-.heartBtnLiked {
-  background: #FFF1F2;
-}
 
-/* Card body */
-.cardBody {
-  padding: 0.85rem 1rem 1rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.3rem;
-  flex: 1;
-}
 
 .cardTitleRow {
   display: flex;

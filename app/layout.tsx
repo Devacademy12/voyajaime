@@ -3,6 +3,7 @@ import "./globals.css";
 import "../public/style/prestataires.css";
 import "../public/style/conversations.css";
 import '../public/style/excursion-client.css';
+import '../public/style/excursion-detail.css';
 export const metadata: Metadata = {
   title: "VoyajAime — Découvrez la Tunisie",
   description: "Plateforme de réservation d'excursions en Tunisie",
