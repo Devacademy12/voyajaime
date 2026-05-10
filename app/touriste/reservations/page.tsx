@@ -1,5 +1,7 @@
 import { createServerSupabaseClient } from "@/lib/supabaseServer";
 import ReservationsClient from "./ReservationsClient";
+import { Suspense } from "react";
+import { StripeReturnHandler } from "./StripeReturnHandler";
 
 type Reservation = {
   id: string; booking_code: string; date: string; time: string;
@@ -19,7 +21,7 @@ type Reservation = {
 export default async function TouristeReservations({
   searchParams,
 }: {
-  searchParams: Promise<{ pay?: string }>;
+  searchParams: Promise<{ pay?: string; session_id?: string; success?: string; canceled?: string }>;
 }) {
   const resolvedParams = await searchParams;
   const autoOpenId     = resolvedParams?.pay;
@@ -28,18 +30,20 @@ export default async function TouristeReservations({
   const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) return (
-    <div style={{ textAlign:"center", padding:48 }}>
-      <p style={{ color:"#4a6080" }}>Veuillez vous connecter pour voir vos réservations</p>
+    <div style={{ textAlign: "center", padding: 48 }}>
+      <p style={{ color: "#4a6080" }}>Veuillez vous connecter pour voir vos réservations</p>
     </div>
   );
 
   const today = new Date().toISOString().split("T")[0];
 
+  // ✅ FIX : payment_status inclus directement dans le select principal
   const { data: reservations, error } = await supabase
     .from("reservations")
     .select(`
       id, booking_code, date, time, people_count,
-      total_price, platform_fee, status, created_at, payment_deadline,
+      total_price, platform_fee, status, payment_status,
+      created_at, payment_deadline,
       excursion:excursions(id, title, city, photos, duration_hours, price_per_person, rating)
     `)
     .eq("touriste_id", user.id)
@@ -47,20 +51,9 @@ export default async function TouristeReservations({
     .gte("date", today)
     .order("date", { ascending: true });
 
-  let paymentStatuses: Record<string, string> = {};
-  try {
-    const { data: ps } = await supabase
-      .from("reservations")
-      .select("id, payment_status")
-      .eq("touriste_id", user.id);
-    if (ps) ps.forEach((r: { id: string; payment_status?: string | null }) => {
-      if (r.payment_status) paymentStatuses[r.id] = r.payment_status;
-    });
-  } catch (_) {}
-
   if (error) return (
-    <div style={{ textAlign:"center", padding:48 }}>
-      <p style={{ color:"#EF4444" }}>Erreur : {error.message}</p>
+    <div style={{ textAlign: "center", padding: 48 }}>
+      <p style={{ color: "#EF4444" }}>Erreur : {error.message}</p>
     </div>
   );
 
@@ -77,7 +70,7 @@ export default async function TouristeReservations({
         total_price: r.total_price,
         platform_fee: r.platform_fee,
         status: r.status,
-        payment_status: paymentStatuses[r.id] || null,
+        payment_status: r.payment_status || null, // ✅ vient directement du select
         payment_deadline: r.payment_deadline,
         excursion: excursionData ? {
           id: excursionData.id,
@@ -92,8 +85,13 @@ export default async function TouristeReservations({
     });
 
   return (
-    // ✅ Pas de maxWidth ici — laisser ReservationsClient gérer la largeur
-    <div style={{ width: "75%", background: "#F8FAFC", minHeight: "100vh",position:"relative", padding: "32px 0 60px", margin: "0 auto" }}>
+    <div style={{ width: "75%", background: "#F8FAFC", minHeight: "100vh", position: "relative", padding: "32px 0 60px", margin: "0 auto" }}>
+
+      {/* ✅ Handler Stripe — gère le retour success/cancel depuis Stripe Checkout */}
+      <Suspense fallback={null}>
+        <StripeReturnHandler />
+      </Suspense>
+
       <ReservationsClient
         reservations={formattedReservations}
         autoOpenId={autoOpenId}

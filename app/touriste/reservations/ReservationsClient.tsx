@@ -3,11 +3,10 @@
 import { useState, useCallback, useEffect } from "react";
 import { createClient } from "@/lib/supabaseClient";
 import Link from "next/link";
-import { Sparkles, ArrowRight, History, Compass, RefreshCcw, Loader2 } from "lucide-react";
+import { Sparkles, ArrowRight, History, Compass, RefreshCcw, Loader2, MapPin, Clock, Users, Calendar, CreditCard, CheckCircle2, AlertCircle } from "lucide-react";
 import { Reservation, TODAY } from "@/app/components/reservation/type";
 import ReservationCard from "@/app/components/reservation/Reservationcard";
 import CheckoutModal from "@/app/components/reservation/checkoutmodal";
-import styles from "@/app/components/reservation/Reservations.module.css";
 
 interface Props {
   reservations: Reservation[];
@@ -24,7 +23,6 @@ export default function ReservationsClient({ reservations: init, autoOpenId }: P
   const pending   = reservations.filter(r => r.status === "pending").length;
   const confirmed = reservations.filter(r => r.status === "confirmed").length;
 
-  // ── Move paid past reservations to history ────────────────────────────
   const moveExpiredToHistory = useCallback(async (resas: Reservation[]) => {
     const expired = resas.filter(r => {
       const isPaid = r.payment_status === "paid" || r.status === "confirmed" || r.status === "completed";
@@ -56,7 +54,6 @@ export default function ReservationsClient({ reservations: init, autoOpenId }: P
     }
   }, [supabase]);
 
-  // ── Handle unpaid expired reservations ───────────────────────────────
   const handleUnpaidExpired = useCallback(async (reservationId: string) => {
     const r = reservations.find(res => res.id === reservationId);
     if (!r) return;
@@ -87,7 +84,6 @@ export default function ReservationsClient({ reservations: init, autoOpenId }: P
     }, 3000);
   }, [reservations, supabase]);
 
-  // ── Refresh ───────────────────────────────────────────────────────────
   const refreshReservations = useCallback(async () => {
     setIsRefreshing(true);
     try {
@@ -112,7 +108,6 @@ export default function ReservationsClient({ reservations: init, autoOpenId }: P
     }
   }, [supabase, moveExpiredToHistory]);
 
-  // Auto-refresh every 30s when pending reservations exist
   useEffect(() => {
     const interval = setInterval(() => {
       if (reservations.some(r => r.status === "pending")) refreshReservations();
@@ -120,11 +115,9 @@ export default function ReservationsClient({ reservations: init, autoOpenId }: P
     return () => clearInterval(interval);
   }, [reservations, refreshReservations]);
 
-  // Move past reservations on mount
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { moveExpiredToHistory(init); }, []);
 
-  // Auto-open checkout
   useEffect(() => {
     if (autoOpenId) {
       const target = reservations.find(r => r.id === autoOpenId);
@@ -144,69 +137,117 @@ export default function ReservationsClient({ reservations: init, autoOpenId }: P
   }
 
   return (
-    <div className={styles["rp-root"]}>
+    <div style={{ maxWidth: 1100, margin: "0 auto", padding: "40px 24px 80px" }}>
 
       {/* ── Header ── */}
-      <div className={styles["rp-header"]}>
+      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 32, flexWrap: "wrap", gap: 16 }}>
         <div>
-          <p className={styles["rp-eyebrow"]}>Mes voyages</p>
-          <h1 className={styles["rp-title"]}>Réservations</h1>
-          <p className={styles["rp-subtitle"]}>Gérez et suivez vos aventures en Tunisie</p>
+          <p style={{ fontSize: 13, fontWeight: 600, color: "#0D9488", letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: 6 }}>
+            Mes voyages
+          </p>
+          <h1 style={{ fontSize: 28, fontWeight: 700, color: "#0F172A", margin: 0, marginBottom: 6 }}>
+            Réservations
+          </h1>
+          <p style={{ fontSize: 14, color: "#64748B", margin: 0 }}>
+            Gérez et suivez vos aventures en Tunisie
+          </p>
         </div>
-        <button onClick={refreshReservations} disabled={isRefreshing} className={styles["rp-refresh-btn"]}>
-          <RefreshCcw size={13} className={isRefreshing ? styles["spin"] : ""} /> Actualiser
-        </button>
+        <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+          {isRefreshing && (
+            <span style={{ fontSize: 13, color: "#0D9488", display: "flex", alignItems: "center", gap: 6 }}>
+              <Loader2 size={13} style={{ animation: "spin 1s linear infinite" }} /> Mise à jour…
+            </span>
+          )}
+          <button
+            onClick={refreshReservations}
+            disabled={isRefreshing}
+            style={{
+              display: "flex", alignItems: "center", gap: 6,
+              padding: "9px 16px", borderRadius: 10,
+              border: "1.5px solid #E2E8F0",
+              background: "#FFFFFF",
+              color: "#475569", fontSize: 13, fontWeight: 600,
+              cursor: isRefreshing ? "not-allowed" : "pointer",
+              opacity: isRefreshing ? 0.6 : 1,
+            }}
+          >
+            <RefreshCcw size={13} style={isRefreshing ? { animation: "spin 1s linear infinite" } : {}} />
+            Actualiser
+          </button>
+        </div>
       </div>
 
       {/* ── Stats bar ── */}
       {total > 0 && (
-        <div className={styles["rp-stats"]}>
+        <div style={{ display: "flex", gap: 12, marginBottom: 32, flexWrap: "wrap" }}>
           {[
-            { icon: "🗺️", num: total,     lbl: "Total",      color: "#0D9488" },
-            { icon: "⏳",  num: pending,   lbl: "En attente", color: "#F59E0B" },
-            { icon: "✅",  num: confirmed, lbl: "Confirmées", color: "#0D9488" },
-          ].map(({ icon, num, lbl, color }) => (
-            <div key={lbl} className={styles["rp-stat"]}>
-              <span className={styles["rp-stat-icon"]}>{icon}</span>
+            { icon: <Calendar size={16} color="#0D9488" />, num: total,     lbl: "Total",      bg: "#F0FDFA", border: "#CCFBF1", numColor: "#0D9488" },
+            { icon: <AlertCircle size={16} color="#D97706" />, num: pending,   lbl: "En attente", bg: "#FFFBEB", border: "#FDE68A", numColor: "#D97706" },
+            { icon: <CheckCircle2 size={16} color="#0D9488" />, num: confirmed, lbl: "Confirmées", bg: "#F0FDFA", border: "#CCFBF1", numColor: "#0D9488" },
+          ].map(({ icon, num, lbl, bg, border, numColor }) => (
+            <div key={lbl} style={{
+              display: "flex", alignItems: "center", gap: 12,
+              padding: "14px 20px", borderRadius: 12,
+              background: bg, border: `1.5px solid ${border}`,
+              minWidth: 140, flex: 1,
+            }}>
+              <div style={{ width: 36, height: 36, borderRadius: 10, background: "#FFFFFF", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 1px 3px rgba(0,0,0,0.06)" }}>
+                {icon}
+              </div>
               <div>
-                <p className={styles["rp-stat-num"]} style={{ color }}>{num}</p>
-                <p className={styles["rp-stat-label"]}>{lbl}</p>
+                <p style={{ fontSize: 22, fontWeight: 700, color: numColor, margin: 0, lineHeight: 1 }}>{num}</p>
+                <p style={{ fontSize: 12, color: "#64748B", margin: 0, marginTop: 2 }}>{lbl}</p>
               </div>
             </div>
           ))}
         </div>
       )}
 
-      {/* ── Refreshing toast ── */}
-      {isRefreshing && (
-        <div className={styles["rp-toast"]}>
-          <Loader2 size={13} className={styles["spin"]} /> Mise à jour…
-        </div>
-      )}
-
       {/* ── Empty state ── */}
       {total === 0 ? (
-        <div className={styles["rp-empty"]}>
-          <div className={styles["rp-empty-ring"]}>
-            <Compass size={32} color="#0D9488" strokeWidth={1.5} />
+        <div style={{
+          textAlign: "center", padding: "80px 24px",
+          background: "#FFFFFF", borderRadius: 20,
+          border: "1.5px solid #E2E8F0",
+        }}>
+          <div style={{
+            width: 72, height: 72, borderRadius: "50%",
+            background: "linear-gradient(135deg, #F0FDFA 0%, #CCFBF1 100%)",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            margin: "0 auto 20px",
+            border: "2px solid #99F6E4",
+          }}>
+            <Compass size={30} color="#0D9488" strokeWidth={1.5} />
           </div>
-          <h3 className={styles["rp-empty-title"]}>Aucune réservation active</h3>
-          <p style={{ fontSize: 14, color: "#64748B", marginBottom: 32, lineHeight: 1.7 }}>
-            Découvrez les excursions et planifiez votre prochain voyage
+          <h3 style={{ fontSize: 20, fontWeight: 700, color: "#0F172A", marginBottom: 10 }}>
+            Aucune réservation active
+          </h3>
+          <p style={{ fontSize: 14, color: "#64748B", marginBottom: 32, lineHeight: 1.7, maxWidth: 360, margin: "0 auto 32px" }}>
+            Découvrez les excursions et planifiez votre prochain voyage en Tunisie
           </p>
           <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
-            <Link href="/excursions" style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "14px 28px", background: "#0D9488", color: "white", borderRadius: 12, textDecoration: "none", fontSize: 14, fontWeight: 700 }}>
-              <Sparkles size={15} /> Explorer les excursions <ArrowRight size={14} />
+            <Link href="/excursions" style={{
+              display: "inline-flex", alignItems: "center", gap: 8,
+              padding: "13px 24px", background: "#0D9488", color: "white",
+              borderRadius: 12, textDecoration: "none", fontSize: 14, fontWeight: 700,
+              boxShadow: "0 4px 14px rgba(13,148,136,0.3)",
+            }}>
+              <Sparkles size={14} /> Explorer les excursions <ArrowRight size={14} />
             </Link>
-            <Link href="/touriste/historique" style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "14px 24px", background: "#FFFFFF", color: "#475569", border: "1px solid #E2E8F0", borderRadius: 12, textDecoration: "none", fontSize: 14, fontWeight: 700 }}>
+            <Link href="/touriste/historique" style={{
+              display: "inline-flex", alignItems: "center", gap: 8,
+              padding: "13px 20px", background: "#FFFFFF", color: "#475569",
+              border: "1.5px solid #E2E8F0", borderRadius: 12,
+              textDecoration: "none", fontSize: 14, fontWeight: 600,
+            }}>
               <History size={14} /> Historique
             </Link>
           </div>
         </div>
       ) : (
-        <div className={styles["rp-grid"]}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(340px, 1fr))", gap: 20 }}>
           {reservations.map((r, i) => (
-            <div key={r.id} style={{ animationDelay: `${i * .08}s` }}>
+            <div key={r.id} style={{ animation: `fadeUp 0.4s ease both`, animationDelay: `${i * 0.08}s` }}>
               <ReservationCard
                 r={r}
                 onPay={() => setCheckout(r)}
@@ -227,6 +268,14 @@ export default function ReservationsClient({ reservations: init, autoOpenId }: P
           autoStart={!!autoOpenId && checkout.id === autoOpenId}
         />
       )}
+
+      <style>{`
+        @keyframes spin { to { transform: rotate(360deg); } }
+        @keyframes fadeUp {
+          from { opacity: 0; transform: translateY(16px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+      `}</style>
     </div>
   );
 }
