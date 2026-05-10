@@ -1,0 +1,17 @@
+{
+  "version": 3,
+  "builds": [
+    {
+      "src": "package.json",
+      "use": "@vercel/next"
+    }
+  ],
+  "installCommand": "npm ci --legacy-peer-deps",
+  "buildCommand": "npm run build",
+  "build": {
+    "env": {
+      "NPM_CONFIG_REGISTRY": "https://registry.npmjs.org/"
+    }
+  },
+  "outputDirectory": ".next"
+}

@@ -2,6 +2,10 @@
   "name": "voyajaime",
   "version": "1.0.0",
   "private": true,
+  "packageManager": "npm@11.6.2",
+  "engines": {
+    "node": ">=20.0.0"
+  },
   "scripts": {
     "dev": "next dev",
     "build": "next build",
