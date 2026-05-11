@@ -83,6 +83,7 @@ export default function ExcursionsPage() {
   const [activeTab,     setActiveTab]     = useState<"ville" | "categorie" | "journee" | "heure" | null>(null);
   const [filterJournee, setFilterJournee] = useState(false);
   const [filterHeure,   setFilterHeure]   = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
 
   const supabase = createClient();
 
@@ -152,6 +153,7 @@ export default function ExcursionsPage() {
     else if (sort === "rating")     list.sort((a, b) => b.rating - a.rating);
     else                            list.sort((a, b) => b.reviews_count - a.reviews_count);
     setFiltered(list);
+    setCurrentPage(1);
   }, [excursions, selectedCities, selectedCategories, search, sort, filterJournee, filterHeure]);
 
   const toggleFav = async (excId: string) => {
@@ -181,6 +183,11 @@ export default function ExcursionsPage() {
   };
 
   const hasFilters = selectedCities.length > 0 || selectedCategories.length > 0 || filterJournee || filterHeure;
+
+  const ITEMS_PER_PAGE = 12;
+  const totalPages = Math.max(1, Math.ceil(filtered.length / ITEMS_PER_PAGE));
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const paginated = filtered.slice(startIndex, startIndex + ITEMS_PER_PAGE);
 
   const renderDropdown = () => {
     if (!activeTab || (activeTab !== "ville" && activeTab !== "categorie")) return null;

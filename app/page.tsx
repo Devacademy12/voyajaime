@@ -14,6 +14,8 @@ import PathsSection      from "@/app/components/home/PathsSection";
 import PopularExcursions from "@/app/components/home/PopularExcursions";
 import HomeFooter        from "@/app/components/home/HomeFooter";
 import AboutSection from "./components/home/AboutSection";
+import BlogSection from "@/app/components/home/BlogSection";
+
 
 // Shared types & utils
 import { SlideExcursion, Excursion, SLIDE_COLORS, FALLBACK_IMG } from "@/lib/homeUtils";
@@ -157,6 +159,8 @@ export default function HomePage() {
       />
 
       <AboutSection />
+
+      <BlogSection />
 
       <HomeFooter
         user={user}
