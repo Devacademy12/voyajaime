@@ -268,6 +268,8 @@ export default function AuthModal({ isOpen, onClose, defaultMode = "login" }: Au
         const cleanFullName   = sanitizeText(fullName);
         const cleanAgencyName = sanitizeText(agencyName);
         const cleanCity       = sanitizeText(city);
+
+        // 1. Créer le compte Supabase Auth
         const { data, error } = await supabase.auth.signUp({
           email: cleanEmail, password,
           options: {
@@ -276,14 +278,34 @@ export default function AuthModal({ isOpen, onClose, defaultMode = "login" }: Au
           },
         });
         if (error) throw error;
-        if (!data.user) throw new Error("Erreur création compte");
+
+        // signUp retourne data.user = null si l'email existe déjà
+        if (!data.user) {
+          throw new Error("Cet email est déjà utilisé. Essayez de vous connecter.");
+        }
+
+        // 2. Appel API avec détection explicite HTML vs JSON
         const res = await fetch("/api/register-prestataire", {
-          method: "POST", headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ userId: data.user.id, fullName: cleanFullName, agencyName: cleanAgencyName, city: cleanCity }),
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            userId:     data.user.id,
+            email:      cleanEmail,
+            fullName:   cleanFullName,
+            agencyName: cleanAgencyName,
+            city:       cleanCity,
+          }),
         });
+
+        const contentType = res.headers.get("content-type") || "";
+        if (!contentType.includes("application/json")) {
+          throw new Error(`Erreur serveur (${res.status}) — vérifiez votre configuration.`);
+        }
+
         const json = await res.json();
-        if (!res.ok) throw new Error(json.error || "Erreur API");
-        setSuccess("Demande envoyée ! Votre profil sera validé sous 24-48h.");
+        if (!res.ok) throw new Error(json.error || "Erreur lors de la création du compte.");
+
+        setSuccess("Compte créé ! Vérifiez votre email pour continuer l'inscription.");
       }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Erreur inconnue";

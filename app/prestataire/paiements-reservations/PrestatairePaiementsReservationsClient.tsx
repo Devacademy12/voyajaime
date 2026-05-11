@@ -8,7 +8,7 @@
 //  - Diagnostic : juste la carte photo + stats, sans superflu
 // ─────────────────────────────────────────────────────────────────────
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { createClient } from "@/lib/supabaseClient";
 import {
   TrendingUp, Clock, Percent, Wallet, CalendarDays, Users,
@@ -386,20 +386,30 @@ export default function PrestatairePaiementsReservationsClient({
   const totalFees    = useMemo(() => paiements.reduce((s, p) => s + Number(p.platform_fee), 0), [paiements]);
   const nbPaid       = useMemo(() => paiements.filter(p => p.status === "paid").length, [paiements]);
 
+  // Helper : résoudre touriste et excursion depuis paiement (direct) OU via réservation (fallback)
+  // FIX : les anciens paiements n'ont pas excursion_id/touriste_id stockés dans paiements
+  //       on utilise donc p.excursion_id en priorité, sinon resa.excursion_id
+  const resolvePayData = useCallback((p: Paiement) => {
+    const resa   = resaPayMap[p.reservation_id] || {} as any;
+    const excId  = String((p as any).excursion_id || resa.excursion_id || "");
+    const tourId = String((p as any).touriste_id  || resa.touriste_id  || "");
+    const exc    = excPayMap[excId]  || {} as ExcursionInfo;
+    const tour   = tourMap[tourId]   || null;
+    return { resa, exc, tour };
+  }, [resaPayMap, excPayMap, tourMap]);
+
   // Paiements filtrés
   const filteredPay = useMemo(() => paiements.filter(p => {
-    const resa = resaPayMap[p.reservation_id] || {} as any;
-    const exc  = excPayMap[String(resa.excursion_id)] || {} as ExcursionInfo;
-    const tour = tourMap[String(resa.touriste_id)];
+    const { resa, exc, tour } = resolvePayData(p);
     const q = paySearch.toLowerCase();
     const match =
       (exc.title || "").toLowerCase().includes(q) ||
-      (exc.city  || "").toLowerCase().includes(q) ||
+      ((exc as any).city  || "").toLowerCase().includes(q) ||
       (tour?.full_name || "").toLowerCase().includes(q) ||
       (tour?.email     || "").toLowerCase().includes(q) ||
       String(resa.booking_code || "").toLowerCase().includes(q);
     return match && (payStatus === "all" || p.status === payStatus);
-  }), [paiements, paySearch, payStatus, resaPayMap, excPayMap, tourMap]);
+  }), [paiements, paySearch, payStatus, resolvePayData]);
 
   const groupedPay = useMemo(() => groupByMonth(filteredPay), [filteredPay]);
 
@@ -455,9 +465,7 @@ export default function PrestatairePaiementsReservationsClient({
 
   function handleExport() {
     const rows = filteredPay.map(p => {
-      const resa = resaPayMap[p.reservation_id] || {} as any;
-      const exc  = excPayMap[String(resa.excursion_id)] || {} as ExcursionInfo;
-      const tour = tourMap[String(resa.touriste_id)];
+      const { resa, exc, tour } = resolvePayData(p);
       return { Date: fmtDate(p.created_at), Excursion: exc.title || "—", Ville: (exc as any).city || "—", Touriste: tour?.full_name || "—", Email: tour?.email || "—", Code: String(resa.booking_code || "—"), "Montant EUR": Number(p.amount), "Commission EUR": Number(p.platform_fee), "Net EUR": Number(p.net_amount), Statut: PAIEMENT_STATUS[p.status as PaiementStatus]?.label ?? p.status };
     });
     exportCSV(rows, `mes_paiements_${new Date().toISOString().slice(0, 10)}.csv`);
@@ -719,9 +727,7 @@ export default function PrestatairePaiementsReservationsClient({
                       </div>
 
                       {items.map((p, i) => {
-                        const resa = resaPayMap[p.reservation_id] || {} as any;
-                        const exc  = excPayMap[String(resa.excursion_id)] || {} as ExcursionInfo;
-                        const tour = tourMap[String(resa.touriste_id)];
+                        const { resa, exc, tour } = resolvePayData(p);
                         const cfg  = PAIEMENT_STATUS[p.status as PaiementStatus] ?? PAIEMENT_STATUS.pending;
                         const isOpen = expandedPay === p.id;
 

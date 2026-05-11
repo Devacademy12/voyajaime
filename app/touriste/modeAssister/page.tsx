@@ -1,12 +1,13 @@
 "use client";
 import React, { useState, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import { createClient } from "@/lib/supabaseClient";
 import ExcursionClient from "@/app/excursions/[id]/ExcursionClient";
 import TouristeNav from "@/app/components/touriste/TouristeNav";
 import ItineraireDisplay from "@/app/components/itineraire/ItineraireDisplay";
 import {
   MapPin, Sparkles, Bot, Loader2, ChevronLeft, ChevronRight, CalendarDays,
-  Heart, ArrowRight, CheckCircle,
+  Heart, ArrowRight, CheckCircle, Euro, AlertTriangle,
 } from "lucide-react";
 import styles from "@/public/style/ModeAssiste.module.css";
 
@@ -58,6 +59,34 @@ function fmtShort(d: Date) {
   return `${d.getDate()} ${MONTHS_SHORT[d.getMonth()]}`;
 }
 
+/**
+ * Vérifie si deux plages de dates se chevauchent.
+ * Retourne true si elles se superposent (même un seul jour commun).
+ */
+function datesOverlap(
+  start1: Date | null, end1: Date | null,
+  start2: Date | null, end2: Date | null
+): boolean {
+  if (!start1 || !end1 || !start2 || !end2) return false;
+  // Normalise à minuit pour éviter les décalages horaires
+  const s1 = new Date(start1); s1.setHours(0, 0, 0, 0);
+  const e1 = new Date(end1);   e1.setHours(0, 0, 0, 0);
+  const s2 = new Date(start2); s2.setHours(0, 0, 0, 0);
+  const e2 = new Date(end2);   e2.setHours(0, 0, 0, 0);
+  // Chevauchement : les deux intervalles se croisent si s1 <= e2 ET s2 <= e1
+  return s1 <= e2 && s2 <= e1;
+}
+
+/**
+ * Retourne l'ensemble des dates déjà réservées par les AUTRES villes.
+ * Utilisé pour griser les jours dans MiniCalPop.
+ */
+function getBlockedDates(cityDates: CityDateRange[], excludeCity: string): { start: Date; end: Date }[] {
+  return cityDates
+    .filter((c) => c.city !== excludeCity && c.start && c.end)
+    .map((c) => ({ start: c.start!, end: c.end! }));
+}
+
 /* ════════════════════════════
    MiniCalPop
 ════════════════════════════ */
@@ -66,11 +95,13 @@ function MiniCalPop({
   onChange,
   minDate,
   onClose,
+  blockedRanges,
 }: {
   value: Date | null;
   onChange: (d: Date) => void;
   minDate?: Date | null;
   onClose: () => void;
+  blockedRanges?: { start: Date; end: Date }[];
 }) {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -91,6 +122,17 @@ function MiniCalPop({
   for (let i = 0; i < firstDayIndex; i++) cells.push(null);
   for (let i = 1; i <= daysInMonth; i++) cells.push(i);
 
+  const isBlocked = (day: number | null): boolean => {
+    if (!day || !blockedRanges || blockedRanges.length === 0) return false;
+    const date = new Date(year, month, day);
+    date.setHours(0, 0, 0, 0);
+    return blockedRanges.some((range) => {
+      const s = new Date(range.start); s.setHours(0, 0, 0, 0);
+      const e = new Date(range.end);   e.setHours(0, 0, 0, 0);
+      return date >= s && date <= e;
+    });
+  };
+
   const isDisabled = (day: number | null) => {
     if (!day) return true;
     const date = new Date(year, month, day);
@@ -100,6 +142,7 @@ function MiniCalPop({
       min.setHours(0, 0, 0, 0);
       if (date < min) return true;
     }
+    if (isBlocked(day)) return true;
     return false;
   };
 
@@ -109,7 +152,7 @@ function MiniCalPop({
   };
 
   return (
-    <div className="ma-cal-pop" onClick={(e) => e.stopPropagation()}>
+    <div className="ma-cal-pop" onClick={(e) => e.stopPropagation()} style={{ width: "260px", padding: "10px", fontSize: "12px" }}>
       <div className="ma-cal-pop-header">
         <button className="ma-cal-nav-btn" onClick={() => setCursor(new Date(year, month - 1, 1))}>
           <ChevronLeft size={16} />
@@ -128,12 +171,14 @@ function MiniCalPop({
 
       <div className="ma-cal-grid">
         {cells.map((day, idx) => {
-          const disabled  = isDisabled(day);
-          const selected  = isSelected(day);
+          const disabled = isDisabled(day);
+          const blocked  = isBlocked(day);
+          const selected = isSelected(day);
           return (
             <button
               key={idx}
               disabled={disabled}
+              title={blocked && day ? "Date réservée pour une autre ville" : undefined}
               onClick={() => {
                 if (day && !disabled) {
                   onChange(new Date(year, month, day));
@@ -142,7 +187,8 @@ function MiniCalPop({
               }}
               className={[
                 "ma-cal-day-btn",
-                selected ? "ma-cal-day-btn-selected" : "",
+                selected  ? "ma-cal-day-btn-selected" : "",
+                blocked   ? "ma-cal-day-btn-blocked"  : "",
               ].join(" ")}
             >
               {day || ""}
@@ -150,6 +196,13 @@ function MiniCalPop({
           );
         })}
       </div>
+
+      {blockedRanges && blockedRanges.length > 0 && (
+        <div className="ma-cal-legend">
+          <span className="ma-cal-legend-dot ma-cal-legend-dot-blocked" />
+          <span>Dates réservées pour une autre ville</span>
+        </div>
+      )}
     </div>
   );
 }
@@ -161,43 +214,76 @@ function CityDateRow({
   cdr,
   onStart,
   onEnd,
+  allCityDates,
 }: {
   cdr: CityDateRange;
   onStart: (d: Date) => void;
   onEnd: (d: Date) => void;
+  allCityDates: CityDateRange[];
 }) {
   const [openPop, setOpenPop] = useState<"start" | "end" | null>(null);
-  const nights = cdr.start && cdr.end ? daysBetween(cdr.start, cdr.end) : 0;
+
   const minEnd = cdr.start
-    ? new Date(cdr.start.getFullYear(), cdr.start.getMonth(), cdr.start.getDate() + 1)
+    ? new Date(cdr.start.getFullYear(), cdr.start.getMonth(), cdr.start.getDate())
     : undefined;
 
-  const rowRef = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    if (!openPop) return;
-    const handler = (e: MouseEvent) => {
-      if (rowRef.current && !rowRef.current.contains(e.target as Node)) {
-        setOpenPop(null);
-      }
-    };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, [openPop]);
+  const nights = cdr.start && cdr.end ? daysBetween(cdr.start, cdr.end) : 0;
+
+  // Dates bloquées par les autres villes
+  const blockedRanges = getBlockedDates(allCityDates, cdr.city);
+
+  const calPortal = openPop
+    ? createPortal(
+        <>
+          <div
+            style={{ position: "fixed", inset: 0, zIndex: 9998 }}
+            onClick={() => setOpenPop(null)}
+          />
+          <div
+            style={{
+              position: "fixed",
+              top: "80px",
+              left: "50%",
+              transform: "translateX(-50%) scale(0.85)",
+              transformOrigin: "top center",
+              zIndex: 9999,
+              boxShadow: "0 4px 20px rgba(0,0,0,0.15)",
+              borderRadius: 12,
+              background: "#fff",
+            }}
+            onWheel={(e) => e.stopPropagation()}
+            onTouchMove={(e) => e.stopPropagation()}
+          >
+            <MiniCalPop
+              value={openPop === "start" ? cdr.start : cdr.end}
+              onChange={(d) => {
+                if (openPop === "start") onStart(d);
+                else onEnd(d);
+                setOpenPop(null);
+              }}
+              minDate={openPop === "end" ? minEnd : undefined}
+              onClose={() => setOpenPop(null)}
+              blockedRanges={blockedRanges}
+            />
+          </div>
+        </>,
+        document.body
+      )
+    : null;
 
   return (
-    <div ref={rowRef} className="ma-city-date-row">
-      <div className="ma-city-date-row-left">
-        <span className="ma-city-name">{cdr.city}</span>
-        {nights > 0 && (
-          <span className="ma-city-nights">
-            • {nights} jour{nights > 1 ? "s" : ""}
-          </span>
-        )}
-      </div>
+    <>
+      <div className="ma-city-date-row">
+        <div className="ma-city-date-row-left">
+          <span className="ma-city-name">{cdr.city}</span>
+          {nights > 0 && (
+            <span className="ma-city-nights">
+              • {nights} jour{nights > 1 ? "s" : ""}
+            </span>
+          )}
+        </div>
 
-      <div className="ma-city-date-btns">
-        {/* Arrivée */}
-        <div style={{ position: "relative" }}>
+        <div className="ma-city-date-btns">
           <button
             onClick={() => setOpenPop(openPop === "start" ? null : "start")}
             className={["ma-date-btn", cdr.start ? "ma-date-btn-active" : ""].join(" ")}
@@ -205,19 +291,9 @@ function CityDateRow({
             <CalendarDays size={12} />
             {cdr.start ? fmtShort(cdr.start) : "Arrivée"}
           </button>
-          {openPop === "start" && (
-            <MiniCalPop
-              value={cdr.start}
-              onChange={(d) => { onStart(d); setOpenPop(null); }}
-              onClose={() => setOpenPop(null)}
-            />
-          )}
-        </div>
 
-        <ArrowRight size={14} color="#94a3b8" />
+          <ArrowRight size={14} color="#94a3b8" />
 
-        {/* Départ */}
-        <div style={{ position: "relative" }}>
           <button
             onClick={() => { if (cdr.start) setOpenPop(openPop === "end" ? null : "end"); }}
             className={[
@@ -229,17 +305,11 @@ function CityDateRow({
             <CalendarDays size={12} />
             {cdr.end ? fmtShort(cdr.end) : "Départ"}
           </button>
-          {openPop === "end" && cdr.start && (
-            <MiniCalPop
-              value={cdr.end}
-              onChange={(d) => { onEnd(d); setOpenPop(null); }}
-              minDate={minEnd}
-              onClose={() => setOpenPop(null)}
-            />
-          )}
         </div>
       </div>
-    </div>
+
+      {calPortal}
+    </>
   );
 }
 
@@ -271,6 +341,7 @@ export default function ModeAssiste() {
   const [selectedCities, setSelectedCities] = useState<string[]>([]);
   const [cityDates, setCityDates]           = useState<CityDateRange[]>([]);
   const [selectedCats, setSelectedCats]     = useState<string[]>([]);
+  const [budget, setBudget]                 = useState<string>("");
 
   const [villes, setVilles]         = useState<Ville[]>([]);
   const [categories, setCategories] = useState<Categorie[]>([]);
@@ -281,6 +352,9 @@ export default function ModeAssiste() {
   const [genError, setGenError]   = useState("");
   const [loadingMsg, setLoadingMsg] = useState("");
   const msgIdxRef = useRef(0);
+
+  // ── Erreur de chevauchement de dates ──
+  const [dateError, setDateError] = useState("");
 
   const [showCheckout, setShowCheckout] = useState(false);
   const [saving, setSaving]             = useState(false);
@@ -311,7 +385,7 @@ export default function ModeAssiste() {
     : null;
 
   const canGenerate =
-    selectedCities.length > 0 && selectedCats.length > 0 && allDatesSet && !!N8N_WEBHOOK_URL;
+    selectedCities.length > 0 && selectedCats.length > 0 && allDatesSet && !dateError && !!N8N_WEBHOOK_URL;
 
   /* ── Load Supabase ── */
   useEffect(() => {
@@ -340,6 +414,8 @@ export default function ModeAssiste() {
       setCityDates(
         next.map((c) => cityDates.find((cd) => cd.city === c) ?? { city: c, start: null, end: null })
       );
+      // Réinitialise l'erreur si une ville est désélectionnée (résout potentiellement le conflit)
+      setDateError("");
       return next;
     });
   };
@@ -347,16 +423,58 @@ export default function ModeAssiste() {
   const toggleCat = (id: string) =>
     setSelectedCats((p) => (p.includes(id) ? p.filter((x) => x !== id) : [...p, id]));
 
-  const updateCityStart = (city: string, d: Date) =>
+  /* ── updateCityStart avec contrôle de chevauchement ── */
+  const updateCityStart = (city: string, d: Date) => {
+    // Récupère la date de fin actuelle pour cette ville
+    const currentEnd = cityDates.find((c) => c.city === city)?.end ?? null;
+
+    // Vérifie le chevauchement avec les autres villes
+    const conflict = cityDates.find(
+      (cdr) =>
+        cdr.city !== city &&
+        datesOverlap(d, currentEnd, cdr.start, cdr.end)
+    );
+
+    if (conflict) {
+      setDateError(
+        `Conflit avec "${conflict.city}" : les séjours se chevauchent. Choisissez des dates sans superposition.`
+      );
+      return; // Bloque la mise à jour
+    }
+
+    setDateError("");
     setCityDates((prev) =>
       prev.map((cdr) => {
         if (cdr.city !== city) return cdr;
-        return { ...cdr, start: d, end: cdr.end && cdr.end <= d ? null : cdr.end };
+        return { ...cdr, start: d, end: cdr.end && cdr.end < d ? null : cdr.end };
       })
     );
+  };
 
-  const updateCityEnd = (city: string, d: Date) =>
-    setCityDates((prev) => prev.map((cdr) => (cdr.city !== city ? cdr : { ...cdr, end: d })));
+  /* ── updateCityEnd avec contrôle de chevauchement ── */
+  const updateCityEnd = (city: string, d: Date) => {
+    // Récupère la date de début actuelle pour cette ville
+    const currentStart = cityDates.find((c) => c.city === city)?.start ?? null;
+
+    // Vérifie le chevauchement avec les autres villes
+    const conflict = cityDates.find(
+      (cdr) =>
+        cdr.city !== city &&
+        datesOverlap(currentStart, d, cdr.start, cdr.end)
+    );
+
+    if (conflict) {
+      setDateError(
+        `Conflit avec "${conflict.city}" : les séjours se chevauchent. Choisissez des dates sans superposition.`
+      );
+      return; // Bloque la mise à jour
+    }
+
+    setDateError("");
+    setCityDates((prev) =>
+      prev.map((cdr) => (cdr.city !== city ? cdr : { ...cdr, end: d }))
+    );
+  };
 
   /* ── Generate ── */
   const generate = async () => {
@@ -383,10 +501,13 @@ export default function ModeAssiste() {
         days: daysBetween(cdr.start!, cdr.end!),
       }));
 
+      const budgetLine = budget ? `Budget total du voyageur : ${budget} €. Essaie de respecter ce budget.` : "";
+
       const message = `Tu es un expert en tourisme tunisien.
 Crée un itinéraire de ${totalDays} jours avec ce programme par ville :
 ${citySchedule.map((s) => `- ${s.city} : du ${s.from} au ${s.to} (${s.days} jours)`).join("\n")}
 Intérêts: ${catNames.join(", ")}
+${budgetLine}
 Excursions disponibles (utilise UNIQUEMENT celles-ci):
 ${JSON.stringify(
   relExc.map((e) => ({
@@ -410,6 +531,7 @@ Format: { "title": "Titre", "days": [{ "day":1,"city":"Ville","date":"DD/MM/YYYY
           message, totalDays, citySchedule,
           cities: selectedCities,
           interests: catNames,
+          budget: budget ? Number(budget) : null,
         }),
       });
 
@@ -446,6 +568,7 @@ Format: { "title": "Titre", "days": [{ "day":1,"city":"Ville","date":"DD/MM/YYYY
         nb_jours: totalDays,
         villes_selectionnees: selectedCities,
         categories_selectionnees: catNames,
+        budget: budget ? Number(budget) : null,
         city_schedule: cityDates.map((cdr) => ({
           city: cdr.city,
           start: cdr.start?.toISOString(),
@@ -468,7 +591,9 @@ Format: { "title": "Titre", "days": [{ "day":1,"city":"Ville","date":"DD/MM/YYYY
     setSelectedCities([]);
     setCityDates([]);
     setSelectedCats([]);
+    setBudget("");
     setGenError("");
+    setDateError("");
     setShowCheckout(false);
     setSaveStatus("idle");
   };
@@ -482,7 +607,6 @@ Format: { "title": "Titre", "days": [{ "day":1,"city":"Ville","date":"DD/MM/YYYY
     <div className={styles.root}>
       <TouristeNav />
 
-      {/* ── Topbar ── */}
       {step === "questions" && (
         <div className="ma-topbar">
           <div className="ma-topbar-badge">
@@ -492,13 +616,10 @@ Format: { "title": "Titre", "days": [{ "day":1,"city":"Ville","date":"DD/MM/YYYY
         </div>
       )}
 
-      {/* ── Main ── */}
       <main className="ma-main">
 
-        {/* ════ STEP : QUESTIONS ════ */}
         {step === "questions" && (
           <>
-            {/* Error banner */}
             {genError && (
               <div className="ma-err-banner">
                 <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
@@ -602,16 +723,28 @@ Format: { "title": "Titre", "days": [{ "day":1,"city":"Ville","date":"DD/MM/YYYY
                         {cityDates.filter((c) => c.start && c.end).length}/{cityDates.length} étapes configurées
                       </p>
 
+                      {/* ── Bannière d'erreur de chevauchement ── */}
+                      {dateError && (
+                        <div className="ma-date-conflict-banner">
+                          <div style={{ display: "flex", alignItems: "flex-start", gap: 8 }}>
+                            <AlertTriangle size={15} style={{ marginTop: 1, flexShrink: 0 }} />
+                            <span>{dateError}</span>
+                          </div>
+                          <button onClick={() => setDateError("")}>✕</button>
+                        </div>
+                      )}
+
                       {cityDates.map((cdr) => (
                         <CityDateRow
                           key={cdr.city}
                           cdr={cdr}
+                          allCityDates={cityDates}
                           onStart={(d) => updateCityStart(cdr.city, d)}
                           onEnd={(d)   => updateCityEnd(cdr.city, d)}
                         />
                       ))}
 
-                      {allDatesSet && (
+                      {allDatesSet && !dateError && (
                         <div className="ma-recap-box">
                           <div className="ma-recap-title">
                             <CheckCircle size={14} color="#2B96A8" />
@@ -679,10 +812,56 @@ Format: { "title": "Titre", "days": [{ "day":1,"city":"Ville","date":"DD/MM/YYYY
                       })}
                     </div>
                   )}
+
+                  {/* ── Budget ── */}
+                  <div style={{ marginTop: 20, borderTop: "1px solid #e2e8f0", paddingTop: 16 }}>
+                    <p style={{ fontSize: 13, fontWeight: 600, color: "#374151", marginBottom: 8, display: "flex", alignItems: "center", gap: 6 }}>
+                      <Euro size={14} color="#2B96A8" />
+                      Budget total (optionnel)
+                    </p>
+                    <div style={{ position: "relative" }}>
+                      <input
+                        type="number"
+                        min={0}
+                        placeholder="Ex: 500"
+                        value={budget}
+                        onChange={(e) => setBudget(e.target.value)}
+                        style={{
+                          width: "100%",
+                          padding: "10px 36px 10px 12px",
+                          borderRadius: 10,
+                          border: "1.5px solid #e2e8f0",
+                          fontSize: 14,
+                          color: "#1e293b",
+                          outline: "none",
+                          background: "#f8fafc",
+                          boxSizing: "border-box",
+                          transition: "border-color 0.2s",
+                        }}
+                        onFocus={(e) => e.target.style.borderColor = "#2B96A8"}
+                        onBlur={(e) => e.target.style.borderColor = "#e2e8f0"}
+                      />
+                      <span style={{
+                        position: "absolute",
+                        right: 12,
+                        top: "50%",
+                        transform: "translateY(-50%)",
+                        color: "#94a3b8",
+                        fontSize: 14,
+                        fontWeight: 600,
+                        pointerEvents: "none",
+                      }}>€</span>
+                    </div>
+                    {budget && Number(budget) > 0 && (
+                      <p style={{ fontSize: 11, color: "#2B96A8", marginTop: 6 }}>
+                        Budget de <strong>{Number(budget).toLocaleString("fr-FR")} €</strong> pris en compte
+                      </p>
+                    )}
+                  </div>
                 </div>
               </div>
 
-            </div>{/* end ma-cards-row */}
+            </div>
 
             {/* ── Footer CTA ── */}
             <div className="ma-footer">
@@ -690,12 +869,23 @@ Format: { "title": "Titre", "days": [{ "day":1,"city":"Ville","date":"DD/MM/YYYY
                 <div className="ma-footer-pill">
                   <span>{selectedCities.length > 0 ? selectedCities.slice(0,3).join(", ") + (selectedCities.length > 3 ? ` +${selectedCities.length - 3}` : "") : ""}</span>
                   {totalDays > 0 && <>{" · "}<span>{totalDays} j</span></>}
+                  {budget && Number(budget) > 0 && <>{" · "}<span>{Number(budget).toLocaleString("fr-FR")} €</span></>}
                 </div>
               )}
+
+              {/* Message d'avertissement si chevauchement encore actif */}
+              {dateError && (
+                <p style={{ fontSize: 12, color: "#c2410c", marginBottom: 6, display: "flex", alignItems: "center", gap: 6 }}>
+                  <AlertTriangle size={13} />
+                  Corrigez les conflits de dates avant de générer
+                </p>
+              )}
+
               <button
                 onClick={generate}
                 disabled={!canGenerate}
                 className="ma-generate-btn"
+                title={dateError ? "Résolvez les conflits de dates d'abord" : undefined}
               >
                 <Bot size={18} /> Générer mon itinéraire <ArrowRight size={18} />
               </button>
@@ -703,7 +893,6 @@ Format: { "title": "Titre", "days": [{ "day":1,"city":"Ville","date":"DD/MM/YYYY
           </>
         )}
 
-        {/* ════ STEP : GÉNÉRATION ════ */}
         {step === "generation" && (
           <div className="ma-gen-screen">
             <div className="ma-gen-orb">
@@ -723,7 +912,6 @@ Format: { "title": "Titre", "days": [{ "day":1,"city":"Ville","date":"DD/MM/YYYY
           </div>
         )}
 
-        {/* ════ STEP : ITINÉRAIRE ════ */}
         {step === "itineraire" && itinerary && (
           <div style={{ flex: 1, overflow: "auto" }}>
             <ItineraireDisplay
@@ -746,7 +934,6 @@ Format: { "title": "Titre", "days": [{ "day":1,"city":"Ville","date":"DD/MM/YYYY
 
       </main>
 
-      {/* ── Checkout Modal ── */}
       {showCheckout && itineraryAsExc && (
         <ExcursionClient exc={itineraryAsExc} onClose={() => setShowCheckout(false)} />
       )}

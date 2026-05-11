@@ -2950,3 +2950,10 @@
 .admin-action-button.success:hover {
   background: #DCFCE7;
 }
+.ma-cal-pop {
+  background: var(--color-background-primary, #fff);
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: 0 8px 40px rgba(0, 0, 0, 0.22);
+  min-width: 280px;
+}

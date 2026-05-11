@@ -222,7 +222,7 @@ export default function AboutSection() {
               ))}
 
               <Link
-                href="/a-propos"
+                href="/about"
                 style={{
                   display: "inline-flex",
                   alignItems: "center",

@@ -16,7 +16,7 @@ export default async function PrestataireLayout({
     .from("profiles").select("*").eq("user_id", user.id).single();
 
   if (!profile || profile.role !== "prestataire") redirect("/auth");
-  if (!profile.is_validated) return <ValidationPending />;
+  if (!profile.is_validated) return <ValidationPending userId={user.id} profilComplete={!!profile.profil_complete} />;
 
   return (
     <>

@@ -30,8 +30,15 @@ export default async function PrestatairePaiements() {
         .in("id", resaIds)
     : { data: [] };
 
-  const excursionIds = [...new Set((reservations ?? []).map((r: any) => r.excursion_id).filter(Boolean))];
-  const touristeIds  = [...new Set((reservations ?? []).map((r: any) => r.touriste_id).filter(Boolean))];
+  // FIX : prendre les IDs depuis paiements ET réservations
+  // car les anciens paiements peuvent avoir excursion_id/touriste_id directement
+  const excursionIdsFromResa = (reservations ?? []).map((r: any) => r.excursion_id).filter(Boolean);
+  const excursionIdsFromPay  = (paiements  ?? []).map((p: any) => p.excursion_id).filter(Boolean);
+  const excursionIds = [...new Set([...excursionIdsFromResa, ...excursionIdsFromPay])];
+
+  const touristeIdsFromResa = (reservations ?? []).map((r: any) => r.touriste_id).filter(Boolean);
+  const touristeIdsFromPay  = (paiements   ?? []).map((p: any) => p.touriste_id).filter(Boolean);
+  const touristeIds  = [...new Set([...touristeIdsFromResa, ...touristeIdsFromPay])];
 
   // ── 3. Excursions pour paiements ──────────────────────────────────
   const { data: excursions = [] } = excursionIds.length > 0
