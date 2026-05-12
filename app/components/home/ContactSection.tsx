@@ -179,10 +179,16 @@ export default async function ContactSection({
 
         {/* ── Couche 0 : image de fond ── */}
         {bgImage && (
-          <div
-            className="hcs-bg-img"
-            style={{ backgroundImage: `url(${bgImage})` }}
-          />
+         <div
+        className="contact-page"
+        style={bgImage ? {
+          backgroundImage: `linear-gradient(rgba(13,17,23,.80), rgba(13,17,23,.80)), url(${bgImage})`,
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+          backgroundAttachment: "fixed",
+        } : undefined}
+      />
+        
         )}
 
         {/* ── Couche 1 : overlay sombre ── */}
