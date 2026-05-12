@@ -9,6 +9,7 @@ interface ContactSectionProps {
   hours?:      string;
   ctaLabel?:   string;
   successMsg?: string;
+  bgImage?:    string;   // ← NOUVEAU
 }
 
 const CSS = `
@@ -16,6 +17,8 @@ const CSS = `
 
   .hcs-section {
     background: #0D1117;
+    background-size: cover;
+    background-position: center;
     padding: 96px 40px;
     position: relative;
     overflow: hidden;
@@ -28,7 +31,17 @@ const CSS = `
     background: linear-gradient(90deg, transparent, rgba(2,175,207,.3), transparent);
   }
 
+  /* Overlay sombre par-dessus l'image */
+  .hcs-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(13,17,23,.80);
+    pointer-events: none;
+  }
+
   .hcs-inner {
+    position: relative; /* au-dessus de l'overlay */
+    z-index: 1;
     max-width: 1160px; margin: 0 auto;
     display: grid;
     grid-template-columns: 1fr 1.4fr;
@@ -123,6 +136,7 @@ export default function ContactSection({
   hours      = "Lun–Ven : 9h–18h",
   ctaLabel   = "Envoyer le message",
   successMsg = "Message envoyé ! Nous vous répondrons sous 24h.",
+  bgImage    = "",   // ← NOUVEAU
 }: ContactSectionProps) {
 
   const INFO = [
@@ -135,7 +149,15 @@ export default function ContactSection({
   return (
     <section aria-labelledby="contact-section-heading">
       <style>{CSS}</style>
-      <div className="hcs-section">
+
+      {/* ── bg_image appliqué ici via style inline ── */}
+      <div
+        className="hcs-section"
+        style={bgImage ? { backgroundImage: `url(${bgImage})` } : undefined}
+      >
+        {/* Overlay sombre uniquement quand une image est présente */}
+        {bgImage && <div className="hcs-overlay" />}
+
         <div className="hcs-inner">
 
           {/* ── Gauche ── */}
