@@ -6,7 +6,7 @@ import { sanitizeText } from "@/app/lib/sanitize";
 import {
   Eye, EyeOff, X, ArrowRight, ArrowLeft,
   Mail, Lock, User, Building2, MapPin,
-  Globe, CheckCircle, AlertCircle, Loader2,  // ← Globe rajouté
+  CheckCircle, AlertCircle, Loader2,  // ← Globe rajouté
 } from "lucide-react";
 
 const CITIES = ["Tunis","Sfax","Sousse","Kairouan","Hammamet","Tozeur","Djerba","Tataouine","Gafsa","Douz"];
