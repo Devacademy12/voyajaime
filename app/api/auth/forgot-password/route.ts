@@ -26,7 +26,7 @@ export async function POST(req: Request) {
       options: {
         // ⚠️ Supabase va ajouter #access_token=... automatiquement
         // Notre page doit lire ces paramètres
-      redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback`, // ✅ Changement clé
+redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/reset-password`,
       },
     });
 
