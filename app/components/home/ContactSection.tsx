@@ -15,29 +15,16 @@ interface ContactSectionProps {
 const CSS = `
   @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@400;500;600;700;800&display=swap');
 
+  /* ── Wrapper section ── */
   .hcs-section {
-    position: relative;
-    overflow: hidden;
-    padding: 96px 40px;
+    min-height: 480px;
     background-color: #0D1117;
-  }
-
-  /* ── div image de fond (absolu, z-index 0) ── */
-  .hcs-bg-img {
-    position: absolute;
-    inset: 0;
     background-size: cover;
     background-position: center;
-    background-repeat: no-repeat;
-    z-index: 0;
-  }
-
-  /* ── overlay sombre par-dessus l'image ── */
-  .hcs-bg-overlay {
-    position: absolute;
-    inset: 0;
-    background: rgba(13, 17, 23, 0.78);
-    z-index: 1;
+    background-attachment: fixed;
+    padding: 96px 40px;
+    position: relative;
+    overflow: hidden;
   }
 
   /* Ligne déco en haut */
@@ -45,13 +32,12 @@ const CSS = `
     content: '';
     position: absolute; top: 0; left: 0; right: 0; height: 1px;
     background: linear-gradient(90deg, transparent, rgba(2,175,207,.3), transparent);
-    z-index: 2;
+    z-index: 1;
   }
 
-  /* ── tout le contenu au-dessus ── */
   .hcs-inner {
     position: relative;
-    z-index: 3;
+    z-index: 2;
     max-width: 1160px;
     margin: 0 auto;
     display: grid;
@@ -130,7 +116,7 @@ const CSS = `
 
   @media(max-width:900px){
     .hcs-inner   { grid-template-columns:1fr!important; gap:48px; }
-    .hcs-section { padding:64px 24px; }
+    .hcs-section { padding:64px 24px; background-attachment: scroll; }
   }
   @media(max-width:480px){
     .hcs-form-box { padding:22px; }
@@ -146,7 +132,7 @@ export default async function ContactSection({
   successMsg: successMsgProp,
 }: ContactSectionProps) {
 
-  /* ── Fetch Supabase directement dans le composant ── */
+  /* ── Fetch Supabase directement ── */
   const supabase = await createServerSupabaseClient();
   const { data: rows } = await supabase
     .from("contact_content")
@@ -162,7 +148,7 @@ export default async function ContactSection({
   const hours      = hoursProp      ?? c.hours       ?? "Lun–Ven : 9h–18h";
   const ctaLabel   = ctaLabelProp   ?? c.cta_label   ?? "Envoyer le message";
   const successMsg = successMsgProp ?? c.success_msg ?? "Message envoyé ! Nous vous répondrons sous 24h.";
-  const bgImage    = c.bg_image ?? "";
+  const bgImage    = c.bg_image     ?? "";
 
   const INFO = [
     { icon: <Mail  size={17} color="#02AFCF" strokeWidth={1.8}/>, label:"EMAIL",     value: email,   href: `mailto:${email}` },
@@ -175,26 +161,17 @@ export default async function ContactSection({
     <section aria-labelledby="contact-section-heading">
       <style>{CSS}</style>
 
-      <div className="hcs-section">
-
-        {/* ── Couche 0 : image de fond ── */}
-        {bgImage && (
-         <div
-        className="contact-page"
+      {/* ── Même pattern exact que page.tsx ── */}
+      <div
+        className="hcs-section"
         style={bgImage ? {
           backgroundImage: `linear-gradient(rgba(13,17,23,.80), rgba(13,17,23,.80)), url(${bgImage})`,
           backgroundSize: "cover",
           backgroundPosition: "center",
           backgroundAttachment: "fixed",
         } : undefined}
-      />
-        
-        )}
+      >
 
-        {/* ── Couche 1 : overlay sombre ── */}
-        {bgImage && <div className="hcs-bg-overlay" />}
-
-        {/* ── Couche 3 : contenu ── */}
         <div className="hcs-inner">
 
           {/* ── Gauche ── */}
