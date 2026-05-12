@@ -52,6 +52,7 @@ export const ROUTES = {
     slider:       "/admin/slider",
     blog:         "/admin/blog",
     about:        "/admin/about",
+    contact:      "/admin/contact",
   },
 
 } as const;

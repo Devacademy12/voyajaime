@@ -51,7 +51,7 @@ const NAV: Record<Role, NavElement[]> = {
         { label: "Slider",             href: ROUTES.admin.slider,        icon: <Mountain size={18} /> },
         { label: "Blog",               href: ROUTES.admin.blog,          icon: <Star size={18} /> },
         { label: "À propos",           href: ROUTES.admin.about,         icon: <UserCircle size={18} /> },
-      ],
+        { label: "Contact",            href: ROUTES.admin.contact,       icon: <MessageCircle size={18} />},      ],
     },
   ],
 };

@@ -1,0 +1,373 @@
+"use client";
+
+import { useState } from "react";
+import { createClient } from "@/lib/supabaseClient";
+import {
+  Save, Check, Loader2, AlertCircle, Mail, Phone,
+  MapPin, Clock, Eye, MessageSquare, Image as ImageIcon,
+  ChevronDown, ChevronUp, Trash2, MailOpen, RefreshCw,
+} from "lucide-react";
+
+/* ══ TYPES ══ */
+interface ContentRow { id: string; key: string; value: string | null; updated_at: string; }
+interface Message    { id: string; name: string; email: string; subject: string | null; message: string; is_read: boolean; created_at: string; }
+
+/* ══ CHAMPS ÉDITABLES ══ */
+const FIELDS: { key: string; label: string; icon: React.ReactNode; placeholder: string; multiline?: boolean }[] = [
+  { key:"hero_title",   label:"Titre principal",     icon:<MessageSquare size={14}/>, placeholder:"Contactez-nous" },
+  { key:"hero_subtitle",label:"Sous-titre",           icon:<MessageSquare size={14}/>, placeholder:"Votre message…", multiline:true },
+  { key:"bg_image",     label:"Image de fond (URL)",  icon:<ImageIcon size={14}/>,    placeholder:"https://…" },
+  { key:"email",        label:"Email",                icon:<Mail size={14}/>,         placeholder:"contact@voyajaime.tn" },
+  { key:"phone",        label:"Téléphone",            icon:<Phone size={14}/>,        placeholder:"+216 XX XXX XXX" },
+  { key:"address",      label:"Adresse",              icon:<MapPin size={14}/>,       placeholder:"Tunis, Tunisie" },
+  { key:"hours",        label:"Horaires",             icon:<Clock size={14}/>,        placeholder:"Lun–Ven : 9h–18h" },
+  { key:"cta_label",    label:"Texte du bouton CTA",  icon:<MessageSquare size={14}/>,placeholder:"Envoyer le message" },
+  { key:"success_msg",  label:"Message de succès",    icon:<Check size={14}/>,        placeholder:"Message envoyé !", multiline:true },
+];
+
+const CSS = `
+  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@400;500;600;700;800&display=swap');
+  *, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
+  body { font-family:'DM Sans',system-ui,sans-serif; background:#F0F2F8; }
+
+  @keyframes spin   { to { transform:rotate(360deg); } }
+  @keyframes fadeUp { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+
+  .topbar {
+    background:white; border-bottom:1px solid #E8ECF4; padding:0 32px;
+    height:64px; display:flex; justify-content:space-between; align-items:center;
+    position:sticky; top:0; z-index:100;
+  }
+
+  .tab-btn {
+    padding:8px 18px; border-radius:10px; border:none;
+    font-size:13px; font-weight:700; font-family:inherit;
+    cursor:pointer; transition:all .18s;
+  }
+  .tab-btn.active { background:#053366; color:white; }
+  .tab-btn.idle   { background:#F4F6FB; color:#6B7280; }
+  .tab-btn.idle:hover { background:#EBF0FA; color:#374151; }
+
+  .save-btn {
+    display:inline-flex; align-items:center; gap:7px;
+    padding:10px 22px; background:linear-gradient(135deg,#02AFCF,#053366);
+    color:white; border:none; border-radius:12px;
+    font-size:13px; font-weight:700; cursor:pointer;
+    font-family:inherit; transition:all .2s;
+    box-shadow:0 4px 14px rgba(2,175,207,.28);
+  }
+  .save-btn:hover:not(:disabled) { transform:translateY(-1px); }
+  .save-btn:disabled { background:#E5E7EB; color:#9CA3AF; cursor:not-allowed; box-shadow:none; }
+  .save-btn.ok { background:linear-gradient(135deg,#059669,#047857); }
+
+  .card {
+    background:white; border-radius:14px; border:1.5px solid #E8ECF4;
+    overflow:hidden; animation:fadeUp .22s ease both;
+  }
+
+  .field {
+    width:100%; padding:10px 14px;
+    background:white; border:1.5px solid #E8ECF4;
+    border-radius:10px; font-size:14px; font-family:inherit;
+    color:#111827; outline:none; transition:border .18s, box-shadow .18s;
+    resize:vertical;
+  }
+  .field:focus { border-color:#02AFCF; box-shadow:0 0 0 3px rgba(2,175,207,.09); }
+
+  .label {
+    display:block; font-size:10.5px; font-weight:800;
+    color:#94A3B8; text-transform:uppercase; letter-spacing:.7px; margin-bottom:6px;
+  }
+
+  /* Messages */
+  .msg-row {
+    display:flex; gap:16px; padding:18px 20px;
+    border-bottom:1px solid #F3F4F6; transition:background .15s; cursor:pointer;
+  }
+  .msg-row:last-child { border-bottom:none; }
+  .msg-row:hover { background:#F8FAFF; }
+  .msg-row.unread { background:#FAFEFF; }
+
+  .msg-detail {
+    padding:20px 24px; background:#F8FAFF;
+    border-top:1.5px solid #E8ECF4; animation:fadeUp .18s ease both;
+  }
+
+  .badge {
+    display:inline-flex; align-items:center; gap:4px;
+    padding:2px 8px; border-radius:20px;
+    font-size:10px; font-weight:800;
+  }
+
+  .icon-btn {
+    display:inline-flex; align-items:center; justify-content:center;
+    width:30px; height:30px; border-radius:8px;
+    border:1.5px solid #E8ECF4; background:white;
+    cursor:pointer; transition:all .15s; color:#6B7280; font-family:inherit;
+  }
+  .icon-btn:hover { background:#FEF2F2; border-color:#FCA5A5; color:#DC2626; }
+  .icon-btn.read-btn:hover { background:#EFF6FF; border-color:#BFDBFE; color:#3B82F6; }
+
+  *::-webkit-scrollbar { width:4px; }
+  *::-webkit-scrollbar-thumb { background:#E2E6F0; border-radius:2px; }
+`;
+
+/* ══ COMPOSANT ══ */
+export default function ContactAdminClient({
+  initialContent,
+  initialMessages,
+}: {
+  initialContent:  ContentRow[];
+  initialMessages: Message[];
+}) {
+  const sb = createClient();
+
+  /* ── Tabs ── */
+  const [tab, setTab] = useState<"content"|"messages">("content");
+
+  /* ── Content state ── */
+  const [content, setContent] = useState<Record<string, string>>(
+    Object.fromEntries(initialContent.map(r => [r.key, r.value ?? ""]))
+  );
+  const [saving,    setSaving]    = useState(false);
+  const [saveOk,    setSaveOk]    = useState(false);
+  const [saveError, setSaveError] = useState<string|null>(null);
+
+  /* ── Messages state ── */
+  const [messages,   setMessages]   = useState<Message[]>(initialMessages);
+  const [openMsg,    setOpenMsg]     = useState<string|null>(null);
+  const [refreshing, setRefreshing]  = useState(false);
+
+  /* ── Save content ── */
+  const saveContent = async () => {
+    setSaving(true); setSaveError(null);
+    try {
+      for (const [key, value] of Object.entries(content)) {
+        const { error } = await sb.from("contact_content")
+          .update({ value, updated_at: new Date().toISOString() })
+          .eq("key", key);
+        if (error) throw new Error(`Clé "${key}" : ${error.message}`);
+      }
+      setSaveOk(true);
+      setTimeout(() => setSaveOk(false), 2800);
+    } catch(e) {
+      setSaveError(e instanceof Error ? e.message : "Erreur inconnue");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  /* ── Mark as read ── */
+  const markRead = async (id: string) => {
+    await sb.from("contact_messages").update({ is_read: true }).eq("id", id);
+    setMessages(p => p.map(m => m.id === id ? { ...m, is_read: true } : m));
+  };
+
+  /* ── Delete message ── */
+  const deleteMsg = async (id: string) => {
+    if (!confirm("Supprimer ce message ?")) return;
+    await sb.from("contact_messages").delete().eq("id", id);
+    setMessages(p => p.filter(m => m.id !== id));
+    if (openMsg === id) setOpenMsg(null);
+  };
+
+  /* ── Refresh messages ── */
+  const refreshMessages = async () => {
+    setRefreshing(true);
+    const { data } = await sb.from("contact_messages").select("*").order("created_at", { ascending: false }).limit(100);
+    if (data) setMessages(data as Message[]);
+    setRefreshing(false);
+  };
+
+  const unreadCount = messages.filter(m => !m.is_read).length;
+
+  return (
+    <div style={{ fontFamily:"'DM Sans',system-ui,sans-serif", background:"#F0F2F8", minHeight:"100vh" }}>
+      <style>{CSS}</style>
+
+      {/* ── Topbar ── */}
+      <div className="topbar">
+        <div>
+          <h1 style={{ fontFamily:"'Playfair Display',serif", fontSize:20, fontWeight:900, color:"#053366" }}>
+            Page Contact
+          </h1>
+          <p style={{ fontSize:11.5, color:"#94A3B8", marginTop:2 }}>
+            {unreadCount > 0 ? `${unreadCount} message${unreadCount>1?"s":""} non lu${unreadCount>1?"s":""}` : "Aucun message non lu"}
+          </p>
+        </div>
+
+        <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+          {saveError && (
+            <div style={{ display:"flex", alignItems:"center", gap:7, padding:"8px 13px", background:"#FEF2F2", border:"1.5px solid #FCA5A5", borderRadius:10, fontSize:12, color:"#DC2626" }}>
+              <AlertCircle size={13}/> {saveError}
+            </div>
+          )}
+          <a href="/contact" target="_blank" rel="noopener"
+            style={{ display:"inline-flex", alignItems:"center", gap:7, padding:"10px 18px", background:"#F4F6FB", border:"1.5px solid #E2E6F0", borderRadius:12, fontSize:13, fontWeight:600, color:"#374151", textDecoration:"none" }}>
+            <Eye size={13}/> Voir la page
+          </a>
+          {tab === "content" && (
+            <button className={`save-btn ${saveOk?"ok":""}`} onClick={saveContent} disabled={saving||saveOk}>
+              {saving ? <><Loader2 size={13} style={{animation:"spin .7s linear infinite"}}/> Enregistrement…</>
+               : saveOk ? <><Check size={13}/> Enregistré !</>
+               : <><Save size={13}/> Enregistrer</>}
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* ── Tabs ── */}
+      <div style={{ maxWidth:860, margin:"0 auto", padding:"20px 24px 0" }}>
+        <div style={{ display:"flex", gap:8 }}>
+          <button className={`tab-btn ${tab==="content"?"active":"idle"}`} onClick={() => setTab("content")}>
+            <MessageSquare size={13} style={{display:"inline",marginRight:6}}/>
+            Contenu de la page
+          </button>
+          <button className={`tab-btn ${tab==="messages"?"active":"idle"}`} onClick={() => setTab("messages")}>
+            <Mail size={13} style={{display:"inline",marginRight:6}}/>
+            Messages reçus
+            {unreadCount > 0 && (
+              <span style={{ marginLeft:7, background:"#02AFCF", color:"white", borderRadius:20, padding:"1px 7px", fontSize:10, fontWeight:800 }}>
+                {unreadCount}
+              </span>
+            )}
+          </button>
+        </div>
+      </div>
+
+      <div style={{ maxWidth:860, margin:"0 auto", padding:"16px 24px 100px" }}>
+
+        {/* ══ ONGLET CONTENU ══ */}
+        {tab === "content" && (
+          <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
+            {FIELDS.map(f => (
+              <div key={f.key} className="card" style={{ padding:"18px 20px" }}>
+                <label className="label" style={{ display:"flex", alignItems:"center", gap:6 }}>
+                  {f.icon} {f.label}
+                </label>
+                {f.multiline
+                  ? <textarea
+                      className="field"
+                      value={content[f.key] ?? ""}
+                      placeholder={f.placeholder}
+                      rows={3}
+                      onChange={e => setContent(p => ({ ...p, [f.key]: e.target.value }))}
+                    />
+                  : <input
+                      className="field"
+                      value={content[f.key] ?? ""}
+                      placeholder={f.placeholder}
+                      onChange={e => setContent(p => ({ ...p, [f.key]: e.target.value }))}
+                    />
+                }
+                {/* Prévisualisation image */}
+                {f.key === "bg_image" && content["bg_image"] && (
+                  <div style={{ marginTop:8, height:80, borderRadius:8, overflow:"hidden", border:"1.5px solid #E8ECF4" }}>
+                    <img src={content["bg_image"]} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }}
+                      onError={e => { (e.target as HTMLImageElement).style.display="none"; }}/>
+                  </div>
+                )}
+              </div>
+            ))}
+
+            <div style={{ padding:"12px 16px", background:"#FFFBEB", border:"1.5px solid #FDE68A", borderRadius:12, fontSize:12, color:"#92400E" }}>
+              <strong>💡 Astuce :</strong> Modifiez les champs ci-dessus puis cliquez sur <strong>Enregistrer</strong>. Les changements sont visibles immédiatement sur la page publique.
+            </div>
+          </div>
+        )}
+
+        {/* ══ ONGLET MESSAGES ══ */}
+        {tab === "messages" && (
+          <div style={{ display:"flex", flexDirection:"column", gap:0 }}>
+
+            {/* Toolbar */}
+            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:12 }}>
+              <p style={{ fontSize:13, color:"#6B7280", fontWeight:600 }}>
+                {messages.length} message{messages.length!==1?"s":""} reçu{messages.length!==1?"s":""}
+              </p>
+              <button
+                className="icon-btn read-btn"
+                title="Actualiser"
+                onClick={refreshMessages}
+                style={{ width:"auto", padding:"0 12px", gap:6, display:"flex", alignItems:"center", fontSize:12, fontWeight:700, color:"#374151" }}
+              >
+                <RefreshCw size={13} style={{ animation: refreshing ? "spin .7s linear infinite" : "none" }}/> Actualiser
+              </button>
+            </div>
+
+            <div className="card">
+              {messages.length === 0 && (
+                <div style={{ padding:"60px 20px", textAlign:"center", color:"#9CA3AF" }}>
+                  <Mail size={36} style={{ margin:"0 auto 14px", opacity:.3 }}/>
+                  <p style={{ fontSize:14, fontWeight:600 }}>Aucun message reçu</p>
+                </div>
+              )}
+
+              {messages.map(m => (
+                <div key={m.id}>
+                  {/* Row */}
+                  <div
+                    className={`msg-row ${!m.is_read ? "unread" : ""}`}
+                    onClick={() => {
+                      setOpenMsg(o => o === m.id ? null : m.id);
+                      if (!m.is_read) markRead(m.id);
+                    }}
+                  >
+                    {/* Avatar */}
+                    <div style={{ width:40, height:40, borderRadius:12, background: m.is_read ? "#F3F4F6" : "#E8F9FC", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, fontFamily:"'Playfair Display',serif", fontSize:17, fontWeight:900, color: m.is_read ? "#9CA3AF" : "#02AFCF" }}>
+                      {m.name[0]?.toUpperCase()}
+                    </div>
+
+                    {/* Info */}
+                    <div style={{ flex:1, minWidth:0 }}>
+                      <div style={{ display:"flex", alignItems:"center", gap:8, flexWrap:"wrap" }}>
+                        <span style={{ fontSize:14, fontWeight:800, color:"#111827" }}>{m.name}</span>
+                        {!m.is_read && (
+                          <span className="badge" style={{ background:"#E8F9FC", color:"#02AFCF" }}>Nouveau</span>
+                        )}
+                        <span style={{ fontSize:12, color:"#9CA3AF", marginLeft:"auto" }}>
+                          {new Date(m.created_at).toLocaleDateString("fr-FR", { day:"numeric", month:"short", year:"numeric", hour:"2-digit", minute:"2-digit" })}
+                        </span>
+                      </div>
+                      <p style={{ fontSize:12, color:"#6B7280", marginTop:2 }}>{m.email}</p>
+                      {m.subject && <p style={{ fontSize:12, color:"#9CA3AF", marginTop:1, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{m.subject}</p>}
+                    </div>
+
+                    {/* Actions */}
+                    <div style={{ display:"flex", gap:6, alignItems:"center", flexShrink:0 }} onClick={e => e.stopPropagation()}>
+                      {!m.is_read && (
+                        <button className="icon-btn read-btn" title="Marquer comme lu" onClick={() => markRead(m.id)}>
+                          <MailOpen size={13}/>
+                        </button>
+                      )}
+                      <button className="icon-btn" title="Supprimer" onClick={() => deleteMsg(m.id)}>
+                        <Trash2 size={13}/>
+                      </button>
+                      <div style={{ color:"#D1D5DB", marginLeft:4 }}>
+                        {openMsg === m.id ? <ChevronUp size={14}/> : <ChevronDown size={14}/>}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Message détail */}
+                  {openMsg === m.id && (
+                    <div className="msg-detail">
+                      <p style={{ fontSize:11, fontWeight:800, color:"#94A3B8", textTransform:"uppercase", letterSpacing:".7px", marginBottom:8 }}>Message</p>
+                      <p style={{ fontSize:14, color:"#374151", lineHeight:1.75, whiteSpace:"pre-wrap" }}>{m.message}</p>
+                      <a
+                        href={`mailto:${m.email}?subject=Re: ${m.subject ?? ""}`}
+                        style={{ display:"inline-flex", alignItems:"center", gap:7, marginTop:16, padding:"9px 18px", background:"#053366", color:"white", borderRadius:9, fontSize:13, fontWeight:700, textDecoration:"none" }}
+                      >
+                        <Mail size={13}/> Répondre par email
+                      </a>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
