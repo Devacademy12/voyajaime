@@ -1,7 +1,7 @@
 "use client";
 
 // ═══════════════════════════════════════════════════
-//  app/prestataire/completer-profil/page.tsx
+//  app/completer-profil/page.tsx  (hors layout prestataire — accessible sans validation)
 // ═══════════════════════════════════════════════════
 
 import { useState, useEffect, useRef, Suspense } from "react";
@@ -92,7 +92,7 @@ function CompleterProfilContent() {
   useEffect(() => {
     (async () => {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) { router.push("/auth?type=prestataire"); return; }
+      if (!user) { router.push("/auth"); return; }
       const { data: profile } = await supabase.from("profiles").select("*").eq("user_id", user.id).single();
       if (profile?.role !== "prestataire") { router.push("/"); return; }
       if (profile?.is_validated) { router.push("/prestataire/dashboard"); return; }
