@@ -36,7 +36,8 @@ export const ROUTES = {
     reservations: "/prestataire/paiements-reservations",
     avis:         "/prestataire/avis",
     messages:     "/prestataire/messages",
-    profil:       "/prestataire/profil",
+    profil: "/prestataire/profil",
+    completerProfil: "/prestataire/completer-profil",
   },
 
   // ── Admin ───────────────────────────────────
