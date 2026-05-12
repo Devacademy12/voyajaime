@@ -25,6 +25,9 @@ const CSS = `
   .contact-page {
     min-height: 100vh;
     background: #0D1117;
+    background-size: cover;
+    background-position: center;
+    background-attachment: fixed;
   }
 
   /* ── Main section ── */
@@ -103,7 +106,7 @@ const CSS = `
 
   /* ── Footer ── */
   .contact-footer {
-    background: #0D1117;
+    background: rgba(13,17,23,.92);
     border-top: 1px solid rgba(255,255,255,.06);
     padding: 24px 40px;
     display: flex; justify-content: space-between;
@@ -130,12 +133,13 @@ export default async function ContactPage() {
     (rows as ContactContent[] | null ?? []).map(r => [r.key, r.value ?? ""])
   );
 
-  const email      = c.email      || "contact@voyajaime.tn";
-  const phone      = c.phone      || "+216 XX XXX XXX";
-  const address    = c.address    || "Tunis, Tunisie";
-  const hours      = c.hours      || "Lun–Ven : 9h–18h";
-  const ctaLabel   = c.cta_label  || "Envoyer le message";
+  const email      = c.email       || "contact@voyajaime.tn";
+  const phone      = c.phone       || "+216 XX XXX XXX";
+  const address    = c.address     || "Tunis, Tunisie";
+  const hours      = c.hours       || "Lun–Ven : 9h–18h";
+  const ctaLabel   = c.cta_label   || "Envoyer le message";
   const successMsg = c.success_msg || "Message envoyé ! Nous vous répondrons sous 24h.";
+  const bgImage    = c.bg_image    || "";   // ← IMAGE DE FOND
 
   const jsonLd = {
     "@context": "https://schema.org",
@@ -157,7 +161,16 @@ export default async function ContactPage() {
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       <TouristeNav />
 
-      <div className="contact-page">
+      {/* ── bg_image appliqué ici via style inline ── */}
+      <div
+        className="contact-page"
+        style={bgImage ? {
+          backgroundImage: `linear-gradient(rgba(13,17,23,.80), rgba(13,17,23,.80)), url(${bgImage})`,
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+          backgroundAttachment: "fixed",
+        } : undefined}
+      >
         <div style={{ paddingTop: 64 }} />
 
         <main className="contact-section">

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Mail, Phone, MapPin, Clock, ArrowRight } from "lucide-react";
 import ContactFormInline from "../contact/ContactFormInline";
+import { createServerSupabaseClient } from "@/lib/supabaseServer";
 
 interface ContactSectionProps {
   email?:      string;
@@ -16,19 +17,30 @@ const CSS = `
 
   .hcs-section {
     background: #0D1117;
+    background-size: cover;
+    background-position: center;
     padding: 96px 40px;
     position: relative;
     overflow: hidden;
   }
 
-  /* Subtle top border accent */
   .hcs-section::before {
     content: '';
     position: absolute; top: 0; left: 0; right: 0; height: 1px;
     background: linear-gradient(90deg, transparent, rgba(2,175,207,.3), transparent);
   }
 
+  .hcs-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(13,17,23,.80);
+    pointer-events: none;
+    z-index: 0;
+  }
+
   .hcs-inner {
+    position: relative;
+    z-index: 1;
     max-width: 1160px; margin: 0 auto;
     display: grid;
     grid-template-columns: 1fr 1.4fr;
@@ -36,7 +48,6 @@ const CSS = `
     align-items: start;
   }
 
-  /* ── LEFT ── */
   .hcs-eyebrow {
     font-size: 11px; font-weight: 800;
     color: rgba(255,255,255,.35);
@@ -78,7 +89,6 @@ const CSS = `
   }
   .hcs-ivalue:hover { color: #02AFCF; }
 
-  /* Full page link */
   .hcs-more {
     display: inline-flex; align-items: center; gap: 7px;
     margin-top: 28px;
@@ -87,7 +97,6 @@ const CSS = `
   }
   .hcs-more:hover { color: #02AFCF; }
 
-  /* ── RIGHT — form box ── */
   .hcs-form-box {
     background: rgba(255,255,255,.04);
     border: 1.5px solid rgba(255,255,255,.08);
@@ -116,14 +125,33 @@ const CSS = `
   }
 `;
 
-export default function ContactSection({
-  email      = "contact@voyajaime.tn",
-  phone      = "+216 XX XXX XXX",
-  address    = "Tunis, Tunisie",
-  hours      = "Lun–Ven : 9h–18h",
-  ctaLabel   = "Envoyer le message",
-  successMsg = "Message envoyé ! Nous vous répondrons sous 24h.",
+export default async function ContactSection({
+  email:      emailProp,
+  phone:      phoneProp,
+  address:    addressProp,
+  hours:      hoursProp,
+  ctaLabel:   ctaLabelProp,
+  successMsg: successMsgProp,
 }: ContactSectionProps) {
+
+  /* ── Fetch depuis Supabase directement ── */
+  const supabase = await createServerSupabaseClient();
+  const { data: rows } = await supabase
+    .from("contact_content")
+    .select("key, value");
+
+  const c = Object.fromEntries(
+    (rows ?? []).map((r: { key: string; value: string | null }) => [r.key, r.value ?? ""])
+  );
+
+  /* Priorité aux props passées en dur, sinon valeur Supabase, sinon fallback */
+  const email      = emailProp      ?? c.email       ?? "contact@voyajaime.tn";
+  const phone      = phoneProp      ?? c.phone       ?? "+216 XX XXX XXX";
+  const address    = addressProp    ?? c.address     ?? "Tunis, Tunisie";
+  const hours      = hoursProp      ?? c.hours       ?? "Lun–Ven : 9h–18h";
+  const ctaLabel   = ctaLabelProp   ?? c.cta_label   ?? "Envoyer le message";
+  const successMsg = successMsgProp ?? c.success_msg ?? "Message envoyé ! Nous vous répondrons sous 24h.";
+  const bgImage    = c.bg_image     ?? "";   // ← toujours depuis Supabase
 
   const INFO = [
     { icon: <Mail  size={17} color="#02AFCF" strokeWidth={1.8}/>, label:"EMAIL",     value: email,   href: `mailto:${email}` },
@@ -135,7 +163,18 @@ export default function ContactSection({
   return (
     <section aria-labelledby="contact-section-heading">
       <style>{CSS}</style>
-      <div className="hcs-section">
+
+      <div
+        className="hcs-section"
+        style={bgImage ? {
+          backgroundImage: `url(${bgImage})`,
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+        } : undefined}
+      >
+        {/* Overlay sombre uniquement si image présente */}
+        {bgImage && <div className="hcs-overlay" />}
+
         <div className="hcs-inner">
 
           {/* ── Gauche ── */}
