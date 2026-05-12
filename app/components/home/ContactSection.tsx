@@ -1,239 +1,172 @@
 import Link from "next/link";
-import { Mail, Phone, ArrowRight, MessageSquare } from "lucide-react";
+import { Mail, Phone, MapPin, Clock, ArrowRight } from "lucide-react";
+import ContactFormInline from "../contact/ContactFormInline";
 
 interface ContactSectionProps {
-  email?: string;
-  phone?: string;
+  email?:      string;
+  phone?:      string;
+  address?:    string;
+  hours?:      string;
+  ctaLabel?:   string;
+  successMsg?: string;
 }
 
 const CSS = `
   @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@400;500;600;700;800&display=swap');
 
-  /* ── Home contact section ── */
-  .hcs-wrap {
-    position: relative; overflow: hidden;
+  .hcs-section {
     background: #0D1117;
     padding: 96px 40px;
+    position: relative;
+    overflow: hidden;
   }
 
-  /* Subtle grain */
-  .hcs-grain {
-    position: absolute; inset: 0; opacity: .03; pointer-events: none;
-    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  /* Subtle top border accent */
+  .hcs-section::before {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0; height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(2,175,207,.3), transparent);
   }
 
   .hcs-inner {
-    position: relative; z-index: 1;
     max-width: 1160px; margin: 0 auto;
+    display: grid;
+    grid-template-columns: 1fr 1.4fr;
+    gap: 80px;
+    align-items: start;
   }
 
-  /* Header */
-  .hcs-header {
-    text-align: center; margin-bottom: 56px;
-  }
+  /* ── LEFT ── */
   .hcs-eyebrow {
-    font-size: 11px; font-weight: 800; color: rgba(255,255,255,.35);
+    font-size: 11px; font-weight: 800;
+    color: rgba(255,255,255,.35);
     text-transform: uppercase; letter-spacing: 2.5px;
     display: block; margin-bottom: 14px;
   }
   .hcs-title {
     font-family: 'Playfair Display', serif;
-    font-size: clamp(28px, 3.5vw, 44px);
+    font-size: clamp(28px, 3.5vw, 46px);
     font-weight: 900; color: #fff;
-    letter-spacing: -1.2px; line-height: 1.1;
-    max-width: 480px; margin: 0 auto 14px;
-  }
-  .hcs-sub {
-    font-size: 16px; color: rgba(255,255,255,.45);
-    line-height: 1.7; max-width: 400px; margin: 0 auto;
+    letter-spacing: -1.5px; line-height: 1.08;
+    margin-bottom: 40px;
   }
 
-  /* Cards */
-  .hcs-grid {
-    display: grid; grid-template-columns: 1.15fr 1fr 1fr; gap: 14px;
-    margin-bottom: 20px;
+  .hcs-item {
+    display: flex; align-items: flex-start; gap: 14px;
+    padding: 18px 0;
+    border-bottom: 1px solid rgba(255,255,255,.07);
   }
-
-  .hcs-card {
-    background: rgba(255,255,255,.05);
-    border: 1.5px solid rgba(255,255,255,.08);
-    border-radius: 16px; padding: 26px;
-    display: flex; flex-direction: column; gap: 0;
-    transition: background .2s, border-color .2s, transform .2s;
-    text-decoration: none; color: inherit;
-  }
-  .hcs-card:hover {
-    background: rgba(255,255,255,.08);
-    border-color: rgba(255,255,255,.15);
-    transform: translateY(-3px);
-  }
-  .hcs-card.accent {
-    background: rgba(2,175,207,.12);
-    border-color: rgba(2,175,207,.28);
-  }
-  .hcs-card.accent:hover {
-    background: rgba(2,175,207,.18);
-    border-color: rgba(2,175,207,.45);
-  }
-
-  .hcs-badge {
-    display: inline-flex; align-items: center; gap: 5px;
-    padding: 3px 10px; border-radius: 20px;
-    border: 1px solid rgba(255,255,255,.12);
-    background: rgba(255,255,255,.05);
-    font-size: 9.5px; font-weight: 800;
-    color: rgba(255,255,255,.45);
-    text-transform: uppercase; letter-spacing: 1px;
-    margin-bottom: 18px; align-self: flex-start;
-  }
-  .hcs-badge.teal { border-color: rgba(2,175,207,.35); background: rgba(2,175,207,.1); color: #02AFCF; }
+  .hcs-item:last-child { border-bottom: none; }
 
   .hcs-icon {
-    width: 44px; height: 44px; border-radius: 12px;
+    width: 42px; height: 42px; border-radius: 12px;
+    background: rgba(2,175,207,.12);
+    border: 1px solid rgba(2,175,207,.2);
     display: flex; align-items: center; justify-content: center;
-    margin-bottom: 12px; flex-shrink: 0;
+    flex-shrink: 0;
   }
 
-  .hcs-card-title {
-    font-family: 'Playfair Display', serif;
-    font-size: 22px; font-weight: 900; color: #fff;
-    letter-spacing: -.3px; margin-bottom: 5px;
+  .hcs-ilabel {
+    font-size: 10.5px; font-weight: 800;
+    color: rgba(255,255,255,.32);
+    text-transform: uppercase; letter-spacing: 1.2px;
+    margin-bottom: 5px;
   }
-  .hcs-card-sub {
-    font-size: 12px; font-weight: 600;
-    color: rgba(255,255,255,.4); margin-bottom: 14px;
+  .hcs-ivalue {
+    font-size: 15px; font-weight: 700; color: #fff;
+    text-decoration: none; transition: color .18s;
   }
-  .hcs-card-sub.teal { color: #02AFCF; }
-  .hcs-card-desc {
-    font-size: 13px; color: rgba(255,255,255,.45);
-    line-height: 1.68; flex: 1; margin-bottom: 22px;
-  }
+  .hcs-ivalue:hover { color: #02AFCF; }
 
-  .hcs-btn {
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 12px 16px; border-radius: 10px;
-    font-size: 13px; font-weight: 700;
-    text-decoration: none; transition: all .18s;
-    border: none; font-family: inherit; cursor: pointer; width: 100%;
+  /* Full page link */
+  .hcs-more {
+    display: inline-flex; align-items: center; gap: 7px;
+    margin-top: 28px;
+    font-size: 13px; font-weight: 700; color: rgba(255,255,255,.45);
+    text-decoration: none; transition: color .18s;
   }
-  .hcs-btn.teal { background:#02AFCF; color:#fff; box-shadow:0 3px 14px rgba(2,175,207,.3); }
-  .hcs-btn.teal:hover { background:#00c4e8; }
-  .hcs-btn.ghost { background:rgba(255,255,255,.08); color:#fff; border:1.5px solid rgba(255,255,255,.12); }
-  .hcs-btn.ghost:hover { background:rgba(255,255,255,.14); border-color:rgba(255,255,255,.22); }
+  .hcs-more:hover { color: #02AFCF; }
 
-  /* Provider bar */
-  .hcs-provider {
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 18px 24px;
+  /* ── RIGHT — form box ── */
+  .hcs-form-box {
     background: rgba(255,255,255,.04);
     border: 1.5px solid rgba(255,255,255,.08);
-    border-radius: 12px; gap: 16px; flex-wrap: wrap;
+    border-radius: 18px;
+    padding: 36px;
   }
-  .hcs-provider-btn {
-    display: inline-flex; align-items: center; gap: 7px;
-    padding: 10px 20px; background: rgba(255,255,255,.08);
-    border: 1.5px solid rgba(255,255,255,.15);
-    border-radius: 9px; color: #fff;
-    font-size: 13px; font-weight: 700;
-    text-decoration: none; transition: all .18s;
-    white-space: nowrap; font-family: inherit;
-  }
-  .hcs-provider-btn:hover { background:rgba(255,255,255,.15); border-color:rgba(255,255,255,.28); }
 
-  @media(max-width:880px){
-    .hcs-grid { grid-template-columns:1fr!important; }
-    .hcs-provider { flex-direction:column; align-items:flex-start; }
-    .hcs-wrap { padding:64px 20px; }
+  .hcs-form-eyebrow {
+    font-size: 11px; font-weight: 800;
+    color: rgba(255,255,255,.35);
+    text-transform: uppercase; letter-spacing: 2.5px;
+    display: block; margin-bottom: 10px;
+  }
+  .hcs-form-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 24px; font-weight: 900; color: #fff;
+    letter-spacing: -.4px; margin-bottom: 28px;
+  }
+
+  @media(max-width:900px){
+    .hcs-inner   { grid-template-columns:1fr!important; gap:48px; }
+    .hcs-section { padding:64px 24px; }
+  }
+  @media(max-width:480px){
+    .hcs-form-box { padding:22px; }
   }
 `;
 
-export default function ContactSection({ email, phone }: ContactSectionProps) {
+export default function ContactSection({
+  email      = "contact@voyajaime.tn",
+  phone      = "+216 XX XXX XXX",
+  address    = "Tunis, Tunisie",
+  hours      = "Lun–Ven : 9h–18h",
+  ctaLabel   = "Envoyer le message",
+  successMsg = "Message envoyé ! Nous vous répondrons sous 24h.",
+}: ContactSectionProps) {
+
+  const INFO = [
+    { icon: <Mail  size={17} color="#02AFCF" strokeWidth={1.8}/>, label:"EMAIL",     value: email,   href: `mailto:${email}` },
+    { icon: <Phone size={17} color="#02AFCF" strokeWidth={1.8}/>, label:"TÉLÉPHONE", value: phone,   href: `tel:${phone.replace(/\s/g,"")}` },
+    { icon: <MapPin size={17} color="#02AFCF" strokeWidth={1.8}/>,label:"ADRESSE",   value: address, href: undefined },
+    { icon: <Clock size={17} color="#02AFCF" strokeWidth={1.8}/>, label:"HORAIRES",  value: hours,   href: undefined },
+  ];
+
   return (
-    <section aria-labelledby="hcs-heading">
+    <section aria-labelledby="contact-section-heading">
       <style>{CSS}</style>
-      <div className="hcs-wrap">
-        <div className="hcs-grain" />
+      <div className="hcs-section">
         <div className="hcs-inner">
 
-          {/* Header */}
-          <div className="hcs-header">
-            <span className="hcs-eyebrow">Nous contacter</span>
-            <h2 id="hcs-heading" className="hcs-title">
-              Une question sur votre voyage ?
+          {/* ── Gauche ── */}
+          <div>
+            <span className="hcs-eyebrow">Nos coordonnées</span>
+            <h2 id="contact-section-heading" className="hcs-title">
+              Nous sommes là pour vous
             </h2>
-            <p className="hcs-sub">
-              Trois façons de nous joindre — choisissez celle qui vous correspond.
-            </p>
-          </div>
 
-          {/* 3 cartes */}
-          <div className="hcs-grid">
-
-            {/* Formulaire */}
-            <Link href="/contact#contact-form" className="hcs-card accent">
-              <span className="hcs-badge teal"><Mail size={8}/> Contact direct</span>
-              <div className="hcs-icon" style={{ background:"rgba(2,175,207,.15)", border:"1px solid rgba(2,175,207,.25)" }}>
-                <MessageSquare size={20} color="#02AFCF" strokeWidth={1.8}/>
+            {INFO.map((item, i) => (
+              <div key={i} className="hcs-item">
+                <div className="hcs-icon">{item.icon}</div>
+                <div>
+                  <p className="hcs-ilabel">{item.label}</p>
+                  {item.href
+                    ? <a href={item.href} className="hcs-ivalue">{item.value}</a>
+                    : <p className="hcs-ivalue" style={{ cursor:"default" }}>{item.value}</p>}
+                </div>
               </div>
-              <p className="hcs-card-title">Écrivez-nous</p>
-              <p className="hcs-card-sub teal">Réponse sous 24h</p>
-              <p className="hcs-card-desc">
-                Envoyez-nous votre question directement. Notre équipe vous répond avec une réponse personnalisée.
-              </p>
-              <span className="hcs-btn teal">
-                Envoyer un message <ArrowRight size={13}/>
-              </span>
-            </Link>
+            ))}
 
-            {/* Téléphone */}
-            <Link href={phone ? `tel:${phone.replace(/\s/g,"")}` : "/contact"} className="hcs-card">
-              <span className="hcs-badge">Appel direct</span>
-              <div className="hcs-icon" style={{ background:"rgba(255,255,255,.06)", border:"1px solid rgba(255,255,255,.1)" }}>
-                <Phone size={20} color="rgba(255,255,255,.65)" strokeWidth={1.8}/>
-              </div>
-              <p className="hcs-card-title">Par téléphone</p>
-              <p className="hcs-card-sub">Appel ou WhatsApp</p>
-              <p className="hcs-card-desc">
-                {phone || "+216 XX XXX XXX"}<br/>
-                Lun–Ven : 9h–18h
-              </p>
-              <span className="hcs-btn ghost">
-                Appeler maintenant <ArrowRight size={13}/>
-              </span>
-            </Link>
-
-            {/* Email */}
-            <Link href={email ? `mailto:${email}` : "/contact"} className="hcs-card">
-              <span className="hcs-badge">Email</span>
-              <div className="hcs-icon" style={{ background:"rgba(255,255,255,.06)", border:"1px solid rgba(255,255,255,.1)" }}>
-                <Mail size={20} color="rgba(255,255,255,.65)" strokeWidth={1.8}/>
-              </div>
-              <p className="hcs-card-title">Par email</p>
-              <p className="hcs-card-sub">Réponse sous 24h</p>
-              <p className="hcs-card-desc">
-                {email || "contact@voyajaime.tn"}<br/>
-                Pour toute demande ou partenariat.
-              </p>
-              <span className="hcs-btn ghost">
-                Envoyer un email <ArrowRight size={13}/>
-              </span>
+            <Link href="/contact" className="hcs-more">
+              Voir la page contact complète <ArrowRight size={13}/>
             </Link>
           </div>
 
-          {/* Banner prestataire */}
-          <div className="hcs-provider">
-            <div style={{ display:"flex", alignItems:"center", gap:14 }}>
-              <div style={{ width:38, height:38, borderRadius:10, background:"rgba(255,255,255,.06)", border:"1px solid rgba(255,255,255,.1)", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
-                <Mail size={16} color="rgba(255,255,255,.5)" strokeWidth={1.8}/>
-              </div>
-              <div>
-                <p style={{ fontSize:13, fontWeight:800, color:"#fff", marginBottom:3 }}>Vous êtes prestataire ?</p>
-                <p style={{ fontSize:12, color:"rgba(255,255,255,.4)" }}>Listez vos excursions sur VoyajAime et touchez des milliers de voyageurs.</p>
-              </div>
-            </div>
-            <Link href="/prestataire/inscription" className="hcs-provider-btn">
-              Inscrivez votre activité <ArrowRight size={13}/>
-            </Link>
+          {/* ── Droite : formulaire inline ── */}
+          <div className="hcs-form-box">
+            <span className="hcs-form-eyebrow">Formulaire de contact</span>
+            <h3 className="hcs-form-title">Envoyez-nous un message</h3>
+            <ContactFormInline ctaLabel={ctaLabel} successMsg={successMsg} />
           </div>
 
         </div>
