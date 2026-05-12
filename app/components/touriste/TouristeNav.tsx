@@ -92,6 +92,7 @@ export default function TouristeNav({
     { href: ROUTES.touriste.reservations, icon: "ti-calendar",  label: "Réservations" },
     { href: ROUTES.about,                 icon: "ti-help-circle", label: "À propos" },
     { href: ROUTES.blog,                  icon: "ti-book",      label: "Blog" },
+    { href: ROUTES.contact,               icon: "ti-phone",     label: "Contact" },
   ];
 
   const publicLinks = [
@@ -99,6 +100,7 @@ export default function TouristeNav({
     { href: "#chemins",        icon: "ti-map",          label: "Comment ça marche", anchor: true  },
     { href: ROUTES.about,      icon: "ti-help-circle",  label: "À propos",          anchor: false },
     { href: ROUTES.blog,       icon: "ti-book",         label: "Blog",              anchor: false },
+    { href: ROUTES.contact,    icon: "ti-phone",        label: "Contact",           anchor: false },
   ];
 
   const isActive = (href: string) => {
