@@ -39,5 +39,10 @@
     "postcss": "^8.4.0",
     "tailwindcss": "^3.4.0",
     "typescript": "^5.4.0"
+  },
+  "overrides": {
+    "which-builtin-type": {
+      "which-collection": "1.0.1"
+    }
   }
 }

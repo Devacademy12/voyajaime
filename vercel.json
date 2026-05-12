@@ -6,7 +6,7 @@
       "use": "@vercel/next"
     }
   ],
-  "installCommand": "npm ci --legacy-peer-deps",
+  "installCommand": "npm config set registry https://registry.npmjs.org/ && npm ci --legacy-peer-deps",
   "buildCommand": "npm run build",
   "build": {
     "env": {
