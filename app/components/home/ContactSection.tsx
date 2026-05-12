@@ -15,33 +15,31 @@ interface ContactSectionProps {
 const CSS = `
   @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@400;500;600;700;800&display=swap');
 
+  /* ── Wrapper section ── */
   .hcs-section {
-    background: #0D1117;
+    min-height: 480px;
+    background-color: #0D1117;
     background-size: cover;
     background-position: center;
+    background-attachment: fixed;
     padding: 96px 40px;
     position: relative;
     overflow: hidden;
   }
 
+  /* Ligne déco en haut */
   .hcs-section::before {
     content: '';
     position: absolute; top: 0; left: 0; right: 0; height: 1px;
     background: linear-gradient(90deg, transparent, rgba(2,175,207,.3), transparent);
-  }
-
-  .hcs-overlay {
-    position: absolute;
-    inset: 0;
-    background: rgba(13,17,23,.80);
-    pointer-events: none;
-    z-index: 0;
+    z-index: 1;
   }
 
   .hcs-inner {
     position: relative;
-    z-index: 1;
-    max-width: 1160px; margin: 0 auto;
+    z-index: 2;
+    max-width: 1160px;
+    margin: 0 auto;
     display: grid;
     grid-template-columns: 1fr 1.4fr;
     gap: 80px;
@@ -118,7 +116,7 @@ const CSS = `
 
   @media(max-width:900px){
     .hcs-inner   { grid-template-columns:1fr!important; gap:48px; }
-    .hcs-section { padding:64px 24px; }
+    .hcs-section { padding:64px 24px; background-attachment: scroll; }
   }
   @media(max-width:480px){
     .hcs-form-box { padding:22px; }
@@ -134,7 +132,7 @@ export default async function ContactSection({
   successMsg: successMsgProp,
 }: ContactSectionProps) {
 
-  /* ── Fetch depuis Supabase directement ── */
+  /* ── Fetch Supabase directement ── */
   const supabase = await createServerSupabaseClient();
   const { data: rows } = await supabase
     .from("contact_content")
@@ -144,14 +142,13 @@ export default async function ContactSection({
     (rows ?? []).map((r: { key: string; value: string | null }) => [r.key, r.value ?? ""])
   );
 
-  /* Priorité aux props passées en dur, sinon valeur Supabase, sinon fallback */
   const email      = emailProp      ?? c.email       ?? "contact@voyajaime.tn";
   const phone      = phoneProp      ?? c.phone       ?? "+216 XX XXX XXX";
   const address    = addressProp    ?? c.address     ?? "Tunis, Tunisie";
   const hours      = hoursProp      ?? c.hours       ?? "Lun–Ven : 9h–18h";
   const ctaLabel   = ctaLabelProp   ?? c.cta_label   ?? "Envoyer le message";
   const successMsg = successMsgProp ?? c.success_msg ?? "Message envoyé ! Nous vous répondrons sous 24h.";
-  const bgImage    = c.bg_image     ?? "";   // ← toujours depuis Supabase
+  const bgImage    = c.bg_image     ?? "";
 
   const INFO = [
     { icon: <Mail  size={17} color="#02AFCF" strokeWidth={1.8}/>, label:"EMAIL",     value: email,   href: `mailto:${email}` },
@@ -164,16 +161,16 @@ export default async function ContactSection({
     <section aria-labelledby="contact-section-heading">
       <style>{CSS}</style>
 
+      {/* ── Même pattern exact que page.tsx ── */}
       <div
         className="hcs-section"
         style={bgImage ? {
-          backgroundImage: `url(${bgImage})`,
+          backgroundImage: `linear-gradient(rgba(13,17,23,.80), rgba(13,17,23,.80)), url(${bgImage})`,
           backgroundSize: "cover",
           backgroundPosition: "center",
+          backgroundAttachment: "fixed",
         } : undefined}
       >
-        {/* Overlay sombre uniquement si image présente */}
-        {bgImage && <div className="hcs-overlay" />}
 
         <div className="hcs-inner">
 
@@ -201,7 +198,7 @@ export default async function ContactSection({
             </Link>
           </div>
 
-          {/* ── Droite : formulaire inline ── */}
+          {/* ── Droite : formulaire ── */}
           <div className="hcs-form-box">
             <span className="hcs-form-eyebrow">Formulaire de contact</span>
             <h3 className="hcs-form-title">Envoyez-nous un message</h3>
