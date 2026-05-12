@@ -51,6 +51,10 @@ export default function PrestatairesClient({ prestataires: initial }: { prestata
   const [editCity,     setEditCity]     = useState("");
   const [editPhone,    setEditPhone]    = useState("");
   const [editDesc,     setEditDesc]     = useState("");
+  const [editAddress,  setEditAddress]  = useState("");
+  const [editWebsite,  setEditWebsite]  = useState("");
+  const [editPatente,  setEditPatente]  = useState("");
+  const [editYear,     setEditYear]     = useState("");
   const [editLoading,  setEditLoading]  = useState(false);
 
   const { toast, showToast } = useToast();
@@ -84,8 +88,15 @@ export default function PrestatairesClient({ prestataires: initial }: { prestata
 
   const openModal = (p: Prestataire, m: "view" | "edit" = "view") => {
     setSelected(p); setMode(m);
-    setEditFullName(p.full_name || ""); setEditAgency(p.agency_name || "");
-    setEditCity(p.city || ""); setEditPhone(p.phone || ""); setEditDesc(p.description || "");
+    setEditFullName(p.full_name    || "");
+    setEditAgency(p.agency_name    || "");
+    setEditCity(p.city             || "");
+    setEditPhone(p.phone           || "");
+    setEditDesc(p.description      || "");
+    setEditAddress(p.address       || "");
+    setEditWebsite(p.website       || "");
+    setEditPatente(p.patente       || "");
+    setEditYear(p.year_founded ? String(p.year_founded) : "");
   };
 
   const handleValidate = async (userId: string, name: string) => {
@@ -141,12 +152,28 @@ export default function PrestatairesClient({ prestataires: initial }: { prestata
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           userId: selected.user_id,
-          updates: { full_name: editFullName, agency_name: editAgency, city: editCity, phone: editPhone, description: editDesc },
+          updates: {
+            full_name:    editFullName,
+            agency_name:  editAgency,
+            city:         editCity,
+            phone:        editPhone,
+            description:  editDesc,
+            address:      editAddress,
+            website:      editWebsite,
+            patente:      editPatente,
+            year_founded: editYear ? Number(editYear) : null,
+          },
         }),
       });
       if (!res.ok) throw new Error((await res.json()).error);
       
-      const updated = { ...selected, full_name: editFullName, agency_name: editAgency, city: editCity, phone: editPhone, description: editDesc };
+      const updated = {
+        ...selected,
+        full_name: editFullName, agency_name: editAgency,
+        city: editCity, phone: editPhone, description: editDesc,
+        address: editAddress, website: editWebsite,
+        patente: editPatente, year_founded: editYear ? Number(editYear) : null,
+      };
       
       await execute(selected.user_id, { 
         id: selected.user_id, 
@@ -235,16 +262,15 @@ export default function PrestatairesClient({ prestataires: initial }: { prestata
           onModeChange={setMode}
           onClose={() => setSelected(null)}
           loading={loading === selected.user_id}
-          editFullName={editFullName}
-          setEditFullName={setEditFullName}
-          editAgency={editAgency}
-          setEditAgency={setEditAgency}
-          editCity={editCity}
-          setEditCity={setEditCity}
-          editPhone={editPhone}
-          setEditPhone={setEditPhone}
-          editDesc={editDesc}
-          setEditDesc={setEditDesc}
+          editFullName={editFullName}   setEditFullName={setEditFullName}
+          editAgency={editAgency}       setEditAgency={setEditAgency}
+          editCity={editCity}           setEditCity={setEditCity}
+          editPhone={editPhone}         setEditPhone={setEditPhone}
+          editDesc={editDesc}           setEditDesc={setEditDesc}
+          editAddress={editAddress}     setEditAddress={setEditAddress}
+          editWebsite={editWebsite}     setEditWebsite={setEditWebsite}
+          editPatente={editPatente}     setEditPatente={setEditPatente}
+          editYear={editYear}           setEditYear={setEditYear}
           editLoading={editLoading}
           onValidate={() => {
             const name = selected.agency_name || selected.full_name || "—";

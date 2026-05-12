@@ -4,7 +4,7 @@ import { useState } from "react";
 import {
   Search, MapPin, Phone, Star, Calendar, Users, Clock, CheckCircle,
   Pencil, Trash2, Map, AlertTriangle, Eye, X, Save,
-  Globe, Hash, Building2, FileText, ExternalLink, Image, ShieldCheck,
+  Globe, Hash, Building2, FileText, ExternalLink, Image as ImageIcon, ShieldCheck,
 } from "lucide-react";
 
 export interface PrestastaireUIProps {
@@ -454,7 +454,7 @@ export function PrestastaireDetails({
       {p.agency_photos && p.agency_photos.length > 0 && (
         <div style={{ marginBottom: 16 }}>
           <p style={{ fontSize: 11, fontWeight: 700, color: "#9CA3AF", textTransform: "uppercase", letterSpacing: ".5px", marginBottom: 8, display: "flex", alignItems: "center", gap: 5 }}>
-            <Image size={11} /> Photos de l'agence
+            <ImageIcon size={11} /> Photos de l'agence
           </p>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 7 }}>
             {p.agency_photos.map((url, i) => (
@@ -519,38 +519,36 @@ export function PrestastaireDetails({
 // ── PRESTATAIRE EDIT FORM ──
 export function PrestastaireEditForm({
   p,
-  editFullName,
-  setEditFullName,
-  editAgency,
-  setEditAgency,
-  editCity,
-  setEditCity,
-  editPhone,
-  setEditPhone,
-  editDesc,
-  setEditDesc,
+  editFullName, setEditFullName,
+  editAgency,   setEditAgency,
+  editCity,     setEditCity,
+  editPhone,    setEditPhone,
+  editDesc,     setEditDesc,
+  editAddress,  setEditAddress,
+  editWebsite,  setEditWebsite,
+  editPatente,  setEditPatente,
+  editYear,     setEditYear,
   editLoading,
-  onSave,
-  onCancel,
+  onSave, onCancel,
   cities: CITIES,
 }: {
   p: PrestastaireUIProps;
-  editFullName: string;
-  setEditFullName: (v: string) => void;
-  editAgency: string;
-  setEditAgency: (v: string) => void;
-  editCity: string;
-  setEditCity: (v: string) => void;
-  editPhone: string;
-  setEditPhone: (v: string) => void;
-  editDesc: string;
-  setEditDesc: (v: string) => void;
+  editFullName: string;   setEditFullName: (v: string) => void;
+  editAgency: string;     setEditAgency:   (v: string) => void;
+  editCity: string;       setEditCity:     (v: string) => void;
+  editPhone: string;      setEditPhone:    (v: string) => void;
+  editDesc: string;       setEditDesc:     (v: string) => void;
+  editAddress: string;    setEditAddress:  (v: string) => void;
+  editWebsite: string;    setEditWebsite:  (v: string) => void;
+  editPatente: string;    setEditPatente:  (v: string) => void;
+  editYear: string;       setEditYear:     (v: string) => void;
   editLoading: boolean;
   onSave: () => void;
   onCancel: () => void;
   cities: string[];
 }) {
   const name = p.agency_name || p.full_name || "—";
+  const lbl: React.CSSProperties = { display:"block", fontSize:11, fontWeight:700, color:"#374151", textTransform:"uppercase", letterSpacing:".5px", marginBottom:5 };
 
   return (
     <div style={{ padding: "0 26px 26px" }}>
@@ -558,151 +556,79 @@ export function PrestastaireEditForm({
         Modification de <strong style={{ color: "#111827" }}>{name}</strong>
       </p>
       <div style={{ display: "flex", flexDirection: "column", gap: 13 }}>
-        {[
-          { label: "Nom complet", val: editFullName, set: setEditFullName, ph: "Nom et prénom", type: "input" },
-          { label: "Nom de l'agence", val: editAgency, set: setEditAgency, ph: "Nom de l'agence", type: "input" },
-        ].map(f => (
-          <div key={f.label}>
-            <label
-              style={{
-                display: "block",
-                fontSize: 11,
-                fontWeight: 700,
-                color: "#374151",
-                textTransform: "uppercase",
-                letterSpacing: ".5px",
-                marginBottom: 5,
-              }}
-            >
-              {f.label}
-            </label>
-            <input
-              className="fi"
-              value={f.val}
-              onChange={e => f.set(e.target.value)}
-              placeholder={f.ph}
-              style={{ width: "100%" }}
-            />
-          </div>
-        ))}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+
+        {/* Nom complet + Agence */}
+        <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 }}>
+          {[
+            { label:"Nom complet",    val:editFullName, set:setEditFullName, ph:"Prénom Nom" },
+            { label:"Nom de l'agence", val:editAgency,   set:setEditAgency,   ph:"Agence..." },
+          ].map(f => (
+            <div key={f.label}>
+              <label style={lbl}>{f.label}</label>
+              <input className="fi" value={f.val} onChange={e => f.set(e.target.value)} placeholder={f.ph} style={{ width:"100%" }} />
+            </div>
+          ))}
+        </div>
+
+        {/* Ville + Téléphone */}
+        <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 }}>
           <div>
-            <label
-              style={{
-                display: "block",
-                fontSize: 11,
-                fontWeight: 700,
-                color: "#374151",
-                textTransform: "uppercase",
-                letterSpacing: ".5px",
-                marginBottom: 5,
-              }}
-            >
-              Ville
-            </label>
-            <select
-              className="fi"
-              value={editCity}
-              onChange={e => setEditCity(e.target.value)}
-              style={{ cursor: "pointer", appearance: "none", width: "100%" }}
-            >
+            <label style={lbl}>Ville</label>
+            <select className="fi" value={editCity} onChange={e => setEditCity(e.target.value)} style={{ cursor:"pointer", appearance:"none", width:"100%" }}>
               <option value="">Sélectionnez</option>
               {CITIES.map(c => <option key={c} value={c}>{c}</option>)}
             </select>
           </div>
           <div>
-            <label
-              style={{
-                display: "block",
-                fontSize: 11,
-                fontWeight: 700,
-                color: "#374151",
-                textTransform: "uppercase",
-                letterSpacing: ".5px",
-                marginBottom: 5,
-              }}
-            >
-              Téléphone
-            </label>
-            <input
-              className="fi"
-              value={editPhone}
-              onChange={e => setEditPhone(e.target.value)}
-              placeholder="+216 XX XXX XXX"
-              type="tel"
-              style={{ width: "100%" }}
-            />
+            <label style={lbl}>Téléphone</label>
+            <input className="fi" value={editPhone} onChange={e => setEditPhone(e.target.value)} placeholder="+216 XX XXX XXX" type="tel" style={{ width:"100%" }} />
           </div>
         </div>
+
+        {/* Adresse */}
         <div>
-          <label
-            style={{
-              display: "block",
-              fontSize: 11,
-              fontWeight: 700,
-              color: "#374151",
-              textTransform: "uppercase",
-              letterSpacing: ".5px",
-              marginBottom: 5,
-            }}
-          >
-            Description
-          </label>
-          <textarea
-            className="fi"
-            rows={3}
-            value={editDesc}
-            onChange={e => setEditDesc(e.target.value)}
-            placeholder="Description de l'activité..."
-            style={{ resize: "vertical", width: "100%", fontFamily: "inherit" }}
-          />
+          <label style={lbl}>Adresse physique</label>
+          <textarea className="fi" rows={2} value={editAddress} onChange={e => setEditAddress(e.target.value)}
+            placeholder="Rue, immeuble, étage..." style={{ resize:"none", width:"100%", fontFamily:"inherit" }} />
         </div>
+
+        {/* Site web */}
+        <div>
+          <label style={lbl}>Site web / Réseaux sociaux</label>
+          <input className="fi" value={editWebsite} onChange={e => setEditWebsite(e.target.value)} placeholder="https://..." style={{ width:"100%" }} />
+        </div>
+
+        {/* Patente + Année */}
+        <div style={{ background:"#F0FDF4", border:"1px solid #BBF7D0", borderRadius:10, padding:"12px 14px" }}>
+          <p style={{ fontSize:10, fontWeight:700, color:"#065F46", textTransform:"uppercase", letterSpacing:".8px", marginBottom:10, display:"flex", alignItems:"center", gap:5 }}>
+            <ShieldCheck size={11} color="#059669" /> Vérification authenticité
+          </p>
+          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 }}>
+            <div>
+              <label style={{ ...lbl, color:"#374151" }}>Patente / RNE</label>
+              <input className="fi" value={editPatente} onChange={e => setEditPatente(e.target.value)} placeholder="1234567A/P/M/000" style={{ width:"100%", fontFamily:"monospace" }} />
+            </div>
+            <div>
+              <label style={{ ...lbl, color:"#374151" }}>Année d'ouverture</label>
+              <input className="fi" value={editYear} onChange={e => setEditYear(e.target.value)} placeholder="Ex : 2015" type="number" min="1970" max={new Date().getFullYear()} style={{ width:"100%" }} />
+            </div>
+          </div>
+        </div>
+
+        {/* Description */}
+        <div>
+          <label style={lbl}>Description</label>
+          <textarea className="fi" rows={3} value={editDesc} onChange={e => setEditDesc(e.target.value)}
+            placeholder="Description de l'activité..." style={{ resize:"vertical", width:"100%", fontFamily:"inherit" }} />
+        </div>
+
       </div>
-      <div style={{ display: "flex", gap: 8, marginTop: 18 }}>
-        <button
-          onClick={onCancel}
-          style={{
-            flex: 1,
-            padding: "11px",
-            background: "#F3F4F6",
-            color: "#374151",
-            border: "none",
-            borderRadius: 12,
-            fontSize: 13,
-            fontWeight: 700,
-            cursor: "pointer",
-            fontFamily: "inherit",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: 6,
-          }}
-        >
+      <div style={{ display:"flex", gap:8, marginTop:18 }}>
+        <button onClick={onCancel} style={{ flex:1, padding:"11px", background:"#F3F4F6", color:"#374151", border:"none", borderRadius:12, fontSize:13, fontWeight:700, cursor:"pointer", fontFamily:"inherit", display:"flex", alignItems:"center", justifyContent:"center", gap:6 }}>
           <X size={14} /> Annuler
         </button>
-        <button
-          onClick={onSave}
-          disabled={editLoading}
-          style={{
-            flex: 2,
-            padding: "11px",
-            background: editLoading ? "#9CA3AF" : "#2B96A8",
-            color: "white",
-            border: "none",
-            borderRadius: 12,
-            fontSize: 13,
-            fontWeight: 700,
-            cursor: editLoading ? "not-allowed" : "pointer",
-            fontFamily: "inherit",
-            transition: "all .2s",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: 6,
-          }}
-        >
-          <Save size={14} />
-          {editLoading ? "Sauvegarde..." : "Sauvegarder"}
+        <button onClick={onSave} disabled={editLoading} style={{ flex:2, padding:"11px", background:editLoading?"#9CA3AF":"#2B96A8", color:"white", border:"none", borderRadius:12, fontSize:13, fontWeight:700, cursor:editLoading?"not-allowed":"pointer", fontFamily:"inherit", transition:"all .2s", display:"flex", alignItems:"center", justifyContent:"center", gap:6 }}>
+          <Save size={14} /> {editLoading ? "Sauvegarde..." : "Sauvegarder"}
         </button>
       </div>
     </div>
@@ -711,26 +637,18 @@ export function PrestastaireEditForm({
 
 // ── PRESTATAIRE MODAL ──
 export function PrestastaireModal({
-  p,
-  mode,
-  onModeChange,
-  onClose,
-  loading,
-  editFullName,
-  setEditFullName,
-  editAgency,
-  setEditAgency,
-  editCity,
-  setEditCity,
-  editPhone,
-  setEditPhone,
-  editDesc,
-  setEditDesc,
+  p, mode, onModeChange, onClose, loading,
+  editFullName, setEditFullName,
+  editAgency,   setEditAgency,
+  editCity,     setEditCity,
+  editPhone,    setEditPhone,
+  editDesc,     setEditDesc,
+  editAddress,  setEditAddress,
+  editWebsite,  setEditWebsite,
+  editPatente,  setEditPatente,
+  editYear,     setEditYear,
   editLoading,
-  onValidate,
-  onRevoke,
-  onDelete,
-  onSave,
+  onValidate, onRevoke, onDelete, onSave,
   cities: CITIES,
 }: {
   p: PrestastaireUIProps;
@@ -738,16 +656,15 @@ export function PrestastaireModal({
   onModeChange: (m: "view" | "edit") => void;
   onClose: () => void;
   loading: boolean;
-  editFullName: string;
-  setEditFullName: (v: string) => void;
-  editAgency: string;
-  setEditAgency: (v: string) => void;
-  editCity: string;
-  setEditCity: (v: string) => void;
-  editPhone: string;
-  setEditPhone: (v: string) => void;
-  editDesc: string;
-  setEditDesc: (v: string) => void;
+  editFullName: string;   setEditFullName: (v: string) => void;
+  editAgency: string;     setEditAgency:   (v: string) => void;
+  editCity: string;       setEditCity:     (v: string) => void;
+  editPhone: string;      setEditPhone:    (v: string) => void;
+  editDesc: string;       setEditDesc:     (v: string) => void;
+  editAddress: string;    setEditAddress:  (v: string) => void;
+  editWebsite: string;    setEditWebsite:  (v: string) => void;
+  editPatente: string;    setEditPatente:  (v: string) => void;
+  editYear: string;       setEditYear:     (v: string) => void;
   editLoading: boolean;
   onValidate: () => void;
   onRevoke: () => void;
@@ -842,16 +759,15 @@ export function PrestastaireModal({
         ) : (
           <PrestastaireEditForm
             p={p}
-            editFullName={editFullName}
-            setEditFullName={setEditFullName}
-            editAgency={editAgency}
-            setEditAgency={setEditAgency}
-            editCity={editCity}
-            setEditCity={setEditCity}
-            editPhone={editPhone}
-            setEditPhone={setEditPhone}
-            editDesc={editDesc}
-            setEditDesc={setEditDesc}
+            editFullName={editFullName}   setEditFullName={setEditFullName}
+            editAgency={editAgency}       setEditAgency={setEditAgency}
+            editCity={editCity}           setEditCity={setEditCity}
+            editPhone={editPhone}         setEditPhone={setEditPhone}
+            editDesc={editDesc}           setEditDesc={setEditDesc}
+            editAddress={editAddress}     setEditAddress={setEditAddress}
+            editWebsite={editWebsite}     setEditWebsite={setEditWebsite}
+            editPatente={editPatente}     setEditPatente={setEditPatente}
+            editYear={editYear}           setEditYear={setEditYear}
             editLoading={editLoading}
             onSave={onSave}
             onCancel={() => onModeChange("view")}
