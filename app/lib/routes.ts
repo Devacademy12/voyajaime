@@ -37,7 +37,7 @@ export const ROUTES = {
     avis:         "/prestataire/avis",
     messages:     "/prestataire/messages",
     profil: "/prestataire/profil",
-    completerProfil: "/prestataire/completer-profil",
+    completerProfil: "/compler-profil",
   },
 
   // ── Admin ───────────────────────────────────
