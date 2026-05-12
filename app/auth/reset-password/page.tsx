@@ -23,24 +23,44 @@ export default function ResetPasswordPage() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [isValidating, setIsValidating] = useState(true);
-
-  // ✅ Stocker les tokens récupérés depuis le hash de l'URL
   const [accessToken, setAccessToken] = useState<string | null>(null);
   const [refreshToken, setRefreshToken] = useState<string | null>(null);
 
   useEffect(() => {
-    // ✅ Extraire les tokens depuis le hash Supabase (#access_token=...&refresh_token=...)
     const hash = window.location.hash;
     const params = new URLSearchParams(hash.replace("#", ""));
-    const at = params.get("access_token");
-    const rt = params.get("refresh_token");
 
-    if (!at || !rt) {
+    // ✅ Détecter les erreurs Supabase (otp_expired, access_denied, etc.)
+    const errorCode = params.get("error_code");
+    const errorDesc = params.get("error_description");
+    if (errorCode) {
+      setError(
+        errorCode === "otp_expired"
+          ? "Ce lien a expiré. Veuillez refaire une demande de réinitialisation."
+          : errorDesc?.replace(/\+/g, " ") || "Lien invalide."
+      );
+      setIsValidating(false);
+      return;
+    }
+
+    // ✅ Cas où Supabase a redirigé vers / au lieu de /auth/reset-password
+    // On vérifie aussi dans sessionStorage si on a été redirigé depuis la homepage
+    const storedHash = sessionStorage.getItem("recovery_hash");
+    const finalHash = hash || storedHash || "";
+    const finalParams = new URLSearchParams(finalHash.replace("#", ""));
+
+    const at = finalParams.get("access_token");
+    const rt = finalParams.get("refresh_token");
+    const type = finalParams.get("type");
+
+    if (!at || !rt || type !== "recovery") {
       setError("Lien invalide ou expiré. Veuillez refaire une demande.");
     } else {
       setAccessToken(at);
       setRefreshToken(rt);
+      sessionStorage.removeItem("recovery_hash");
     }
+
     setIsValidating(false);
   }, []);
 
@@ -56,13 +76,12 @@ export default function ResetPasswordPage() {
       const res = await fetch("/api/auth/reset-password", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        // ✅ Envoyer les tokens avec le nouveau mot de passe
         body: JSON.stringify({ newPassword, accessToken, refreshToken }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
       setSuccess("Mot de passe mis à jour avec succès !");
-      setTimeout(() => router.push("/"), 3000);
+      setTimeout(() => router.push("/auth"), 3000);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Erreur inconnue.");
     } finally { setLoading(false); }
@@ -77,6 +96,26 @@ export default function ResetPasswordPage() {
           <div style={{ width:44, height:44, border:"3.5px solid #2B96A8", borderTopColor:"transparent", borderRadius:"50%", animation:"spin .7s linear infinite", margin:"0 auto 16px" }}/>
           <p style={{ color:"#64748B", fontSize:14, margin:0 }}>Vérification du lien…</p>
           <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+        </div>
+      </div>
+    );
+  }
+
+  // ✅ Afficher un message d'erreur avec bouton pour refaire la demande
+  if (error && !success) {
+    return (
+      <div style={{ minHeight:"100vh", display:"flex", alignItems:"center", justifyContent:"center", background:"linear-gradient(135deg,#EFF9FB,#E0F2FE)", fontFamily:"'DM Sans',system-ui,sans-serif", padding:16 }}>
+        <div style={{ background:"white", padding:"40px 36px 32px", borderRadius:28, boxShadow:"0 4px 6px rgba(0,0,0,.05),0 24px 60px rgba(43,150,168,.14)", width:"100%", maxWidth:420, textAlign:"center" }}>
+          <div style={{ width:64, height:64, borderRadius:18, background:"#FEF2F2", display:"flex", alignItems:"center", justifyContent:"center", margin:"0 auto 20px", border:"1px solid #FECACA" }}>
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#DC2626" strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          </div>
+          <h2 style={{ fontSize:18, fontWeight:800, color:"#111827", margin:"0 0 8px" }}>Lien invalide</h2>
+          <p style={{ fontSize:13, color:"#6B7280", margin:"0 0 24px" }}>{error}</p>
+          <button
+            onClick={() => router.push("/auth")}
+            style={{ padding:"11px 24px", background:"#111827", color:"white", border:"none", borderRadius:12, fontSize:14, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>
+            Refaire une demande →
+          </button>
         </div>
       </div>
     );
@@ -104,11 +143,6 @@ export default function ResetPasswordPage() {
           <p style={{ fontSize:13, color:"#9CA3AF", margin:0 }}>Choisissez un mot de passe sécurisé</p>
         </div>
 
-        {error && !success && (
-          <div style={{ padding:"10px 13px", borderRadius:10, background:"#FEF2F2", border:"1px solid #FECACA", color:"#DC2626", fontSize:12, fontWeight:500, marginBottom:18 }}>
-            ⚠️ {error}
-          </div>
-        )}
         {success && (
           <div style={{ padding:"10px 13px", borderRadius:10, background:"#F0FDF4", border:"1px solid #BBF7D0", color:"#15803D", fontSize:12, fontWeight:500, marginBottom:18 }}>
             ✅ {success} Redirection en cours…
