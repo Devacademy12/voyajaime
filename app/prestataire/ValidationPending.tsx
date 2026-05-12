@@ -55,7 +55,7 @@ export default function ValidationPending({ userId, profilComplete = false }: Pr
               Pour accélérer la validation de votre compte, commencez par compléter les détails de votre agence.
             </p>
             <button
-              onClick={() => router.push(`/prestataire/completer-profil`)}
+              onClick={() => router.push(ROUTES.prestataire.completerProfil)}
               style={{ display:"inline-flex", alignItems:"center", justifyContent:"center", gap:8, width:"100%", padding:"14px 28px", background:"#2B96A8", color:"white", border:"none", borderRadius:12, fontSize:14, fontWeight:700, cursor:"pointer", fontFamily:"inherit", marginBottom:12 }}
             >
               Compléter mon profil agence <ArrowRight size={15} />
