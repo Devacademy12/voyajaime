@@ -4,6 +4,7 @@ import { useState } from "react";
 import {
   Search, MapPin, Phone, Star, Calendar, Users, Clock, CheckCircle,
   Pencil, Trash2, Map, AlertTriangle, Eye, X, Save,
+  Globe, Hash, Building2, FileText, ExternalLink, Image, ShieldCheck,
 } from "lucide-react";
 
 export interface PrestastaireUIProps {
@@ -12,14 +13,22 @@ export interface PrestastaireUIProps {
   full_name: string | null;
   agency_name: string | null;
   city: string | null;
+  address: string | null;
   description: string | null;
   phone: string | null;
+  website: string | null;
   avatar_url: string | null;
   is_validated: boolean;
   rating: number | null;
   created_at: string;
   excursion_count: number;
   excursion_active: number;
+  // Champs vérification authenticité
+  year_founded: number | null;
+  patente: string | null;
+  agency_photos: string[] | null;
+  declaration_url: string | null;
+  profil_complete: boolean | null;
 }
 
 // ── SEARCH BAR ──
@@ -285,8 +294,7 @@ export function PrestastaireCard({
               className="pbtn pbtn-gray"
               onClick={onRevoke}
               disabled={isLoading}
-              style={{ padding: "7px 12px", borderRadius: 9, cursor: "pointer", fontSize: 12, fontWeight: 700, fontFamily: "inherit", transition: "all .2s", whiteSpace: "nowrap", display: "inline-flex", alignItems: "center", gap: 5, background: "#F9FAFB", color: "#374151", border: "1px solid #E5E7EB" }}
-            >
+style={{ padding: "7px 12px", borderRadius: 9, cursor: "pointer", fontSize: 12, fontWeight: 700, fontFamily: "inherit", transition: "all .2s", whiteSpace: "nowrap", display: "inline-flex", alignItems: "center", gap: 5, background: "#F9FAFB", color: "#374151", border: "1px solid #E5E7EB" }}            >
               <AlertTriangle size={12} />
               {isLoading ? "..." : "Révoquer"}
             </button>
@@ -384,39 +392,83 @@ export function PrestastaireDetails({
         </div>
       </div>
 
-      {/* Détails */}
+      {/* Détails de base */}
       <div style={{ marginBottom: 16 }}>
         {[
-          { Icon: MapPin, label: "Ville", val: p.city || "—" },
-          { Icon: Phone, label: "Téléphone", val: p.phone || "—" },
-          { Icon: Star, label: "Note moyenne", val: p.rating ? `${p.rating}/5` : "—" },
-          { Icon: Calendar, label: "Inscrit le", val: new Date(p.created_at).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" }) },
-        ].map((row, i) => (
-          <div
-            key={row.label}
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              padding: "10px 0",
-              borderBottom: i < 3 ? "1px solid #F3F4F6" : "none",
-              fontSize: 13,
-            }}
-          >
+          { Icon: MapPin,    label: "Ville",         val: p.city    || "—" },
+          { Icon: Building2, label: "Adresse",       val: p.address || "—" },
+          { Icon: Phone,     label: "Téléphone",     val: p.phone   || "—" },
+          { Icon: Globe,     label: "Site web",      val: p.website || "—", link: p.website },
+          { Icon: Star,      label: "Note moyenne",  val: p.rating  ? `${p.rating}/5` : "—" },
+          { Icon: Calendar,  label: "Inscrit le",    val: new Date(p.created_at).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" }) },
+        ].map((row, i, arr) => (
+          <div key={row.label} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 0", borderBottom: i < arr.length - 1 ? "1px solid #F3F4F6" : "none", fontSize: 13 }}>
             <span style={{ color: "#6B7280", display: "flex", alignItems: "center", gap: 7 }}>
-              <row.Icon size={13} color="#9CA3AF" />
-              {row.label}
+              <row.Icon size={13} color="#9CA3AF" /> {row.label}
             </span>
-            <span style={{ fontWeight: 700, color: "#111827" }}>{row.val}</span>
+            {'link' in row && row.link ? (
+              <a href={row.link} target="_blank" rel="noopener noreferrer" style={{ fontWeight: 700, color: "#2B96A8", display: "flex", alignItems: "center", gap: 4, textDecoration: "none" }}>
+                {row.val} <ExternalLink size={10} />
+              </a>
+            ) : (
+              <span style={{ fontWeight: 700, color: "#111827", textAlign: "right", maxWidth: 220, wordBreak: "break-word" }}>{row.val}</span>
+            )}
           </div>
         ))}
       </div>
 
+      {/* Section vérification authenticité */}
+      <div style={{ background: "#F0FDF4", border: "1px solid #BBF7D0", borderRadius: 12, padding: "14px 16px", marginBottom: 16 }}>
+        <p style={{ fontSize: 11, fontWeight: 700, color: "#065F46", textTransform: "uppercase", letterSpacing: ".8px", marginBottom: 12, display: "flex", alignItems: "center", gap: 6 }}>
+          <ShieldCheck size={12} color="#059669" /> Vérification d'authenticité
+        </p>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+          <div style={{ background: "white", borderRadius: 9, padding: "10px 12px", border: "1px solid #D1FAE5" }}>
+            <p style={{ fontSize: 10, fontWeight: 700, color: "#9CA3AF", textTransform: "uppercase", letterSpacing: ".5px", marginBottom: 4 }}>Année d'ouverture</p>
+            <p style={{ fontSize: 14, fontWeight: 800, color: "#111827" }}>{p.year_founded || "—"}</p>
+          </div>
+          <div style={{ background: "white", borderRadius: 9, padding: "10px 12px", border: "1px solid #D1FAE5" }}>
+            <p style={{ fontSize: 10, fontWeight: 700, color: "#9CA3AF", textTransform: "uppercase", letterSpacing: ".5px", marginBottom: 4 }}>Patente / RNE</p>
+            <p style={{ fontSize: 13, fontWeight: 800, color: "#111827", fontFamily: "monospace", wordBreak: "break-all" }}>{p.patente || "—"}</p>
+          </div>
+        </div>
+
+        {/* Déclaration d'entreprise */}
+        {p.declaration_url ? (
+          <div style={{ marginTop: 10 }}>
+            <p style={{ fontSize: 10, fontWeight: 700, color: "#9CA3AF", textTransform: "uppercase", letterSpacing: ".5px", marginBottom: 6 }}>Déclaration d'entreprise</p>
+            <a href={p.declaration_url} target="_blank" rel="noopener noreferrer" style={{
+              display: "inline-flex", alignItems: "center", gap: 7, padding: "8px 14px",
+              background: "white", border: "1px solid #BBF7D0", borderRadius: 9,
+              fontSize: 12, fontWeight: 700, color: "#059669", textDecoration: "none",
+            }}>
+              <FileText size={13} /> Voir le document <ExternalLink size={11} />
+            </a>
+          </div>
+        ) : (
+          <p style={{ marginTop: 10, fontSize: 12, color: "#D97706", fontWeight: 600 }}>⚠️ Aucune déclaration uploadée</p>
+        )}
+      </div>
+
+      {/* Photos de l'agence */}
+      {p.agency_photos && p.agency_photos.length > 0 && (
+        <div style={{ marginBottom: 16 }}>
+          <p style={{ fontSize: 11, fontWeight: 700, color: "#9CA3AF", textTransform: "uppercase", letterSpacing: ".5px", marginBottom: 8, display: "flex", alignItems: "center", gap: 5 }}>
+            <Image size={11} /> Photos de l'agence
+          </p>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 7 }}>
+            {p.agency_photos.map((url, i) => (
+              <a key={i} href={url} target="_blank" rel="noopener noreferrer" style={{ display: "block", aspectRatio: "1", borderRadius: 9, overflow: "hidden", border: "1px solid #E5E7EB" }}>
+                <img src={url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+              </a>
+            ))}
+          </div>
+        </div>
+      )}
+
       {p.description && (
         <div style={{ background: "#F9FAFB", borderRadius: 12, padding: "12px 14px", marginBottom: 18 }}>
-          <p style={{ fontSize: 11, fontWeight: 700, color: "#9CA3AF", textTransform: "uppercase", letterSpacing: ".5px", marginBottom: 6 }}>
-            Description
-          </p>
+          <p style={{ fontSize: 11, fontWeight: 700, color: "#9CA3AF", textTransform: "uppercase", letterSpacing: ".5px", marginBottom: 6 }}>Description</p>
           <p style={{ fontSize: 13, color: "#374151", lineHeight: 1.7 }}>{p.description}</p>
         </div>
       )}

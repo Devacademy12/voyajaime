@@ -19,10 +19,14 @@ const CITIES = ["Tunis","Sfax","Sousse","Kairouan","Hammamet","Tozeur","Djerba",
 interface Prestataire {
   id: string; user_id: string; full_name: string | null;
   agency_name: string | null; city: string | null;
-  description: string | null; phone: string | null;
+  address: string | null; description: string | null;
+  phone: string | null; website: string | null;
   avatar_url: string | null; is_validated: boolean;
   rating: number | null; created_at: string;
   excursion_count: number; excursion_active: number;
+  year_founded: number | null; patente: string | null;
+  agency_photos: string[] | null; declaration_url: string | null;
+  profil_complete: boolean | null;
 }
 
 // ✅ Définir le type localement

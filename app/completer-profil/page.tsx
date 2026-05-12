@@ -142,10 +142,10 @@ function CompleterProfilContent() {
       const uploadedUrls: string[] = [];
       for (const photo of agencyPhotos) {
         const ext  = photo.file.name.split(".").pop() || "jpg";
-        const path = `${user.id}/agency-${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
-        const { data: up, error: upErr } = await supabase.storage.from("avatars").upload(path, photo.file, { upsert: true });
+        const path = `agency/${user.id}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+        const { data: up, error: upErr } = await supabase.storage.from("voyajaime-media").upload(path, photo.file, { upsert: true });
         if (!upErr && up) {
-          const { data: { publicUrl } } = supabase.storage.from("avatars").getPublicUrl(up.path);
+          const { data: { publicUrl } } = supabase.storage.from("voyajaime-media").getPublicUrl(up.path);
           uploadedUrls.push(publicUrl);
         }
       }
