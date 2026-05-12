@@ -11,31 +11,41 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Email requis" }, { status: 400 });
     }
 
-    // Client admin avec service_role key
     const supabaseAdmin = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.SUPABASE_SERVICE_ROLE_KEY!,
       { auth: { autoRefreshToken: false, persistSession: false } }
     );
 
-    // Générer le lien de reset
+    // ✅ Solution 1: Utiliser le vrai endpoint de reset password sans fragment
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://voyajaime.com";
+    
     const { data, error } = await supabaseAdmin.auth.admin.generateLink({
       type: "recovery",
       email,
       options: {
-    redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/reset-password`, // ✅ ICI
+        // ⚠️ Supabase va ajouter #access_token=... automatiquement
+        // Notre page doit lire ces paramètres
+        redirectTo: `${siteUrl}/auth/reset-password`,
       },
     });
 
-    // Sécurité : toujours répondre success
     if (error || !data?.properties?.action_link) {
       console.error("generateLink error:", error?.message);
       return NextResponse.json({ success: true });
     }
 
-    const resetLink = data.properties.action_link;
+    // 🔧 CORRECTION: Nettoyer et normaliser le lien
+    let resetLink = data.properties.action_link;
+    
+    // Transformer https://voyajaime.com/auth/reset-password#access_token=xxx
+    // en https://voyajaime.com/auth/reset-password?token=xxx
+    if (resetLink.includes('#')) {
+      const hashParams = resetLink.split('#')[1];
+      const urlWithoutHash = resetLink.split('#')[0];
+      resetLink = `${urlWithoutHash}?${hashParams}`;
+    }
 
-    // ✅ Envoyer l'email via Resend
     const { data: sendData, error: sendError } = await resend.emails.send({
       from: "VoyajAime <no-reply@voyajaime.com>",
       to: email,
@@ -52,7 +62,8 @@ export async function POST(req: Request) {
             Réinitialiser mon mot de passe
           </a>
           <p>Ce lien expire dans <strong>1 heure</strong>.</p>
-          <p>Si vous n'êtes pas à l'origine de cette demande, ignorez cet email.</p>
+          <p><strong>📌 Astuce :</strong> Copiez-collez le lien dans votre navigateur si le clic ne fonctionne pas.</p>
+          <p style="font-size: 12px; color: #666;">Lien complet pour copier/coller :<br/>${resetLink}</p>
           <hr/>
           <p style="font-size: 12px; color: #999;">VoyajAime - Tourisme en Tunisie</p>
         </body>
@@ -62,12 +73,10 @@ export async function POST(req: Request) {
 
     if (sendError) {
       console.error("Resend error:", sendError);
-      // On retourne quand même success pour ne pas exposer si l'email existe
       return NextResponse.json({ success: true });
     }
 
-    console.log("📧 Email envoyé via Resend, id:", sendData?.id);
-
+    console.log("📧 Email envoyé, resetLink:", resetLink);
     return NextResponse.json({ success: true });
 
   } catch (err) {
