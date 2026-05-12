@@ -1,19 +1,8 @@
 import { NextResponse } from "next/server";
-import nodemailer from "nodemailer";
+import { Resend } from "resend";
 import { createClient } from "@supabase/supabase-js";
 
-// ⚠️ ATTENTION PRODUCTION : Ethereal est un service de test uniquement.
-// Les emails ne sont PAS réellement envoyés aux utilisateurs.
-// Pour la production, remplacer par un vrai service (Resend, SendGrid, Mailgun, etc.)
-// et mettre à jour les variables d'environnement correspondantes.
-const transporter = nodemailer.createTransport({
-  host: 'smtp.ethereal.email',
-  port: 587,
-  auth: {
-    user: process.env.ETHEREAL_USER!,  // Ton email Ethereal
-    pass: process.env.ETHEREAL_PASS!   // Ton mot de passe Ethereal
-  }
-});
+const resend = new Resend(process.env.RESEND_API_KEY!);
 
 export async function POST(req: Request) {
   try {
@@ -46,9 +35,9 @@ export async function POST(req: Request) {
 
     const resetLink = data.properties.action_link;
 
-    // ✅ Envoyer l'email via Ethereal (au lieu de Resend)
-    const info = await transporter.sendMail({
-      from: '"VoyajAime" <no-reply@voyajaime.com>',
+    // ✅ Envoyer l'email via Resend
+    const { data: sendData, error: sendError } = await resend.emails.send({
+      from: "VoyajAime <no-reply@voyajaime.com>",
       to: email,
       subject: "Réinitialisation de votre mot de passe",
       html: `
@@ -71,9 +60,13 @@ export async function POST(req: Request) {
       `,
     });
 
-    // ✅ Affiche le lien de visualisation dans la console
-    console.log("📧 Email envoyé !");
-    console.log("🔗 Visualiser l'email ici :", nodemailer.getTestMessageUrl(info));
+    if (sendError) {
+      console.error("Resend error:", sendError);
+      // On retourne quand même success pour ne pas exposer si l'email existe
+      return NextResponse.json({ success: true });
+    }
+
+    console.log("📧 Email envoyé via Resend, id:", sendData?.id);
 
     return NextResponse.json({ success: true });
 

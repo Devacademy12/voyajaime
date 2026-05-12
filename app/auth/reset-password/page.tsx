@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabaseClient";
 
 function pwdStrength(p: string) {
   if (p.length === 0) return null;
@@ -25,14 +24,24 @@ export default function ResetPasswordPage() {
   const [success, setSuccess] = useState<string | null>(null);
   const [isValidating, setIsValidating] = useState(true);
 
+  // ✅ Stocker les tokens récupérés depuis le hash de l'URL
+  const [accessToken, setAccessToken] = useState<string | null>(null);
+  const [refreshToken, setRefreshToken] = useState<string | null>(null);
+
   useEffect(() => {
-    const validateToken = async () => {
-      const supabase = createClient();
-      const { data: { user }, error } = await supabase.auth.getUser();
-      if (error || !user) setError("Lien invalide ou expiré. Veuillez refaire une demande.");
-      setIsValidating(false);
-    };
-    validateToken();
+    // ✅ Extraire les tokens depuis le hash Supabase (#access_token=...&refresh_token=...)
+    const hash = window.location.hash;
+    const params = new URLSearchParams(hash.replace("#", ""));
+    const at = params.get("access_token");
+    const rt = params.get("refresh_token");
+
+    if (!at || !rt) {
+      setError("Lien invalide ou expiré. Veuillez refaire une demande.");
+    } else {
+      setAccessToken(at);
+      setRefreshToken(rt);
+    }
+    setIsValidating(false);
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -40,12 +49,15 @@ export default function ResetPasswordPage() {
     setError(null);
     if (newPassword.length < 8) { setError("Le mot de passe doit contenir au moins 8 caractères."); return; }
     if (newPassword !== confirmPassword) { setError("Les mots de passe ne correspondent pas."); return; }
+    if (!accessToken || !refreshToken) { setError("Session invalide. Veuillez refaire une demande."); return; }
+
     setLoading(true);
     try {
       const res = await fetch("/api/auth/reset-password", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ newPassword }),
+        // ✅ Envoyer les tokens avec le nouveau mot de passe
+        body: JSON.stringify({ newPassword, accessToken, refreshToken }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);

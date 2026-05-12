@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabaseClient";
+import { createClient } from "@supabase/supabase-js";
 
 export async function POST(req: Request) {
   try {
-    const { newPassword } = await req.json();
+    const { newPassword, accessToken, refreshToken } = await req.json();
 
     if (!newPassword || newPassword.length < 8) {
       return NextResponse.json(
@@ -12,12 +12,27 @@ export async function POST(req: Request) {
       );
     }
 
-    const supabase = createClient();
-    
-    // Récupérer l'utilisateur actuel (connecté via le lien magique)
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    if (!accessToken || !refreshToken) {
+      return NextResponse.json(
+        { error: "Session invalide ou expirée. Veuillez refaire une demande." },
+        { status: 401 }
+      );
+    }
 
-    if (userError || !user) {
+    // Créer un client Supabase standard (pas admin)
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      { auth: { autoRefreshToken: false, persistSession: false } }
+    );
+
+    // Restaurer la session depuis les tokens envoyés par le client
+    const { error: sessionError } = await supabase.auth.setSession({
+      access_token: accessToken,
+      refresh_token: refreshToken,
+    });
+
+    if (sessionError) {
       return NextResponse.json(
         { error: "Session invalide ou expirée. Veuillez refaire une demande." },
         { status: 401 }
@@ -26,7 +41,7 @@ export async function POST(req: Request) {
 
     // Mettre à jour le mot de passe
     const { error: updateError } = await supabase.auth.updateUser({
-      password: newPassword
+      password: newPassword,
     });
 
     if (updateError) {
@@ -37,12 +52,12 @@ export async function POST(req: Request) {
       );
     }
 
-    // Déconnecter l'utilisateur pour qu'il se reconnecte avec le nouveau mot de passe
+    // Déconnecter
     await supabase.auth.signOut();
 
     return NextResponse.json({
       success: true,
-      message: "Mot de passe mis à jour avec succès ! Vous pouvez maintenant vous connecter."
+      message: "Mot de passe mis à jour avec succès ! Vous pouvez maintenant vous connecter.",
     });
 
   } catch (error) {
