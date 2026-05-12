@@ -15,6 +15,7 @@ import PopularExcursions from "@/app/components/home/PopularExcursions";
 import HomeFooter        from "@/app/components/home/HomeFooter";
 import AboutSection from "./components/home/AboutSection";
 import BlogSection from "@/app/components/home/BlogSection";
+import ContactSection from "@/app/components/home/ContactSection";
 
 
 // Shared types & utils
@@ -161,6 +162,8 @@ export default function HomePage() {
       <AboutSection />
 
       <BlogSection />
+
+      <ContactSection />
 
       <HomeFooter
         user={user}

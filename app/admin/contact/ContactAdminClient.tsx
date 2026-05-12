@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { createClient } from "@/lib/supabaseClient";
 import {
   Save, Check, Loader2, AlertCircle, Mail, Phone,
   MapPin, Clock, Eye, MessageSquare, Image as ImageIcon,
   ChevronDown, ChevronUp, Trash2, MailOpen, RefreshCw,
+  Upload, X, FolderOpen,
 } from "lucide-react";
 
 /* ══ TYPES ══ */
@@ -13,16 +14,16 @@ interface ContentRow { id: string; key: string; value: string | null; updated_at
 interface Message    { id: string; name: string; email: string; subject: string | null; message: string; is_read: boolean; created_at: string; }
 
 /* ══ CHAMPS ÉDITABLES ══ */
-const FIELDS: { key: string; label: string; icon: React.ReactNode; placeholder: string; multiline?: boolean }[] = [
-  { key:"hero_title",   label:"Titre principal",     icon:<MessageSquare size={14}/>, placeholder:"Contactez-nous" },
-  { key:"hero_subtitle",label:"Sous-titre",           icon:<MessageSquare size={14}/>, placeholder:"Votre message…", multiline:true },
-  { key:"bg_image",     label:"Image de fond (URL)",  icon:<ImageIcon size={14}/>,    placeholder:"https://…" },
-  { key:"email",        label:"Email",                icon:<Mail size={14}/>,         placeholder:"contact@voyajaime.tn" },
-  { key:"phone",        label:"Téléphone",            icon:<Phone size={14}/>,        placeholder:"+216 XX XXX XXX" },
-  { key:"address",      label:"Adresse",              icon:<MapPin size={14}/>,       placeholder:"Tunis, Tunisie" },
-  { key:"hours",        label:"Horaires",             icon:<Clock size={14}/>,        placeholder:"Lun–Ven : 9h–18h" },
-  { key:"cta_label",    label:"Texte du bouton CTA",  icon:<MessageSquare size={14}/>,placeholder:"Envoyer le message" },
-  { key:"success_msg",  label:"Message de succès",    icon:<Check size={14}/>,        placeholder:"Message envoyé !", multiline:true },
+const FIELDS: { key: string; label: string; icon: React.ReactNode; placeholder: string; multiline?: boolean; isImage?: boolean }[] = [
+  { key:"hero_title",    label:"Titre principal",    icon:<MessageSquare size={14}/>, placeholder:"Contactez-nous" },
+  { key:"hero_subtitle", label:"Sous-titre",         icon:<MessageSquare size={14}/>, placeholder:"Votre message…", multiline:true },
+  { key:"bg_image",      label:"Image de fond",      icon:<ImageIcon size={14}/>,     placeholder:"https://…", isImage:true },
+  { key:"email",         label:"Email",              icon:<Mail size={14}/>,          placeholder:"contact@voyajaime.tn" },
+  { key:"phone",         label:"Téléphone",          icon:<Phone size={14}/>,         placeholder:"+216 XX XXX XXX" },
+  { key:"address",       label:"Adresse",            icon:<MapPin size={14}/>,        placeholder:"Tunis, Tunisie" },
+  { key:"hours",         label:"Horaires",           icon:<Clock size={14}/>,         placeholder:"Lun–Ven : 9h–18h" },
+  { key:"cta_label",     label:"Texte du bouton CTA",icon:<MessageSquare size={14}/>, placeholder:"Envoyer le message" },
+  { key:"success_msg",   label:"Message de succès",  icon:<Check size={14}/>,         placeholder:"Message envoyé !", multiline:true },
 ];
 
 const CSS = `
@@ -79,6 +80,59 @@ const CSS = `
     color:#94A3B8; text-transform:uppercase; letter-spacing:.7px; margin-bottom:6px;
   }
 
+  /* ── Upload zone ── */
+  .upload-zone {
+    border: 2px dashed #D1D5DB;
+    border-radius: 12px;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    transition: all .2s;
+    background: #F9FAFB;
+    text-align: center;
+  }
+  .upload-zone:hover { border-color: #02AFCF; background: #F0FAFF; }
+  .upload-zone.dragging { border-color: #02AFCF; background: #E8F9FC; }
+
+  .upload-btn {
+    display: inline-flex; align-items: center; gap: 7px;
+    padding: 8px 16px;
+    background: #053366; color: white;
+    border: none; border-radius: 9px;
+    font-size: 12px; font-weight: 700; cursor: pointer;
+    font-family: inherit; transition: all .18s;
+  }
+  .upload-btn:hover { background: #02265a; }
+  .upload-btn:disabled { background: #9CA3AF; cursor: not-allowed; }
+
+  .img-preview {
+    position: relative;
+    margin-top: 10px;
+    border-radius: 10px;
+    overflow: hidden;
+    border: 1.5px solid #E8ECF4;
+  }
+  .img-preview-del {
+    position: absolute; top: 6px; right: 6px;
+    width: 26px; height: 26px; border-radius: 50%;
+    background: rgba(0,0,0,.55); border: none; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    color: white; transition: background .15s;
+  }
+  .img-preview-del:hover { background: rgba(220,38,38,.8); }
+
+  .upload-progress {
+    height: 4px; border-radius: 2px; background: #E5E7EB;
+    overflow: hidden; margin-top: 6px;
+  }
+  .upload-progress-bar {
+    height: 100%; background: linear-gradient(90deg,#02AFCF,#053366);
+    border-radius: 2px; transition: width .3s ease;
+  }
+
   /* Messages */
   .msg-row {
     display:flex; gap:16px; padding:18px 20px;
@@ -112,7 +166,163 @@ const CSS = `
   *::-webkit-scrollbar-thumb { background:#E2E6F0; border-radius:2px; }
 `;
 
-/* ══ COMPOSANT ══ */
+/* ══ IMAGE UPLOADER ══ */
+function ImageUploader({
+  value,
+  onChange,
+}: {
+  value: string;
+  onChange: (url: string) => void;
+}) {
+  const sb          = createClient();
+  const fileRef     = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+  const [progress,  setProgress]  = useState(0);
+  const [error,     setError]     = useState<string | null>(null);
+  const [dragging,  setDragging]  = useState(false);
+
+  const handleFile = async (file: File) => {
+    if (!file.type.startsWith("image/")) {
+      setError("Seules les images sont acceptées (JPG, PNG, WebP…)");
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      setError("L'image ne doit pas dépasser 5 Mo.");
+      return;
+    }
+
+    setUploading(true); setError(null); setProgress(10);
+
+    try {
+      const ext      = file.name.split(".").pop() ?? "jpg";
+      const filename = `contact-bg-${Date.now()}.${ext}`;
+      const path     = `contact/${filename}`;
+
+      setProgress(40);
+
+      /* Upload vers Supabase Storage — bucket "images" (ajustez si besoin) */
+      const { error: upErr } = await sb.storage
+        .from("images")
+        .upload(path, file, { cacheControl: "3600", upsert: true });
+
+      if (upErr) throw upErr;
+
+      setProgress(80);
+
+      /* Récupérer l'URL publique */
+      const { data: urlData } = sb.storage.from("images").getPublicUrl(path);
+      const publicUrl = urlData.publicUrl;
+
+      setProgress(100);
+      onChange(publicUrl);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Échec de l'upload.");
+    } finally {
+      setUploading(false);
+      setTimeout(() => setProgress(0), 800);
+    }
+  };
+
+  const onInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) handleFile(file);
+  };
+
+  const onDrop = (e: React.DragEvent) => {
+    e.preventDefault(); setDragging(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file) handleFile(file);
+  };
+
+  const clearImage = () => {
+    onChange("");
+    if (fileRef.current) fileRef.current.value = "";
+  };
+
+  return (
+    <div>
+      {/* Zone de drop */}
+      <div
+        className={`upload-zone ${dragging ? "dragging" : ""}`}
+        onDragOver={e => { e.preventDefault(); setDragging(true); }}
+        onDragLeave={() => setDragging(false)}
+        onDrop={onDrop}
+        onClick={() => fileRef.current?.click()}
+      >
+        {uploading
+          ? <Loader2 size={24} color="#02AFCF" style={{ animation:"spin .7s linear infinite" }}/>
+          : <Upload size={24} color="#9CA3AF"/>}
+
+        <p style={{ fontSize:13, fontWeight:600, color:"#374151" }}>
+          {dragging ? "Déposez l'image ici" : "Glissez-déposez une image"}
+        </p>
+        <p style={{ fontSize:11, color:"#9CA3AF" }}>JPG, PNG, WebP — max 5 Mo</p>
+
+        <button
+          className="upload-btn"
+          type="button"
+          disabled={uploading}
+          onClick={e => { e.stopPropagation(); fileRef.current?.click(); }}
+        >
+          <FolderOpen size={13}/>
+          {uploading ? "Upload en cours…" : "Choisir depuis le PC"}
+        </button>
+      </div>
+
+      {/* Barre de progression */}
+      {progress > 0 && (
+        <div className="upload-progress">
+          <div className="upload-progress-bar" style={{ width:`${progress}%` }}/>
+        </div>
+      )}
+
+      {/* Erreur */}
+      {error && (
+        <p style={{ marginTop:8, fontSize:12, color:"#DC2626", display:"flex", alignItems:"center", gap:5 }}>
+          <AlertCircle size={12}/> {error}
+        </p>
+      )}
+
+      {/* Ou URL manuelle */}
+      <div style={{ display:"flex", alignItems:"center", gap:8, margin:"10px 0 6px" }}>
+        <div style={{ flex:1, height:1, background:"#E8ECF4" }}/>
+        <span style={{ fontSize:11, color:"#9CA3AF", fontWeight:600 }}>ou entrer une URL</span>
+        <div style={{ flex:1, height:1, background:"#E8ECF4" }}/>
+      </div>
+      <input
+        className="field"
+        value={value}
+        placeholder="https://example.com/image.jpg"
+        onChange={e => onChange(e.target.value)}
+      />
+
+      {/* Prévisualisation */}
+      {value && (
+        <div className="img-preview" style={{ marginTop:10, height:140 }}>
+          <img
+            src={value} alt="Aperçu image de fond"
+            style={{ width:"100%", height:"100%", objectFit:"cover", display:"block" }}
+            onError={e => { (e.target as HTMLImageElement).style.display="none"; }}
+          />
+          <button className="img-preview-del" type="button" onClick={clearImage} title="Supprimer l'image">
+            <X size={13}/>
+          </button>
+        </div>
+      )}
+
+      {/* Input file caché */}
+      <input
+        ref={fileRef}
+        type="file"
+        accept="image/*"
+        style={{ display:"none" }}
+        onChange={onInputChange}
+      />
+    </div>
+  );
+}
+
+/* ══ PAGE ADMIN PRINCIPALE ══ */
 export default function ContactAdminClient({
   initialContent,
   initialMessages,
@@ -122,23 +332,18 @@ export default function ContactAdminClient({
 }) {
   const sb = createClient();
 
-  /* ── Tabs ── */
-  const [tab, setTab] = useState<"content"|"messages">("content");
-
-  /* ── Content state ── */
-  const [content, setContent] = useState<Record<string, string>>(
+  const [tab,       setTab]       = useState<"content"|"messages">("content");
+  const [content,   setContent]   = useState<Record<string, string>>(
     Object.fromEntries(initialContent.map(r => [r.key, r.value ?? ""]))
   );
   const [saving,    setSaving]    = useState(false);
   const [saveOk,    setSaveOk]    = useState(false);
   const [saveError, setSaveError] = useState<string|null>(null);
+  const [messages,  setMessages]  = useState<Message[]>(initialMessages);
+  const [openMsg,   setOpenMsg]   = useState<string|null>(null);
+  const [refreshing,setRefreshing]= useState(false);
 
-  /* ── Messages state ── */
-  const [messages,   setMessages]   = useState<Message[]>(initialMessages);
-  const [openMsg,    setOpenMsg]     = useState<string|null>(null);
-  const [refreshing, setRefreshing]  = useState(false);
-
-  /* ── Save content ── */
+  /* Save */
   const saveContent = async () => {
     setSaving(true); setSaveError(null);
     try {
@@ -157,13 +362,11 @@ export default function ContactAdminClient({
     }
   };
 
-  /* ── Mark as read ── */
   const markRead = async (id: string) => {
     await sb.from("contact_messages").update({ is_read: true }).eq("id", id);
     setMessages(p => p.map(m => m.id === id ? { ...m, is_read: true } : m));
   };
 
-  /* ── Delete message ── */
   const deleteMsg = async (id: string) => {
     if (!confirm("Supprimer ce message ?")) return;
     await sb.from("contact_messages").delete().eq("id", id);
@@ -171,7 +374,6 @@ export default function ContactAdminClient({
     if (openMsg === id) setOpenMsg(null);
   };
 
-  /* ── Refresh messages ── */
   const refreshMessages = async () => {
     setRefreshing(true);
     const { data } = await sb.from("contact_messages").select("*").order("created_at", { ascending: false }).limit(100);
@@ -192,7 +394,9 @@ export default function ContactAdminClient({
             Page Contact
           </h1>
           <p style={{ fontSize:11.5, color:"#94A3B8", marginTop:2 }}>
-            {unreadCount > 0 ? `${unreadCount} message${unreadCount>1?"s":""} non lu${unreadCount>1?"s":""}` : "Aucun message non lu"}
+            {unreadCount > 0
+              ? `${unreadCount} message${unreadCount>1?"s":""} non lu${unreadCount>1?"s":""}`
+              : "Aucun message non lu"}
           </p>
         </div>
 
@@ -208,9 +412,11 @@ export default function ContactAdminClient({
           </a>
           {tab === "content" && (
             <button className={`save-btn ${saveOk?"ok":""}`} onClick={saveContent} disabled={saving||saveOk}>
-              {saving ? <><Loader2 size={13} style={{animation:"spin .7s linear infinite"}}/> Enregistrement…</>
-               : saveOk ? <><Check size={13}/> Enregistré !</>
-               : <><Save size={13}/> Enregistrer</>}
+              {saving
+                ? <><Loader2 size={13} style={{animation:"spin .7s linear infinite"}}/> Enregistrement…</>
+                : saveOk
+                  ? <><Check size={13}/> Enregistré !</>
+                  : <><Save size={13}/> Enregistrer</>}
             </button>
           )}
         </div>
@@ -242,36 +448,37 @@ export default function ContactAdminClient({
           <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
             {FIELDS.map(f => (
               <div key={f.key} className="card" style={{ padding:"18px 20px" }}>
-                <label className="label" style={{ display:"flex", alignItems:"center", gap:6 }}>
+                <label className="label" style={{ display:"flex", alignItems:"center", gap:6, marginBottom: f.isImage ? 10 : 6 }}>
                   {f.icon} {f.label}
                 </label>
-                {f.multiline
-                  ? <textarea
-                      className="field"
-                      value={content[f.key] ?? ""}
-                      placeholder={f.placeholder}
-                      rows={3}
-                      onChange={e => setContent(p => ({ ...p, [f.key]: e.target.value }))}
-                    />
-                  : <input
-                      className="field"
-                      value={content[f.key] ?? ""}
-                      placeholder={f.placeholder}
-                      onChange={e => setContent(p => ({ ...p, [f.key]: e.target.value }))}
-                    />
-                }
-                {/* Prévisualisation image */}
-                {f.key === "bg_image" && content["bg_image"] && (
-                  <div style={{ marginTop:8, height:80, borderRadius:8, overflow:"hidden", border:"1.5px solid #E8ECF4" }}>
-                    <img src={content["bg_image"]} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }}
-                      onError={e => { (e.target as HTMLImageElement).style.display="none"; }}/>
-                  </div>
+
+                {/* ── Champ image avec uploader ── */}
+                {f.isImage ? (
+                  <ImageUploader
+                    value={content[f.key] ?? ""}
+                    onChange={url => setContent(p => ({ ...p, [f.key]: url }))}
+                  />
+                ) : f.multiline ? (
+                  <textarea
+                    className="field"
+                    value={content[f.key] ?? ""}
+                    placeholder={f.placeholder}
+                    rows={3}
+                    onChange={e => setContent(p => ({ ...p, [f.key]: e.target.value }))}
+                  />
+                ) : (
+                  <input
+                    className="field"
+                    value={content[f.key] ?? ""}
+                    placeholder={f.placeholder}
+                    onChange={e => setContent(p => ({ ...p, [f.key]: e.target.value }))}
+                  />
                 )}
               </div>
             ))}
 
             <div style={{ padding:"12px 16px", background:"#FFFBEB", border:"1.5px solid #FDE68A", borderRadius:12, fontSize:12, color:"#92400E" }}>
-              <strong>💡 Astuce :</strong> Modifiez les champs ci-dessus puis cliquez sur <strong>Enregistrer</strong>. Les changements sont visibles immédiatement sur la page publique.
+              <strong>💡 Astuce :</strong> Pour l'image de fond, glissez-déposez un fichier ou cliquez sur <em>Choisir depuis le PC</em>. L'image est uploadée automatiquement sur Supabase Storage. Pensez à <strong>Enregistrer</strong> après chaque modification.
             </div>
           </div>
         )}
@@ -279,8 +486,6 @@ export default function ContactAdminClient({
         {/* ══ ONGLET MESSAGES ══ */}
         {tab === "messages" && (
           <div style={{ display:"flex", flexDirection:"column", gap:0 }}>
-
-            {/* Toolbar */}
             <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:12 }}>
               <p style={{ fontSize:13, color:"#6B7280", fontWeight:600 }}>
                 {messages.length} message{messages.length!==1?"s":""} reçu{messages.length!==1?"s":""}
@@ -298,14 +503,13 @@ export default function ContactAdminClient({
             <div className="card">
               {messages.length === 0 && (
                 <div style={{ padding:"60px 20px", textAlign:"center", color:"#9CA3AF" }}>
-                  <Mail size={36} style={{ margin:"0 auto 14px", opacity:.3 }}/>
+                  <Mail size={36} style={{ margin:"0 auto 14px", opacity:.3, display:"block" }}/>
                   <p style={{ fontSize:14, fontWeight:600 }}>Aucun message reçu</p>
                 </div>
               )}
 
               {messages.map(m => (
                 <div key={m.id}>
-                  {/* Row */}
                   <div
                     className={`msg-row ${!m.is_read ? "unread" : ""}`}
                     onClick={() => {
