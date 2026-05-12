@@ -73,7 +73,7 @@ export async function sendWelcomePrestataire({
 }) {
   // Lien sécurisé avec l'userId en paramètre
   // La page /prestataire/completer-profil vérifie que l'user est connecté
-  const completionLink = `${APP_URL}/prestataire/completer-profil?uid=${userId}`;
+  const completionLink = `${APP_URL}/completer-profil`;
 
   const html = baseLayout(`
     <h1 style="margin:0 0 8px;font-size:24px;font-weight:800;color:#0F172A;letter-spacing:-0.5px;">
