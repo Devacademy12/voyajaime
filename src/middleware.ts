@@ -3,7 +3,7 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-// Routes publiques
+// Routes publiques — accessibles sans connexion
 const PUBLIC_ROUTES = [
   "/",
   "/auth",
@@ -12,10 +12,15 @@ const PUBLIC_ROUTES = [
   "/blog",
   "/about",
   "/contact",
+  "/completer-profil",
   "/api/auth/callback",
   "/api/auth/forgot-password",
   "/api/auth/reset-password",
   "/api/webhooks/stripe",
+  "/api/register-prestataire",
+  // Pages touriste accessibles sans compte
+  "/touriste/modeAssister",
+  "/touriste/modeLibre",
 ];
 
 // Préfixes publics
@@ -29,14 +34,14 @@ const PUBLIC_PREFIXES = [
   "/images/",
   "/logo",
   "/brandmark",
+  // Sous-routes mode assisté et mode libre
+  "/touriste/modeAssister/",
+  "/touriste/modeLibre/",
 ];
 
 function isPublic(pathname: string): boolean {
   if (PUBLIC_ROUTES.includes(pathname)) return true;
-
-  return PUBLIC_PREFIXES.some((prefix) =>
-    pathname.startsWith(prefix)
-  );
+  return PUBLIC_PREFIXES.some((prefix) => pathname.startsWith(prefix));
 }
 
 export async function middleware(request: NextRequest) {
@@ -54,10 +59,7 @@ export async function middleware(request: NextRequest) {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
-        getAll() {
-          return request.cookies.getAll();
-        },
-
+        getAll() { return request.cookies.getAll(); },
         setAll(cookiesToSet) {
           cookiesToSet.forEach(({ name, value, options }) => {
             response.cookies.set(name, value, options);
@@ -67,28 +69,19 @@ export async function middleware(request: NextRequest) {
     }
   );
 
-  // Vérifier utilisateur connecté
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { data: { user } } = await supabase.auth.getUser();
 
-  // Non connecté
+  // Non connecté → rediriger vers /auth
   if (!user) {
     const loginUrl = new URL("/auth", request.url);
-
     loginUrl.searchParams.set("redirect", pathname);
-
     return NextResponse.redirect(loginUrl);
   }
 
   // Vérification rôle ADMIN
   if (pathname.startsWith("/admin")) {
     const { data: profile } = await supabase
-      .from("profiles")
-      .select("role")
-      .eq("user_id", user.id)
-      .single();
-
+      .from("profiles").select("role").eq("user_id", user.id).single();
     if (!profile || profile.role !== "admin") {
       return NextResponse.redirect(new URL("/auth", request.url));
     }
@@ -97,24 +90,17 @@ export async function middleware(request: NextRequest) {
   // Vérification rôle PRESTATAIRE
   if (pathname.startsWith("/prestataire")) {
     const { data: profile } = await supabase
-      .from("profiles")
-      .select("role")
-      .eq("user_id", user.id)
-      .single();
-
+      .from("profiles").select("role").eq("user_id", user.id).single();
     if (!profile || profile.role !== "prestataire") {
       return NextResponse.redirect(new URL("/auth", request.url));
     }
   }
 
   // Vérification rôle TOURISTE
+  // Seulement pour les pages qui nécessitent vraiment un compte
   if (pathname.startsWith("/touriste")) {
     const { data: profile } = await supabase
-      .from("profiles")
-      .select("role")
-      .eq("user_id", user.id)
-      .single();
-
+      .from("profiles").select("role").eq("user_id", user.id).single();
     if (!profile || profile.role !== "touriste") {
       return NextResponse.redirect(new URL("/auth", request.url));
     }
@@ -123,7 +109,6 @@ export async function middleware(request: NextRequest) {
   return response;
 }
 
-// IMPORTANT POUR VERCEL
 export const runtime = "nodejs";
 
 export const config = {
