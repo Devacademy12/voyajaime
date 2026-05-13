@@ -447,16 +447,21 @@ export default function DashboardClient({ profile, excursions, reservations, pai
         .dp-actions { display:flex; gap:12px; margin-bottom:28px; flex-wrap:wrap; }
         .dp-resa-inner { display:flex; justify-content:space-between; align-items:center; }
         @media(max-width:900px) { .dp-stats { grid-template-columns:repeat(2,1fr); } }
-        @media(max-width:600px) {
+        @media(max-width:767px) {
           .dp-stats   { grid-template-columns:repeat(2,1fr); gap:10px; }
           .dp-actions { flex-direction:column; }
-          .dp-actions .dp-action { justify-content:center; width:100%; }
+          .dp-actions .dp-action { justify-content:center; width:100%; box-sizing:border-box; }
           .dp-resa-inner { flex-direction:column; align-items:flex-start; gap:8px; }
           .dp-resa-badge { align-self:flex-end; }
+          .dp-charts-grid { grid-template-columns:1fr !important; }
+          .dp-main-pad { padding:16px !important; }
+        }
+        @media(max-width:400px) {
+          .dp-stats { grid-template-columns:1fr 1fr; gap:8px; }
         }
       `}</style>
 
-      <div style={{ maxWidth: 1400, margin: "0 auto", padding: "32px 40px" }}>
+      <div className="dp-main-pad" style={{ maxWidth: 1400, margin: "0 auto", padding: "32px 40px" }}>
         {/* Header */}
         <div className="dp-card" style={{ marginBottom: 32, animationDelay: "0s" }}>
           <h1 style={{ fontSize: 28, fontWeight: 800, color: "#053366", margin: 0, letterSpacing: "-0.5px" }}>
@@ -497,7 +502,7 @@ export default function DashboardClient({ profile, excursions, reservations, pai
         </div>
 
         {/* Graphique + Calendrier */}
-        <div className="dp-card" style={{ marginBottom: 28, animationDelay: ".14s", display: "grid", gridTemplateColumns: "1fr 1.2fr", gap: 24 }}>
+        <div className="dp-card dp-charts-grid" style={{ marginBottom: 28, animationDelay: ".14s", display: "grid", gridTemplateColumns: "1fr 1.2fr", gap: 24 }}>
           <ExcursionRatingsChart excursions={excursions} />
           <ReservationCalendar reservations={reservations} />
         </div>

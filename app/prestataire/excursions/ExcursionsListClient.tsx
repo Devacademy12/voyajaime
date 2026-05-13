@@ -108,6 +108,14 @@ export default function ExcursionsListClient({
         .toast-p{position:fixed;top:24px;right:24px;z-index:9999;padding:13px 20px;border-radius:14px;font-size:14px;font-weight:600;font-family:inherit;box-shadow:0 8px 30px rgba(0,0,0,.12);animation:tin .3s ease;display:flex;align-items:center;gap:8px}
         @keyframes tin{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}
         @keyframes spin{to{transform:rotate(360deg)}}
+        @media(max-width:767px){
+          .exc-filters { flex-wrap:wrap !important; gap:6px !important; }
+          .ftab { font-size:12px !important; padding:6px 12px !important; }
+          .exc-grid { grid-template-columns:1fr !important; }
+        }
+        @media(max-width:400px){
+          .exc-card-img { height:160px !important; }
+        }
       `}</style>
 
       {toast && (
@@ -118,7 +126,7 @@ export default function ExcursionsListClient({
       )}
 
       {/* Filtres */}
-      <div style={{ display: "flex", gap: 8, marginBottom: 20 }}>
+      <div className="exc-filters" style={{ display: "flex", gap: 8, marginBottom: 20 }}>
         {([
           { k: "all" as const, label: `Toutes (${excursions.length})`, icon: null },
           { k: "active" as const, label: `Publiées (${excursions.filter(e => e.is_active).length})`, icon: <CheckCircle2 size={13} /> },
@@ -131,7 +139,7 @@ export default function ExcursionsListClient({
       </div>
 
       {/* Grille */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 18 }}>
+      <div className="exc-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 18 }}>
         {filtered.map(exc => (
           <div key={exc.id} className="exc-card"
             onClick={(e) => { if ((e.target as HTMLElement).closest("button,a")) return; window.location.href = `/prestataire/excursions/${exc.id}`; }}

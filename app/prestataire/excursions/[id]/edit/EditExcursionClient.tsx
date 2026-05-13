@@ -357,6 +357,21 @@ export default function EditExcursionClient({
         .spin{animation:sp 1s linear infinite;}
         @keyframes sp{to{transform:rotate(360deg);}}
         select{appearance:none !important;-webkit-appearance:none !important;}
+        @media(max-width:767px){
+          .ef-main-grid { grid-template-columns:1fr !important; }
+          .ef-inner-grid-2 { grid-template-columns:1fr 1fr !important; }
+          .ef-inner-grid-3 { grid-template-columns:1fr 1fr !important; }
+          .ef-header-actions { flex-direction:column; align-items:stretch !important; gap:8px !important; }
+          .ef-header-actions .pub-btn,
+          .ef-header-actions .draft-btn { width:100%; justify-content:center; }
+          .tab-btn { padding:8px 12px !important; font-size:12px !important; }
+          .ef-tabs-wrap { overflow-x:auto; -webkit-overflow-scrolling:touch; flex-wrap:nowrap !important; }
+          .ef-tabs-wrap::-webkit-scrollbar { display:none; }
+        }
+        @media(max-width:400px){
+          .ef-inner-grid-2 { grid-template-columns:1fr !important; }
+          .ef-inner-grid-3 { grid-template-columns:1fr !important; }
+        }
       `}</style>
 
       <div style={{ maxWidth:960, margin:"0 auto" }}>
@@ -409,7 +424,7 @@ export default function EditExcursionClient({
           </div>
         )}
 
-        <div style={{ display:"grid", gridTemplateColumns:"1fr 264px", gap:18, alignItems:"start" }}>
+        <div className="ef-main-grid" style={{ display:"grid", gridTemplateColumns:"1fr 264px", gap:18, alignItems:"start" }}>
 
           {/* ── Colonne principale ── */}
           <div>
@@ -462,7 +477,7 @@ export default function EditExcursionClient({
 
                 <div className="card">
                   <SectionTitle icon={Settings2} label="Détails pratiques"/>
-                  <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:12 }}>
+                  <div className="ef-inner-grid-3" style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:12 }}>
                     {[
                       { label:"Durée (h)",        val:duration,  min:0.5, max:24,  step:0.5, set:setDuration  },
                       { label:"Prix/pers. (EUR)",  val:price,     min:1,           step:1,   set:setPrice     },
@@ -518,7 +533,7 @@ export default function EditExcursionClient({
               <div style={{ display:"flex", flexDirection:"column", gap:14 }}>
                 <div className="card">
                   <SectionTitle icon={Navigation} label="Logistique" subtitle="Informations pratiques pour le touriste"/>
-                  <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:14 }}>
+                  <div className="ef-inner-grid-2" style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:14 }}>
                     <Field label="Point de rendez-vous" hint="Adresse ou lieu de départ">
                       <div className="nf-field" style={{ position:"relative" }}>
                         <MapPin size={13} color="#94A3B8" style={{ position:"absolute", left:11, top:"50%", transform:"translateY(-50%)", pointerEvents:"none" }}/>
@@ -547,7 +562,7 @@ export default function EditExcursionClient({
 
                 <div className="card">
                   <SectionTitle icon={Package} label="Inclus et non inclus"/>
-                  <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:14 }}>
+                  <div className="ef-inner-grid-2" style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:14 }}>
                     <Field label="Non inclus" hint="Ex : billets, repas...">
                       <div className="nf-field">
                         <textarea rows={3} placeholder={"- Billets d'entrée\n- Repas personnels"} value={notIncl} onChange={e=>setNotIncl(e.target.value)} style={{ resize:"vertical" }}/>
@@ -581,7 +596,7 @@ export default function EditExcursionClient({
 
             {/* ════ DATES ════ */}
             {tab==="dates" && (
-              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:14, alignItems:"start" }}>
+              <div className="ef-inner-grid-2" style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:14, alignItems:"start" }}>
                 <div style={{ display:"flex", flexDirection:"column", gap:14 }}>
                   <div className="card">
                     <SectionTitle icon={CalendarDays} label="Ajouter une date"/>
@@ -640,7 +655,7 @@ export default function EditExcursionClient({
                         ))}
                       </div>
                     </div>
-                    <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8, marginBottom:10 }}>
+                    <div className="ef-inner-grid-2" style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8, marginBottom:10 }}>
                       {[{l:"Du",v:recurFrom,m:today,s:setRecurFrom},{l:"Au",v:recurTo,m:recurFrom||today,s:setRecurTo}].map(f=>(
                         <div key={f.l} className="nf-field">
                           <label style={{ fontSize:11, fontWeight:700, color:"#475569", textTransform:"uppercase", letterSpacing:".5px", display:"block", marginBottom:5 }}>{f.l}</label>
@@ -747,7 +762,7 @@ export default function EditExcursionClient({
                   </div>
                 ) : (
                   <>
-                    <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:10, marginBottom:12 }}>
+                    <div className="ef-inner-grid-3" style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:10, marginBottom:12 }}>
                       {photos.map((p,i)=>(
                         <div key={i} style={{ position:"relative", aspectRatio:"4/3", borderRadius:12, overflow:"hidden", background:"#F1F5F9", border:i===0?"2.5px solid #0F766E":"2px solid transparent", boxShadow:i===0?"0 0 0 3px rgba(15,118,110,.15)":"none" }}>
                           <img src={p.url} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }} onError={e=>{(e.target as HTMLImageElement).style.display="none"}}/>

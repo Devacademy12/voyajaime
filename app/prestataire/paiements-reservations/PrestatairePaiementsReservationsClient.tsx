@@ -502,7 +502,27 @@ export default function PrestatairePaiementsReservationsClient({
         .pay-detail-row { display:flex; gap:10px; flex-wrap:wrap; margin-top:8px; }
         .pay-chip { display:inline-flex; align-items:center; gap:4px; padding:4px 10px; border-radius:8px; background:#F8FAFF; border:1px solid #EEF2FF; font-size:11px; color:#374151; font-weight:600; }
         @media(max-width:900px) { .pp-stats { grid-template-columns: repeat(2,1fr); } }
-        @media(max-width:600px) { .pp-stats { grid-template-columns: 1fr; } .pp-row { flex-direction:column; } }
+        @media(max-width:767px) {
+          .pp-stats { grid-template-columns: repeat(2,1fr); gap:10px; margin-bottom:16px; }
+          .pp-row { flex-direction:column; gap:10px; padding:14px; }
+          .pp-row-actions { flex-direction:row; flex-wrap:wrap; gap:6px; align-self:stretch; }
+          .pp-header { flex-direction:column; align-items:flex-start !important; gap:10px; }
+          .pp-header-title { font-size:18px !important; }
+          .pp-tabs { overflow-x:auto; -webkit-overflow-scrolling:touch; }
+          .pp-tabs::-webkit-scrollbar { display:none; }
+          .main-tab { padding:9px 16px !important; font-size:13px !important; }
+          .rr-tabs-wrap { overflow-x:auto; -webkit-overflow-scrolling:touch; flex-wrap:nowrap !important; padding-bottom:4px; }
+          .rr-tabs-wrap::-webkit-scrollbar { display:none; }
+          .diag-grid { grid-template-columns:1fr !important; }
+          .pp-row-left { min-width:0; }
+          .pp-row-right { flex-direction:row; flex-wrap:wrap; justify-content:space-between; width:100%; }
+          .pay-detail-row { gap:6px; }
+          .pay-chip { font-size:10px !important; }
+          .pp-export-btn { width:100%; justify-content:center; }
+        }
+        @media(max-width:480px) {
+          .pp-stats { grid-template-columns: 1fr 1fr; gap:8px; }
+        }
       `}</style>
 
       <Toast toast={toast} />
@@ -510,24 +530,24 @@ export default function PrestatairePaiementsReservationsClient({
 
       {/* ══ HEADER ══ */}
       <div className="pp-card" style={{ marginBottom: 24 }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
+        <div className="pp-header" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
             <div style={{ width: 46, height: 46, borderRadius: 14, background: "linear-gradient(135deg,#02AFCF,#053366)", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 4px 14px rgba(2,175,207,.35)" }}>
               <Wallet size={22} color="white" strokeWidth={1.8} />
             </div>
             <div>
-              <h1 style={{ fontSize: 22, fontWeight: 800, color: "#053366", margin: 0 }}>Paiements & Réservations</h1>
+              <h1 className="pp-header-title" style={{ fontSize: 22, fontWeight: 800, color: "#053366", margin: 0 }}>Paiements & Réservations</h1>
               <p style={{ color: "#6B7280", fontSize: 13, margin: 0 }}>
                 {paiements.length} paiement{paiements.length > 1 ? "s" : ""} · {reservations.length} réservation{reservations.length > 1 ? "s" : ""}
               </p>
             </div>
           </div>
-          {activeTab === "paiements" && <button className="pp-btn" onClick={handleExport}><Download size={14} /> Exporter CSV</button>}
+          {activeTab === "paiements" && <button className="pp-btn pp-export-btn" onClick={handleExport}><Download size={14} /> Exporter CSV</button>}
         </div>
       </div>
 
       {/* ══ TABS ══ */}
-      <div style={{ display: "flex", gap: 10, marginBottom: 24 }}>
+      <div className="pp-tabs" style={{ display: "flex", gap: 10, marginBottom: 24 }}>
         <button className={`main-tab ${activeTab === "reservations" ? "on" : ""}`} onClick={() => setActiveTab("reservations")}>
           📅 Réservations
           <span style={{ marginLeft: 6, padding: "2px 8px", borderRadius: 99, fontSize: 11, background: activeTab === "reservations" ? "rgba(255,255,255,.25)" : "#EEF2FF", color: activeTab === "reservations" ? "white" : "#053366" }}>{reservations.length}</span>
@@ -555,7 +575,7 @@ export default function PrestatairePaiementsReservationsClient({
                   <p style={{ fontSize: 12, color: "#9CA3AF", margin: "2px 0 0" }}>État des réservations et places disponibles par excursion et par date</p>
                 </div>
               </div>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 16 }}>
+              <div className="diag-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 16 }}>
                 {excursionStats.map(s => <DiagnosticCard key={s.excursion_id} s={s} />)}
               </div>
             </div>
@@ -567,7 +587,7 @@ export default function PrestatairePaiementsReservationsClient({
               <Search size={15} color="#9CA3AF" style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", pointerEvents: "none" }} />
               <input className="rr-search" type="text" value={resSearch} onChange={e => setResSearch(e.target.value)} placeholder="Voyageur, email, excursion, code..." />
             </div>
-            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            <div className="rr-tabs-wrap" style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
               {RES_TABS.map(tab => {
                 const count = resCounts[tab.key] ?? 0;
                 if (tab.key !== "all" && count === 0) return null;

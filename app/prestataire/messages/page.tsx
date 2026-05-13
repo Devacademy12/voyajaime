@@ -149,12 +149,27 @@ export default function PrestataireMessagesPage() {
   if (loading) return (
     <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: 400, gap: 12 }}>
       <Loader2 size={28} style={{ color: "#2B96A8", animation: "spin .7s linear infinite" }} />
-      <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+      <style>{`
+      @keyframes spin{to{transform:rotate(360deg)}}
+      @media(max-width:767px){
+        .msg-container { flex-direction:column !important; height:auto !important; min-height:calc(100vh - 130px) !important; margin:0 !important; border-radius:16px !important; }
+        .msg-sidebar { width:100% !important; height:auto !important; max-height:40vh !important; border-right:none !important; border-bottom:1px solid #E5E7EB !important; flex-shrink:0 !important; }
+        .msg-sidebar.hidden-mobile { display:none !important; }
+        .msg-chat { flex:1 !important; min-height:300px; }
+        .msg-chat.hidden-mobile { display:none !important; }
+        .msg-back-btn { display:flex !important; }
+      }
+      @media(min-width:768px){
+        .msg-back-btn { display:none !important; }
+        .msg-sidebar { display:flex !important; }
+        .msg-chat { display:flex !important; }
+      }
+    `}</style>
     </div>
   );
 
   return (
-    <div style={{ height: "calc(100vh - 64px - 32px)", display: "flex", background: "white", borderRadius: 20, border: "1px solid #E5E7EB", overflow: "hidden", boxShadow: "0 4px 24px rgba(0,0,0,.06)", margin: "16px 16px 0" }}>
+    <div className="msg-container" style={{ height: "calc(100vh - 64px - 32px)", display: "flex", background: "white", borderRadius: 20, border: "1px solid #E5E7EB", overflow: "hidden", boxShadow: "0 4px 24px rgba(0,0,0,.06)", margin: "16px 16px 0" }}>
       <style>{`
         @keyframes spin{to{transform:rotate(360deg)}}
         @keyframes popIn{from{opacity:0;transform:scale(.94)}to{opacity:1;transform:scale(1)}}
@@ -167,7 +182,7 @@ export default function PrestataireMessagesPage() {
       `}</style>
 
       {/* ── Sidebar ── */}
-      <div style={{ width: 300, flexShrink: 0, borderRight: "1px solid #E5E7EB", display: "flex", flexDirection: "column", background: "#FAFAFA" }}>
+      <div className="msg-sidebar" style={{ width: 300, flexShrink: 0, borderRight: "1px solid #E5E7EB", display: "flex", flexDirection: "column", background: "#FAFAFA" }}>
         <div style={{ padding: "16px", borderBottom: "1px solid #E5E7EB", background: "white" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
             <MessageCircle size={18} style={{ color: "#2B96A8" }} />
@@ -241,7 +256,7 @@ export default function PrestataireMessagesPage() {
 
       {/* ── Zone chat ── */}
       {activeConv ? (
-        <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
+        <div className="msg-chat" style={{ flex: 1, display: "flex", flexDirection: "column" }}>
           {/* Chat header */}
           <div style={{ padding: "14px 20px", borderBottom: "1px solid #E5E7EB", display: "flex", alignItems: "center", gap: 12, background: "white" }}>
             <div style={{ width: 40, height: 40, borderRadius: "50%", overflow: "hidden", background: "linear-gradient(135deg,#7C3AED,#5B21B6)", display: "flex", alignItems: "center", justifyContent: "center", color: "white", fontWeight: 700, fontSize: 16, flexShrink: 0 }}>
@@ -322,7 +337,7 @@ export default function PrestataireMessagesPage() {
           </div>
         </div>
       ) : (
-        <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: 14, background: "#F8FAFB" }}>
+        <div className="msg-chat" style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: 14, background: "#F8FAFB" }}>
           <div style={{ width: 80, height: 80, borderRadius: "50%", background: "linear-gradient(135deg,#F3E8FF,#E9D5FF)", display: "flex", alignItems: "center", justifyContent: "center" }}>
             <MessageCircle size={36} style={{ color: "#7C3AED" }} />
           </div>
