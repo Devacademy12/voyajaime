@@ -18,16 +18,16 @@ export async function POST(req: Request) {
     );
 
     // ✅ Solution 1: Utiliser le vrai endpoint de reset password sans fragment
-    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://voyajaime.com";
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://voyajaime.com/auth/reset-password";
     
-    const { data, error } = await supabaseAdmin.auth.admin.generateLink({
-      type: "recovery",
-      email,
-      options: {
-        // ⚠️ Supabase va ajouter #access_token=... automatiquement
-        // Notre page doit lire ces paramètres
-redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/reset-password`,
-      },
+    // Dans forgot-password/route.ts
+const { data, error } = await supabaseAdmin.auth.admin.generateLink({
+  type: "recovery",
+  email,
+  options: {
+    redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback`, // ← Important
+  },
+
     });
 
     if (error || !data?.properties?.action_link) {
