@@ -12,7 +12,8 @@ import {
 
 const Logo = () => (
   <img src="/logo.png" alt="VoyajAime"
-    style={{ height: 42, width: "auto", objectFit: "contain", display: "block" }} />
+    className="gnav-logo-img"
+    style={{ width: "auto", objectFit: "contain", display: "block" }} />
 );
 
 export default function TouristeNav({
@@ -341,13 +342,52 @@ export default function TouristeNav({
           padding: 2px 14px 8px; font-family: 'DM Sans', sans-serif;
         }
 
+        /* ── Logo base size (controlled by CSS only, no inline height) ── */
+        .gnav-logo-img { height: 42px; }
+
         /* ── Responsive ── */
         @media (max-width: 1000px) {
           .g-center  { display: none !important; }
           .g-burger  { display: flex !important; }
         }
+
+        /* ── Mobile ≤ 640px ── */
         @media (max-width: 640px) {
-          .gnav-header { padding: 0 16px !important; }
+          .gnav-header { padding: 0 12px !important; gap: 6px !important; }
+
+          /* Logo réduit */
+          .gnav-logo-img { height: 26px !important; }
+
+          /* Bouton Connexion : icône uniquement, très compact */
+          .g-btn {
+            padding: 7px 9px !important;
+            font-size: 0 !important;        /* masque le texte */
+            gap: 0 !important;
+            border-radius: 8px !important;
+            min-width: unset !important;
+          }
+          .g-btn i {
+            font-size: 16px !important;     /* icône visible */
+          }
+          .g-btn-text { display: none !important; }
+
+          /* Favoris et avatar compacts */
+          .g-fav  { width: 32px !important; height: 32px !important; }
+          .g-fav i { font-size: 15px !important; }
+          .av     { width: 32px !important; height: 32px !important; font-size: 11px !important; }
+
+          /* Burger compact */
+          .g-burger { padding: 6px !important; }
+
+          /* Séparateur */
+          .g-sep { height: 16px !important; }
+        }
+
+        /* ── Très petit ≤ 380px ── */
+        @media (max-width: 380px) {
+          .gnav-logo-img { height: 22px !important; }
+          .g-fav  { width: 28px !important; height: 28px !important; }
+          .av     { width: 28px !important; height: 28px !important; }
         }
       `}</style>
 
@@ -547,7 +587,8 @@ export default function TouristeNav({
               </Link>
               <div className="g-sep" />
               <Link href={ROUTES.auth} className="g-btn">
-                <i className="ti ti-user" aria-hidden="true" /> Connexion
+                <i className="ti ti-user" aria-hidden="true" />
+                <span className="g-btn-text">Connexion</span>
               </Link>
             </>
           )}

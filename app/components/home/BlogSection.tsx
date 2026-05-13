@@ -30,7 +30,7 @@ const CSS = `
   @keyframes bs-expandW   { from{width:0} to{width:48px} }
   @keyframes bs-pulse     { 0%,100%{opacity:1} 50%{opacity:.4} }
 
-  .bs-section { padding:80px 48px; background:#FAFAF9; font-family:'DM Sans',sans-serif; }
+.bs-section { padding:80px 10rem; background:#FAFAF9; font-family:'DM Sans',sans-serif; }
 
   /* ── Header ── */
   .bs-header { text-align:center; margin-bottom:52px; }
@@ -163,11 +163,11 @@ export default function BlogSection() {
               <span className="bs-cat" style={{ background: COLORS[featured.category] || "#02AFCF", alignSelf: "flex-start" }}>
                 {featured.category}
               </span>
-              <h3 style={{ fontFamily: "'Instrument Serif',serif", fontSize: "clamp(20px,2.5vw,28px)", fontWeight: 400, color: "#053366", letterSpacing: "-0.4px", lineHeight: 1.2, margin: 0 }}>
+              <h3 style={{ fontSize: "clamp(20px,2.5vw,30px)", fontWeight: 400, color: "#053366", letterSpacing: "-0.4px", lineHeight: 1.2, margin: 0 }}>
                 {featured.title}
               </h3>
               {featured.excerpt && (
-                <p style={{ fontSize: 14, color: "#6B7280", lineHeight: 1.75, display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical", overflow: "hidden", margin: 0 }}>
+                <p style={{ fontSize: 15, color: "#6B7280", lineHeight: 1.75, display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical", overflow: "hidden", margin: 0 }}>
                   {featured.excerpt}
                 </p>
               )}
@@ -208,11 +208,11 @@ export default function BlogSection() {
 
                   {/* Body */}
                   <div style={{ padding: "18px", flex: 1, display: "flex", flexDirection: "column", gap: 8 }}>
-                    <h3 style={{ fontFamily: "'Instrument Serif',serif", fontSize: 17, fontWeight: 400, color: "#053366", lineHeight: 1.3, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", margin: 0 }}>
+                    <h3 style={{  fontSize: 19, fontWeight: 400, color: "#053366", lineHeight: 1.3, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", margin: 0 }}>
                       {post.title}
                     </h3>
                     {post.excerpt && (
-                      <p style={{ fontSize: 12, color: "#6B7280", lineHeight: 1.65, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", margin: 0 }}>
+                      <p style={{ fontSize: 14, color: "#6B7280", lineHeight: 1.65, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", margin: 0 }}>
                         {post.excerpt}
                       </p>
                     )}
