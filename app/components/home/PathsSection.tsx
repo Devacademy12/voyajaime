@@ -100,7 +100,7 @@ export default function PathsSection({ slides, user, openAuth }: PathsSectionPro
               Construisez votre voyage de A à Z — choisissez chaque excursion, chaque jour, dans l&apos;ordre qui vous plaît.
             </p>
             <Link
-              href={`${ROUTES.touriste.modeLibre}?mode=libre`}
+              href="/modeLibre?mode=libre"
               className="path-card-btn"
               style={{ background: "rgba(255,255,255,0.14)", border: "1.5px solid rgba(255,255,255,0.32)", color: "white" }}
             >
