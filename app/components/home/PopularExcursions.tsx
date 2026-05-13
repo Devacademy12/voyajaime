@@ -151,35 +151,7 @@ export default function PopularExcursions({
           </div>
         )}
 
-        {/* Guest CTA */}
-        {!user && (
-          <div className="guest-cta" style={{
-            marginTop: 56, padding: "40px 48px",
-            background: "linear-gradient(135deg,#EFF9FB 0%,#F8FFFE 100%)",
-            border: "1.5px solid #C5E9EF", borderRadius: 24,
-            display: "flex", justifyContent: "space-between", alignItems: "center", gap: 24,
-          }}>
-            <div>
-              <h3 style={{
-                fontSize: 22, fontWeight: 800, color: "#111827", marginBottom: 8,
-                fontFamily: "'Playfair Display',serif", letterSpacing: "-0.5px",
-              }}>
-                Envie de réserver ou sauvegarder ?
-              </h3>
-              <p style={{ fontSize: 15, color: "#6B7280", lineHeight: 1.6 }}>
-                Créez un compte gratuit — accès aux favoris, réservations et suivi de paiement.
-              </p>
-            </div>
-            <div style={{ display: "flex", gap: 12, flexShrink: 0 }}>
-              <button onClick={() => openAuth("register")} className="btn-primary" style={{ fontSize: 14, padding: "13px 24px" }}>
-                <UserPlus size={16} /> Créer un compte
-              </button>
-              <button onClick={() => openAuth("login")} className="btn-outline" style={{ fontSize: 14 }}>
-                <LogIn size={16} /> Se connecter
-              </button>
-            </div>
-          </div>
-        )}
+       
       </div>
     </section>
   );
