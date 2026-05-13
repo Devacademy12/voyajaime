@@ -2,10 +2,8 @@
 
 // ─────────────────────────────────────────────────────────────────────
 // FUSION : Paiements + Réservations prestataire
-// Style original conservé. Ajouts :
-//  - Photos des excursions dans le diagnostic
-//  - Photo touriste + email + tous détails dans paiements
-//  - Diagnostic : juste la carte photo + stats, sans superflu
+// FIX : nom et avatar touriste lus directement depuis le paiement
+//       (embarqués côté serveur), plus de résolution map côté client.
 // ─────────────────────────────────────────────────────────────────────
 
 import { useState, useMemo, useCallback } from "react";
@@ -55,9 +53,18 @@ interface ExcursionInfo {
   description?: string | null; price_per_person?: number | null;
   max_people?: number | null;
 }
+// ✅ Paiement enrichi avec données touriste directement
+type EnrichedPaiement = Paiement & {
+  excursion_id?:   string | null;
+  touriste_id?:    string | null;
+  touriste_name?:  string | null;
+  touriste_email?: string | null;
+  touriste_avatar?:string | null;
+  touriste_phone?: string | null;
+};
 
 interface Props {
-  paiements:       Paiement[];
+  paiements:       EnrichedPaiement[];
   reservationsPay: Record<string, unknown>[];
   excursionsPay:   ExcursionInfo[];
   touristes:       TouristeProfile[];
@@ -109,21 +116,31 @@ function Avatar({ url, name, size = 40 }: { url?: string | null; name?: string |
   const COLORS = ["#02AFCF","#8B5CF6","#EC4899","#F59E0B","#10B981","#EF4444","#6366F1","#0EA5E9"];
   const color  = COLORS[(name || "?").charCodeAt(0) % COLORS.length];
   if (url && !err) return (
-    <img src={url} alt={name || ""} onError={() => setErr(true)}
-      style={{ width: size, height: size, borderRadius: "50%", objectFit: "cover",
-        flexShrink: 0, border: "2px solid #E5E7EB", boxShadow: "0 1px 4px rgba(0,0,0,.1)" }} />
+    <img
+      src={url}
+      alt={name || ""}
+      onError={() => setErr(true)}
+      style={{
+        width: size, height: size, borderRadius: "50%", objectFit: "cover",
+        flexShrink: 0, border: "2px solid #E5E7EB",
+        boxShadow: "0 1px 4px rgba(0,0,0,.1)",
+      }}
+    />
   );
   return (
-    <div style={{ width: size, height: size, borderRadius: "50%", flexShrink: 0, background: color,
+    <div style={{
+      width: size, height: size, borderRadius: "50%", flexShrink: 0,
+      background: color,
       display: "flex", alignItems: "center", justifyContent: "center",
       fontSize: size * 0.36, fontWeight: 800, color: "white",
-      border: "2px solid #E5E7EB", boxShadow: "0 1px 4px rgba(0,0,0,.1)" }}>
+      border: "2px solid #E5E7EB", boxShadow: "0 1px 4px rgba(0,0,0,.1)",
+    }}>
       {initials}
     </div>
   );
 }
 
-// ─── Diagnostic Card (photo + stats uniquement) ───────────────────────
+// ─── Diagnostic Card ──────────────────────────────────────────────────
 function DiagnosticCard({ s }: { s: ExcursionStat }) {
   const [expanded, setExpanded] = useState(false);
   const st      = getSlotStatus(s.places_restantes, s.taux_remplissage);
@@ -139,49 +156,37 @@ function DiagnosticCard({ s }: { s: ExcursionStat }) {
       onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.boxShadow = "0 8px 28px rgba(5,51,102,.14)"; (e.currentTarget as HTMLDivElement).style.transform = "translateY(-2px)"; }}
       onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.boxShadow = "0 2px 12px rgba(5,51,102,.07)"; (e.currentTarget as HTMLDivElement).style.transform = "none"; }}
     >
-      {/* ── Photo ── */}
+      {/* Photo */}
       <div style={{ position: "relative", height: 150, overflow: "hidden", background: "#F3F4F6", flexShrink: 0 }}>
         {s.photo ? (
-          <img
-            src={s.photo}
-            alt={s.excursion_title}
+          <img src={s.photo} alt={s.excursion_title}
             style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
-            onError={e => { (e.currentTarget as HTMLImageElement).src = FALLBACK; }}
-          />
+            onError={e => { (e.currentTarget as HTMLImageElement).src = FALLBACK; }} />
         ) : (
           <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center",
             justifyContent: "center", background: "linear-gradient(135deg,#EEF2FF,#DCE5FF)" }}>
             <ImageIcon size={36} color="#C7D2FE" strokeWidth={1.2} />
           </div>
         )}
-        {/* Overlay */}
         <div style={{ position: "absolute", inset: 0,
           background: "linear-gradient(to top, rgba(5,51,102,.75) 0%, rgba(5,51,102,.1) 50%, transparent 100%)" }} />
-        {/* Badge statut */}
-        <span style={{
-          position: "absolute", top: 10, right: 10,
+        <span style={{ position: "absolute", top: 10, right: 10,
           display: "inline-flex", alignItems: "center", gap: 4,
           padding: "4px 11px", borderRadius: 20, fontSize: 11, fontWeight: 700,
           background: st.bg, color: st.color, border: `1px solid ${st.border}`,
-          backdropFilter: "blur(8px)",
-        }}>
+          backdropFilter: "blur(8px)" }}>
           <span style={{ width: 6, height: 6, borderRadius: "50%", background: st.dot, display: "inline-block" }} />
           {st.label}
         </span>
-        {/* Titre sur la photo */}
-        <p style={{
-          position: "absolute", bottom: 10, left: 12, right: 12,
+        <p style={{ position: "absolute", bottom: 10, left: 12, right: 12,
           fontSize: 14, fontWeight: 800, color: "white", margin: 0, lineHeight: 1.3,
           overflow: "hidden", display: "-webkit-box",
           WebkitLineClamp: 2, WebkitBoxOrient: "vertical",
-          textShadow: "0 2px 6px rgba(0,0,0,.5)",
-        }}>{s.excursion_title}</p>
+          textShadow: "0 2px 6px rgba(0,0,0,.5)" }}>{s.excursion_title}</p>
       </div>
 
-      {/* ── Stats ── */}
+      {/* Stats */}
       <div style={{ padding: "14px 16px 16px" }}>
-
-        {/* Barre remplissage */}
         <div style={{ marginBottom: 14 }}>
           <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 5 }}>
             <span style={{ fontSize: 11, color: "#9CA3AF", fontWeight: 600 }}>Remplissage global</span>
@@ -192,8 +197,6 @@ function DiagnosticCard({ s }: { s: ExcursionStat }) {
               background: st.bar, borderRadius: 99, transition: "width .6s ease" }} />
           </div>
         </div>
-
-        {/* 3 chiffres */}
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginBottom: 12 }}>
           {[
             { label: "Réservations",  value: s.nb_reservations, color: "#053366" },
@@ -208,8 +211,6 @@ function DiagnosticCard({ s }: { s: ExcursionStat }) {
             </div>
           ))}
         </div>
-
-        {/* Capacité */}
         {s.max_people > 0 && (
           <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 5,
             padding: "6px 10px", background: "#EEF2FF", borderRadius: 8, marginBottom: 12 }}>
@@ -219,23 +220,16 @@ function DiagnosticCard({ s }: { s: ExcursionStat }) {
             </span>
           </div>
         )}
-
-        {/* Bouton ajouter date si tout plein */}
         {allFull && (
           <a href={`/prestataire/excursions/${s.excursion_id}/edit`}
             style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 7,
               padding: "10px 14px", background: "linear-gradient(135deg,#053366,#02AFCF)",
               color: "white", borderRadius: 12, fontSize: 12, fontWeight: 800,
               textDecoration: "none", marginBottom: 12,
-              boxShadow: "0 3px 12px rgba(2,175,207,.35)", transition: "all .18s" }}
-            onMouseEnter={e => { (e.currentTarget as HTMLAnchorElement).style.transform = "translateY(-1px)"; }}
-            onMouseLeave={e => { (e.currentTarget as HTMLAnchorElement).style.transform = "none"; }}
-          >
+              boxShadow: "0 3px 12px rgba(2,175,207,.35)", transition: "all .18s" }}>
             <Plus size={14} /> Ajouter une nouvelle date
           </a>
         )}
-
-        {/* Détail par date */}
         {s.has_dates && s.date_diagnostics.length > 0 && (
           <>
             <button onClick={() => setExpanded(p => !p)}
@@ -249,7 +243,6 @@ function DiagnosticCard({ s }: { s: ExcursionStat }) {
               </span>
               {expanded ? <ChevronUp size={14} color="#9CA3AF" /> : <ChevronDown size={14} color="#9CA3AF" />}
             </button>
-
             {expanded && (
               <div style={{ marginTop: 8, display: "flex", flexDirection: "column", gap: 6 }}>
                 {s.date_diagnostics.map(d => {
@@ -319,10 +312,22 @@ function CancelModal({ reservation, onClose, onConfirm, loading }: {
           <div style={{ background: "#F9FAFB", border: "1px solid #E5E7EB", borderRadius: 14, padding: "12px 14px", marginBottom: 20 }}>
             <p style={{ fontSize: 14, fontWeight: 700, color: "#053366", marginBottom: 6 }}>{reservation.excursion_title}</p>
             <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
-              <span style={{ fontSize: 12, color: "#6B7280", display: "flex", alignItems: "center", gap: 4 }}><User size={11} color="#9CA3AF" /> {reservation.touriste_name}</span>
-              <span style={{ fontSize: 12, color: "#6B7280", display: "flex", alignItems: "center", gap: 4 }}><Mail size={11} color="#9CA3AF" /> {reservation.touriste_email}</span>
-              <span style={{ fontSize: 12, color: "#6B7280", display: "flex", alignItems: "center", gap: 4 }}><CalendarDays size={11} color="#9CA3AF" /> {fmtDate(reservation.date)}</span>
-              <span style={{ fontSize: 12, color: "#6B7280", display: "flex", alignItems: "center", gap: 4 }}><Users size={11} color="#9CA3AF" /> {reservation.people_count} pers.</span>
+              {/* ✅ Avatar + nom dans la modal */}
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <Avatar url={reservation.touriste_avatar} name={reservation.touriste_name} size={28} />
+                <span style={{ fontSize: 12, color: "#374151", fontWeight: 600 }}>{reservation.touriste_name}</span>
+              </div>
+              {reservation.touriste_email && (
+                <span style={{ fontSize: 12, color: "#6B7280", display: "flex", alignItems: "center", gap: 4 }}>
+                  <Mail size={11} color="#9CA3AF" /> {reservation.touriste_email}
+                </span>
+              )}
+              <span style={{ fontSize: 12, color: "#6B7280", display: "flex", alignItems: "center", gap: 4 }}>
+                <CalendarDays size={11} color="#9CA3AF" /> {fmtDate(reservation.date)}
+              </span>
+              <span style={{ fontSize: 12, color: "#6B7280", display: "flex", alignItems: "center", gap: 4 }}>
+                <Users size={11} color="#9CA3AF" /> {reservation.people_count} pers.
+              </span>
             </div>
           </div>
           <p style={{ fontSize: 13, fontWeight: 700, color: "#374151", marginBottom: 10 }}>Raison <span style={{ color: "#DC2626" }}>*</span></p>
@@ -342,7 +347,7 @@ function CancelModal({ reservation, onClose, onConfirm, loading }: {
           {sel && (
             <div style={{ display: "flex", alignItems: "flex-start", gap: 8, padding: "10px 13px", background: "#FEF3C7", border: "1px solid #FDE68A", borderRadius: 10, marginBottom: 16, fontSize: 12, color: "#92400E" }}>
               <span style={{ fontSize: 14 }}>📧</span>
-              <span>Email à <strong>{reservation.touriste_name}</strong> ({reservation.touriste_email})</span>
+              <span>Email à <strong>{reservation.touriste_name}</strong>{reservation.touriste_email ? ` (${reservation.touriste_email})` : ""}</span>
             </div>
           )}
           <div style={{ display: "flex", gap: 10 }}>
@@ -376,26 +381,36 @@ export default function PrestatairePaiementsReservationsClient({
   const [activeTab,    setActiveTab]    = useState<"reservations" | "paiements">("reservations");
   const [expandedPay,  setExpandedPay]  = useState<string | null>(null);
 
-  // Maps
-  const resaPayMap  = useMemo(() => Object.fromEntries(reservationsPay.map(r => [String((r as any).id), r])), [reservationsPay]);
-  const excPayMap   = useMemo(() => Object.fromEntries(excursionsPay.map(e => [e.id, e])), [excursionsPay]);
-  const tourMap     = useMemo(() => Object.fromEntries(touristes.map(t => [t.user_id, t])), [touristes]);
+  // Maps (garde-fous si les données inline manquent)
+  const resaPayMap = useMemo(() => Object.fromEntries(reservationsPay.map(r => [String((r as any).id), r])), [reservationsPay]);
+  const excPayMap  = useMemo(() => Object.fromEntries(excursionsPay.map(e => [e.id, e])), [excursionsPay]);
+  const tourMap    = useMemo(() => Object.fromEntries(touristes.map(t => [t.user_id, t])), [touristes]);
 
   // KPIs
   const totalPaid    = useMemo(() => paiements.filter(p => p.status === "paid").reduce((s, p) => s + Number(p.net_amount), 0), [paiements]);
   const totalPending = useMemo(() => paiements.filter(p => p.status === "pending").reduce((s, p) => s + Number(p.net_amount), 0), [paiements]);
   const totalFees    = useMemo(() => paiements.reduce((s, p) => s + Number(p.platform_fee), 0), [paiements]);
-  const nbPaid       = useMemo(() => paiements.filter(p => p.status === "paid").length, [paiements]);
 
-  // Helper : résoudre touriste et excursion depuis paiement (direct) OU via réservation (fallback)
-  // FIX : les anciens paiements n'ont pas excursion_id/touriste_id stockés dans paiements
-  //       on utilise donc p.excursion_id en priorité, sinon resa.excursion_id
-  const resolvePayData = useCallback((p: Paiement) => {
-    const resa   = resaPayMap[p.reservation_id] || {} as any;
-    const excId  = String((p as any).excursion_id || resa.excursion_id || "");
-    const tourId = String((p as any).touriste_id  || resa.touriste_id  || "");
-    const exc    = excPayMap[excId]  || {} as ExcursionInfo;
-    const tour   = tourMap[tourId]   || null;
+  // ✅ CORRECTION CLÉE : données touriste lues directement depuis le paiement (embarqué côté serveur)
+  //    Le tourMap n'est qu'un garde-fou si les données inline sont absentes.
+  const resolvePayData = useCallback((p: EnrichedPaiement) => {
+    const resa  = resaPayMap[p.reservation_id] || {} as any;
+    const excId = String(p.excursion_id || (resa as any).excursion_id || "");
+    const exc   = excPayMap[excId] || {} as ExcursionInfo;
+
+    // ✅ Priorité 1 : données embarquées directement dans le paiement (côté serveur)
+    // ✅ Priorité 2 : tourMap (garde-fou)
+    const tourId = p.touriste_id || String((resa as any).touriste_id || "");
+    const fallback = tourId ? tourMap[tourId] : null;
+
+    const tour = {
+      user_id:    tourId ?? "",
+      full_name:  p.touriste_name   ?? fallback?.full_name   ?? null,
+      email:      p.touriste_email  ?? fallback?.email       ?? null,
+      avatar_url: p.touriste_avatar ?? fallback?.avatar_url  ?? null,
+      phone:      p.touriste_phone  ?? fallback?.phone       ?? null,
+    };
+
     return { resa, exc, tour };
   }, [resaPayMap, excPayMap, tourMap]);
 
@@ -404,11 +419,11 @@ export default function PrestatairePaiementsReservationsClient({
     const { resa, exc, tour } = resolvePayData(p);
     const q = paySearch.toLowerCase();
     const match =
-      (exc.title || "").toLowerCase().includes(q) ||
-      ((exc as any).city  || "").toLowerCase().includes(q) ||
-      (tour?.full_name || "").toLowerCase().includes(q) ||
-      (tour?.email     || "").toLowerCase().includes(q) ||
-      String(resa.booking_code || "").toLowerCase().includes(q);
+      (exc.title     || "").toLowerCase().includes(q) ||
+      ((exc as any).city || "").toLowerCase().includes(q) ||
+      (tour.full_name  || "").toLowerCase().includes(q) ||
+      (tour.email      || "").toLowerCase().includes(q) ||
+      String((resa as any).booking_code || "").toLowerCase().includes(q);
     return match && (payStatus === "all" || p.status === payStatus);
   }), [paiements, paySearch, payStatus, resolvePayData]);
 
@@ -467,7 +482,18 @@ export default function PrestatairePaiementsReservationsClient({
   function handleExport() {
     const rows = filteredPay.map(p => {
       const { resa, exc, tour } = resolvePayData(p);
-      return { Date: fmtDate(p.created_at), Excursion: exc.title || "—", Ville: (exc as any).city || "—", Touriste: tour?.full_name || "—", Email: tour?.email || "—", Code: String(resa.booking_code || "—"), "Montant EUR": Number(p.amount), "Commission EUR": Number(p.platform_fee), "Net EUR": Number(p.net_amount), Statut: PAIEMENT_STATUS[p.status as PaiementStatus]?.label ?? p.status };
+      return {
+        Date: fmtDate(p.created_at),
+        Excursion: exc.title || "—",
+        Ville: (exc as any).city || "—",
+        Touriste: tour.full_name || "—",
+        Email: tour.email || "—",
+        Code: String((resa as any).booking_code || "—"),
+        "Montant EUR": Number(p.amount),
+        "Commission EUR": Number(p.platform_fee),
+        "Net EUR": Number(p.net_amount),
+        Statut: PAIEMENT_STATUS[p.status as PaiementStatus]?.label ?? p.status,
+      };
     });
     exportCSV(rows, `mes_paiements_${new Date().toISOString().slice(0, 10)}.csv`);
     showToast(`${rows.length} paiement(s) exporté(s)`);
@@ -500,13 +526,11 @@ export default function PrestatairePaiementsReservationsClient({
         .main-tab { padding:11px 24px; border-radius:12px; font-size:14px; font-weight:700; cursor:pointer; font-family:inherit; border:none; transition:all .2s; }
         .main-tab.on { background: linear-gradient(135deg,#02AFCF,#053366); color:white; box-shadow:0 4px 14px rgba(2,175,207,.35); }
         .main-tab:not(.on) { background:white; color:#6B7280; border:1.5px solid #E5E7EB; }
-        .pay-detail-row { display:flex; gap:10px; flex-wrap:wrap; margin-top:8px; }
         .pay-chip { display:inline-flex; align-items:center; gap:4px; padding:4px 10px; border-radius:8px; background:#F8FAFF; border:1px solid #EEF2FF; font-size:11px; color:#374151; font-weight:600; }
         @media(max-width:900px) { .pp-stats { grid-template-columns: repeat(2,1fr); } }
         @media(max-width:767px) {
           .pp-stats { grid-template-columns: repeat(2,1fr); gap:10px; margin-bottom:16px; }
           .pp-row { flex-direction:column; gap:10px; padding:14px; }
-          .pp-row-actions { flex-direction:row; flex-wrap:wrap; gap:6px; align-self:stretch; }
           .pp-header { flex-direction:column; align-items:flex-start !important; gap:10px; }
           .pp-header-title { font-size:18px !important; }
           .pp-tabs { overflow-x:auto; -webkit-overflow-scrolling:touch; }
@@ -515,9 +539,7 @@ export default function PrestatairePaiementsReservationsClient({
           .rr-tabs-wrap { overflow-x:auto; -webkit-overflow-scrolling:touch; flex-wrap:nowrap !important; padding-bottom:4px; }
           .rr-tabs-wrap::-webkit-scrollbar { display:none; }
           .diag-grid { grid-template-columns:1fr !important; }
-          .pp-row-left { min-width:0; }
           .pp-row-right { flex-direction:row; flex-wrap:wrap; justify-content:space-between; width:100%; }
-          .pay-detail-row { gap:6px; }
           .pay-chip { font-size:10px !important; }
           .pp-export-btn { width:100%; justify-content:center; }
         }
@@ -527,7 +549,14 @@ export default function PrestatairePaiementsReservationsClient({
       `}</style>
 
       <Toast toast={toast} />
-      {cancelTarget && <CancelModal reservation={cancelTarget} onClose={() => setCancelTarget(null)} onConfirm={handleCancelConfirm} loading={loadingId === cancelTarget.id} />}
+      {cancelTarget && (
+        <CancelModal
+          reservation={cancelTarget}
+          onClose={() => setCancelTarget(null)}
+          onConfirm={handleCancelConfirm}
+          loading={loadingId === cancelTarget.id}
+        />
+      )}
 
       {/* ══ HEADER ══ */}
       <div className="pp-card" style={{ marginBottom: 24 }}>
@@ -543,7 +572,11 @@ export default function PrestatairePaiementsReservationsClient({
               </p>
             </div>
           </div>
-          {activeTab === "paiements" && <button className="pp-btn pp-export-btn" onClick={handleExport}><Download size={14} /> Exporter CSV</button>}
+          {activeTab === "paiements" && (
+            <button className="pp-btn pp-export-btn" onClick={handleExport}>
+              <Download size={14} /> Exporter CSV
+            </button>
+          )}
         </div>
       </div>
 
@@ -559,12 +592,9 @@ export default function PrestatairePaiementsReservationsClient({
         </button>
       </div>
 
-      {/* ════════════════════════════════════════
-          ONGLET RÉSERVATIONS
-      ════════════════════════════════════════ */}
+      {/* ════ ONGLET RÉSERVATIONS ════ */}
       {activeTab === "reservations" && (
         <>
-          {/* Diagnostic */}
           {excursionStats.length > 0 && (
             <div style={{ marginBottom: 28 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
@@ -625,23 +655,28 @@ export default function PrestatairePaiementsReservationsClient({
                   </div>
 
                   {/* Excursion */}
-                  <p style={{ fontSize: 15, fontWeight: 800, color: "#053366", marginBottom: 8, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.excursion_title}</p>
+                  <p style={{ fontSize: 15, fontWeight: 800, color: "#053366", marginBottom: 10, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.excursion_title}</p>
 
-                  {/* Touriste */}
-                  <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
-                    <Avatar url={r.touriste_avatar} name={r.touriste_name} size={36} />
-                    <div>
-                      <p style={{ fontSize: 13, fontWeight: 700, color: "#111827", margin: 0 }}>{r.touriste_name}</p>
+                  {/* ✅ Touriste : avatar + nom + email */}
+                  <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10, padding: "10px 12px", background: "#F8FAFF", borderRadius: 12, border: "1px solid #EEF2FF" }}>
+                    <Avatar url={r.touriste_avatar} name={r.touriste_name} size={40} />
+                    <div style={{ minWidth: 0 }}>
+                      <p style={{ fontSize: 14, fontWeight: 700, color: "#053366", margin: 0 }}>{r.touriste_name}</p>
                       {r.touriste_email && (
-                        <a href={`mailto:${r.touriste_email}`} style={{ fontSize: 11, color: "#02AFCF", display: "flex", alignItems: "center", gap: 3, textDecoration: "none", marginTop: 2 }}>
-                          <Mail size={10} color="#02AFCF" /> {r.touriste_email}
+                        <a href={`mailto:${r.touriste_email}`} style={{ fontSize: 12, color: "#02AFCF", display: "flex", alignItems: "center", gap: 4, textDecoration: "none", marginTop: 2 }}>
+                          <Mail size={11} color="#02AFCF" /> {r.touriste_email}
                         </a>
+                      )}
+                      {r.touriste_phone && (
+                        <p style={{ fontSize: 11, color: "#6B7280", margin: "2px 0 0", display: "flex", alignItems: "center", gap: 4 }}>
+                          <Phone size={10} color="#9CA3AF" /> {r.touriste_phone}
+                        </p>
                       )}
                     </div>
                   </div>
 
                   {/* Infos */}
-                  <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                     {r.excursion_city && <span className="pay-chip"><MapPin size={10} color="#9CA3AF" /> {r.excursion_city}</span>}
                     <span className="pay-chip"><CalendarDays size={10} color="#9CA3AF" /> {fmtDate(r.date)}{r.time ? ` à ${r.time}` : ""}</span>
                     <span className="pay-chip"><Users size={10} color="#9CA3AF" /> {r.people_count} pers.</span>
@@ -649,9 +684,9 @@ export default function PrestatairePaiementsReservationsClient({
                 </div>
 
                 {/* Droite */}
-                <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 10, flexShrink: 0, marginLeft: 12 }}>
+                <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 10, flexShrink: 0, marginLeft: 16 }}>
                   <div style={{ textAlign: "right" }}>
-                    <p style={{ fontSize: 18, fontWeight: 900, color: "#053366", margin: 0 }}>{r.total_price} <span style={{ fontSize: 11, fontWeight: 500, color: "#9CA3AF" }}>EUR</span></p>
+                    <p style={{ fontSize: 20, fontWeight: 900, color: "#053366", margin: 0 }}>{r.total_price} <span style={{ fontSize: 11, fontWeight: 500, color: "#9CA3AF" }}>EUR</span></p>
                     <p style={{ fontSize: 11, color: "#02AFCF", fontWeight: 600, marginTop: 3, display: "flex", alignItems: "center", gap: 3 }}><Banknote size={10} /> Net : {net} EUR</p>
                   </div>
                   {r.status === "pending" && (
@@ -676,47 +711,19 @@ export default function PrestatairePaiementsReservationsClient({
         </>
       )}
 
-      {/* ════════════════════════════════════════
-          ONGLET PAIEMENTS - VERSION CORRIGÉE
-      ════════════════════════════════════════ */}
+      {/* ════ ONGLET PAIEMENTS ════ */}
       {activeTab === "paiements" && (
         <>
-          {/* KPIs - CORRIGÉS */}
           <div className="pp-stats pp-card" style={{ animationDelay: ".07s" }}>
-            <StatCard 
-              label="Total encaissé (EUR)"       
-              value={totalPaid}            
-              icon={<TrendingUp size={20}/>} 
-              color="#02AFCF" 
-              bg="rgba(2,175,207,.1)"   
-              border="rgba(2,175,207,.2)"   
-              delay={0.07} 
-            />
-            <StatCard 
-              label="En attente versement (EUR)" 
-              value={totalPending}        
-              icon={<Clock size={20}/>}      
-              color="#A16207" 
-              bg="rgba(217,119,6,.1)"   
-              border="rgba(217,119,6,.2)"   
-              delay={0.12} 
-            />
-            <StatCard 
-              label="Commission prélevée (EUR)"  
-              value={totalFees}           
-              icon={<Percent size={20}/>}   
-              color="#6B7280" 
-              bg="rgba(107,114,128,.08)" 
-              border="rgba(107,114,128,.15)" 
-              delay={0.17} 
-            />
+            <StatCard label="Total encaissé (EUR)"       value={totalPaid}    icon={<TrendingUp size={20}/>} color="#02AFCF" bg="rgba(2,175,207,.1)"   border="rgba(2,175,207,.2)"   delay={0.07} />
+            <StatCard label="En attente versement (EUR)" value={totalPending} icon={<Clock size={20}/>}     color="#A16207" bg="rgba(217,119,6,.1)"   border="rgba(217,119,6,.2)"   delay={0.12} />
+            <StatCard label="Commission prélevée (EUR)"  value={totalFees}    icon={<Percent size={20}/>}   color="#6B7280" bg="rgba(107,114,128,.08)" border="rgba(107,114,128,.15)" delay={0.17} />
           </div>
 
           {paiements.length === 0 ? (
             <EmptyState icon={<Wallet size={32} color="#02AFCF" strokeWidth={1.5} />} title="Aucun paiement pour l'instant" subtitle="Vos revenus apparaîtront ici après vos premières réservations confirmées" />
           ) : (
             <>
-              {/* Toolbar */}
               <div className="pp-card" style={{ background: "white", borderRadius: 16, border: "1px solid #EEF2FF", padding: "14px 16px", marginBottom: 20, animationDelay: ".18s" }}>
                 <div style={{ marginBottom: 12 }}>
                   <SearchBar value={paySearch} onChange={setPaySearch} placeholder="Excursion, touriste, email, code..." />
@@ -737,7 +744,6 @@ export default function PrestatairePaiementsReservationsClient({
                   const monthNet = items.reduce((s, p) => s + Number(p.net_amount), 0);
                   return (
                     <div key={month} style={{ marginBottom: 28 }}>
-                      {/* En-tête mois */}
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
                         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                           <div style={{ width: 3, height: 18, borderRadius: 2, background: "linear-gradient(#02AFCF,#259FFC)" }} />
@@ -757,33 +763,33 @@ export default function PrestatairePaiementsReservationsClient({
                             {/* Ligne principale */}
                             <div style={{ display: "flex", alignItems: "flex-start", gap: 14 }}>
 
-                              {/* Avatar touriste */}
-                              <Avatar url={tour?.avatar_url} name={tour?.full_name} size={44} />
+                              {/* ✅ Avatar résolu depuis p.touriste_avatar en priorité */}
+                              <Avatar url={tour.avatar_url} name={tour.full_name} size={46} />
 
-                              {/* Infos touriste + excursion */}
                               <div style={{ flex: 1, minWidth: 0 }}>
-                                {/* Nom + statut */}
+                                {/* ✅ Nom résolu depuis p.touriste_name */}
                                 <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4, flexWrap: "wrap" }}>
-                                  <span style={{ fontSize: 14, fontWeight: 800, color: "#053366" }}>{tour?.full_name || "Client inconnu"}</span>
+                                  <span style={{ fontSize: 14, fontWeight: 800, color: "#053366" }}>
+                                    {tour.full_name || "Client inconnu"}
+                                  </span>
                                   <StatusBadge status={p.status} size="sm" />
                                 </div>
-                                {/* Email */}
-                                {tour?.email && (
-                                  <a href={`mailto:${tour.email}`} style={{ fontSize: 11, color: "#02AFCF", display: "flex", alignItems: "center", gap: 3, textDecoration: "none", marginBottom: 4 }}>
+                                {/* ✅ Email résolu depuis p.touriste_email */}
+                                {tour.email && (
+                                  <a href={`mailto:${tour.email}`} style={{ fontSize: 11, color: "#02AFCF", display: "flex", alignItems: "center", gap: 3, textDecoration: "none", marginBottom: 6 }}>
                                     <Mail size={10} color="#02AFCF" /> {tour.email}
                                   </a>
                                 )}
-                                {/* Chips excursion + détails */}
                                 <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                                   <span style={{ fontSize: 12, fontWeight: 700, color: "#374151" }}>{exc.title || "—"}</span>
                                   {(exc as any).city && <span className="pay-chip"><MapPin size={9} color="#9CA3AF" /> {(exc as any).city}</span>}
-                                  {resa.booking_code && <span className="pay-chip" style={{ fontFamily: "monospace", color: "#02AFCF" }}>#{String(resa.booking_code)}</span>}
-                                  {resa.date && <span className="pay-chip"><CalendarDays size={9} color="#9CA3AF" /> {fmtDate(String(resa.date))}</span>}
-                                  {resa.people_count && <span className="pay-chip"><Users size={9} color="#9CA3AF" /> {String(resa.people_count)} pers.</span>}
+                                  {(resa as any).booking_code && <span className="pay-chip" style={{ fontFamily: "monospace", color: "#02AFCF" }}>#{String((resa as any).booking_code)}</span>}
+                                  {(resa as any).date && <span className="pay-chip"><CalendarDays size={9} color="#9CA3AF" /> {fmtDate(String((resa as any).date))}</span>}
+                                  {(resa as any).people_count && <span className="pay-chip"><Users size={9} color="#9CA3AF" /> {String((resa as any).people_count)} pers.</span>}
                                 </div>
                               </div>
 
-                              {/* Montant + bouton détails */}
+                              {/* Montant + détails */}
                               <div style={{ textAlign: "right", flexShrink: 0 }}>
                                 <p style={{ fontSize: 20, fontWeight: 900, color: "#053366", margin: 0 }}>
                                   {Number(p.net_amount)} <span style={{ fontSize: 11, fontWeight: 500, color: "#9CA3AF" }}>EUR</span>
@@ -809,7 +815,6 @@ export default function PrestatairePaiementsReservationsClient({
                             {/* Détails étendus */}
                             {isOpen && (
                               <div style={{ marginTop: 14, padding: "14px 16px", background: "#F8FAFF", borderRadius: 12, border: "1px solid #EEF2FF" }}>
-                                {/* Photo excursion */}
                                 {exc.photo_url && (
                                   <div style={{ position: "relative", height: 120, borderRadius: 10, overflow: "hidden", marginBottom: 12 }}>
                                     <img src={exc.photo_url} alt={exc.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
@@ -817,16 +822,14 @@ export default function PrestatairePaiementsReservationsClient({
                                     <p style={{ position: "absolute", bottom: 8, left: 10, right: 10, fontSize: 13, fontWeight: 800, color: "white", margin: 0 }}>{exc.title}</p>
                                   </div>
                                 )}
-
-                                {/* Grille détails */}
                                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(130px, 1fr))", gap: 8, marginBottom: 12 }}>
                                   {[
-                                    { label: "Montant payé",    value: `${Number(p.amount)} EUR`,       color: "#053366" },
-                                    { label: "Votre part",      value: `${Number(p.net_amount)} EUR`,   color: "#059669" },
-                                    { label: "Commission",      value: `${Number(p.platform_fee)} EUR`, color: "#D97706" },
-                                    { label: "Places",          value: `${resa.people_count ?? "—"} pers.`, color: "#02AFCF" },
-                                    ...(exc.price_per_person    ? [{ label: "Prix/pers.", value: `${exc.price_per_person} EUR`, color: "#6B7280" }] : []),
-                                    ...(exc.max_people          ? [{ label: "Capacité",   value: `${exc.max_people} places`,   color: "#6B7280" }] : []),
+                                    { label: "Montant payé",  value: `${Number(p.amount)} EUR`,       color: "#053366" },
+                                    { label: "Votre part",    value: `${Number(p.net_amount)} EUR`,   color: "#059669" },
+                                    { label: "Commission",    value: `${Number(p.platform_fee)} EUR`, color: "#D97706" },
+                                    { label: "Places",        value: `${(resa as any).people_count ?? "—"} pers.`, color: "#02AFCF" },
+                                    ...(exc.price_per_person  ? [{ label: "Prix/pers.", value: `${exc.price_per_person} EUR`, color: "#6B7280" }] : []),
+                                    ...(exc.max_people        ? [{ label: "Capacité",   value: `${exc.max_people} places`,   color: "#6B7280" }] : []),
                                   ].map((item, idx) => (
                                     <div key={idx} style={{ background: "white", border: "1px solid #EEF2FF", borderRadius: 10, padding: "8px 10px" }}>
                                       <p style={{ fontSize: 9, color: "#9CA3AF", fontWeight: 700, margin: 0, textTransform: "uppercase", letterSpacing: .4 }}>{item.label}</p>
@@ -834,25 +837,21 @@ export default function PrestatairePaiementsReservationsClient({
                                     </div>
                                   ))}
                                 </div>
-
-                                {/* Description excursion */}
                                 {exc.description && (
                                   <p style={{ fontSize: 12, color: "#6B7280", lineHeight: 1.6, margin: 0 }}>{exc.description}</p>
                                 )}
-
-                                {/* Infos touriste complètes */}
+                                {/* ✅ Infos touriste complètes dans les détails */}
                                 <div style={{ marginTop: 12, padding: "10px 12px", background: "white", borderRadius: 10, border: "1px solid #EEF2FF" }}>
                                   <p style={{ fontSize: 11, fontWeight: 700, color: "#9CA3AF", textTransform: "uppercase", letterSpacing: .5, margin: "0 0 8px" }}>Informations touriste</p>
                                   <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                                    <Avatar url={tour?.avatar_url} name={tour?.full_name} size={38} />
+                                    <Avatar url={tour.avatar_url} name={tour.full_name} size={40} />
                                     <div>
-                                      <p style={{ fontSize: 13, fontWeight: 700, color: "#053366", margin: 0 }}>{tour?.full_name || "—"}</p>
-                                      {tour?.email && <a href={`mailto:${tour.email}`} style={{ fontSize: 11, color: "#02AFCF", display: "flex", alignItems: "center", gap: 3, textDecoration: "none", marginTop: 2 }}><Mail size={10} /> {tour.email}</a>}
-                                      {tour?.phone && <p style={{ fontSize: 11, color: "#6B7280", margin: "2px 0 0", display: "flex", alignItems: "center", gap: 3 }}><Phone size={10} color="#9CA3AF" /> {tour.phone}</p>}
+                                      <p style={{ fontSize: 13, fontWeight: 700, color: "#053366", margin: 0 }}>{tour.full_name || "—"}</p>
+                                      {tour.email && <a href={`mailto:${tour.email}`} style={{ fontSize: 11, color: "#02AFCF", display: "flex", alignItems: "center", gap: 3, textDecoration: "none", marginTop: 2 }}><Mail size={10} /> {tour.email}</a>}
+                                      {tour.phone && <p style={{ fontSize: 11, color: "#6B7280", margin: "2px 0 0", display: "flex", alignItems: "center", gap: 3 }}><Phone size={10} color="#9CA3AF" /> {tour.phone}</p>}
                                     </div>
                                   </div>
                                 </div>
-
                                 <p style={{ fontSize: 10, color: "#9CA3AF", marginTop: 10, textAlign: "right" }}>Paiement le {fmtDate(p.created_at)}</p>
                               </div>
                             )}
