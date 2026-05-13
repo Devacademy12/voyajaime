@@ -478,6 +478,22 @@ export default function NouvelleExcursionClient({
         .spin { animation:sp 1s linear infinite; }
         @keyframes sp { to { transform:rotate(360deg); } }
         select { appearance:none !important; -webkit-appearance:none !important; }
+        @media(max-width:767px) {
+          .nf-main-grid { grid-template-columns:1fr !important; }
+          .nf-inner-grid-2 { grid-template-columns:1fr 1fr !important; }
+          .nf-inner-grid-3 { grid-template-columns:1fr 1fr !important; }
+          .nf-header-actions { flex-direction:column; align-items:stretch !important; gap:8px !important; }
+          .nf-header-actions .pub-btn,
+          .nf-header-actions .draft-btn { width:100%; justify-content:center; }
+          .tab-btn { padding:8px 12px; font-size:12px; }
+          .nf-tabs-wrap { overflow-x:auto; -webkit-overflow-scrolling:touch; flex-wrap:nowrap !important; padding-bottom:4px; }
+          .nf-tabs-wrap::-webkit-scrollbar { display:none; }
+          .date-row { flex-wrap:wrap; }
+        }
+        @media(max-width:400px) {
+          .nf-inner-grid-2 { grid-template-columns:1fr !important; }
+          .nf-inner-grid-3 { grid-template-columns:1fr !important; }
+        }
       `}</style>
 
       <div style={{ maxWidth:960, margin:"0 auto" }}>
@@ -492,7 +508,7 @@ export default function NouvelleExcursionClient({
               <h1 style={{ fontSize:26, fontWeight:800, color:"#053366", margin:0, letterSpacing:"-.04em" }}>Nouvelle excursion</h1>
               <p style={{ fontSize:13, color:"#64748B", margin:"6px 0 0", fontWeight:500 }}>Complétez tous les champs pour débloquer la publication</p>
             </div>
-            <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+            <div className="nf-header-actions" style={{ display:"flex", alignItems:"center", gap:10 }}>
               {/* Cercle de progression */}
               <div style={{ position:"relative", width:50, height:50 }}>
                 <svg width="50" height="50" viewBox="0 0 50 50" style={{ transform:"rotate(-90deg)" }}>
@@ -526,7 +542,7 @@ export default function NouvelleExcursionClient({
           </div>
         )}
 
-        <div style={{ display:"grid", gridTemplateColumns:"1fr 264px", gap:18, alignItems:"start" }}>
+        <div className="nf-main-grid" style={{ display:"grid", gridTemplateColumns:"1fr 264px", gap:18, alignItems:"start" }}>
 
           {/* ── Colonne principale ── */}
           <div>
@@ -596,7 +612,7 @@ export default function NouvelleExcursionClient({
                 {/* Chiffres clés */}
                 <div className="card">
                   <SectionTitle icon={Settings2} label="Chiffres clés" subtitle="Durée, prix et capacité de l'excursion"/>
-                  <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:14 }}>
+                  <div className="nf-inner-grid-3" style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:14 }}>
                     <Field label="Durée (heures)" hint="Ex : 2, 3.5, 8">
                       <div className="nf-field">
                         <input type="number" min={0.5} max={24} step={0.5} value={duration} onChange={e=>setDuration(Number(e.target.value))}/>
@@ -659,7 +675,7 @@ export default function NouvelleExcursionClient({
 
                 <div className="card">
                   <SectionTitle icon={Navigation} label="Logistique" subtitle="Informations pratiques pour le touriste"/>
-                  <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:16 }}>
+                  <div className="nf-inner-grid-2" style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:16 }}>
                     <Field label="Point de rendez-vous" hint="Adresse ou description précise du lieu de départ">
                       <div className="nf-field" style={{ position:"relative" }}>
                         <MapPin size={13} color="#94A3B8" style={{ position:"absolute", left:11, top:"50%", transform:"translateY(-50%)", pointerEvents:"none" }}/>
@@ -688,7 +704,7 @@ export default function NouvelleExcursionClient({
 
                 <div className="card">
                   <SectionTitle icon={Package} label="Inclus et non inclus" subtitle="Soyez précis — cela réduit les malentendus avec vos clients"/>
-                  <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:16 }}>
+                  <div className="nf-inner-grid-2" style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:16 }}>
                     <Field label="Non inclus dans le prix" hint="Ex : billets d'entrée, repas personnels...">
                       <div className="nf-field">
                         <textarea rows={3} placeholder={"- Billets d'entrée\n- Repas personnels\n- Pourboires"} value={notIncl} onChange={e=>setNotIncl(e.target.value)} style={{ resize:"vertical" }}/>
@@ -722,7 +738,7 @@ export default function NouvelleExcursionClient({
 
             {/* ════ DATES ════ */}
             {tab==="dates" && (
-              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:16, alignItems:"start" }}>
+              <div className="nf-inner-grid-2" style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:16, alignItems:"start" }}>
 
                 {/* ── Panneau gauche : ajout ── */}
                 <div style={{ display:"flex", flexDirection:"column", gap:16 }}>
@@ -822,7 +838,7 @@ export default function NouvelleExcursionClient({
                     </div>
 
                     {/* Période */}
-                    <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8, marginBottom:14 }}>
+                    <div className="nf-inner-grid-2" style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8, marginBottom:14 }}>
                       {[{l:"Du",v:recurFrom,m:today,s:setRecurFrom},{l:"Au",v:recurTo,m:recurFrom||today,s:setRecurTo}].map(f=>(
                         <div key={f.l}>
                           <label style={{ fontSize:11, fontWeight:700, color:"#475569", textTransform:"uppercase" as const, letterSpacing:".5px", display:"block", marginBottom:5 }}>{f.l}</label>

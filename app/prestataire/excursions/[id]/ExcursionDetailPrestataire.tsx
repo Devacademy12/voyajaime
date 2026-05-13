@@ -163,6 +163,11 @@ export default function ExcursionDetailPrestataire({
         @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@400;500;600;700;800&display=swap');
         *{box-sizing:border-box;font-family:'DM Sans',sans-serif}
         .thumb-p{width:72px;height:54px;border-radius:10px;overflow:hidden;cursor:pointer;border:2.5px solid transparent;transition:all .2s;flex-shrink:0}
+        @media(max-width:767px){
+          .exc-detail-grid { grid-template-columns:1fr !important; }
+          .exc-detail-h1 { font-size:22px !important; }
+          .exc-detail-sidebar { order:-1; }
+        }
         .thumb-p.on{border-color:#2B96A8;box-shadow:0 0 0 3px rgba(43,150,168,.15)}
         .thumb-p img{width:100%;height:100%;object-fit:cover}
         .avis-card{background:white;border-radius:18px;border:1px solid #F0F0F0;padding:20px 22px;margin-bottom:12px;transition:box-shadow .2s}
@@ -192,7 +197,7 @@ export default function ExcursionDetailPrestataire({
         <span style={{ color: "#111827", fontWeight: 600 }}>{exc.title}</span>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 320px", gap: 28 }}>
+      <div className="exc-detail-grid" style={{ display: "grid", gridTemplateColumns: "1fr 320px", gap: 28 }}>
 
         {/* ══════════════ COLONNE GAUCHE ══════════════ */}
         <div>
@@ -208,7 +213,7 @@ export default function ExcursionDetailPrestataire({
                 {exc.is_active ? "Publiée" : "Brouillon"}
               </span>
             </div>
-            <h1 style={{ fontFamily: "'Playfair Display',serif", fontSize: 28, fontWeight: 900, color: "#111827", letterSpacing: "-0.5px", marginBottom: 6 }}>
+            <h1 className="exc-detail-h1" style={{ fontFamily: "'Playfair Display',serif", fontSize: 28, fontWeight: 900, color: "#111827", letterSpacing: "-0.5px", marginBottom: 6 }}>
               {exc.title}
             </h1>
             <div style={{ display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap" }}>

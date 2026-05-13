@@ -150,6 +150,10 @@ export default function ProfilClient({ profile, email }: Props) {
       <style>{`
         @keyframes spin{to{transform:rotate(360deg)}}
         @keyframes tin{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}
+        @media(max-width:767px){
+          .pf-grid { grid-template-columns:1fr !important; }
+          .pf-form-grid { grid-template-columns:1fr !important; }
+        }
         .pf-input{width:100%;padding:10px 14px 10px 38px;border:1.5px solid #E5E7EB;border-radius:11px;font-size:13px;font-family:inherit;color:#111827;outline:none;transition:all .2s;background:#FAFAFA;box-sizing:border-box}
         .pf-input:focus{border-color:#2B96A8;background:white;box-shadow:0 0 0 3px rgba(43,150,168,.08)}
         .pf-input:disabled{background:#F3F4F6;color:#9CA3AF;cursor:not-allowed;border-color:#F3F4F6}
@@ -170,7 +174,7 @@ export default function ProfilClient({ profile, email }: Props) {
         style={{ display: "none" }} onChange={handleFileSelect} />
 
       {/* ── 2-column layout ── */}
-      <div style={{ display: "grid", gridTemplateColumns: "270px 1fr", gap: 16, height: "100%" }}>
+      <div className="pf-grid" style={{ display: "grid", gridTemplateColumns: "270px 1fr", gap: 16, height: "100%" }}>
 
         {/* ══ LEFT COLUMN ══ */}
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
@@ -275,7 +279,7 @@ export default function ProfilClient({ profile, email }: Props) {
               <User size={13} color="#2B96A8"/>Informations professionnelles
             </h2>
 
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginBottom: 14 }}>
+            <div className="pf-form-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginBottom: 14 }}>
               {/* Nom complet */}
               <div>
                 <label className="pf-label">Nom complet</label>
