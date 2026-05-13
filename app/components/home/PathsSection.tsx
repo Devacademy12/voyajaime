@@ -52,7 +52,6 @@ export default function PathsSection({ slides, user, openAuth }: PathsSectionPro
               <span style={{ fontSize: 10, fontWeight: 800, color: "#7EDCED", letterSpacing: 1 }}>IA · RAPIDE</span>
             </div>
 
-            {/* ✅ Icône + Titre sur la même ligne */}
             <div style={{ display: "flex", alignItems: "center", gap: 14, marginTop: 4 }}>
               <Bot size={40} color="rgba(255,255,255,0.88)" style={{ flexShrink: 0 }} />
               <div>
@@ -67,8 +66,7 @@ export default function PathsSection({ slides, user, openAuth }: PathsSectionPro
               Répondez à 3 questions simples. Notre IA génère votre itinéraire jour par jour, avec des alternatives locales.
             </p>
             <Link
-              href={user ? ROUTES.touriste.ModeAssiste : "#"}
-              onClick={!user ? (e) => { e.preventDefault(); openAuth("login", ROUTES.touriste.ModeAssiste); } : undefined}
+              href={ROUTES.touriste.ModeAssiste}
               className="path-card-btn"
               style={{ background: "#2B96A8", color: "white", boxShadow: "0 6px 22px rgba(43,150,168,0.42)" }}
             >
@@ -88,7 +86,6 @@ export default function PathsSection({ slides, user, openAuth }: PathsSectionPro
               <span style={{ fontSize: 10, fontWeight: 800, color: "rgba(255,255,255,0.65)", letterSpacing: 1 }}>BUILDER · FLEXIBLE</span>
             </div>
 
-            {/* ✅ Icône + Titre sur la même ligne */}
             <div style={{ display: "flex", alignItems: "center", gap: 14, marginTop: 4 }}>
               <ClipboardList size={40} color="rgba(255,255,255,0.88)" style={{ flexShrink: 0 }} />
               <div>
@@ -103,8 +100,7 @@ export default function PathsSection({ slides, user, openAuth }: PathsSectionPro
               Construisez votre voyage de A à Z — choisissez chaque excursion, chaque jour, dans l&apos;ordre qui vous plaît.
             </p>
             <Link
-              href={user ? `${ROUTES.touriste.modeLibre}?mode=libre` : "#"}
-              onClick={!user ? (e) => { e.preventDefault(); openAuth("login"); } : undefined}
+              href={`${ROUTES.touriste.modeLibre}?mode=libre`}
               className="path-card-btn"
               style={{ background: "rgba(255,255,255,0.14)", border: "1.5px solid rgba(255,255,255,0.32)", color: "white" }}
             >
@@ -124,7 +120,6 @@ export default function PathsSection({ slides, user, openAuth }: PathsSectionPro
               <span style={{ fontSize: 10, fontWeight: 800, color: "rgba(255,255,255,0.52)", letterSpacing: 1 }}>SANS COMPTE</span>
             </div>
 
-            {/* ✅ Icône + Titre sur la même ligne */}
             <div style={{ display: "flex", alignItems: "center", gap: 14, marginTop: 4 }}>
               <Mountain size={40} color="rgba(255,255,255,0.88)" style={{ flexShrink: 0 }} />
               <div>

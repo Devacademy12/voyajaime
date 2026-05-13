@@ -6,25 +6,36 @@ export default async function TouristeLayout({ children }: { children: React.Rea
   const supabase = await createServerSupabaseClient();
   const { data: { user } } = await supabase.auth.getUser();
 
-  if (!user) redirect("/auth");
+  // Pas de redirect — les pages touriste sont accessibles sans connexion.
+  // Chaque page gère elle-même les actions qui nécessitent un compte (favoris, réservation…).
 
-  const { data: profile } = await supabase
-    .from("profiles").select("role, full_name").eq("user_id", user.id).single();
+  let userName = "Touriste";
+  let favCount = 0;
 
-  if (!profile || profile.role !== "touriste") redirect("/auth");
+  if (user) {
+    const { data: profile } = await supabase
+      .from("profiles").select("role, full_name").eq("user_id", user.id).single();
 
-  const { count: favCount } = await supabase
-    .from("favoris").select("*", { count: "exact", head: true }).eq("touriste_id", user.id);
+    // Rediriger seulement si l'utilisateur est connecté mais n'est pas touriste
+    if (profile && profile.role !== "touriste") redirect("/auth");
+
+    userName = profile?.full_name || user.email || "Touriste";
+
+    const { count } = await supabase
+      .from("favoris").select("*", { count: "exact", head: true }).eq("touriste_id", user.id);
+    favCount = count || 0;
+  }
 
   return (
     <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column", background: "#FAFAF9" }}>
       <TouristeNav
-        userName={profile.full_name || user.email || "Touriste"}
-        favCount={favCount || 0}
-      /><div style={{ paddingTop: 64 }}>   </div>
+        userName={userName}
+        favCount={favCount}
+      />
+      <div style={{ paddingTop: 64 }} />
       <main style={{ flex: 1, display: "flex", flexDirection: "column" }}>
         {children}
       </main>
     </div>
   );
-} 
+}
