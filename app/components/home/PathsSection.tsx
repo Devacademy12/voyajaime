@@ -66,7 +66,7 @@ export default function PathsSection({ slides, user, openAuth }: PathsSectionPro
               Répondez à 3 questions simples. Notre IA génère votre itinéraire jour par jour, avec des alternatives locales.
             </p>
             <Link
-              href={ROUTES.touriste.ModeAssiste}
+              href={ROUTES.ModeAssiste}
               className="path-card-btn"
               style={{ background: "#2B96A8", color: "white", boxShadow: "0 6px 22px rgba(43,150,168,0.42)" }}
             >
@@ -100,7 +100,7 @@ export default function PathsSection({ slides, user, openAuth }: PathsSectionPro
               Construisez votre voyage de A à Z — choisissez chaque excursion, chaque jour, dans l&apos;ordre qui vous plaît.
             </p>
             <Link
-              href={`${ROUTES.touriste.modeLibre}?mode=libre`}
+              href={`${ROUTES.modeLibre}?mode=libre`}
               className="path-card-btn"
               style={{ background: "rgba(255,255,255,0.14)", border: "1.5px solid rgba(255,255,255,0.32)", color: "white" }}
             >
