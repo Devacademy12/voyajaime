@@ -1,7 +1,10 @@
+"use client";
+
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { Mail, Phone, MapPin, Clock, ArrowRight } from "lucide-react";
 import ContactFormInline from "../contact/ContactFormInline";
-import { createServerSupabaseClient } from "@/lib/supabaseServer";
+import { createClient } from "@/lib/supabaseClient";
 
 interface ContactSectionProps {
   email?:      string;
@@ -123,7 +126,7 @@ const CSS = `
   }
 `;
 
-export default async function ContactSection({
+export default function ContactSection({
   email:      emailProp,
   phone:      phoneProp,
   address:    addressProp,
@@ -131,15 +134,21 @@ export default async function ContactSection({
   ctaLabel:   ctaLabelProp,
   successMsg: successMsgProp,
 }: ContactSectionProps) {
+  const [rows, setRows] = useState<{ key: string; value: string | null }[]>([]);
 
-  /* ── Fetch Supabase directement ── */
-  const supabase = await createServerSupabaseClient();
-  const { data: rows } = await supabase
-    .from("contact_content")
-    .select("key, value");
+  useEffect(() => {
+    const supabase = createClient();
+    supabase
+      .from("contact_content")
+      .select("key, value")
+      .then(({ data }) => {
+        if (data) setRows(data);
+      });
+  }, []);
 
-  const c = Object.fromEntries(
-    (rows ?? []).map((r: { key: string; value: string | null }) => [r.key, r.value ?? ""])
+  const c = useMemo(
+    () => Object.fromEntries(rows.map((r) => [r.key, r.value ?? ""])),
+    [rows]
   );
 
   const email      = emailProp      ?? c.email       ?? "contact@voyajaime.tn";

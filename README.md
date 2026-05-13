@@ -27,4 +27,3 @@ npm start
 
 ---
 
-Développé avec ❤️ pour promouvoir le tourisme en Tunisie

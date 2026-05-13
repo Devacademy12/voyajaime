@@ -6,7 +6,8 @@ export const ROUTES = {
 
   // ── Public ──────────────────────────────────
   home:       "/",
-  auth:       "/auth",
+  auth: "/auth",
+  resetPassword: "/auth/reset-password",
   excursions: "/excursions",
   excursion:  (id: string) => `/excursions/${id}`,
   ModeAssiste : "/modeAssister",

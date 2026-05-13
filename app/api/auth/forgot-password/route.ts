@@ -1,19 +1,8 @@
 import { NextResponse } from "next/server";
-import nodemailer from "nodemailer";
+import { Resend } from "resend";
 import { createClient } from "@supabase/supabase-js";
 
-// ⚠️ ATTENTION PRODUCTION : Ethereal est un service de test uniquement.
-// Les emails ne sont PAS réellement envoyés aux utilisateurs.
-// Pour la production, remplacer par un vrai service (Resend, SendGrid, Mailgun, etc.)
-// et mettre à jour les variables d'environnement correspondantes.
-const transporter = nodemailer.createTransport({
-  host: 'smtp.ethereal.email',
-  port: 587,
-  auth: {
-    user: process.env.ETHEREAL_USER!,  // Ton email Ethereal
-    pass: process.env.ETHEREAL_PASS!   // Ton mot de passe Ethereal
-  }
-});
+const resend = new Resend(process.env.RESEND_API_KEY!);
 
 export async function POST(req: Request) {
   try {
@@ -22,33 +11,42 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Email requis" }, { status: 400 });
     }
 
-    // Client admin avec service_role key
     const supabaseAdmin = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.SUPABASE_SERVICE_ROLE_KEY!,
       { auth: { autoRefreshToken: false, persistSession: false } }
     );
 
-    // Générer le lien de reset
-    const { data, error } = await supabaseAdmin.auth.admin.generateLink({
-      type: "recovery",
-      email,
-      options: {
-        redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/reset-password`,
-      },
+    // ✅ Solution 1: Utiliser le vrai endpoint de reset password sans fragment
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://voyajaime.com";
+    
+    // Dans forgot-password/route.ts
+const { data, error } = await supabaseAdmin.auth.admin.generateLink({
+  type: "recovery",
+  email,
+  options: {
+redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback?next=/auth/reset-password`,  },
+
     });
 
-    // Sécurité : toujours répondre success
     if (error || !data?.properties?.action_link) {
       console.error("generateLink error:", error?.message);
       return NextResponse.json({ success: true });
     }
 
-    const resetLink = data.properties.action_link;
+    // 🔧 CORRECTION: Nettoyer et normaliser le lien
+    let resetLink = data.properties.action_link;
+    
+    // Transformer https://voyajaime.com/auth/reset-password#access_token=xxx
+    // en https://voyajaime.com/auth/reset-password?token=xxx
+    if (resetLink.includes('#')) {
+      const hashParams = resetLink.split('#')[1];
+      const urlWithoutHash = resetLink.split('#')[0];
+      resetLink = `${urlWithoutHash}?${hashParams}`;
+    }
 
-    // ✅ Envoyer l'email via Ethereal (au lieu de Resend)
-    const info = await transporter.sendMail({
-      from: '"VoyajAime" <no-reply@voyajaime.com>',
+    const { data: sendData, error: sendError } = await resend.emails.send({
+      from: "VoyajAime <no-reply@voyajaime.com>",
       to: email,
       subject: "Réinitialisation de votre mot de passe",
       html: `
@@ -63,7 +61,8 @@ export async function POST(req: Request) {
             Réinitialiser mon mot de passe
           </a>
           <p>Ce lien expire dans <strong>1 heure</strong>.</p>
-          <p>Si vous n'êtes pas à l'origine de cette demande, ignorez cet email.</p>
+          <p><strong>📌 Astuce :</strong> Copiez-collez le lien dans votre navigateur si le clic ne fonctionne pas.</p>
+          <p style="font-size: 12px; color: #666;">Lien complet pour copier/coller :<br/>${resetLink}</p>
           <hr/>
           <p style="font-size: 12px; color: #999;">VoyajAime - Tourisme en Tunisie</p>
         </body>
@@ -71,10 +70,12 @@ export async function POST(req: Request) {
       `,
     });
 
-    // ✅ Affiche le lien de visualisation dans la console
-    console.log("📧 Email envoyé !");
-    console.log("🔗 Visualiser l'email ici :", nodemailer.getTestMessageUrl(info));
+    if (sendError) {
+      console.error("Resend error:", sendError);
+      return NextResponse.json({ success: true });
+    }
 
+    console.log("📧 Email envoyé, resetLink:", resetLink);
     return NextResponse.json({ success: true });
 
   } catch (err) {
