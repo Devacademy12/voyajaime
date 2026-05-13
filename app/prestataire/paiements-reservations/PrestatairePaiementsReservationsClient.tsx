@@ -33,6 +33,7 @@ interface ResRow {
   id: string; booking_code: string; date: string; time: string;
   people_count: number; total_price: number; platform_fee: number;
   status: string; touriste_name: string; touriste_email: string;
+  touriste_avatar?: string | null; touriste_phone?: string | null;
   excursion_id: string; excursion_title: string; excursion_city: string; excursion_max: number;
 }
 interface DateDiag {
@@ -628,7 +629,7 @@ export default function PrestatairePaiementsReservationsClient({
 
                   {/* Touriste */}
                   <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
-                    <Avatar name={r.touriste_name} size={36} />
+                    <Avatar url={r.touriste_avatar} name={r.touriste_name} size={36} />
                     <div>
                       <p style={{ fontSize: 13, fontWeight: 700, color: "#111827", margin: 0 }}>{r.touriste_name}</p>
                       {r.touriste_email && (
