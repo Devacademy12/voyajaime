@@ -2,27 +2,27 @@
 //  routes.ts  —  toutes les URLs de l'application
 //  Emplacement : /lib/routes.ts
 // ─────────────────────────────────────────────
+
+import ModeAssiste from "../modeAssister/page";
+
 export const ROUTES = {
 
   // ── Public ──────────────────────────────────
   home:       "/",
-  auth: "/auth",
-  resetPassword: "/auth/reset-password",
+  auth:       "/auth",
   excursions: "/excursions",
   excursion:  (id: string) => `/excursions/${id}`,
   ModeAssiste : "/modeAssister",
   about:      "/about",
   blog:       "/blog",
-  blogCat:    (cat: string) => `/blog?cat=${encodeURIComponent(cat)}`,
-  blogSearch: (q: string)   => `/blog?q=${encodeURIComponent(q)}`,
   contact:    "/contact",
 
   // ── Touriste ────────────────────────────────
   touriste: {
     dashboard:    "/touriste/dashboard",
     itineraires:   "/touriste/itineraires",
-    modeLibre:   "/touriste/modeLibre",
-    ModeAssiste : "/touriste/modeAssister",
+    modeLibre:   "/modeLibre",
+    ModeAssiste : "/modeAssister",
     reservations: "/touriste/reservations",
     favoris:      "/touriste/favoris",
     messages:     "/touriste/messages",
@@ -37,8 +37,7 @@ export const ROUTES = {
     reservations: "/prestataire/paiements-reservations",
     avis:         "/prestataire/avis",
     messages:     "/prestataire/messages",
-    profil: "/prestataire/profil",
-    completerProfil: "/compler-profil",
+    profil:       "/prestataire/profil",
   },
 
   // ── Admin ───────────────────────────────────
@@ -50,10 +49,10 @@ export const ROUTES = {
     avis:          "/admin/avis",
     conversations: "/admin/conversations",
     catalogue:     "/admin/catalogue",
-    slider:       "/admin/slider",
-    blog:         "/admin/blog",
-    about:        "/admin/about",
-    contact:      "/admin/contact",
+    slider:        "/admin/slider",
+    blog:          "/admin/blog",
+    about:         "/admin/about",
+    contact:       "/admin/contact",
   },
 
 } as const;

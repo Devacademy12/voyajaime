@@ -1,9 +1,7 @@
-/* cspell:words supabase publiques Préfixes brandmark Autoriser Vérifier utilisateur connecté rôle PRESTATAIRE prestataire TOURISTE touriste */
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-// Routes publiques — accessibles sans connexion
 const PUBLIC_ROUTES = [
   "/",
   "/auth",
@@ -13,17 +11,15 @@ const PUBLIC_ROUTES = [
   "/about",
   "/contact",
   "/completer-profil",
+  "/modeAssister",
+  "/modeLibre",
   "/api/auth/callback",
   "/api/auth/forgot-password",
   "/api/auth/reset-password",
   "/api/webhooks/stripe",
   "/api/register-prestataire",
-  // Pages touriste accessibles sans compte
-  "/touriste/modeAssister",
-  "/touriste/modeLibre",
 ];
 
-// Préfixes publics
 const PUBLIC_PREFIXES = [
   "/excursions/",
   "/blog/",
@@ -34,9 +30,8 @@ const PUBLIC_PREFIXES = [
   "/images/",
   "/logo",
   "/brandmark",
-  // Sous-routes mode assisté et mode libre
-  "/touriste/modeAssister/",
-  "/touriste/modeLibre/",
+  "/modeAssister/",
+  "/modeLibre/",
 ];
 
 function isPublic(pathname: string): boolean {
@@ -47,10 +42,7 @@ function isPublic(pathname: string): boolean {
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Autoriser routes publiques
-  if (isPublic(pathname)) {
-    return NextResponse.next();
-  }
+  if (isPublic(pathname)) return NextResponse.next();
 
   const response = NextResponse.next();
 
@@ -71,39 +63,31 @@ export async function middleware(request: NextRequest) {
 
   const { data: { user } } = await supabase.auth.getUser();
 
-  // Non connecté → rediriger vers /auth
   if (!user) {
     const loginUrl = new URL("/auth", request.url);
     loginUrl.searchParams.set("redirect", pathname);
     return NextResponse.redirect(loginUrl);
   }
 
-  // Vérification rôle ADMIN
   if (pathname.startsWith("/admin")) {
     const { data: profile } = await supabase
       .from("profiles").select("role").eq("user_id", user.id).single();
-    if (!profile || profile.role !== "admin") {
+    if (!profile || profile.role !== "admin")
       return NextResponse.redirect(new URL("/auth", request.url));
-    }
   }
 
-  // Vérification rôle PRESTATAIRE
   if (pathname.startsWith("/prestataire")) {
     const { data: profile } = await supabase
       .from("profiles").select("role").eq("user_id", user.id).single();
-    if (!profile || profile.role !== "prestataire") {
+    if (!profile || profile.role !== "prestataire")
       return NextResponse.redirect(new URL("/auth", request.url));
-    }
   }
 
-  // Vérification rôle TOURISTE
-  // Seulement pour les pages qui nécessitent vraiment un compte
   if (pathname.startsWith("/touriste")) {
     const { data: profile } = await supabase
       .from("profiles").select("role").eq("user_id", user.id).single();
-    if (!profile || profile.role !== "touriste") {
+    if (!profile || profile.role !== "touriste")
       return NextResponse.redirect(new URL("/auth", request.url));
-    }
   }
 
   return response;

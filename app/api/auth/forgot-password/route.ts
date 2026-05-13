@@ -17,16 +17,14 @@ export async function POST(req: Request) {
       { auth: { autoRefreshToken: false, persistSession: false } }
     );
 
-    // ✅ Solution 1: Utiliser le vrai endpoint de reset password sans fragment
+    // Correction : rediriger directement vers la page de reset-password avec le token
     const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://voyajaime.com";
-    
-    // Dans forgot-password/route.ts
-const { data, error } = await supabaseAdmin.auth.admin.generateLink({
-  type: "recovery",
-  email,
-  options: {
-redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback?next=/auth/reset-password`,  },
-
+    const { data, error } = await supabaseAdmin.auth.admin.generateLink({
+      type: "recovery",
+      email,
+      options: {
+        redirectTo: `${siteUrl}/auth/reset-password`,
+      },
     });
 
     if (error || !data?.properties?.action_link) {
