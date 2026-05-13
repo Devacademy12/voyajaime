@@ -17,12 +17,12 @@ interface NavGroup { label: string; icon: React.ReactNode; items: NavItem[]; }
 type NavElement = NavItem | NavGroup;
 
 const isGroup = (item: NavElement): item is NavGroup => "items" in item;
-const isItem = (item: NavElement): item is NavItem => !("items" in item);
+const isItem  = (item: NavElement): item is NavItem  => !("items" in item);
 
 const NAV: Record<Role, NavElement[]> = {
   touriste: [
     { label: "Accueil",          href: ROUTES.touriste.dashboard,    icon: <LayoutDashboard size={18} /> },
-    { label: "Mon itinéraire",   href: ROUTES.touriste.itineraires,   icon: <Map size={18} /> },
+    { label: "Mon itinéraire",   href: ROUTES.touriste.itineraires,  icon: <Map size={18} /> },
     { label: "Mes réservations", href: ROUTES.touriste.reservations, icon: <CalendarDays size={18} /> },
     { label: "Mes favoris",      href: ROUTES.touriste.favoris,      icon: <Heart size={18} /> },
     { label: "Messages",         href: ROUTES.touriste.messages,     icon: <MessageCircle size={18} /> },
@@ -31,7 +31,7 @@ const NAV: Record<Role, NavElement[]> = {
   prestataire: [
     { label: "Dashboard",      href: ROUTES.prestataire.dashboard,    icon: <LayoutDashboard size={18} /> },
     { label: "Mes excursions", href: ROUTES.prestataire.excursions,   icon: <Mountain size={18} /> },
-    { label: "Réservations et paiements",   href: ROUTES.prestataire.reservations, icon: <CalendarDays size={18} /> },
+    { label: "Réservations et paiements", href: ROUTES.prestataire.reservations, icon: <CalendarDays size={18} /> },
     { label: "Avis clients",   href: ROUTES.prestataire.avis,         icon: <Star size={18} /> },
     { label: "Messages",       href: ROUTES.prestataire.messages,     icon: <MessageCircle size={18} /> },
     { label: "Mon profil",     href: ROUTES.prestataire.profil,       icon: <UserCircle size={18} /> },
@@ -47,11 +47,12 @@ const NAV: Record<Role, NavElement[]> = {
       label: "Configuration",
       icon: <Settings size={18} />,
       items: [
-        { label: "Catalogue & Villes", href: ROUTES.admin.catalogue,     icon: <FolderOpen size={18} /> },
-        { label: "Slider",             href: ROUTES.admin.slider,        icon: <Mountain size={18} /> },
-        { label: "Blog",               href: ROUTES.admin.blog,          icon: <Star size={18} /> },
-        { label: "À propos",           href: ROUTES.admin.about,         icon: <UserCircle size={18} /> },
-        { label: "Contact",            href: ROUTES.admin.contact,       icon: <MessageCircle size={18} />},      ],
+        { label: "Catalogue & Villes", href: ROUTES.admin.catalogue, icon: <FolderOpen size={18} /> },
+        { label: "Slider",             href: ROUTES.admin.slider,    icon: <Mountain size={18} /> },
+        { label: "Blog",               href: ROUTES.admin.blog,      icon: <Star size={18} /> },
+        { label: "À propos",           href: ROUTES.admin.about,     icon: <UserCircle size={18} /> },
+        { label: "Contact",            href: ROUTES.admin.contact,   icon: <MessageCircle size={18} /> },
+      ],
     },
   ],
 };
@@ -69,14 +70,14 @@ interface SidebarProps {
 }
 
 export default function Sidebar({ role, userName, userEmail }: SidebarProps) {
-  const supabase   = createClient();
-  const pathname   = usePathname();
-  const router     = useRouter();
-  const items      = NAV[role];
-  const [drawerOpen, setDrawerOpen] = useState(false);
-  const [isMobile,   setIsMobile]   = useState(false);
-  const [avatarUrl,  setAvatarUrl]  = useState<string | null>(null);
-  const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
+  const supabase  = createClient();
+  const pathname  = usePathname();
+  const router    = useRouter();
+  const items     = NAV[role];
+  const [drawerOpen,      setDrawerOpen]      = useState(false);
+  const [isMobile,        setIsMobile]        = useState(false);
+  const [avatarUrl,       setAvatarUrl]       = useState<string | null>(null);
+  const [expandedGroups,  setExpandedGroups]  = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 768);
@@ -132,7 +133,7 @@ export default function Sidebar({ role, userName, userEmail }: SidebarProps) {
               border: "2px solid rgba(43,150,168,.2)",
             }}>
               {avatarUrl
-                ? <img src={avatarUrl} alt={userName || ""} style={{ width: "100%", height: "100%", objectFit: "cover" }} onError={e => { (e.target as HTMLImageElement).style.display = "none"; }}/>
+                ? <img src={avatarUrl} alt={userName || ""} style={{ width: "100%", height: "100%", objectFit: "cover" }} onError={e => { (e.target as HTMLImageElement).style.display = "none"; }} />
                 : <span style={{ fontSize: 20, fontWeight: 800, color: "white" }}>{initial}</span>
               }
             </div>
@@ -181,7 +182,7 @@ export default function Sidebar({ role, userName, userEmail }: SidebarProps) {
 
             if (isGroup(item)) {
               const expanded = expandedGroups[item.label] ?? false;
-              const groupActive = item.items.some(subItem => 
+              const groupActive = item.items.some(subItem =>
                 pathname === subItem.href || pathname.startsWith(subItem.href + "/")
               );
 
@@ -191,7 +192,7 @@ export default function Sidebar({ role, userName, userEmail }: SidebarProps) {
                     onClick={() => {
                       setExpandedGroups(prev => ({
                         ...prev,
-                        [item.label]: !prev[item.label]
+                        [item.label]: !prev[item.label],
                       }));
                     }}
                     style={{
@@ -211,13 +212,13 @@ export default function Sidebar({ role, userName, userEmail }: SidebarProps) {
                       {item.icon}
                     </span>
                     <span style={{ flex: 1 }}>{item.label}</span>
-                    <ChevronDown 
-                      size={16} 
-                      style={{ 
+                    <ChevronDown
+                      size={16}
+                      style={{
                         transform: expanded ? "rotate(180deg)" : "rotate(0deg)",
                         transition: "transform 0.2s",
-                        color: groupActive ? "#2B96A8" : "#9CA3AF"
-                      }} 
+                        color: groupActive ? "#2B96A8" : "#9CA3AF",
+                      }}
                     />
                   </button>
 
@@ -288,22 +289,51 @@ export default function Sidebar({ role, userName, userEmail }: SidebarProps) {
   if (isMobile) {
     return (
       <>
-        <button
-          onClick={() => setDrawerOpen(true)}
-          style={{ position: "fixed", top: 14, left: 14, zIndex: 60, width: 40, height: 40, background: "white", border: "1px solid #E5E7EB", borderRadius: 12, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 2px 8px rgba(0,0,0,.08)" }}
-          aria-label="Ouvrir le menu"
-        >
-          <Menu size={20} color="#374151" />
-        </button>
-
-        {drawerOpen && (
-          <div onClick={() => setDrawerOpen(false)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.4)", zIndex: 49 }} />
+        {/* ✅ Burger : caché quand le drawer est ouvert */}
+        {!drawerOpen && (
+          <button
+            onClick={() => setDrawerOpen(true)}
+            style={{
+              position: "fixed", top: 14, left: 14, zIndex: 60,
+              width: 40, height: 40,
+              background: "white", border: "1px solid #E5E7EB",
+              borderRadius: 12, cursor: "pointer",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              boxShadow: "0 2px 8px rgba(0,0,0,.08)",
+            }}
+            aria-label="Ouvrir le menu"
+          >
+            <Menu size={20} color="#374151" />
+          </button>
         )}
 
-        <aside style={{ ...asideBase, transform: drawerOpen ? "translateX(0)" : "translateX(-100%)", transition: "transform 0.3s ease", boxShadow: drawerOpen ? "0 0 40px rgba(0,0,0,.15)" : "none", zIndex: 55 }}>
+        {/* ✅ Overlay */}
+        {drawerOpen && (
+          <div
+            onClick={() => setDrawerOpen(false)}
+            style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.4)", zIndex: 49 }}
+          />
+        )}
+
+        {/* ✅ Drawer */}
+        <aside style={{
+          ...asideBase,
+          transform: drawerOpen ? "translateX(0)" : "translateX(-100%)",
+          transition: "transform 0.3s ease",
+          boxShadow: drawerOpen ? "0 0 40px rgba(0,0,0,.15)" : "none",
+          zIndex: 55,
+        }}>
+          {/* ✅ Bouton fermeture dans le drawer */}
           <button
             onClick={() => setDrawerOpen(false)}
-            style={{ position: "absolute", top: 14, right: 14, width: 28, height: 28, border: "none", background: "#F3F4F6", borderRadius: 8, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
+            style={{
+              position: "absolute", top: 14, right: 14,
+              width: 28, height: 28,
+              border: "none", background: "#F3F4F6",
+              borderRadius: 8, cursor: "pointer",
+              display: "flex", alignItems: "center", justifyContent: "center",
+            }}
+            aria-label="Fermer le menu"
           >
             <X size={15} color="#374151" />
           </button>
