@@ -22,6 +22,7 @@ type Excursion = {
   description?: string; categories?: string[];
   photos?: string[]; languages?: string[];
   inclusions?: string[]; rating?: number; reviews_count?: number; max_people?: number;
+  start_date?: string; end_date?: string; is_active?: boolean;
 };
 type Activity = {
   id: string; name: string; description?: string;
@@ -59,36 +60,116 @@ function fmtShort(d: Date) {
   return `${d.getDate()} ${MONTHS_SHORT[d.getMonth()]}`;
 }
 
-/**
- * Vérifie si deux plages de dates se chevauchent.
- * Retourne true si elles se superposent (même un seul jour commun).
- */
+// CORRECTION 1: Format date pour n8n (YYYY-MM-DD)
+function formatDateForN8N(date: Date): string {
+  return date.toISOString().split('T')[0];
+}
+
+// CORRECTION 2: Vérifie si une excursion est disponible pendant les dates du séjour
+function isExcursionAvailable(excursion: Excursion, cityStart: Date, cityEnd: Date): boolean {
+  if (!excursion.start_date || !excursion.end_date) return true; // Pas de dates spécifiques = disponible
+  
+  const excStart = new Date(excursion.start_date);
+  const excEnd = new Date(excursion.end_date);
+  
+  // Normalise à minuit
+  excStart.setHours(0, 0, 0, 0);
+  excEnd.setHours(0, 0, 0, 0);
+  const start = new Date(cityStart); start.setHours(0, 0, 0, 0);
+  const end = new Date(cityEnd); end.setHours(0, 0, 0, 0);
+  
+  // Chevauchement entre séjour et disponibilité excursion
+  return start <= excEnd && end >= excStart;
+}
+
 function datesOverlap(
   start1: Date | null, end1: Date | null,
   start2: Date | null, end2: Date | null
 ): boolean {
   if (!start1 || !end1 || !start2 || !end2) return false;
-  // Normalise à minuit pour éviter les décalages horaires
   const s1 = new Date(start1); s1.setHours(0, 0, 0, 0);
   const e1 = new Date(end1);   e1.setHours(0, 0, 0, 0);
   const s2 = new Date(start2); s2.setHours(0, 0, 0, 0);
   const e2 = new Date(end2);   e2.setHours(0, 0, 0, 0);
-  // Chevauchement : les deux intervalles se croisent si s1 <= e2 ET s2 <= e1
   return s1 <= e2 && s2 <= e1;
 }
 
-/**
- * Retourne l'ensemble des dates déjà réservées par les AUTRES villes.
- * Utilisé pour griser les jours dans MiniCalPop.
- */
 function getBlockedDates(cityDates: CityDateRange[], excludeCity: string): { start: Date; end: Date }[] {
   return cityDates
     .filter((c) => c.city !== excludeCity && c.start && c.end)
     .map((c) => ({ start: c.start!, end: c.end! }));
 }
 
+// CORRECTION 3: Extraction robuste de l'itinéraire depuis la réponse n8n
+function extractItinerary(raw: unknown): Itinerary {
+  // Fonction récursive pour chercher un objet avec "days"
+  const findDaysObject = (obj: any): any => {
+    if (!obj) return null;
+    if (obj.days && Array.isArray(obj.days) && obj.days.length > 0) return obj;
+    if (obj.itinerary && obj.itinerary.days) return obj.itinerary;
+    if (obj.result && obj.result.days) return obj.result;
+    if (obj.data && obj.data.days) return obj.data;
+    
+    // Parcourir les propriétés
+    for (const key in obj) {
+      if (typeof obj[key] === 'object' && obj[key] !== null) {
+        const found = findDaysObject(obj[key]);
+        if (found) return found;
+      }
+    }
+    return null;
+  };
+
+  try {
+    // Si c'est une chaîne JSON, parser
+    let parsed = raw;
+    if (typeof raw === 'string') {
+      // Nettoyer les marqueurs markdown
+      const cleaned = raw.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+      const match = cleaned.match(/\{[\s\S]*\}/);
+      if (match) {
+        parsed = JSON.parse(match[0]);
+      } else {
+        parsed = JSON.parse(cleaned);
+      }
+    }
+
+    // Chercher l'objet avec days
+    const itineraryObj = findDaysObject(parsed);
+    
+    if (itineraryObj && itineraryObj.days) {
+      // Valider et normaliser les activités
+      const normalizedDays = itineraryObj.days.map((day: any, idx: number) => ({
+        day: day.day || idx + 1,
+        city: day.city || "Ville inconnue",
+        theme: day.theme || "Découverte",
+        activities: (day.activities || []).map((act: any) => ({
+          id: act.id || `act-${Date.now()}-${Math.random()}`,
+          name: act.name || act.title || "Activité",
+          description: act.description || "",
+          time: act.time || act.horaire || "09:00",
+          duration: act.duration || "2h",
+          price: typeof act.price === 'number' ? act.price : (parseFloat(act.price) || 0),
+          photos: act.photos || [],
+          languages: act.languages || ["Français", "Anglais"],
+          inclusion: act.inclusion || act.inclusions || [],
+          city: act.city || day.city,
+          rating: act.rating || 4.5
+        }))
+      }));
+      
+      return { title: itineraryObj.title || "Mon voyage en Tunisie", days: normalizedDays };
+    }
+    
+    throw new Error("Aucun itinéraire valide trouvé");
+  } catch (err) {
+    console.error("Erreur extraction itinéraire:", err);
+    throw new Error(`Impossible de parser l'itinéraire: ${err instanceof Error ? err.message : "Format invalide"}`);
+  }
+}
+
 /* ════════════════════════════
-   MiniCalPop
+   MiniCalPop (inchangé)
 ════════════════════════════ */
 function MiniCalPop({
   value,
@@ -103,6 +184,7 @@ function MiniCalPop({
   onClose: () => void;
   blockedRanges?: { start: Date; end: Date }[];
 }) {
+  // ... (conservez votre code existant inchangé)
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
@@ -208,7 +290,7 @@ function MiniCalPop({
 }
 
 /* ════════════════════════════
-   CityDateRow
+   CityDateRow (inchangé)
 ════════════════════════════ */
 function CityDateRow({
   cdr,
@@ -222,14 +304,10 @@ function CityDateRow({
   allCityDates: CityDateRange[];
 }) {
   const [openPop, setOpenPop] = useState<"start" | "end" | null>(null);
-
   const minEnd = cdr.start
     ? new Date(cdr.start.getFullYear(), cdr.start.getMonth(), cdr.start.getDate())
     : undefined;
-
   const nights = cdr.start && cdr.end ? daysBetween(cdr.start, cdr.end) : 0;
-
-  // Dates bloquées par les autres villes
   const blockedRanges = getBlockedDates(allCityDates, cdr.city);
 
   const calPortal = openPop
@@ -313,24 +391,6 @@ function CityDateRow({
   );
 }
 
-/* ── Extract itinerary helper ── */
-function extractItinerary(raw: unknown): Itinerary {
-  const item = Array.isArray(raw) ? raw[0] : raw;
-  const r = item as Record<string, unknown>;
-  const candidates = [r?.output, r?.message, r?.text, r?.json, r?.data, r?.itinerary, item];
-  for (const c of candidates) {
-    if (!c) continue;
-    try {
-      const p  = typeof c === "string" ? JSON.parse(c) : c;
-      const pr = p as Record<string, unknown>;
-      if (Array.isArray(pr?.days) && (pr.days as unknown[]).length > 0) return p as Itinerary;
-      const nested = pr?.itinerary || pr?.result;
-      if (nested && Array.isArray((nested as Record<string, unknown>)?.days)) return nested as Itinerary;
-    } catch { /* continue */ }
-  }
-  throw new Error("Impossible de trouver l'itinéraire dans la réponse n8n.");
-}
-
 /* ════════════════════════════
    Main Component
 ════════════════════════════ */
@@ -353,9 +413,7 @@ export default function ModeAssiste() {
   const [loadingMsg, setLoadingMsg] = useState("");
   const msgIdxRef = useRef(0);
 
-  // ── Erreur de chevauchement de dates ──
   const [dateError, setDateError] = useState("");
-
   const [showCheckout, setShowCheckout] = useState(false);
   const [saving, setSaving]             = useState(false);
   const [saveStatus, setSaveStatus]     = useState<"idle" | "ok" | "error" | "login">("idle");
@@ -414,7 +472,6 @@ export default function ModeAssiste() {
       setCityDates(
         next.map((c) => cityDates.find((cd) => cd.city === c) ?? { city: c, start: null, end: null })
       );
-      // Réinitialise l'erreur si une ville est désélectionnée (résout potentiellement le conflit)
       setDateError("");
       return next;
     });
@@ -423,12 +480,8 @@ export default function ModeAssiste() {
   const toggleCat = (id: string) =>
     setSelectedCats((p) => (p.includes(id) ? p.filter((x) => x !== id) : [...p, id]));
 
-  /* ── updateCityStart avec contrôle de chevauchement ── */
   const updateCityStart = (city: string, d: Date) => {
-    // Récupère la date de fin actuelle pour cette ville
     const currentEnd = cityDates.find((c) => c.city === city)?.end ?? null;
-
-    // Vérifie le chevauchement avec les autres villes
     const conflict = cityDates.find(
       (cdr) =>
         cdr.city !== city &&
@@ -439,7 +492,7 @@ export default function ModeAssiste() {
       setDateError(
         `Conflit avec "${conflict.city}" : les séjours se chevauchent. Choisissez des dates sans superposition.`
       );
-      return; // Bloque la mise à jour
+      return;
     }
 
     setDateError("");
@@ -451,12 +504,8 @@ export default function ModeAssiste() {
     );
   };
 
-  /* ── updateCityEnd avec contrôle de chevauchement ── */
   const updateCityEnd = (city: string, d: Date) => {
-    // Récupère la date de début actuelle pour cette ville
     const currentStart = cityDates.find((c) => c.city === city)?.start ?? null;
-
-    // Vérifie le chevauchement avec les autres villes
     const conflict = cityDates.find(
       (cdr) =>
         cdr.city !== city &&
@@ -467,7 +516,7 @@ export default function ModeAssiste() {
       setDateError(
         `Conflit avec "${conflict.city}" : les séjours se chevauchent. Choisissez des dates sans superposition.`
       );
-      return; // Bloque la mise à jour
+      return;
     }
 
     setDateError("");
@@ -476,7 +525,7 @@ export default function ModeAssiste() {
     );
   };
 
-  /* ── Generate ── */
+  // CORRECTION 4: Fonction generate complètement réécrite
   const generate = async () => {
     if (!canGenerate) return;
     setStep("generation");
@@ -490,58 +539,71 @@ export default function ModeAssiste() {
     }, 2000);
 
     try {
-      const relExc = excursions.filter((e) => selectedCities.includes(e.city));
+      // Filtrer les excursions par villes sélectionnées ET par disponibilité des dates
+      const filteredExcursions = excursions.filter((exc) => {
+        if (!selectedCities.includes(exc.city)) return false;
+        
+        // Trouver les dates pour cette ville
+        const cityDateRange = cityDates.find(c => c.city === exc.city);
+        if (!cityDateRange || !cityDateRange.start || !cityDateRange.end) return false;
+        
+        // Vérifier si l'excursion est disponible pendant le séjour
+        return isExcursionAvailable(exc, cityDateRange.start, cityDateRange.end);
+      });
+
+      // Obtenir les noms des catégories
       const catNames = selectedCats
         .map((id) => categories.find((c) => c.id === id)?.nom)
-        .filter(Boolean);
+        .filter(Boolean) as string[];
+
+      // Construire le planning par ville avec dates au format ISO
       const citySchedule = cityDates.map((cdr) => ({
         city: cdr.city,
-        from: cdr.start!.toLocaleDateString("fr-FR"),
-        to:   cdr.end!.toLocaleDateString("fr-FR"),
-        days: daysBetween(cdr.start!, cdr.end!),
-      }));
+        startDate: cdr.start ? formatDateForN8N(cdr.start) : null,
+        endDate: cdr.end ? formatDateForN8N(cdr.end) : null,
+        daysCount: cdr.start && cdr.end ? daysBetween(cdr.start, cdr.end) : 0,
+      })).filter(s => s.startDate && s.endDate);
 
-      const budgetLine = budget ? `Budget total du voyageur : ${budget} €. Essaie de respecter ce budget.` : "";
+      // CORRECTION 5: Envoyer une structure simple et claire à n8n
+      const payload = {
+        destination: selectedCities.join(", "),
+        startDate: citySchedule[0]?.startDate || "",
+        endDate: citySchedule[citySchedule.length - 1]?.endDate || "",
+        budget: budget ? Number(budget) : 0,
+        travelers: 1,
+        interests: catNames,
+        cities: selectedCities,
+        citySchedule: citySchedule,
+        message: `Séjour en Tunisie du ${citySchedule[0]?.startDate} au ${citySchedule[citySchedule.length - 1]?.endDate}`,
+        // Ajout pour debug
+        timestamp: new Date().toISOString()
+      };
 
-      const message = `Tu es un expert en tourisme tunisien.
-Crée un itinéraire de ${totalDays} jours avec ce programme par ville :
-${citySchedule.map((s) => `- ${s.city} : du ${s.from} au ${s.to} (${s.days} jours)`).join("\n")}
-Intérêts: ${catNames.join(", ")}
-${budgetLine}
-Excursions disponibles (utilise UNIQUEMENT celles-ci):
-${JSON.stringify(
-  relExc.map((e) => ({
-    id: e.id, name: e.title, city: e.city,
-    price: e.price_per_person || 0,
-    duration: e.duration_hours ? `${e.duration_hours}h` : "2h",
-    description: e.description || "",
-    photos: e.photos || [], languages: e.languages || [],
-    inclusions: e.inclusions || [], rating: e.rating,
-  })),
-  null, 2
-)}
-RÈGLES: max 3 activités/jour, respecte les dates par ville, IDs exacts, JSON uniquement.
-Format: { "title": "Titre", "days": [{ "day":1,"city":"Ville","date":"DD/MM/YYYY","theme":"Thème","activities":[{"id":"...","name":"...","description":"...","photos":["url"],"time":"09:00","duration":"2h","price":45,"languages":["Français"],"inclusion":["Transport"],"city":"Ville","rating":4.5}] }] }`;
+      console.log("Envoi à n8n:", payload);
 
       const res = await fetch(N8N_WEBHOOK_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          action: "generate",
-          message, totalDays, citySchedule,
-          cities: selectedCities,
-          interests: catNames,
-          budget: budget ? Number(budget) : null,
-        }),
+        body: JSON.stringify(payload),
       });
 
       clearInterval(iv);
-      if (!res.ok) throw new Error(`n8n ${res.status}`);
-      setItinerary(extractItinerary(await res.json()));
+
+      if (!res.ok) {
+        const errorText = await res.text();
+        throw new Error(`n8n error ${res.status}: ${errorText}`);
+      }
+
+      const responseData = await res.json();
+      console.log("Réponse n8n:", responseData);
+      
+      const extractedItinerary = extractItinerary(responseData);
+      setItinerary(extractedItinerary);
       setStep("itineraire");
     } catch (err) {
       clearInterval(iv);
-      setGenError(err instanceof Error ? err.message : "Erreur inconnue");
+      console.error("Erreur génération:", err);
+      setGenError(err instanceof Error ? err.message : "Erreur inconnue lors de la génération");
       setStep("questions");
     }
   };
@@ -639,7 +701,7 @@ Format: { "title": "Titre", "days": [{ "day":1,"city":"Ville","date":"DD/MM/YYYY
 
             <div className="ma-cards-row">
 
-              {/* ── Card 1 : Villes ── */}
+              {/* Card 1 : Villes */}
               <div className="ma-card">
                 <div className="ma-card-header">
                   <div className="ma-card-header-left">
@@ -684,7 +746,7 @@ Format: { "title": "Titre", "days": [{ "day":1,"city":"Ville","date":"DD/MM/YYYY
                 </div>
               </div>
 
-              {/* ── Card 2 : Calendrier ── */}
+              {/* Card 2 : Calendrier */}
               <div className={["ma-card", selectedCities.length === 0 ? "ma-card-disabled" : ""].join(" ")}>
                 <div className="ma-card-header">
                   <div className="ma-card-header-left">
@@ -723,7 +785,6 @@ Format: { "title": "Titre", "days": [{ "day":1,"city":"Ville","date":"DD/MM/YYYY
                         {cityDates.filter((c) => c.start && c.end).length}/{cityDates.length} étapes configurées
                       </p>
 
-                      {/* ── Bannière d'erreur de chevauchement ── */}
                       {dateError && (
                         <div className="ma-date-conflict-banner">
                           <div style={{ display: "flex", alignItems: "flex-start", gap: 8 }}>
@@ -768,7 +829,7 @@ Format: { "title": "Titre", "days": [{ "day":1,"city":"Ville","date":"DD/MM/YYYY
                 </div>
               </div>
 
-              {/* ── Card 3 : Centres d'intérêt ── */}
+              {/* Card 3 : Centres d'intérêt */}
               <div className={["ma-card", !allDatesSet ? "ma-card-disabled" : ""].join(" ")}>
                 <div className="ma-card-header">
                   <div className="ma-card-header-left">
@@ -813,7 +874,6 @@ Format: { "title": "Titre", "days": [{ "day":1,"city":"Ville","date":"DD/MM/YYYY
                     </div>
                   )}
 
-                  {/* ── Budget ── */}
                   <div style={{ marginTop: 20, borderTop: "1px solid #e2e8f0", paddingTop: 16 }}>
                     <p style={{ fontSize: 13, fontWeight: 600, color: "#374151", marginBottom: 8, display: "flex", alignItems: "center", gap: 6 }}>
                       <Euro size={14} color="#2B96A8" />
@@ -863,7 +923,6 @@ Format: { "title": "Titre", "days": [{ "day":1,"city":"Ville","date":"DD/MM/YYYY
 
             </div>
 
-            {/* ── Footer CTA ── */}
             <div className="ma-footer">
               {pillParts.length > 0 && (
                 <div className="ma-footer-pill">
@@ -873,7 +932,6 @@ Format: { "title": "Titre", "days": [{ "day":1,"city":"Ville","date":"DD/MM/YYYY
                 </div>
               )}
 
-              {/* Message d'avertissement si chevauchement encore actif */}
               {dateError && (
                 <p style={{ fontSize: 12, color: "#c2410c", marginBottom: 6, display: "flex", alignItems: "center", gap: 6 }}>
                   <AlertTriangle size={13} />
