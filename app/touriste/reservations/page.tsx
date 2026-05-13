@@ -8,13 +8,8 @@ type Reservation = {
   people_count: number; total_price: number; platform_fee: number;
   status: string; payment_status: string | null; payment_deadline?: string | null;
   excursion: {
-    id: string;
-    title: string;
-    city: string;
-    photos: string[];
-    duration_hours: number;
-    price_per_person: number;
-    rating?: number;
+    id: string; title: string; city: string; photos: string[];
+    duration_hours: number; price_per_person: number; rating?: number;
   } | null;
 };
 
@@ -30,14 +25,15 @@ export default async function TouristeReservations({
   const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) return (
-    <div style={{ textAlign: "center", padding: 48 }}>
-      <p style={{ color: "#4a6080" }}>Veuillez vous connecter pour voir vos réservations</p>
+    <div style={{ textAlign: "center", padding: "64px 24px" }}>
+      <p style={{ color: "#6B7A8D", fontSize: 14 }}>
+        Veuillez vous connecter pour voir vos réservations
+      </p>
     </div>
   );
 
   const today = new Date().toISOString().split("T")[0];
 
-  // ✅ FIX : payment_status inclus directement dans le select principal
   const { data: reservations, error } = await supabase
     .from("reservations")
     .select(`
@@ -52,8 +48,8 @@ export default async function TouristeReservations({
     .order("date", { ascending: true });
 
   if (error) return (
-    <div style={{ textAlign: "center", padding: 48 }}>
-      <p style={{ color: "#EF4444" }}>Erreur : {error.message}</p>
+    <div style={{ textAlign: "center", padding: "64px 24px" }}>
+      <p style={{ color: "#EF4444", fontSize: 14 }}>Erreur : {error.message}</p>
     </div>
   );
 
@@ -70,7 +66,7 @@ export default async function TouristeReservations({
         total_price: r.total_price,
         platform_fee: r.platform_fee,
         status: r.status,
-        payment_status: r.payment_status || null, // ✅ vient directement du select
+        payment_status: r.payment_status || null,
         payment_deadline: r.payment_deadline,
         excursion: excursionData ? {
           id: excursionData.id,
@@ -85,17 +81,37 @@ export default async function TouristeReservations({
     });
 
   return (
-    <div style={{ width: "75%", background: "#F8FAFC", minHeight: "100vh", position: "relative", padding: "32px 0 60px", margin: "0 auto" }}>
+    <>
+      {/* ── Responsive wrapper styles ── */}
+      <style>{`
+        .resa-page-wrap {
+          width: 100%;
+          max-width: 1200px;
+          background: #F8FAFC;
+          min-height: 100vh;
+          position: relative;
+          margin: 0 auto;
+          padding: 36px 48px 60px;
+          box-sizing: border-box;
+        }
+        @media (max-width: 900px) {
+          .resa-page-wrap { padding: 24px 24px 48px; }
+        }
+        @media (max-width: 640px) {
+          .resa-page-wrap { padding: 16px 12px 40px; }
+        }
+      `}</style>
 
-      {/* ✅ Handler Stripe — gère le retour success/cancel depuis Stripe Checkout */}
-      <Suspense fallback={null}>
-        <StripeReturnHandler />
-      </Suspense>
+      <div className="resa-page-wrap">
+        <Suspense fallback={null}>
+          <StripeReturnHandler />
+        </Suspense>
 
-      <ReservationsClient
-        reservations={formattedReservations}
-        autoOpenId={autoOpenId}
-      />
-    </div>
+        <ReservationsClient
+          reservations={formattedReservations}
+          autoOpenId={autoOpenId}
+        />
+      </div>
+    </>
   );
 }

@@ -3,10 +3,168 @@
 import { useState, useCallback, useEffect } from "react";
 import { createClient } from "@/lib/supabaseClient";
 import Link from "next/link";
-import { Sparkles, ArrowRight, History, Compass, RefreshCcw, Loader2, MapPin, Clock, Users, Calendar, CreditCard, CheckCircle2, AlertCircle } from "lucide-react";
+import {
+  Sparkles, ArrowRight, History, Compass, RefreshCcw, Loader2,
+  MapPin, Clock, Users, Calendar, CreditCard, CheckCircle2,
+  AlertCircle, CalendarDays, Coins, Bot, PenLine,
+} from "lucide-react";
 import { Reservation, TODAY } from "@/app/components/reservation/type";
 import ReservationCard from "@/app/components/reservation/Reservationcard";
 import CheckoutModal from "@/app/components/reservation/checkoutmodal";
+
+/* ─────────────────────────────────────────
+   Responsive CSS — same structure as itineraires
+───────────────────────────────────────── */
+const RESPONSIVE_CSS = `
+  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap');
+
+  @keyframes fadeUp  { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
+  @keyframes spin    { to{transform:rotate(360deg)} }
+
+  /* ── Wrapper ── */
+  .resa-wrap {
+    font-family: 'DM Sans', system-ui, sans-serif;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  /* ── Page header ── */
+  .resa-page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 32px;
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+
+  /* ── Stats bar ── */
+  .resa-stats {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 32px;
+    flex-wrap: wrap;
+  }
+  .resa-stat-card {
+    display: flex; align-items: center; gap: 12px;
+    padding: 14px 20px; border-radius: 16px;
+    min-width: 130px; flex: 1;
+    border: 1.5px solid;
+    box-sizing: border-box;
+  }
+  .resa-stat-icon {
+    width: 36px; height: 36px; border-radius: 10px;
+    background: #FFFFFF;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    box-shadow: 0 1px 4px rgba(5,51,102,0.08);
+  }
+
+  /* ── Grid ── */
+  .resa-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+    gap: 20px;
+  }
+  .resa-grid-item { animation: fadeUp 0.4s ease both; }
+
+  /* ── Empty state ── */
+  .resa-empty {
+    text-align: center;
+    padding: 80px 24px;
+    background: #FFFFFF;
+    border-radius: 24px;
+    border: 1.5px solid #E2E8F0;
+  }
+  .resa-empty-icon {
+    width: 72px; height: 72px; border-radius: 50%;
+    background: linear-gradient(135deg, #EFF9FB 0%, #D0F0F5 100%);
+    display: flex; align-items: center; justify-content: center;
+    margin: 0 auto 20px;
+    border: 2px solid rgba(43,150,168,.25);
+  }
+
+  /* ── Refresh button ── */
+  .resa-refresh-btn {
+    display: flex; align-items: center; gap: 6px;
+    padding: 9px 16px; border-radius: 10px;
+    border: 1.5px solid rgba(43,150,168,.25);
+    background: #FFFFFF;
+    color: #2B96A8; font-size: 13px; font-weight: 600;
+    cursor: pointer; font-family: 'DM Sans', sans-serif;
+    transition: all .15s;
+  }
+  .resa-refresh-btn:hover  { background: rgba(43,150,168,.06); border-color: #2B96A8; }
+  .resa-refresh-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  /* ── CTA buttons (empty state) ── */
+  .resa-cta-primary {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 13px 24px;
+    background: linear-gradient(135deg, #2B96A8, #053366);
+    color: white; border-radius: 40px;
+    text-decoration: none; font-size: 14px; font-weight: 700;
+    box-shadow: 0 4px 16px rgba(43,150,168,.35);
+    transition: all .18s;
+  }
+  .resa-cta-primary:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(43,150,168,.4); }
+
+  .resa-cta-secondary {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 13px 20px;
+    background: #FFFFFF; color: #6B7A8D;
+    border: 1.5px solid rgba(5,51,102,.12);
+    border-radius: 40px;
+    text-decoration: none; font-size: 14px; font-weight: 600;
+    transition: all .15s;
+  }
+  .resa-cta-secondary:hover { background: rgba(5,51,102,.04); color: #053366; }
+
+  /* ────────────────────────────────
+     TABLET  ≤ 900px
+  ──────────────────────────────── */
+  @media (max-width: 900px) {
+    .resa-grid {
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 16px;
+    }
+  }
+
+  /* ────────────────────────────────
+     MOBILE  ≤ 640px
+  ──────────────────────────────── */
+  @media (max-width: 640px) {
+    .resa-page-header { margin-bottom: 20px; }
+
+    /* Stats : 2 par ligne */
+    .resa-stats { gap: 8px; margin-bottom: 20px; }
+    .resa-stat-card { padding: 10px 14px; min-width: calc(50% - 4px); }
+    .resa-stat-icon { width: 30px; height: 30px; border-radius: 8px; }
+
+    /* Grid : 1 colonne */
+    .resa-grid { grid-template-columns: 1fr; gap: 12px; }
+
+    /* Empty state */
+    .resa-empty { padding: 48px 16px; border-radius: 16px; }
+    .resa-empty-icon { width: 56px; height: 56px; }
+
+    /* Refresh btn compact */
+    .resa-refresh-btn { padding: 7px 12px; font-size: 12px; }
+
+    /* CTA stack */
+    .resa-cta-row { flex-direction: column; align-items: stretch !important; }
+    .resa-cta-primary,
+    .resa-cta-secondary { justify-content: center; width: 100%; box-sizing: border-box; }
+  }
+
+  /* ────────────────────────────────
+     VERY SMALL  ≤ 380px
+  ──────────────────────────────── */
+  @media (max-width: 380px) {
+    .resa-stat-card { padding: 8px 10px; min-width: 100%; }
+    .resa-stats { flex-direction: column; }
+  }
+`;
 
 interface Props {
   reservations: Reservation[];
@@ -23,6 +181,7 @@ export default function ReservationsClient({ reservations: init, autoOpenId }: P
   const pending   = reservations.filter(r => r.status === "pending").length;
   const confirmed = reservations.filter(r => r.status === "confirmed").length;
 
+  /* ── Move expired paid reservations to history ── */
   const moveExpiredToHistory = useCallback(async (resas: Reservation[]) => {
     const expired = resas.filter(r => {
       const isPaid = r.payment_status === "paid" || r.status === "confirmed" || r.status === "completed";
@@ -54,6 +213,7 @@ export default function ReservationsClient({ reservations: init, autoOpenId }: P
     }
   }, [supabase]);
 
+  /* ── Handle unpaid expired ── */
   const handleUnpaidExpired = useCallback(async (reservationId: string) => {
     const r = reservations.find(res => res.id === reservationId);
     if (!r) return;
@@ -84,6 +244,7 @@ export default function ReservationsClient({ reservations: init, autoOpenId }: P
     }, 3000);
   }, [reservations, supabase]);
 
+  /* ── Refresh ── */
   const refreshReservations = useCallback(async () => {
     setIsRefreshing(true);
     try {
@@ -121,7 +282,8 @@ export default function ReservationsClient({ reservations: init, autoOpenId }: P
   useEffect(() => {
     if (autoOpenId) {
       const target = reservations.find(r => r.id === autoOpenId);
-      if (target && target.payment_status !== "paid" && target.status !== "cancelled") setCheckout(target);
+      if (target && target.payment_status !== "paid" && target.status !== "cancelled")
+        setCheckout(target);
     } else {
       const latestUnpaid = reservations
         .filter(r => r.status === "pending" && !r.payment_status)
@@ -131,151 +293,170 @@ export default function ReservationsClient({ reservations: init, autoOpenId }: P
   }, [reservations, autoOpenId]);
 
   function handlePaid(id: string) {
-    setReservations(prev => prev.map(r => r.id === id ? { ...r, payment_status: "paid", status: "confirmed" } : r));
+    setReservations(prev =>
+      prev.map(r => r.id === id ? { ...r, payment_status: "paid", status: "confirmed" } : r)
+    );
     setCheckout(null);
     setTimeout(() => refreshReservations(), 2000);
   }
 
+  /* ── Stats config — itineraires palette ── */
+  const stats = [
+    {
+      icon: <CalendarDays size={15} color="#2B96A8" />,
+      num: total, lbl: "Total",
+      bg: "#EFF9FB", border: "rgba(43,150,168,.20)", numColor: "#053366",
+    },
+    {
+      icon: <AlertCircle size={15} color="#D97706" />,
+      num: pending, lbl: "En attente",
+      bg: "#FFFBEB", border: "#FDE68A", numColor: "#D97706",
+    },
+    {
+      icon: <CheckCircle2 size={15} color="#02AFCF" />,
+      num: confirmed, lbl: "Confirmées",
+      bg: "#EFF9FB", border: "rgba(2,175,207,.25)", numColor: "#02AFCF",
+    },
+  ];
+
   return (
-    <div style={{ maxWidth: 1100, margin: "0 auto", padding: "40px 24px 80px" }}>
+    <>
+      <style>{RESPONSIVE_CSS}</style>
 
-      {/* ── Header ── */}
-      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 32, flexWrap: "wrap", gap: 16 }}>
-        <div>
-          <p style={{ fontSize: 13, fontWeight: 600, color: "#0D9488", letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: 6 }}>
-            Mes voyages
-          </p>
-          <h1 style={{ fontSize: 28, fontWeight: 700, color: "#0F172A", margin: 0, marginBottom: 6 }}>
-            Réservations
-          </h1>
-          <p style={{ fontSize: 14, color: "#64748B", margin: 0 }}>
-            Gérez et suivez vos aventures en Tunisie
-          </p>
-        </div>
-        <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-          {isRefreshing && (
-            <span style={{ fontSize: 13, color: "#0D9488", display: "flex", alignItems: "center", gap: 6 }}>
-              <Loader2 size={13} style={{ animation: "spin 1s linear infinite" }} /> Mise à jour…
-            </span>
-          )}
-          <button
-            onClick={refreshReservations}
-            disabled={isRefreshing}
-            style={{
-              display: "flex", alignItems: "center", gap: 6,
-              padding: "9px 16px", borderRadius: 10,
-              border: "1.5px solid #E2E8F0",
-              background: "#FFFFFF",
-              color: "#475569", fontSize: 13, fontWeight: 600,
-              cursor: isRefreshing ? "not-allowed" : "pointer",
-              opacity: isRefreshing ? 0.6 : 1,
-            }}
-          >
-            <RefreshCcw size={13} style={isRefreshing ? { animation: "spin 1s linear infinite" } : {}} />
-            Actualiser
-          </button>
-        </div>
-      </div>
+      <div className="resa-wrap">
 
-      {/* ── Stats bar ── */}
-      {total > 0 && (
-        <div style={{ display: "flex", gap: 12, marginBottom: 32, flexWrap: "wrap" }}>
-          {[
-            { icon: <Calendar size={16} color="#0D9488" />, num: total,     lbl: "Total",      bg: "#F0FDFA", border: "#CCFBF1", numColor: "#0D9488" },
-            { icon: <AlertCircle size={16} color="#D97706" />, num: pending,   lbl: "En attente", bg: "#FFFBEB", border: "#FDE68A", numColor: "#D97706" },
-            { icon: <CheckCircle2 size={16} color="#0D9488" />, num: confirmed, lbl: "Confirmées", bg: "#F0FDFA", border: "#CCFBF1", numColor: "#0D9488" },
-          ].map(({ icon, num, lbl, bg, border, numColor }) => (
-            <div key={lbl} style={{
-              display: "flex", alignItems: "center", gap: 12,
-              padding: "14px 20px", borderRadius: 12,
-              background: bg, border: `1.5px solid ${border}`,
-              minWidth: 140, flex: 1,
+        {/* ── Page header ── */}
+        <div className="resa-page-header">
+          <div>
+            <p style={{
+              fontSize: 12, fontWeight: 700, color: "#2B96A8",
+              letterSpacing: "0.08em", textTransform: "uppercase",
+              marginBottom: 6, margin: "0 0 6px",
             }}>
-              <div style={{ width: 36, height: 36, borderRadius: 10, background: "#FFFFFF", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 1px 3px rgba(0,0,0,0.06)" }}>
-                {icon}
-              </div>
-              <div>
-                <p style={{ fontSize: 22, fontWeight: 700, color: numColor, margin: 0, lineHeight: 1 }}>{num}</p>
-                <p style={{ fontSize: 12, color: "#64748B", margin: 0, marginTop: 2 }}>{lbl}</p>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* ── Empty state ── */}
-      {total === 0 ? (
-        <div style={{
-          textAlign: "center", padding: "80px 24px",
-          background: "#FFFFFF", borderRadius: 20,
-          border: "1.5px solid #E2E8F0",
-        }}>
-          <div style={{
-            width: 72, height: 72, borderRadius: "50%",
-            background: "linear-gradient(135deg, #F0FDFA 0%, #CCFBF1 100%)",
-            display: "flex", alignItems: "center", justifyContent: "center",
-            margin: "0 auto 20px",
-            border: "2px solid #99F6E4",
-          }}>
-            <Compass size={30} color="#0D9488" strokeWidth={1.5} />
+              Mes voyages
+            </p>
+            <h1 style={{
+              fontSize: "clamp(20px, 4vw, 28px)", fontWeight: 700,
+              color: "#053366", margin: "0 0 6px",
+            }}>
+              Réservations
+            </h1>
+            <p style={{ fontSize: 13, color: "#9CA3AF", margin: 0 }}>
+              Gérez et suivez vos aventures en Tunisie
+            </p>
           </div>
-          <h3 style={{ fontSize: 20, fontWeight: 700, color: "#0F172A", marginBottom: 10 }}>
-            Aucune réservation active
-          </h3>
-          <p style={{ fontSize: 14, color: "#64748B", marginBottom: 32, lineHeight: 1.7, maxWidth: 360, margin: "0 auto 32px" }}>
-            Découvrez les excursions et planifiez votre prochain voyage en Tunisie
-          </p>
-          <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
-            <Link href="/excursions" style={{
-              display: "inline-flex", alignItems: "center", gap: 8,
-              padding: "13px 24px", background: "#0D9488", color: "white",
-              borderRadius: 12, textDecoration: "none", fontSize: 14, fontWeight: 700,
-              boxShadow: "0 4px 14px rgba(13,148,136,0.3)",
-            }}>
-              <Sparkles size={14} /> Explorer les excursions <ArrowRight size={14} />
-            </Link>
-            <Link href="/touriste/historique" style={{
-              display: "inline-flex", alignItems: "center", gap: 8,
-              padding: "13px 20px", background: "#FFFFFF", color: "#475569",
-              border: "1.5px solid #E2E8F0", borderRadius: 12,
-              textDecoration: "none", fontSize: 14, fontWeight: 600,
-            }}>
-              <History size={14} /> Historique
-            </Link>
-          </div>
-        </div>
-      ) : (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(340px, 1fr))", gap: 20 }}>
-          {reservations.map((r, i) => (
-            <div key={r.id} style={{ animation: `fadeUp 0.4s ease both`, animationDelay: `${i * 0.08}s` }}>
-              <ReservationCard
-                r={r}
-                onPay={() => setCheckout(r)}
-                onRefresh={refreshReservations}
-                onExpired={handleUnpaidExpired}
+
+          {/* Refresh */}
+          <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+            {isRefreshing && (
+              <span style={{
+                fontSize: 12, color: "#2B96A8",
+                display: "flex", alignItems: "center", gap: 5,
+              }}>
+                <Loader2 size={12} style={{ animation: "spin 1s linear infinite" }} />
+                Mise à jour…
+              </span>
+            )}
+            <button
+              className="resa-refresh-btn"
+              onClick={refreshReservations}
+              disabled={isRefreshing}
+            >
+              <RefreshCcw
+                size={13}
+                style={isRefreshing ? { animation: "spin 1s linear infinite" } : {}}
               />
-            </div>
-          ))}
+              Actualiser
+            </button>
+          </div>
         </div>
-      )}
 
-      {/* ── Checkout modal ── */}
-      {checkout && (
-        <CheckoutModal
-          reservation={checkout}
-          onClose={() => setCheckout(null)}
-          onPaid={handlePaid}
-          autoStart={!!autoOpenId && checkout.id === autoOpenId}
-        />
-      )}
+        {/* ── Stats bar ── */}
+        {total > 0 && (
+          <div className="resa-stats">
+            {stats.map(({ icon, num, lbl, bg, border, numColor }) => (
+              <div
+                key={lbl}
+                className="resa-stat-card"
+                style={{ background: bg, borderColor: border }}
+              >
+                <div className="resa-stat-icon">{icon}</div>
+                <div>
+                  <p style={{
+                    fontSize: 22, fontWeight: 800,
+                    color: numColor, margin: 0, lineHeight: 1,
+                  }}>
+                    {num}
+                  </p>
+                  <p style={{ fontSize: 11, color: "#9CA3AF", margin: "3px 0 0", fontWeight: 600 }}>
+                    {lbl}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
 
-      <style>{`
-        @keyframes spin { to { transform: rotate(360deg); } }
-        @keyframes fadeUp {
-          from { opacity: 0; transform: translateY(16px); }
-          to   { opacity: 1; transform: translateY(0); }
-        }
-      `}</style>
-    </div>
+        {/* ── Empty state ── */}
+        {total === 0 ? (
+          <div className="resa-empty">
+            <div className="resa-empty-icon">
+              <Compass size={28} color="#2B96A8" strokeWidth={1.5} />
+            </div>
+            <h3 style={{
+              fontSize: "clamp(17px,4vw,20px)", fontWeight: 700,
+              color: "#053366", marginBottom: 10,
+            }}>
+              Aucune réservation active
+            </h3>
+            <p style={{
+              fontSize: 14, color: "#9CA3AF",
+              lineHeight: 1.7, maxWidth: 340,
+              margin: "0 auto 32px",
+            }}>
+              Découvrez les excursions et planifiez votre prochain voyage en Tunisie
+            </p>
+            <div
+              className="resa-cta-row"
+              style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}
+            >
+              <Link href="/excursions" className="resa-cta-primary">
+                <Sparkles size={14} /> Explorer les excursions <ArrowRight size={14} />
+              </Link>
+              <Link href="/touriste/historique" className="resa-cta-secondary">
+                <History size={14} /> Historique
+              </Link>
+            </div>
+          </div>
+        ) : (
+          <div className="resa-grid">
+            {reservations.map((r, i) => (
+              <div
+                key={r.id}
+                className="resa-grid-item"
+                style={{ animationDelay: `${i * 0.08}s` }}
+              >
+                <ReservationCard
+                  r={r}
+                  onPay={() => setCheckout(r)}
+                  onRefresh={refreshReservations}
+                  onExpired={handleUnpaidExpired}
+                />
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* ── Checkout modal ── */}
+        {checkout && (
+          <CheckoutModal
+            reservation={checkout}
+            onClose={() => setCheckout(null)}
+            onPaid={handlePaid}
+            autoStart={!!autoOpenId && checkout.id === autoOpenId}
+          />
+        )}
+      </div>
+    </>
   );
 }
