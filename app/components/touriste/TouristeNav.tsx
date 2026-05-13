@@ -12,6 +12,7 @@ import {
 
 const Logo = () => (
   <img src="/logo.png" alt="VoyajAime"
+    className="gnav-logo-img"
     style={{ height: 42, width: "auto", objectFit: "contain", display: "block" }} />
 );
 
@@ -346,8 +347,52 @@ export default function TouristeNav({
           .g-center  { display: none !important; }
           .g-burger  { display: flex !important; }
         }
+
+        /* ── Mobile small screens ── */
         @media (max-width: 640px) {
-          .gnav-header { padding: 0 16px !important; }
+          .gnav-header { padding: 0 12px !important; gap: 8px !important; }
+
+          /* Logo réduit */
+          .gnav-logo-img { height: 28px !important; }
+
+          /* Bouton Connexion compact */
+          .g-btn {
+            padding: 6px 10px !important;
+            font-size: 12px !important;
+            gap: 4px !important;
+            border-radius: 7px !important;
+          }
+          .g-btn i { font-size: 12px !important; }
+
+          /* Favoris et avatar compacts */
+          .g-fav {
+            width: 32px !important;
+            height: 32px !important;
+          }
+          .g-fav i { font-size: 15px !important; }
+
+          .av {
+            width: 32px !important;
+            height: 32px !important;
+            font-size: 11px !important;
+          }
+
+          /* Burger compact */
+          .g-burger { padding: 6px !important; }
+
+          /* Séparateur vertical moins haut */
+          .g-sep { height: 16px !important; }
+        }
+
+        /* ── Very small screens (≤380px) ── */
+        @media (max-width: 380px) {
+          .gnav-logo-img { height: 24px !important; }
+          .g-btn {
+            padding: 5px 8px !important;
+            font-size: 11px !important;
+          }
+          /* Masquer le texte "Connexion", garder seulement l'icône */
+          .g-btn-text { display: none !important; }
         }
       `}</style>
 
@@ -547,7 +592,8 @@ export default function TouristeNav({
               </Link>
               <div className="g-sep" />
               <Link href={ROUTES.auth} className="g-btn">
-                <i className="ti ti-user" aria-hidden="true" /> Connexion
+                <i className="ti ti-user" aria-hidden="true" />
+                <span className="g-btn-text">Connexion</span>
               </Link>
             </>
           )}
