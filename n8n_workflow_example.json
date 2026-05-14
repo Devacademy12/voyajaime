@@ -84,7 +84,7 @@
     },
     {
       "parameters": {
-        "model": "deepseek-v4-pro",
+        "model": "deepseek-reasoner",
         "options": {
           "frequencyPenalty": 0,
           "maxTokens": 4000,
