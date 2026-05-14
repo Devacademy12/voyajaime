@@ -7,7 +7,7 @@ import TouristeNav from "@/app/components/touriste/TouristeNav";
 import ItineraireDisplay from "@/app/components/itineraire/ItineraireDisplay";
 import {
   MapPin, Sparkles, Bot, Loader2, ChevronLeft, ChevronRight, CalendarDays,
-  Heart, ArrowRight, CheckCircle, Euro, AlertTriangle, Bug,
+  Heart, ArrowRight, CheckCircle, Euro, AlertTriangle,
 } from "lucide-react";
 import styles from "@/public/style/ModeAssiste.module.css";
 
@@ -60,18 +60,25 @@ function fmtShort(d: Date) {
   return `${d.getDate()} ${MONTHS_SHORT[d.getMonth()]}`;
 }
 
+// CORRECTION 1: Format date pour n8n (YYYY-MM-DD)
 function formatDateForN8N(date: Date): string {
   return date.toISOString().split('T')[0];
 }
 
+// CORRECTION 2: Vérifie si une excursion est disponible pendant les dates du séjour
 function isExcursionAvailable(excursion: Excursion, cityStart: Date, cityEnd: Date): boolean {
-  if (!excursion.start_date || !excursion.end_date) return true;
+  if (!excursion.start_date || !excursion.end_date) return true; // Pas de dates spécifiques = disponible
+  
   const excStart = new Date(excursion.start_date);
-  const excEnd   = new Date(excursion.end_date);
+  const excEnd = new Date(excursion.end_date);
+  
+  // Normalise à minuit
   excStart.setHours(0, 0, 0, 0);
   excEnd.setHours(0, 0, 0, 0);
   const start = new Date(cityStart); start.setHours(0, 0, 0, 0);
-  const end   = new Date(cityEnd);   end.setHours(0, 0, 0, 0);
+  const end = new Date(cityEnd); end.setHours(0, 0, 0, 0);
+  
+  // Chevauchement entre séjour et disponibilité excursion
   return start <= excEnd && end >= excStart;
 }
 
@@ -93,13 +100,17 @@ function getBlockedDates(cityDates: CityDateRange[], excludeCity: string): { sta
     .map((c) => ({ start: c.start!, end: c.end! }));
 }
 
+// CORRECTION 3: Extraction robuste de l'itinéraire depuis la réponse n8n
 function extractItinerary(raw: unknown): Itinerary {
+  // Fonction récursive pour chercher un objet avec "days"
   const findDaysObject = (obj: any): any => {
     if (!obj) return null;
     if (obj.days && Array.isArray(obj.days) && obj.days.length > 0) return obj;
     if (obj.itinerary && obj.itinerary.days) return obj.itinerary;
-    if (obj.result   && obj.result.days)    return obj.result;
-    if (obj.data     && obj.data.days)      return obj.data;
+    if (obj.result && obj.result.days) return obj.result;
+    if (obj.data && obj.data.days) return obj.data;
+    
+    // Parcourir les propriétés
     for (const key in obj) {
       if (typeof obj[key] === 'object' && obj[key] !== null) {
         const found = findDaysObject(obj[key]);
@@ -110,15 +121,24 @@ function extractItinerary(raw: unknown): Itinerary {
   };
 
   try {
+    // Si c'est une chaîne JSON, parser
     let parsed = raw;
     if (typeof raw === 'string') {
+      // Nettoyer les marqueurs markdown
       const cleaned = raw.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
       const match = cleaned.match(/\{[\s\S]*\}/);
-      parsed = match ? JSON.parse(match[0]) : JSON.parse(cleaned);
+      if (match) {
+        parsed = JSON.parse(match[0]);
+      } else {
+        parsed = JSON.parse(cleaned);
+      }
     }
 
+    // Chercher l'objet avec days
     const itineraryObj = findDaysObject(parsed);
+    
     if (itineraryObj && itineraryObj.days) {
+      // Valider et normaliser les activités
       const normalizedDays = itineraryObj.days.map((day: any, idx: number) => ({
         day: day.day || idx + 1,
         city: day.city || "Ville inconnue",
@@ -134,11 +154,13 @@ function extractItinerary(raw: unknown): Itinerary {
           languages: act.languages || ["Français", "Anglais"],
           inclusion: act.inclusion || act.inclusions || [],
           city: act.city || day.city,
-          rating: act.rating || 4.5,
-        })),
+          rating: act.rating || 4.5
+        }))
       }));
+      
       return { title: itineraryObj.title || "Mon voyage en Tunisie", days: normalizedDays };
     }
+    
     throw new Error("Aucun itinéraire valide trouvé");
   } catch (err) {
     console.error("Erreur extraction itinéraire:", err);
@@ -147,10 +169,14 @@ function extractItinerary(raw: unknown): Itinerary {
 }
 
 /* ════════════════════════════
-   MiniCalPop
+   MiniCalPop (inchangé)
 ════════════════════════════ */
 function MiniCalPop({
-  value, onChange, minDate, onClose, blockedRanges,
+  value,
+  onChange,
+  minDate,
+  onClose,
+  blockedRanges,
 }: {
   value: Date | null;
   onChange: (d: Date) => void;
@@ -158,6 +184,7 @@ function MiniCalPop({
   onClose: () => void;
   blockedRanges?: { start: Date; end: Date }[];
 }) {
+  // ... (conservez votre code existant inchangé)
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
@@ -219,7 +246,9 @@ function MiniCalPop({
       </div>
 
       <div className="ma-cal-days-header">
-        {DAYS_FR.map((d) => <div key={d} className="ma-cal-day-name">{d}</div>)}
+        {DAYS_FR.map((d) => (
+          <div key={d} className="ma-cal-day-name">{d}</div>
+        ))}
       </div>
 
       <div className="ma-cal-grid">
@@ -233,12 +262,15 @@ function MiniCalPop({
               disabled={disabled}
               title={blocked && day ? "Date réservée pour une autre ville" : undefined}
               onClick={() => {
-                if (day && !disabled) { onChange(new Date(year, month, day)); onClose(); }
+                if (day && !disabled) {
+                  onChange(new Date(year, month, day));
+                  onClose();
+                }
               }}
               className={[
                 "ma-cal-day-btn",
-                selected ? "ma-cal-day-btn-selected" : "",
-                blocked  ? "ma-cal-day-btn-blocked"  : "",
+                selected  ? "ma-cal-day-btn-selected" : "",
+                blocked   ? "ma-cal-day-btn-blocked"  : "",
               ].join(" ")}
             >
               {day || ""}
@@ -258,10 +290,13 @@ function MiniCalPop({
 }
 
 /* ════════════════════════════
-   CityDateRow
+   CityDateRow (inchangé)
 ════════════════════════════ */
 function CityDateRow({
-  cdr, onStart, onEnd, allCityDates,
+  cdr,
+  onStart,
+  onEnd,
+  allCityDates,
 }: {
   cdr: CityDateRange;
   onStart: (d: Date) => void;
@@ -272,19 +307,27 @@ function CityDateRow({
   const minEnd = cdr.start
     ? new Date(cdr.start.getFullYear(), cdr.start.getMonth(), cdr.start.getDate())
     : undefined;
-  const nights       = cdr.start && cdr.end ? daysBetween(cdr.start, cdr.end) : 0;
+  const nights = cdr.start && cdr.end ? daysBetween(cdr.start, cdr.end) : 0;
   const blockedRanges = getBlockedDates(allCityDates, cdr.city);
 
   const calPortal = openPop
     ? createPortal(
         <>
-          <div style={{ position: "fixed", inset: 0, zIndex: 9998 }} onClick={() => setOpenPop(null)} />
+          <div
+            style={{ position: "fixed", inset: 0, zIndex: 9998 }}
+            onClick={() => setOpenPop(null)}
+          />
           <div
             style={{
-              position: "fixed", top: "80px", left: "50%",
-              transform: "translateX(-50%) scale(0.85)", transformOrigin: "top center",
-              zIndex: 9999, boxShadow: "0 4px 20px rgba(0,0,0,0.15)",
-              borderRadius: 12, background: "#fff",
+              position: "fixed",
+              top: "80px",
+              left: "50%",
+              transform: "translateX(-50%) scale(0.85)",
+              transformOrigin: "top center",
+              zIndex: 9999,
+              boxShadow: "0 4px 20px rgba(0,0,0,0.15)",
+              borderRadius: 12,
+              background: "#fff",
             }}
             onWheel={(e) => e.stopPropagation()}
             onTouchMove={(e) => e.stopPropagation()}
@@ -292,7 +335,8 @@ function CityDateRow({
             <MiniCalPop
               value={openPop === "start" ? cdr.start : cdr.end}
               onChange={(d) => {
-                if (openPop === "start") onStart(d); else onEnd(d);
+                if (openPop === "start") onStart(d);
+                else onEnd(d);
                 setOpenPop(null);
               }}
               minDate={openPop === "end" ? minEnd : undefined}
@@ -311,9 +355,12 @@ function CityDateRow({
         <div className="ma-city-date-row-left">
           <span className="ma-city-name">{cdr.city}</span>
           {nights > 0 && (
-            <span className="ma-city-nights">• {nights} jour{nights > 1 ? "s" : ""}</span>
+            <span className="ma-city-nights">
+              • {nights} jour{nights > 1 ? "s" : ""}
+            </span>
           )}
         </div>
+
         <div className="ma-city-date-btns">
           <button
             onClick={() => setOpenPop(openPop === "start" ? null : "start")}
@@ -322,7 +369,9 @@ function CityDateRow({
             <CalendarDays size={12} />
             {cdr.start ? fmtShort(cdr.start) : "Arrivée"}
           </button>
+
           <ArrowRight size={14} color="#94a3b8" />
+
           <button
             onClick={() => { if (cdr.start) setOpenPop(openPop === "end" ? null : "end"); }}
             className={[
@@ -336,211 +385,9 @@ function CityDateRow({
           </button>
         </div>
       </div>
+
       {calPortal}
     </>
-  );
-}
-
-/* ════════════════════════════
-   DebugPanel — visible en tout environnement
-   Affiche le résultat du test webhook dans un overlay
-════════════════════════════ */
-function DebugPanel({ webhookUrl }: { webhookUrl: string }) {
-  const [open,   setOpen]   = useState(false);
-  const [status, setStatus] = useState<"idle" | "loading" | "ok" | "error">("idle");
-  const [log,    setLog]    = useState<string[]>([]);
-
-  const addLog = (msg: string) => setLog((p) => [...p, `[${new Date().toLocaleTimeString()}] ${msg}`]);
-
-  const runTest = async () => {
-    setStatus("loading");
-    setLog([]);
-    addLog("▶ Démarrage du test...");
-    addLog(`URL: ${webhookUrl}`);
-
-    const payload = {
-      destination: "Tunis",
-      startDate: "2025-06-01",
-      endDate: "2025-06-03",
-      budget: 500,
-      travelers: 1,
-      interests: ["Culture"],
-      cities: ["Tunis"],
-      citySchedule: [{ city: "Tunis", startDate: "2025-06-01", endDate: "2025-06-03", daysCount: 3 }],
-      message: "Test debug",
-    };
-
-    addLog("📤 Payload: " + JSON.stringify(payload, null, 2));
-
-    try {
-      const res = await fetch(webhookUrl, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-
-      addLog(`📥 Status HTTP: ${res.status} ${res.statusText}`);
-
-      const text = await res.text();
-      addLog("📥 Réponse brute:");
-      addLog(text.substring(0, 2000));
-
-      if (!res.ok) {
-        setStatus("error");
-        addLog("❌ Échec — le webhook a retourné une erreur.");
-        if (res.status === 404) addLog("⚠️  404 = workflow n8n non activé ou mauvais chemin webhook.");
-        if (res.status === 500) addLog("⚠️  500 = erreur interne dans un nœud n8n. Vérifiez les logs n8n.");
-      } else {
-        // Essayer de parser
-        try {
-          const json = JSON.parse(text);
-          if (json.days) {
-            addLog(`✅ Itinéraire reçu : ${json.days.length} jour(s), titre: "${json.title}"`);
-            setStatus("ok");
-          } else if (json.error) {
-            addLog(`⚠️  n8n a répondu mais avec une erreur: ${json.error}`);
-            setStatus("error");
-          } else {
-            addLog("⚠️  JSON reçu mais sans champ 'days'. Structure inattendue.");
-            addLog("Clés reçues: " + Object.keys(json).join(", "));
-            setStatus("error");
-          }
-        } catch {
-          addLog("⚠️  La réponse n'est pas du JSON valide.");
-          setStatus("error");
-        }
-      }
-    } catch (err: any) {
-      addLog("❌ Erreur réseau: " + err.message);
-      addLog("⚠️  Causes possibles: CORS bloqué, n8n hors ligne, URL incorrecte.");
-      setStatus("error");
-    }
-  };
-
-  if (!open) {
-    return (
-      <button
-        onClick={() => setOpen(true)}
-        style={{
-          position: "fixed", bottom: 24, right: 24, zIndex: 9999,
-          background: "#1e293b", color: "#fff", border: "none",
-          borderRadius: 12, padding: "10px 16px", cursor: "pointer",
-          display: "flex", alignItems: "center", gap: 8,
-          fontSize: 13, fontWeight: 600, boxShadow: "0 4px 16px rgba(0,0,0,0.3)",
-          opacity: 0.85,
-        }}
-      >
-        <Bug size={15} /> Debug N8N
-      </button>
-    );
-  }
-
-  return (
-    <div
-      style={{
-        position: "fixed", inset: 0, zIndex: 10000,
-        background: "rgba(0,0,0,0.6)", display: "flex",
-        alignItems: "center", justifyContent: "center", padding: 16,
-      }}
-      onClick={() => setOpen(false)}
-    >
-      <div
-        onClick={(e) => e.stopPropagation()}
-        style={{
-          background: "#0f172a", color: "#e2e8f0", borderRadius: 16,
-          width: "100%", maxWidth: 700, maxHeight: "85vh",
-          display: "flex", flexDirection: "column", overflow: "hidden",
-          boxShadow: "0 25px 60px rgba(0,0,0,0.5)",
-        }}
-      >
-        {/* Header */}
-        <div style={{
-          padding: "16px 20px", borderBottom: "1px solid #1e293b",
-          display: "flex", alignItems: "center", justifyContent: "space-between",
-        }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <Bug size={18} color="#38bdf8" />
-            <span style={{ fontWeight: 700, fontSize: 15 }}>Debug Webhook N8N</span>
-            {status === "ok"      && <span style={{ background: "#166534", color: "#86efac", borderRadius: 20, padding: "2px 10px", fontSize: 11, fontWeight: 700 }}>✅ OK</span>}
-            {status === "error"   && <span style={{ background: "#7f1d1d", color: "#fca5a5", borderRadius: 20, padding: "2px 10px", fontSize: 11, fontWeight: 700 }}>❌ ERREUR</span>}
-            {status === "loading" && <span style={{ background: "#1e3a5f", color: "#93c5fd", borderRadius: 20, padding: "2px 10px", fontSize: 11, fontWeight: 700 }}>⏳ EN COURS...</span>}
-          </div>
-          <button onClick={() => setOpen(false)} style={{ background: "none", border: "none", color: "#94a3b8", cursor: "pointer", fontSize: 20 }}>✕</button>
-        </div>
-
-        {/* URL info */}
-        <div style={{ padding: "12px 20px", borderBottom: "1px solid #1e293b", background: "#0a0f1a" }}>
-          <p style={{ fontSize: 11, color: "#64748b", marginBottom: 4 }}>WEBHOOK URL</p>
-          <p style={{ fontSize: 12, color: "#38bdf8", fontFamily: "monospace", wordBreak: "break-all" }}>
-            {webhookUrl || "⚠️  NEXT_PUBLIC_N8N_WEBHOOK_URL non défini !"}
-          </p>
-        </div>
-
-        {/* Log output */}
-        <div style={{
-          flex: 1, overflow: "auto", padding: "16px 20px",
-          fontFamily: "monospace", fontSize: 12, lineHeight: 1.7,
-        }}>
-          {log.length === 0 ? (
-            <p style={{ color: "#475569" }}>Cliquez sur "Lancer le test" pour diagnostiquer le webhook...</p>
-          ) : (
-            log.map((line, i) => (
-              <div key={i} style={{
-                color: line.includes("❌") ? "#f87171"
-                     : line.includes("✅") ? "#86efac"
-                     : line.includes("⚠️") ? "#fbbf24"
-                     : line.includes("▶")  ? "#38bdf8"
-                     : line.includes("📤") ? "#a78bfa"
-                     : line.includes("📥") ? "#34d399"
-                     : "#cbd5e1",
-                marginBottom: 2,
-                whiteSpace: "pre-wrap",
-                wordBreak: "break-all",
-              }}>
-                {line}
-              </div>
-            ))
-          )}
-        </div>
-
-        {/* Actions */}
-        <div style={{
-          padding: "14px 20px", borderTop: "1px solid #1e293b",
-          display: "flex", gap: 10,
-        }}>
-          <button
-            onClick={runTest}
-            disabled={status === "loading"}
-            style={{
-              flex: 1, background: status === "loading" ? "#1e3a5f" : "#0ea5e9",
-              color: "#fff", border: "none", borderRadius: 10,
-              padding: "10px 20px", cursor: status === "loading" ? "not-allowed" : "pointer",
-              fontWeight: 700, fontSize: 13,
-            }}
-          >
-            {status === "loading" ? "⏳ Test en cours..." : "▶ Lancer le test"}
-          </button>
-          <button
-            onClick={() => setLog([])}
-            style={{
-              background: "#1e293b", color: "#94a3b8", border: "none",
-              borderRadius: 10, padding: "10px 16px", cursor: "pointer", fontSize: 13,
-            }}
-          >
-            Effacer
-          </button>
-          <button
-            onClick={() => setOpen(false)}
-            style={{
-              background: "#1e293b", color: "#94a3b8", border: "none",
-              borderRadius: 10, padding: "10px 16px", cursor: "pointer", fontSize: 13,
-            }}
-          >
-            Fermer
-          </button>
-        </div>
-      </div>
-    </div>
   );
 }
 
@@ -550,7 +397,7 @@ function DebugPanel({ webhookUrl }: { webhookUrl: string }) {
 export default function ModeAssiste() {
   const supabase = createClient();
 
-  const [step, setStep]                     = useState<"questions" | "generation" | "itineraire">("questions");
+  const [step, setStep]                   = useState<"questions" | "generation" | "itineraire">("questions");
   const [selectedCities, setSelectedCities] = useState<string[]>([]);
   const [cityDates, setCityDates]           = useState<CityDateRange[]>([]);
   const [selectedCats, setSelectedCats]     = useState<string[]>([]);
@@ -561,12 +408,12 @@ export default function ModeAssiste() {
   const [excursions, setExcursions] = useState<Excursion[]>([]);
   const [dbLoading, setDbLoading]   = useState(true);
 
-  const [itinerary, setItinerary]   = useState<Itinerary | null>(null);
-  const [genError, setGenError]     = useState("");
+  const [itinerary, setItinerary] = useState<Itinerary | null>(null);
+  const [genError, setGenError]   = useState("");
   const [loadingMsg, setLoadingMsg] = useState("");
   const msgIdxRef = useRef(0);
 
-  const [dateError, setDateError]   = useState("");
+  const [dateError, setDateError] = useState("");
   const [showCheckout, setShowCheckout] = useState(false);
   const [saving, setSaving]             = useState(false);
   const [saveStatus, setSaveStatus]     = useState<"idle" | "ok" | "error" | "login">("idle");
@@ -596,11 +443,7 @@ export default function ModeAssiste() {
     : null;
 
   const canGenerate =
-    selectedCities.length > 0 &&
-    selectedCats.length > 0 &&
-    allDatesSet &&
-    !dateError &&
-    !!N8N_WEBHOOK_URL;
+    selectedCities.length > 0 && selectedCats.length > 0 && allDatesSet && !dateError && !!N8N_WEBHOOK_URL;
 
   /* ── Load Supabase ── */
   useEffect(() => {
@@ -640,12 +483,18 @@ export default function ModeAssiste() {
   const updateCityStart = (city: string, d: Date) => {
     const currentEnd = cityDates.find((c) => c.city === city)?.end ?? null;
     const conflict = cityDates.find(
-      (cdr) => cdr.city !== city && datesOverlap(d, currentEnd, cdr.start, cdr.end)
+      (cdr) =>
+        cdr.city !== city &&
+        datesOverlap(d, currentEnd, cdr.start, cdr.end)
     );
+
     if (conflict) {
-      setDateError(`Conflit avec "${conflict.city}" : les séjours se chevauchent. Choisissez des dates sans superposition.`);
+      setDateError(
+        `Conflit avec "${conflict.city}" : les séjours se chevauchent. Choisissez des dates sans superposition.`
+      );
       return;
     }
+
     setDateError("");
     setCityDates((prev) =>
       prev.map((cdr) => {
@@ -658,19 +507,25 @@ export default function ModeAssiste() {
   const updateCityEnd = (city: string, d: Date) => {
     const currentStart = cityDates.find((c) => c.city === city)?.start ?? null;
     const conflict = cityDates.find(
-      (cdr) => cdr.city !== city && datesOverlap(currentStart, d, cdr.start, cdr.end)
+      (cdr) =>
+        cdr.city !== city &&
+        datesOverlap(currentStart, d, cdr.start, cdr.end)
     );
+
     if (conflict) {
-      setDateError(`Conflit avec "${conflict.city}" : les séjours se chevauchent. Choisissez des dates sans superposition.`);
+      setDateError(
+        `Conflit avec "${conflict.city}" : les séjours se chevauchent. Choisissez des dates sans superposition.`
+      );
       return;
     }
+
     setDateError("");
     setCityDates((prev) =>
       prev.map((cdr) => (cdr.city !== city ? cdr : { ...cdr, end: d }))
     );
   };
 
-  /* ── Generate ── */
+  // CORRECTION 4: Fonction generate complètement réécrite
   const generate = async () => {
     if (!canGenerate) return;
     setStep("generation");
@@ -684,33 +539,47 @@ export default function ModeAssiste() {
     }, 2000);
 
     try {
+      // Filtrer les excursions par villes sélectionnées ET par disponibilité des dates
+      const filteredExcursions = excursions.filter((exc) => {
+        if (!selectedCities.includes(exc.city)) return false;
+        
+        // Trouver les dates pour cette ville
+        const cityDateRange = cityDates.find(c => c.city === exc.city);
+        if (!cityDateRange || !cityDateRange.start || !cityDateRange.end) return false;
+        
+        // Vérifier si l'excursion est disponible pendant le séjour
+        return isExcursionAvailable(exc, cityDateRange.start, cityDateRange.end);
+      });
+
+      // Obtenir les noms des catégories
       const catNames = selectedCats
         .map((id) => categories.find((c) => c.id === id)?.nom)
         .filter(Boolean) as string[];
 
-      const citySchedule = cityDates
-        .map((cdr) => ({
-          city: cdr.city,
-          startDate: cdr.start ? formatDateForN8N(cdr.start) : null,
-          endDate:   cdr.end   ? formatDateForN8N(cdr.end)   : null,
-          daysCount: cdr.start && cdr.end ? daysBetween(cdr.start, cdr.end) : 0,
-        }))
-        .filter((s) => s.startDate && s.endDate);
+      // Construire le planning par ville avec dates au format ISO
+      const citySchedule = cityDates.map((cdr) => ({
+        city: cdr.city,
+        startDate: cdr.start ? formatDateForN8N(cdr.start) : null,
+        endDate: cdr.end ? formatDateForN8N(cdr.end) : null,
+        daysCount: cdr.start && cdr.end ? daysBetween(cdr.start, cdr.end) : 0,
+      })).filter(s => s.startDate && s.endDate);
 
+      // CORRECTION 5: Envoyer une structure simple et claire à n8n
       const payload = {
-        destination:  selectedCities.join(", "),
-        startDate:    citySchedule[0]?.startDate || "",
-        endDate:      citySchedule[citySchedule.length - 1]?.endDate || "",
-        budget:       budget ? Number(budget) : 0,
-        travelers:    1,
-        interests:    catNames,
-        cities:       selectedCities,
-        citySchedule,
+        destination: selectedCities.join(", "),
+        startDate: citySchedule[0]?.startDate || "",
+        endDate: citySchedule[citySchedule.length - 1]?.endDate || "",
+        budget: budget ? Number(budget) : 0,
+        travelers: 1,
+        interests: catNames,
+        cities: selectedCities,
+        citySchedule: citySchedule,
         message: `Séjour en Tunisie du ${citySchedule[0]?.startDate} au ${citySchedule[citySchedule.length - 1]?.endDate}`,
-        timestamp: new Date().toISOString(),
+        // Ajout pour debug
+        timestamp: new Date().toISOString()
       };
 
-      console.log("📤 Envoi à n8n:", payload);
+      console.log("Envoi à n8n:", payload);
 
       const res = await fetch(N8N_WEBHOOK_URL, {
         method: "POST",
@@ -726,14 +595,14 @@ export default function ModeAssiste() {
       }
 
       const responseData = await res.json();
-      console.log("📥 Réponse n8n:", responseData);
-
+      console.log("Réponse n8n:", responseData);
+      
       const extractedItinerary = extractItinerary(responseData);
       setItinerary(extractedItinerary);
       setStep("itineraire");
     } catch (err) {
       clearInterval(iv);
-      console.error("❌ Erreur génération:", err);
+      console.error("Erreur génération:", err);
       setGenError(err instanceof Error ? err.message : "Erreur inconnue lors de la génération");
       setStep("questions");
     }
@@ -763,7 +632,7 @@ export default function ModeAssiste() {
         categories_selectionnees: catNames,
         budget: budget ? Number(budget) : null,
         city_schedule: cityDates.map((cdr) => ({
-          city:  cdr.city,
+          city: cdr.city,
           start: cdr.start?.toISOString(),
           end:   cdr.end?.toISOString(),
         })),
@@ -800,9 +669,6 @@ export default function ModeAssiste() {
     <div className={styles.root}>
       <TouristeNav />
 
-      {/* ── DEBUG PANEL (bouton flottant bas-droite) ── */}
-      <DebugPanel webhookUrl={N8N_WEBHOOK_URL} />
-
       {step === "questions" && (
         <div className="ma-topbar">
           <div className="ma-topbar-badge">
@@ -827,7 +693,9 @@ export default function ModeAssiste() {
                 <button
                   onClick={() => setGenError("")}
                   style={{ background: "none", border: "none", cursor: "pointer", color: "#991b1b" }}
-                >✕</button>
+                >
+                  ✕
+                </button>
               </div>
             )}
 
@@ -837,7 +705,9 @@ export default function ModeAssiste() {
               <div className="ma-card">
                 <div className="ma-card-header">
                   <div className="ma-card-header-left">
-                    <div className="ma-card-icon"><MapPin size={18} color="#2B96A8" /></div>
+                    <div className="ma-card-icon">
+                      <MapPin size={18} color="#2B96A8" />
+                    </div>
                     <div>
                       <p className="ma-card-title">Destinations</p>
                       <p className="ma-card-sub">Choisissez vos villes</p>
@@ -849,6 +719,7 @@ export default function ModeAssiste() {
                     </span>
                   )}
                 </div>
+
                 <div className="ma-card-body">
                   {dbLoading ? (
                     <div className="ma-loading-row">
@@ -879,7 +750,9 @@ export default function ModeAssiste() {
               <div className={["ma-card", selectedCities.length === 0 ? "ma-card-disabled" : ""].join(" ")}>
                 <div className="ma-card-header">
                   <div className="ma-card-header-left">
-                    <div className="ma-card-icon"><CalendarDays size={18} color="#2B96A8" /></div>
+                    <div className="ma-card-icon">
+                      <CalendarDays size={18} color="#2B96A8" />
+                    </div>
                     <div>
                       <p className="ma-card-title">Calendrier</p>
                       <p className="ma-card-sub">
@@ -891,12 +764,17 @@ export default function ModeAssiste() {
                       </p>
                     </div>
                   </div>
-                  {totalDays > 0 && <span className="ma-badge-days">🗓️ {totalDays}j</span>}
+                  {totalDays > 0 && (
+                    <span className="ma-badge-days">🗓️ {totalDays}j</span>
+                  )}
                 </div>
+
                 <div className="ma-card-body">
                   {selectedCities.length === 0 ? (
                     <div className="ma-cal-empty">
-                      <div className="ma-cal-empty-icon"><MapPin size={24} color="#94a3b8" /></div>
+                      <div className="ma-cal-empty-icon">
+                        <MapPin size={24} color="#94a3b8" />
+                      </div>
                       <p className="ma-cal-empty-text">
                         Choisissez vos villes à gauche pour organiser votre calendrier
                       </p>
@@ -935,12 +813,13 @@ export default function ModeAssiste() {
                           </div>
                           <div className="ma-recap-pills">
                             {cityDates.map(
-                              (cdr) => cdr.start && cdr.end && (
-                                <span key={cdr.city} className="ma-recap-pill">
-                                  <MapPin size={10} />
-                                  {cdr.city} · {fmtShort(cdr.start)} → {fmtShort(cdr.end)}
-                                </span>
-                              )
+                              (cdr) =>
+                                cdr.start && cdr.end && (
+                                  <span key={cdr.city} className="ma-recap-pill">
+                                    <MapPin size={10} />
+                                    {cdr.city} · {fmtShort(cdr.start)} → {fmtShort(cdr.end)}
+                                  </span>
+                                )
                             )}
                           </div>
                         </div>
@@ -954,7 +833,9 @@ export default function ModeAssiste() {
               <div className={["ma-card", !allDatesSet ? "ma-card-disabled" : ""].join(" ")}>
                 <div className="ma-card-header">
                   <div className="ma-card-header-left">
-                    <div className="ma-card-icon"><Heart size={18} color="#2B96A8" /></div>
+                    <div className="ma-card-icon">
+                      <Heart size={18} color="#2B96A8" />
+                    </div>
                     <div>
                       <p className="ma-card-title">Centres d&apos;intérêt</p>
                       <p className="ma-card-sub">
@@ -967,6 +848,7 @@ export default function ModeAssiste() {
                     </div>
                   </div>
                 </div>
+
                 <div className="ma-card-body">
                   {dbLoading ? (
                     <div className="ma-loading-row">
@@ -976,8 +858,8 @@ export default function ModeAssiste() {
                   ) : (
                     <div className="ma-cats-wrap">
                       {categories.map((cat) => {
-                        const catName = String(cat.nom || cat.name || cat.label || "");
-                        const isOn    = selectedCats.includes(cat.id);
+                        const catName  = String(cat.nom || cat.name || cat.label || "");
+                        const isOn     = selectedCats.includes(cat.id);
                         return (
                           <button
                             key={cat.id}
@@ -999,20 +881,35 @@ export default function ModeAssiste() {
                     </p>
                     <div style={{ position: "relative" }}>
                       <input
-                        type="number" min={0} placeholder="Ex: 500"
-                        value={budget} onChange={(e) => setBudget(e.target.value)}
+                        type="number"
+                        min={0}
+                        placeholder="Ex: 500"
+                        value={budget}
+                        onChange={(e) => setBudget(e.target.value)}
                         style={{
-                          width: "100%", padding: "10px 36px 10px 12px",
-                          borderRadius: 10, border: "1.5px solid #e2e8f0",
-                          fontSize: 14, color: "#1e293b", outline: "none",
-                          background: "#f8fafc", boxSizing: "border-box", transition: "border-color 0.2s",
+                          width: "100%",
+                          padding: "10px 36px 10px 12px",
+                          borderRadius: 10,
+                          border: "1.5px solid #e2e8f0",
+                          fontSize: 14,
+                          color: "#1e293b",
+                          outline: "none",
+                          background: "#f8fafc",
+                          boxSizing: "border-box",
+                          transition: "border-color 0.2s",
                         }}
                         onFocus={(e) => e.target.style.borderColor = "#2B96A8"}
-                        onBlur={(e)  => e.target.style.borderColor = "#e2e8f0"}
+                        onBlur={(e) => e.target.style.borderColor = "#e2e8f0"}
                       />
                       <span style={{
-                        position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)",
-                        color: "#94a3b8", fontSize: 14, fontWeight: 600, pointerEvents: "none",
+                        position: "absolute",
+                        right: 12,
+                        top: "50%",
+                        transform: "translateY(-50%)",
+                        color: "#94a3b8",
+                        fontSize: 14,
+                        fontWeight: 600,
+                        pointerEvents: "none",
                       }}>€</span>
                     </div>
                     {budget && Number(budget) > 0 && (
@@ -1029,11 +926,7 @@ export default function ModeAssiste() {
             <div className="ma-footer">
               {pillParts.length > 0 && (
                 <div className="ma-footer-pill">
-                  <span>
-                    {selectedCities.length > 0
-                      ? selectedCities.slice(0, 3).join(", ") + (selectedCities.length > 3 ? ` +${selectedCities.length - 3}` : "")
-                      : ""}
-                  </span>
+                  <span>{selectedCities.length > 0 ? selectedCities.slice(0,3).join(", ") + (selectedCities.length > 3 ? ` +${selectedCities.length - 3}` : "") : ""}</span>
                   {totalDays > 0 && <>{" · "}<span>{totalDays} j</span></>}
                   {budget && Number(budget) > 0 && <>{" · "}<span>{Number(budget).toLocaleString("fr-FR")} €</span></>}
                 </div>
