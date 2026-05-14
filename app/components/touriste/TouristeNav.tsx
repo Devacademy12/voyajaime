@@ -111,9 +111,13 @@ export default function TouristeNav({
 
   const isPlanActive =
     pathname === ROUTES.touriste.ModeAssiste ||
+    pathname === ROUTES.ModeAssiste ||
     pathname === ROUTES.touriste.modeLibre ||
+    pathname === "/modeLibre" ||
     pathname.startsWith("/touriste/modeAssister") ||
-    pathname.startsWith("/touriste/modeLibre");
+    pathname.startsWith("/touriste/modeLibre") ||
+    pathname.startsWith("/modeAssister") ||
+    pathname.startsWith("/modeLibre");
 
   const initial = userName
     ? userName.charAt(0).toUpperCase()
@@ -487,16 +491,79 @@ export default function TouristeNav({
               </div>
             </>
           ) : (
-            publicLinks.map(l =>
-              l.anchor
-                ? <a key={l.href} href={l.href} className="glink">
-                    <i className={`ti ${l.icon}`} aria-hidden="true" /> {l.label}
-                  </a>
-                : <Link key={l.href} href={l.href}
-                    className={`glink ${isActive(l.href) ? "on" : ""}`}>
-                    <i className={`ti ${l.icon}`} aria-hidden="true" /> {l.label}
-                  </Link>
-            )
+            <>
+              <div style={{ position: "relative" }}>
+                <button
+                  className={`glink-plan ${isPlanActive ? "on" : ""} ${planOpen ? "open" : ""}`}
+                  onClick={() => setPlanOpen(o => !o)}
+                >
+                  <i className="ti ti-route main-icon" aria-hidden="true" />
+                  Planifier
+                  <i className="ti ti-chevron-down chevron" aria-hidden="true" />
+                </button>
+
+                {planOpen && (
+                  <>
+                    <div style={{ position: "fixed", inset: 0, zIndex: 399 }}
+                      onClick={() => setPlanOpen(false)} />
+                    <div className="plan-drop">
+                      <Link
+                        href={ROUTES.ModeAssiste}
+                        className={`plan-card ${
+                          pathname === ROUTES.ModeAssiste ||
+                          pathname.startsWith("/modeAssister") ? "active-mode" : ""
+                        }`}
+                        onClick={() => setPlanOpen(false)}
+                      >
+                        <div className="plan-icon assiste">
+                          <i className="ti ti-wand" style={{ color: "#02AFCF" }} aria-hidden="true" />
+                        </div>
+                        <div>
+                          <p className="plan-title">Mode Assisté</p>
+                          <p className="plan-desc">Laissez notre IA concevoir votre itinéraire idéal selon vos préférences.</p>
+                          <span className="plan-badge ai">
+                            <i className="ti ti-wand" aria-hidden="true" /> Propulsé par l'IA
+                          </span>
+                        </div>
+                      </Link>
+
+                      <div className="plan-divider" />
+
+                      <Link
+                        href={ROUTES.touriste.modeLibre}
+                        className={`plan-card ${
+                          pathname === ROUTES.touriste.modeLibre ||
+                          pathname.startsWith("/modeLibre") ? "active-mode" : ""
+                        }`}
+                        onClick={() => setPlanOpen(false)}
+                      >
+                        <div className="plan-icon libre">
+                          <i className="ti ti-navigation" style={{ color: "#2B96A8" }} aria-hidden="true" />
+                        </div>
+                        <div>
+                          <p className="plan-title">Mode Libre</p>
+                          <p className="plan-desc">Construisez votre voyage étape par étape, selon vos propres choix.</p>
+                          <span className="plan-badge free">
+                            <i className="ti ti-navigation" aria-hidden="true" /> Personnalisé
+                          </span>
+                        </div>
+                      </Link>
+                    </div>
+                  </>
+                )}
+              </div>
+
+              {publicLinks.map(l =>
+                l.anchor
+                  ? <a key={l.href} href={l.href} className="glink">
+                      <i className={`ti ${l.icon}`} aria-hidden="true" /> {l.label}
+                    </a>
+                  : <Link key={l.href} href={l.href}
+                      className={`glink ${isActive(l.href) ? "on" : ""}`}>
+                      <i className={`ti ${l.icon}`} aria-hidden="true" /> {l.label}
+                    </Link>
+              )}
+            </>
           )}
         </nav>
 
@@ -640,6 +707,26 @@ export default function TouristeNav({
           </>
         ) : (
           <>
+            <div className="g-plan-section">
+              <p className="g-plan-label">Planifier mon voyage</p>
+              <Link
+                href={ROUTES.ModeAssiste}
+                className={`g-mlink ${pathname.startsWith("/modeAssister") ? "on" : ""}`}
+                onClick={() => setMobileOpen(false)}
+              >
+                <i className="ti ti-wand" style={{ color: "#02AFCF" }} aria-hidden="true" />
+                Mode Assisté
+              </Link>
+              <Link
+                href={ROUTES.touriste.modeLibre}
+                className={`g-mlink ${pathname.startsWith("/modeLibre") ? "on" : ""}`}
+                onClick={() => setMobileOpen(false)}
+              >
+                <i className="ti ti-navigation" style={{ color: "#2B96A8" }} aria-hidden="true" />
+                Mode Libre
+              </Link>
+            </div>
+
             {publicLinks.map(l => (
               l.anchor ? (
                 <a key={l.href} href={l.href} className="g-mlink"

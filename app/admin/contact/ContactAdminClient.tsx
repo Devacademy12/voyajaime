@@ -242,8 +242,7 @@ function ImageUploader({
   return (
     <div>
       {/* Zone de drop */}
-      <div
-        className={`upload-zone ${dragging ? "dragging" : ""}`}
+      <div  className={`upload-zone ${dragging ? "dragging" : ""}`}
         onDragOver={e => { e.preventDefault(); setDragging(true); }}
         onDragLeave={() => setDragging(false)}
         onDrop={onDrop}
