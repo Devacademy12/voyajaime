@@ -1,0 +1,25 @@
+{
+  "title": "Titre court du voyage",
+  "days": [
+    {
+      "day": 1,
+      "city": "Nom de la ville",
+      "date": "JJ/MM/AAAA",
+      "theme": "Thème de la journée",
+      "activities": [
+        {
+          "id": "id-exact-depuis-supabase",
+          "name": "Nom exact",
+          "photos": "URL des photos",
+          "description": "Courte description en français",
+          "time": "Créneau horaire (ex: 09:00 - 11:00)",
+          "languages": "Langues disponibles",
+          "inclusion": "Ce qui est inclus",
+          "duration": "Durée en heures",
+          "price": "Prix par personne",
+          "city": "Ville de l'activité"
+        }
+      ]
+    }
+  ]
+}

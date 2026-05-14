@@ -1,0 +1,170 @@
+{
+  "nodes": [
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{$json}}",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          }
+        }
+      },
+      "id": "2ddf48fe-8ad4-4a8a-b90f-0ff2a78aaf8f",
+      "name": "Return Itinerary",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [11104, 4400]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Extract and validate JSON from AI Agent response\nconst items = $input.all();\nconst response = items[0].json.output;\n\nfunction extractJSON(str) {\n  if (typeof str !== 'string') return str;\n  let cleaned = str.replace(/```json\\n?/g, '').replace(/```\\n?/g, '').trim();\n  const match = cleaned.match(/\\{[\\s\\S]*\\}/);\n  if (match) {\n    try {\n      return JSON.parse(match[0]);\n    } catch(e) {\n      return null;\n    }\n  }\n  return null;\n}\n\nlet itinerary = extractJSON(response);\nif (!itinerary && typeof response === 'string') {\n  try {\n    itinerary = JSON.parse(response);\n  } catch(e) {\n    console.log('JSON parse error:', e.message);\n  }\n}\nif (!itinerary || !itinerary.days) {\n  itinerary = {\n    success: false,\n    error: 'Impossible de générer l\'itinéraire. Veuillez reformuler votre demande.',\n    message: 'Aucun itinéraire valide n\'a pu être créé avec les excursions disponibles.',\n    rawResponse: typeof response === 'string' ? response.substring(0, 500) : response\n  };\n} else {\n  itinerary.success = true;\n}\nreturn [itinerary];"
+      },
+      "id": "967139cc-82df-4478-96f5-b3926d035dcb",
+      "name": "Extract & Route JSON",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [10896, 4400]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Tu es un expert en tourisme tunisien et planificateur de voyages professionnel.\n\nVoici la demande du client :\n\nDESTINATION: {{ $json.destination }}\nDATE DÉBUT: {{ $json.startDate }}\nDATE FIN: {{ $json.endDate }}\nBUDGET: {{ $json.budget }} TND\nNOMBRE DE VOYAGEURS: {{ $json.travelers }}\nCENTRES D'INTÉRÊT: {{ JSON.stringify($json.interests) }}\nVILLES SOUHAITÉES: {{ JSON.stringify($json.cities) }}\nMESSAGE: {{ $json.message }}\n\nRÈGLES OBLIGATOIRES :\n\n1. Utilise l'outil Supabase pour récupérer toutes les excursions actives (is_active = true).\n2. Filtre les excursions pour ne garder que celles dont :\n   - La ville correspond EXACTEMENT à une des villes demandées par l'utilisateur.\n   - La date de l'excursion (available_dates) est comprise entre la date d'arrivée et la date de départ du voyage.\n   - Le prix est inférieur ou égal au budget total (si un budget est fourni).\n   - La catégorie correspond à au moins un des centres d'intérêt sélectionnés (si fournis).\n3. Génère un itinéraire jour par jour :\n   - Une seule ville par jour.\n   - Maximum 3 activités par jour.\n   - Répartis les activités sur matin / après-midi / soir.\n   - Ne mets pas deux excursions de la même catégorie le même jour.\n   - Utilise UNIQUEMENT les excursions filtrées depuis Supabase.\n   - Ne propose AUCUNE excursion si elle n'est pas disponible dans Supabase.\n\nFORMAT DE RÉPONSE OBLIGATOIRE (JSON brut, sans texte avant/après, sans markdown) :\n\n{\n  \"title\": \"Titre court du voyage\",\n  \"days\": [\n    {\n      \"day\": 1,\n      \"city\": \"Nom de la ville\",\n      \"date\": \"JJ/MM/AAAA\",\n      \"theme\": \"Thème de la journée\",\n      \"activities\": [\n        {\n          \"id\": \"id-exact-depuis-supabase\",\n          \"name\": \"Nom exact\",\n          \"photos\": \"URL des photos\",\n          \"description\": \"Courte description en français\",\n          \"time\": \"Créneau horaire (ex: 09:00 - 11:00)\",\n          \"languages\": \"Langues disponibles\",\n          \"inclusion\": \"Ce qui est inclus\",\n          \"duration\": \"Durée en heures\",\n          \"price\": \"Prix par personne\",\n          \"city\": \"Ville de l'activité\"\n        }\n      ]\n    }\n  ]\n}\n\n⚠️ RÈGLES STRICTES :\n- Ne JAMAIS inclure une excursion si sa ville n'est pas demandée.\n- Ne JAMAIS inclure une excursion si sa date est en dehors du séjour.\n- Ne JAMAIS dépasser le budget total.\n- Réponds UNIQUEMENT avec le JSON valide. Rien d'autre.",
+        "options": {
+          "maxIterations": 5
+        }
+      },
+      "id": "ccbbf4da-bdf7-483d-8021-8c3258b35e72",
+      "name": "AI Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [10592, 4400]
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Récupère toutes les excursions actives depuis Supabase. Retourne les champs: id, title, city, price_per_person, duration_hours, description, photos, categories, start_date, end_date, is_active.",
+        "useCustomSchema": true,
+        "operation": "getAll",
+        "tableId": "excursions",
+        "returnAll": true
+      },
+      "id": "a1874d1b-c22e-4981-aeb1-d9d6e961cd32",
+      "name": "Get excursions from Supabase",
+      "type": "n8n-nodes-base.supabaseTool",
+      "typeVersion": 1,
+      "position": [10944, 4576],
+      "credentials": {
+        "supabaseApi": {
+          "id": "vIoXxrk67sux6jjK",
+          "name": "voyajaime"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "tunisia-planner",
+        "responseMode": "responseNode",
+        "options": {
+          "allowedOrigins": "*"
+        }
+      },
+      "id": "1df2eca0-f2a7-47c2-b5bd-d9bce873e310",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [10192, 4400],
+      "webhookId": "tunisia-planner-webhook"
+    },
+    {
+      "parameters": {
+        "model": "deepseek-v4-pro",
+        "options": {
+          "frequencyPenalty": 0,
+          "maxTokens": 4000,
+          "presencePenalty": 0,
+          "temperature": 0.3
+        }
+      },
+      "id": "fb428a71-09f5-4106-8cea-7f82d0898240",
+      "name": "DeepSeek Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatDeepSeek",
+      "typeVersion": 1,
+      "position": [10448, 4608],
+      "credentials": {
+        "deepSeekApi": {
+          "id": "fuAdRFgZKVy975lm",
+          "name": "voyajaime"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Extract & Route JSON": {
+      "main": [
+        [
+          {
+            "node": "Return Itinerary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Extract & Route JSON",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get excursions from Supabase": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DeepSeek Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "175d5bcbc8aa43cd1d165791defb57bb704f80839962ed8b1b75503c0a4df8d8"
+  }
+}
