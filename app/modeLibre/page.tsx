@@ -2,6 +2,8 @@
 
 import React, { useState, useEffect, Suspense, useMemo } from "react";
 import { useRouter } from "next/navigation";
+import TouristeNav from "../components/touriste/TouristeNav";
+
 import { createClient } from "@/lib/supabaseClient";
 import {
   ArrowRight, Calendar, MapPin, Layers, SlidersHorizontal,
@@ -283,6 +285,7 @@ function ConfigInner() {
 
   return (
     <div className="itineraire-config-page">
+       <TouristeNav    />
       <style>{CSS_CONFIG}</style>
 
       {/* Topbar */}
