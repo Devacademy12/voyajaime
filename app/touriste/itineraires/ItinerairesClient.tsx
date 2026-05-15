@@ -14,8 +14,8 @@ import ExcursionClient from "@/app/excursions/[id]/ExcursionClient";
 // ─── Types ───────────────────────────────────────────────────────────────────
 
 type ActivityItem = {
-  id: string;               // ID interne du plan (peut être un UUID excursion ou non)
-  excursion_id?: string;    // UUID réel de l'excursion Supabase (si disponible dans le plan)
+  id: string;
+  excursion_id?: string;
   excursion: {
     title: string;
     city: string;
@@ -65,23 +65,16 @@ const TIME_LABEL = { matin: "Matin", aprem: "Après-midi", soir: "Soir" };
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
-/** Normalise le plan JSON (mode manuel = tableau, mode IA = objet {days:[]}) */
 function normalizePlan(raw: RawPlan): DayPlan[] {
   if (!raw) return [];
-
-  // Mode manuel : le plan est déjà un tableau de DayPlan
   if (Array.isArray(raw)) return raw as DayPlan[];
-
-  // Mode IA : le plan est un objet { days: [...] }
   if (typeof raw === "object" && Array.isArray((raw as { days?: unknown[] }).days)) {
     const days = (raw as { days: unknown[] }).days;
     return days.map((d: unknown) => {
       const dd = d as Record<string, unknown>;
       const acts: ActivityItem[] = Array.isArray(dd.activities)
         ? (dd.activities as Record<string, unknown>[]).map(a => ({
-            // On conserve l'ID tel quel — peut être UUID ou autre
             id: String(a.id || a.excursion_id || ""),
-            // On stocke aussi excursion_id si présent séparément
             excursion_id: String(a.excursion_id || a.id || ""),
             note: String(a.description || ""),
             time: (a.time as "matin" | "aprem" | "soir") || "matin",
@@ -90,7 +83,7 @@ function normalizePlan(raw: RawPlan): DayPlan[] {
               title: String(a.name || a.title || ""),
               city: String(a.city || dd.city || ""),
               price_per_person: Number(a.price) || Number(a.price_per_person) || 0,
-              duration_hours: parseFloat(String(a.duration || "2")) || 2,
+              duration_hours: parseFloat(String(a.duration || a.duration_hours || "2")) || 2,
               photos: Array.isArray(a.photos) ? (a.photos as string[]) : [],
               meeting_point: String(a.meeting_point || a.lieu_depart || ""),
               start_date: String(a.start_date || a.date || ""),
@@ -101,37 +94,42 @@ function normalizePlan(raw: RawPlan): DayPlan[] {
       return { city: String(dd.city || ""), activities: acts };
     });
   }
-
   return [];
 }
 
-/** Vérifie si une chaîne est un UUID v4 valide */
 function isValidUUID(str: string): boolean {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str);
+}
+
+/**
+ * Normalise un titre pour comparaison floue :
+ * minuscules + sans accents + sans ponctuation + espaces normalisés
+ */
+function normalizeTitle(str: string): string {
+  return str
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9\s]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 function formatDate(dateStr: string) {
   if (!dateStr) return "";
   try {
-    const date = new Date(dateStr);
-    return date.toLocaleDateString("fr-FR", {
-      weekday: "long",
-      day: "numeric",
-      month: "long",
-      year: "numeric",
+    return new Date(dateStr).toLocaleDateString("fr-FR", {
+      weekday: "long", day: "numeric", month: "long", year: "numeric",
     });
-  } catch {
-    return dateStr;
-  }
+  } catch { return dateStr; }
 }
 
 // ─── CSS ─────────────────────────────────────────────────────────────────────
 
 const RESPONSIVE_CSS = `
   @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@400;500;600;700;800&display=swap');
-
-  @keyframes fadeUp  { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
-  @keyframes spin    { to{transform:rotate(360deg)} }
+  @keyframes fadeUp { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
+  @keyframes spin   { to{transform:rotate(360deg)} }
 
   .it-wrap {
     font-family: 'DM Sans', system-ui, sans-serif;
@@ -141,10 +139,9 @@ const RESPONSIVE_CSS = `
     width: 100%;
     box-sizing: border-box;
   }
-
   .it-card { animation:fadeUp .22s ease both; transition:box-shadow .2s,transform .18s; }
   .it-card:hover { box-shadow:0 8px 28px -8px rgba(43,150,168,.2)!important; transform:translateY(-2px); }
-  .it-btn  { transition:all .15s; cursor:pointer; font-family:inherit; border:none; outline:none; }
+  .it-btn { transition:all .15s; cursor:pointer; font-family:inherit; border:none; outline:none; }
 
   .it-reserve-all-btn {
     display:inline-flex; align-items:center; gap:6px;
@@ -155,7 +152,7 @@ const RESPONSIVE_CSS = `
     font-family:'DM Sans',sans-serif; transition:all .18s;
     flex-shrink:0; white-space:nowrap;
   }
-  .it-reserve-all-btn:hover  { transform:translateY(-1px); box-shadow:0 4px 14px rgba(43,150,168,.4); }
+  .it-reserve-all-btn:hover { transform:translateY(-1px); box-shadow:0 4px 14px rgba(43,150,168,.4); }
   .it-reserve-all-btn:disabled { background:#E5E7EB; color:#9CA3AF; cursor:not-allowed; transform:none; box-shadow:none; }
 
   .act-row {
@@ -172,27 +169,22 @@ const RESPONSIVE_CSS = `
   .act-photo-placeholder {
     width:64px; height:64px; border-radius:12px; flex-shrink:0;
     background:#EEF2FF; display:flex; align-items:center; justify-content:center;
-    border:1px solid #DCE5FF;
+    border:1px solid #DCE5FF; cursor:pointer;
   }
-
   .excursion-title { cursor:pointer; transition:color .15s; }
   .excursion-title:hover { color:#2B96A8; }
-
   .info-badge {
     display:inline-flex; align-items:center; gap:4px;
     padding:3px 8px; background:white; border-radius:20px;
     font-size:10px; font-weight:600; color:#374151; border:1px solid #E5E7EB;
   }
-
   .it-card-header {
     padding:20px 24px;
     display:flex; align-items:center; gap:14px;
     cursor:pointer;
   }
   .it-card-meta { flex:1; min-width:0; }
-  .it-card-actions {
-    display:flex; gap:8px; flex-shrink:0; align-items:center;
-  }
+  .it-card-actions { display:flex; gap:8px; flex-shrink:0; align-items:center; }
   .it-page-header {
     display:flex; justify-content:space-between; align-items:flex-start;
     margin-bottom:32px;
@@ -201,7 +193,6 @@ const RESPONSIVE_CSS = `
   @media (max-width: 900px) {
     .it-wrap { padding: 24px 24px 48px; }
   }
-
   @media (max-width: 640px) {
     .it-wrap { padding: 16px 12px 40px; }
     .it-card-header { flex-wrap:wrap; gap:10px; padding:14px 14px; }
@@ -216,7 +207,6 @@ const RESPONSIVE_CSS = `
     .it-day-block { padding-left:10px !important; }
     .it-detail { padding: 0 14px 14px !important; }
   }
-
   @media (max-width: 380px) {
     .it-wrap { padding: 12px 8px 32px; }
     .it-card-header { padding: 12px 10px; }
@@ -235,7 +225,7 @@ export default function ItinerairesClient() {
   const [expanded, setExpanded] = useState<string | null>(null);
   const [excPhotos, setExcPhotos] = useState<Record<string, string[]>>({});
   const [excDetails, setExcDetails] = useState<Record<string, any>>({});
-  // Map titre → UUID réel Supabase (fallback pour les plans IA avec mauvais IDs)
+  // titre normalisé → UUID Supabase réel
   const [titleToId, setTitleToId] = useState<Record<string, string>>({});
   const [checkoutExcs, setCheckoutExcs] = useState<ExcursionForCheckout[] | null>(null);
 
@@ -262,75 +252,64 @@ export default function ItinerairesClient() {
       const itineraires: Itineraire[] = data || [];
       setItems(itineraires);
 
-      // ── Collecter tous les IDs présents dans les plans ──────────────────
+      // ── Collecter IDs valides + villes du plan ──────────────────────────
       const candidateIds = new Set<string>();
-      const activityTitles = new Set<string>();
+      const planCities = new Set<string>();
 
-      itineraires.forEach(it =>
-        normalizePlan(it.plan).forEach(day =>
+      itineraires.forEach(it => {
+        it.villes_selectionnees?.forEach(v => { if (v?.trim()) planCities.add(v.trim()); });
+        normalizePlan(it.plan).forEach(day => {
+          if (day.city?.trim()) planCities.add(day.city.trim());
           day.activities?.forEach(act => {
-            // Collecter l'id ET excursion_id s'ils ressemblent à des UUIDs
             if (act.id && isValidUUID(act.id)) candidateIds.add(act.id);
             if (act.excursion_id && isValidUUID(act.excursion_id)) candidateIds.add(act.excursion_id);
-            // Collecter aussi les titres pour le fallback par titre
-            if (act.excursion?.title) activityTitles.add(act.excursion.title);
-          })
-        )
-      );
+            if (act.excursion?.city?.trim()) planCities.add(act.excursion.city.trim());
+          });
+        });
+      });
 
-      // ── Charger les excursions depuis Supabase ───────────────────────────
+      // ── Maps locaux ─────────────────────────────────────────────────────
       const photoMap: Record<string, string[]> = {};
       const detailsMap: Record<string, any> = {};
       const titleMap: Record<string, string> = {};
 
-      // 1. Chercher par UUIDs connus
+      // Indexe une excursion Supabase dans les 3 maps
+      const indexExc = (e: any) => {
+        photoMap[e.id] = e.photos || [];
+        detailsMap[e.id] = {
+          meeting_point: e.meeting_point,
+          start_date: e.start_date,
+          start_time: e.depart_time,
+          city: e.city,
+          title: e.title,
+        };
+        if (e.title) {
+          // clé normalisée (robuste aux accents / casse / ponctuation)
+          titleMap[normalizeTitle(e.title)] = e.id;
+          // clé exacte minuscule (double sécurité)
+          titleMap[e.title.trim().toLowerCase()] = e.id;
+        }
+      };
+
+      // 1. Par UUIDs présents dans le plan (plan manuel ou IA avec bons IDs)
       if (candidateIds.size > 0) {
         const { data: excs } = await sb
           .from("excursions")
-          .select("id, title, city, photos, available_dates, meeting_point, start_date, depart_time")
+          .select("id, title, city, photos, meeting_point, start_date, depart_time")
           .in("id", Array.from(candidateIds));
-
-        if (excs) {
-          excs.forEach((e: any) => {
-            photoMap[e.id] = e.photos || [];
-            detailsMap[e.id] = {
-              meeting_point: e.meeting_point,
-              start_date: e.start_date,
-              start_time: e.depart_time,
-              city: e.city,
-              title: e.title,
-            };
-            // Construire le map titre → id pour le fallback
-            if (e.title) titleMap[e.title.trim().toLowerCase()] = e.id;
-          });
-        }
+        excs?.forEach(indexExc);
       }
 
-      // 2. Fallback : chercher par titres pour les activités dont l'ID n'a pas matché
-      const unmatchedTitles = Array.from(activityTitles).filter(
-        t => !titleMap[t.trim().toLowerCase()]
-      );
-
-      if (unmatchedTitles.length > 0) {
-        // On cherche les excursions dont le titre correspond
-        const { data: excsByTitle } = await sb
+      // 2. Par villes — charge TOUT le catalogue des villes du plan.
+      //    Stratégie clé : le plan IA peut avoir de mauvais IDs ou des titres
+      //    légèrement différents. En chargeant toutes les excursions des villes
+      //    concernées, on peut ensuite matcher par titre normalisé.
+      if (planCities.size > 0) {
+        const { data: excsByCity } = await sb
           .from("excursions")
-          .select("id, title, city, photos, available_dates, meeting_point, start_date, depart_time")
-          .in("title", unmatchedTitles);
-
-        if (excsByTitle) {
-          excsByTitle.forEach((e: any) => {
-            photoMap[e.id] = e.photos || [];
-            detailsMap[e.id] = {
-              meeting_point: e.meeting_point,
-              start_date: e.start_date,
-              start_time: e.depart_time,
-              city: e.city,
-              title: e.title,
-            };
-            if (e.title) titleMap[e.title.trim().toLowerCase()] = e.id;
-          });
-        }
+          .select("id, title, city, photos, meeting_point, start_date, depart_time")
+          .in("city", Array.from(planCities));
+        excsByCity?.forEach(indexExc);
       }
 
       setExcPhotos(photoMap);
@@ -340,58 +319,76 @@ export default function ItinerairesClient() {
     })();
   }, []);
 
-  // ── Résolution de l'UUID réel d'une excursion ──────────────────────────────
+  // ── Résolution UUID réel ───────────────────────────────────────────────────
   /**
-   * Stratégie (dans l'ordre) :
-   * 1. act.id est un UUID valide ET présent dans excDetails  → utiliser act.id
-   * 2. act.excursion_id est un UUID valide ET dans excDetails → utiliser act.excursion_id
-   * 3. Le titre de l'excursion est dans titleToId              → utiliser cet UUID
-   * 4. Fallback : act.excursion_id ou act.id (dernier recours)
+   * Cascade :
+   * 1. act.id  → UUID valide + connu en base
+   * 2. act.excursion_id → UUID valide + connu en base
+   * 3. Titre normalisé exact
+   * 4. Titre exact minuscule
+   * 5. Titre normalisé inclus dans une clé du map (ou vice-versa)
+   * 6. Score de mots communs ≥ 60 %
+   * 7. Dernier recours : UUID brut (même sans confirmation)
    */
   const resolveExcursionId = (act: ActivityItem): string | null => {
-    // 1. act.id est un vrai UUID Supabase
     if (isValidUUID(act.id) && excDetails[act.id]) return act.id;
-
-    // 2. excursion_id explicite
     if (act.excursion_id && isValidUUID(act.excursion_id) && excDetails[act.excursion_id])
       return act.excursion_id;
 
-    // 3. Fallback par titre
-    if (act.excursion?.title) {
-      const key = act.excursion.title.trim().toLowerCase();
-      if (titleToId[key]) return titleToId[key];
+    const title = act.excursion?.title;
+    if (title) {
+      const norm = normalizeTitle(title);
+      const lower = title.trim().toLowerCase();
+
+      if (titleToId[norm]) return titleToId[norm];
+      if (titleToId[lower]) return titleToId[lower];
+
+      const entries = Object.entries(titleToId);
+
+      // Inclusion partielle
+      const contained = entries.find(([key]) =>
+        key.includes(norm) || norm.includes(key)
+      );
+      if (contained) return contained[1];
+
+      // Score de mots communs
+      const planWords = norm.split(" ").filter(w => w.length > 2);
+      if (planWords.length > 0) {
+        const best = entries
+          .map(([key, id]) => {
+            const dbWords = key.split(" ").filter(w => w.length > 2);
+            const common = planWords.filter(w => dbWords.includes(w)).length;
+            const score = common / Math.max(planWords.length, dbWords.length);
+            return { id, score };
+          })
+          .filter(m => m.score >= 0.6)
+          .sort((a, b) => b.score - a.score)[0];
+        if (best) return best.id;
+      }
     }
 
-    // 4. Dernier recours (peut mener à 404, mais c'est le mieux qu'on puisse faire)
+    // Dernier recours
     if (act.excursion_id && isValidUUID(act.excursion_id)) return act.excursion_id;
     if (isValidUUID(act.id)) return act.id;
-
     return null;
   };
 
-  /** Retourne les photos d'une activité (en utilisant le bon UUID) */
   const getActPhoto = (act: ActivityItem): string | undefined => {
-    const realId = resolveExcursionId(act);
-    return (realId ? excPhotos[realId]?.[0] : undefined) || act.excursion?.photos?.[0];
+    const id = resolveExcursionId(act);
+    return (id ? excPhotos[id]?.[0] : undefined) || act.excursion?.photos?.[0];
   };
 
-  /** Retourne les détails d'une activité (en utilisant le bon UUID) */
   const getActDetails = (act: ActivityItem): any => {
-    const realId = resolveExcursionId(act);
-    return realId ? excDetails[realId] : undefined;
+    const id = resolveExcursionId(act);
+    return id ? excDetails[id] : undefined;
   };
 
-  /** Ouvre la page de détail de l'excursion dans un nouvel onglet */
   const openExcursionDetails = (act: ActivityItem) => {
-    const realId = resolveExcursionId(act);
-    if (realId) {
-      window.open(`/excursions/${realId}`, "_blank");
-    } else {
-      console.warn("Impossible de résoudre l'UUID de l'excursion pour :", act.excursion?.title);
-    }
+    const id = resolveExcursionId(act);
+    if (id) window.open(`/excursions/${id}`, "_blank");
   };
 
-  // ── Suppression ───────────────────────────────────────────────────────────
+  // ── CRUD ──────────────────────────────────────────────────────────────────
   const deleteIt = async (id: string) => {
     if (!confirm("Supprimer cet itinéraire ?")) return;
     setDeleting(id);
@@ -400,14 +397,12 @@ export default function ItinerairesClient() {
     setDeleting(null);
   };
 
-  // ── Stats ─────────────────────────────────────────────────────────────────
   const totAct = (raw: RawPlan) =>
     normalizePlan(raw).reduce((s, d) => s + (d.activities?.length || 0), 0);
 
   const totBudget = (raw: RawPlan) =>
     normalizePlan(raw).reduce(
-      (s, d) => s + (d.activities || []).reduce((ss, a) => ss + (a.excursion?.price_per_person || 0), 0),
-      0
+      (s, d) => s + (d.activities || []).reduce((ss, a) => ss + (a.excursion?.price_per_person || 0), 0), 0
     );
 
   const fmt = (iso: string) =>
@@ -416,12 +411,10 @@ export default function ItinerairesClient() {
   const isAssisted = (raw: RawPlan) =>
     !!raw && !Array.isArray(raw) && typeof raw === "object" && "days" in raw;
 
-  // ── Checkout de tout l'itinéraire ─────────────────────────────────────────
   const openItineraryCheckout = (it: Itineraire) => {
     const plan = normalizePlan(it.plan);
     const seen = new Set<string>();
     const excursions: ExcursionForCheckout[] = [];
-
     plan.forEach(day => {
       (day.activities || []).forEach(act => {
         if (!act.excursion?.price_per_person) return;
@@ -439,12 +432,10 @@ export default function ItinerairesClient() {
         });
       });
     });
-
     if (excursions.length > 0) setCheckoutExcs(excursions);
   };
 
   // ── Render ────────────────────────────────────────────────────────────────
-
   if (loading) return (
     <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 12, padding: "100px 0", color: "#9CA3AF", fontSize: 14, fontFamily: "'DM Sans',system-ui" }}>
       <Loader2 size={22} color="#2B96A8" style={{ animation: "spin .8s linear infinite" }} />
@@ -466,10 +457,9 @@ export default function ItinerairesClient() {
   return (
     <>
       <style>{RESPONSIVE_CSS}</style>
-
       <div className="it-wrap">
 
-        {/* ── Page header ── */}
+        {/* Page header */}
         <div className="it-page-header">
           <div>
             <h1 style={{ fontSize: "clamp(20px, 4vw, 28px)", fontWeight: 700, color: "#053366", margin: 0 }}>
@@ -482,14 +472,14 @@ export default function ItinerairesClient() {
           </div>
         </div>
 
-        {/* ── Empty state ── */}
+        {/* Empty state */}
         {items.length === 0 ? (
           <div style={{ textAlign: "center", padding: "48px 16px", background: "#ffffff", borderRadius: 28, border: "1px solid #E5E7EB", boxShadow: "0 2px 12px rgba(0,0,0,.04)" }}>
             <Map size={52} color="#D1D5DB" style={{ margin: "0 auto 16px" }} />
             <h2 style={{ fontFamily: "'Playfair Display',serif", fontSize: "clamp(18px,4vw,24px)", fontWeight: 900, color: "#111827", marginBottom: 10 }}>
               Aucun itinéraire sauvegardé
             </h2>
-            <p style={{ fontSize: 14, color: "#9CA3AF", marginBottom: 28, maxWidth: 320, margin: "0 auto 28px" }}>
+            <p style={{ fontSize: 14, color: "#9CA3AF", maxWidth: 320, margin: "0 auto 28px" }}>
               Planifiez votre voyage en Tunisie et sauvegardez votre itinéraire
             </p>
             <a href="/touriste/itineraire"
@@ -513,15 +503,12 @@ export default function ItinerairesClient() {
                 <div key={it.id} className="it-card"
                   style={{ background: "white", borderRadius: 24, border: "1px solid #E5E7EB", overflow: "hidden", boxShadow: "0 2px 10px rgba(0,0,0,.05)", animationDelay: `${idx * .06}s` }}>
 
-                  {/* ── Card header ── */}
+                  {/* Card header */}
                   <div className="it-card-header" onClick={() => setExpanded(isOpen ? null : it.id)}>
-
-                    {/* Icône mode */}
                     <div style={{ width: 46, height: 46, borderRadius: 14, background: assisted ? "linear-gradient(135deg,rgba(2,175,207,.15),rgba(37,159,252,.1))" : "linear-gradient(135deg,#EFF9FB,#D0F0F5)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, border: `1px solid ${assisted ? "rgba(2,175,207,.25)" : "rgba(43,150,168,.15)"}` }}>
                       {assisted ? <Bot size={20} color="#02AFCF" /> : <PenLine size={20} color="#2B96A8" />}
                     </div>
 
-                    {/* Meta */}
                     <div className="it-card-meta">
                       <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4, flexWrap: "wrap" }}>
                         <h3 style={{ fontSize: "clamp(13px,3vw,15px)", fontWeight: 800, color: "#111827", margin: 0 }}>
@@ -536,9 +523,7 @@ export default function ItinerairesClient() {
                           </span>
                         ))}
                         {(it.villes_selectionnees?.length || 0) > 2 && (
-                          <span style={{ fontSize: 11, color: "#9CA3AF" }}>
-                            +{it.villes_selectionnees.length - 2}
-                          </span>
+                          <span style={{ fontSize: 11, color: "#9CA3AF" }}>+{it.villes_selectionnees.length - 2}</span>
                         )}
                       </div>
                       <div style={{ display: "flex", gap: 12, fontSize: 11, color: "#9CA3AF", flexWrap: "wrap", alignItems: "center" }}>
@@ -556,7 +541,6 @@ export default function ItinerairesClient() {
                       </div>
                     </div>
 
-                    {/* Actions */}
                     <div className="it-card-actions" onClick={e => e.stopPropagation()}>
                       <a href={`/touriste/itineraires/${it.id}`}
                         style={{ padding: "8px 14px", background: "#F3F4F6", color: "#374151", borderRadius: 20, fontSize: 12, fontWeight: 700, textDecoration: "none", display: "flex", alignItems: "center", gap: 5, transition: "all .15s" }}
@@ -564,20 +548,14 @@ export default function ItinerairesClient() {
                         onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = "#F3F4F6"; }}>
                         <Pencil size={12} /> Modifier
                       </a>
-
                       <button className="it-btn"
-                        onClick={() => deleteIt(it.id)}
-                        disabled={deleting === it.id}
+                        onClick={() => deleteIt(it.id)} disabled={deleting === it.id}
                         style={{ padding: "8px 14px", background: "#FEF2F2", color: "#DC2626", borderRadius: 20, fontSize: 12, fontWeight: 700, display: "flex", alignItems: "center", gap: 5 }}>
                         {deleting === it.id
                           ? <Loader2 size={13} style={{ animation: "spin .8s linear infinite" }} />
                           : <Trash2 size={13} />}
                       </button>
-
-                      <button
-                        className="it-reserve-all-btn"
-                        disabled={!hasBookable}
-                        onClick={() => openItineraryCheckout(it)}>
+                      <button className="it-reserve-all-btn" disabled={!hasBookable} onClick={() => openItineraryCheckout(it)}>
                         <ShoppingCart size={13} /> Réserver
                       </button>
                     </div>
@@ -587,18 +565,15 @@ export default function ItinerairesClient() {
                     </div>
                   </div>
 
-                  {/* ── Détail expandé ── */}
+                  {/* Détail expandé */}
                   {isOpen && (
                     <div className="it-detail" style={{ padding: "0 24px 20px", borderTop: "1px solid #F3F4F6" }}>
                       <div style={{ paddingTop: 18 }}>
                         {plan.length === 0 ? (
-                          <p style={{ fontSize: 13, color: "#C4C9D0", fontStyle: "italic" }}>
-                            Aucune activité planifiée
-                          </p>
+                          <p style={{ fontSize: 13, color: "#C4C9D0", fontStyle: "italic" }}>Aucune activité planifiée</p>
                         ) : plan.map((day, di) => (
                           <div key={di} className="it-day-block"
                             style={{ borderLeft: "3px solid #EEF2FF", paddingLeft: 14, marginBottom: 24 }}>
-
                             <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 12 }}>
                               <MapPin size={12} color="#02AFCF" />
                               <p style={{ fontSize: 13, fontWeight: 800, color: "#053366", margin: 0 }}>
@@ -609,14 +584,11 @@ export default function ItinerairesClient() {
                             {(day.activities || []).length === 0 ? (
                               <p style={{ fontSize: 12, color: "#D1D5DB", fontStyle: "italic" }}>Journée libre</p>
                             ) : (day.activities || []).map((act, ai) => {
-                              // ── Résolution des données via le bon UUID ──
                               const photo = getActPhoto(act);
                               const details = getActDetails(act);
                               const startDate = act.date || details?.start_date || act.excursion?.start_date;
                               const startTime = act.excursion?.start_time || details?.start_time;
                               const meetingPoint = details?.meeting_point || act.excursion?.meeting_point;
-                              // Vérifier si on a pu résoudre l'UUID (pour désactiver si introuvable)
-                              const resolvedId = resolveExcursionId(act);
 
                               return (
                                 <div key={act.id || ai} className="act-row">
@@ -631,31 +603,20 @@ export default function ItinerairesClient() {
                                       onError={e => { (e.target as HTMLImageElement).style.display = "none"; }}
                                     />
                                   ) : (
-                                    <div
-                                      className="act-photo-placeholder"
-                                      onClick={() => resolvedId && openExcursionDetails(act)}
-                                      style={{ cursor: resolvedId ? "pointer" : "default" }}>
+                                    <div className="act-photo-placeholder" onClick={() => openExcursionDetails(act)}>
                                       <ImageIcon size={20} color="#9CA3AF" strokeWidth={1.5} />
                                     </div>
                                   )}
 
                                   <div style={{ flex: 1, minWidth: 0 }}>
-                                    {/* Titre */}
                                     <p
                                       className="excursion-title"
-                                      onClick={() => resolvedId && openExcursionDetails(act)}
-                                      style={{
-                                        fontSize: 14, fontWeight: 700, color: "#111827",
-                                        margin: "0 0 6px",
-                                        cursor: resolvedId ? "pointer" : "default",
-                                        display: "flex", alignItems: "center", gap: 6,
-                                        opacity: resolvedId ? 1 : 0.7,
-                                      }}>
+                                      onClick={() => openExcursionDetails(act)}
+                                      style={{ fontSize: 14, fontWeight: 700, color: "#111827", margin: "0 0 6px", display: "flex", alignItems: "center", gap: 6 }}>
                                       {act.excursion?.title || "—"}
-                                      {resolvedId && <ExternalLink size={12} color="#9CA3AF" />}
+                                      <ExternalLink size={12} color="#9CA3AF" />
                                     </p>
 
-                                    {/* Badges */}
                                     <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", marginBottom: 6 }}>
                                       {act.time && (
                                         <span className="info-badge">
@@ -674,7 +635,6 @@ export default function ItinerairesClient() {
                                       )}
                                     </div>
 
-                                    {/* Date / heure */}
                                     {(startDate || startTime) && (
                                       <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 6, padding: "4px 8px", background: "#F0FDF4", borderRadius: 8, border: "1px solid #D1FAE5" }}>
                                         <Calendar size={12} color="#059669" />
@@ -685,7 +645,6 @@ export default function ItinerairesClient() {
                                       </div>
                                     )}
 
-                                    {/* Point de rendez-vous */}
                                     {meetingPoint && (
                                       <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 6, padding: "4px 8px", background: "#FFF7ED", borderRadius: 8, border: "1px solid #FED7AA" }}>
                                         <Flag size={12} color="#EA580C" />
@@ -695,7 +654,6 @@ export default function ItinerairesClient() {
                                       </div>
                                     )}
 
-                                    {/* Ville */}
                                     {act.excursion?.city && (
                                       <div style={{ display: "flex", alignItems: "center", gap: 4, marginBottom: 4 }}>
                                         <MapPin size={10} color="#9CA3AF" />
@@ -703,40 +661,24 @@ export default function ItinerairesClient() {
                                       </div>
                                     )}
 
-                                    {/* Note */}
                                     {act.note && (
                                       <p style={{ fontSize: 10, color: "#9CA3AF", margin: "6px 0 0", fontStyle: "italic", display: "flex", alignItems: "center", gap: 3 }}>
                                         <FileText size={9} /> {act.note}
                                       </p>
                                     )}
 
-                                    {/* Bouton voir détail — désactivé si UUID introuvable */}
                                     <button
                                       onClick={() => openExcursionDetails(act)}
-                                      disabled={!resolvedId}
-                                      title={!resolvedId ? "Excursion introuvable dans la base de données" : ""}
-                                      style={{
-                                        marginTop: 10, padding: "6px 12px",
-                                        background: "white",
-                                        border: `1.5px solid ${resolvedId ? "#2B96A8" : "#E5E7EB"}`,
-                                        borderRadius: 20, fontSize: 11, fontWeight: 600,
-                                        color: resolvedId ? "#2B96A8" : "#9CA3AF",
-                                        cursor: resolvedId ? "pointer" : "not-allowed",
-                                        display: "inline-flex", alignItems: "center", gap: 5,
-                                        transition: "all .15s",
-                                      }}
+                                      style={{ marginTop: 10, padding: "6px 12px", background: "white", border: "1.5px solid #2B96A8", borderRadius: 20, fontSize: 11, fontWeight: 600, color: "#2B96A8", cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 5, transition: "all .15s" }}
                                       onMouseEnter={e => {
-                                        if (!resolvedId) return;
                                         (e.currentTarget as HTMLElement).style.background = "#2B96A8";
                                         (e.currentTarget as HTMLElement).style.color = "white";
                                       }}
                                       onMouseLeave={e => {
-                                        if (!resolvedId) return;
                                         (e.currentTarget as HTMLElement).style.background = "white";
                                         (e.currentTarget as HTMLElement).style.color = "#2B96A8";
                                       }}>
-                                      <ExternalLink size={11} />
-                                      {resolvedId ? "Voir détail" : "Excursion introuvable"}
+                                      <ExternalLink size={11} /> Voir détail
                                     </button>
                                   </div>
                                 </div>
@@ -753,7 +695,7 @@ export default function ItinerairesClient() {
           </div>
         )}
 
-        {/* ── Checkout modal ── */}
+        {/* Checkout modal */}
         {checkoutExcs && checkoutExcs.length > 0 && (
           <ExcursionClient
             exc={checkoutExcs[0]}

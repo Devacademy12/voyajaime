@@ -44,8 +44,6 @@ const CSS = `
   /* ══════════════════════════════
      ANIMATIONS
   ══════════════════════════════ */
-
-  /* Hero d'entrée */
   @keyframes heroFadeUp {
     from { opacity:0; transform:translateY(36px); }
     to   { opacity:1; transform:translateY(0); }
@@ -62,36 +60,24 @@ const CSS = `
     from { opacity:0; transform:translateX(-16px) scale(.9); }
     to   { opacity:1; transform:translateX(0) scale(1); }
   }
-
-  /* Points clignotants */
   @keyframes dotPulse   { 0%,100%{opacity:1;transform:scale(1);}  50%{opacity:.4;transform:scale(.75);} }
   @keyframes dotPulse2  { 0%,100%{opacity:.4;transform:scale(.75);} 50%{opacity:1;transform:scale(1);}  }
-
-  /* Pulse bouton CTA */
   @keyframes ctaPulse {
     0%,100% { box-shadow:0 4px 20px rgba(2,175,207,.35); }
     50%     { box-shadow:0 8px 36px rgba(2,175,207,.6); }
   }
-
-  /* Stats pop-in */
   @keyframes countUp {
     from { opacity:0; transform:translateY(16px) scale(.85); }
     to   { opacity:1; transform:translateY(0) scale(1); }
   }
-
-  /* Scroll reveal générique */
   @keyframes revealUp {
     from { opacity:0; transform:translateY(28px); }
     to   { opacity:1; transform:translateY(0); }
   }
-
-  /* Trait décoratif */
   @keyframes lineGrow {
     from { transform:scaleX(0); }
     to   { transform:scaleX(1); }
   }
-
-  /* Shimmer (carte équipe) */
   @keyframes shimmer {
     0%   { background-position:-400px 0; }
     100% { background-position:400px 0; }
@@ -139,14 +125,14 @@ const CSS = `
 
   .hero-title {
     font-family:'Playfair Display',serif;
-    font-size:clamp(36px,5vw,64px);
+    font-size:clamp(28px,5vw,64px);
     font-weight:900; color:#053366;
-    letter-spacing:-2px; line-height:1.04;
+    letter-spacing:-1.5px; line-height:1.06;
     margin-bottom:20px;
     animation:heroFadeUp .7s .1s ease both;
   }
   .hero-sub {
-    font-size:17px; color:#6B7280; line-height:1.72;
+    font-size:16px; color:#6B7280; line-height:1.72;
     max-width:480px; margin-bottom:24px;
     animation:heroFadeUp .7s .22s ease both;
   }
@@ -202,7 +188,7 @@ const CSS = `
      STAT CARDS
   ══════════════════════════════ */
   .stat-card {
-    text-align:center; padding:32px 20px;
+    text-align:center; padding:28px 16px;
     border-radius:14px; background:#ffffff;
     border:1px solid #E5E7EB;
     position:relative; overflow:hidden;
@@ -238,7 +224,7 @@ const CSS = `
      VALUE CARDS
   ══════════════════════════════ */
   .value-card {
-    padding:28px; border-radius:14px;
+    padding:24px; border-radius:14px;
     background:white; border:1.5px solid #E5E7EB;
     position:relative; overflow:hidden;
     cursor:default;
@@ -298,7 +284,7 @@ const CSS = `
   ══════════════════════════════ */
   .cta-btn {
     display:inline-flex; align-items:center; gap:10px;
-    padding:16px 32px; background:#02AFCF; color:white;
+    padding:14px 28px; background:#02AFCF; color:white;
     border-radius:12px; font-size:15px; font-weight:700;
     text-decoration:none;
     transition:all .3s cubic-bezier(.34,1.56,.64,1);
@@ -328,13 +314,12 @@ const CSS = `
     background:#ffffff;
     border:1.5px solid #E5E7EB;
     border-radius:20px;
-    padding:44px 44px 40px;
+    padding:36px 32px 32px;
     position:relative;
     overflow:hidden;
     box-shadow:0 8px 32px rgba(5,51,102,.07),0 2px 8px rgba(5,51,102,.04);
     animation:heroSlideRight .7s .05s ease both;
   }
-  /* Coin dégradé décoratif */
   .hero-text-card::before {
     content:'';
     position:absolute; top:0; left:0;
@@ -343,7 +328,6 @@ const CSS = `
     border-radius:0 0 80px 0;
     pointer-events:none;
   }
-  /* Trait accent en haut */
   .hero-text-card::after {
     content:'';
     position:absolute; top:0; left:0; right:0; height:3px;
@@ -358,7 +342,7 @@ const CSS = `
     background:#ffffff;
     border:1.5px solid #E5E7EB;
     border-radius:20px;
-    padding:52px 52px 48px;
+    padding:40px 36px 36px;
     position:relative;
     overflow:hidden;
     box-shadow:0 10px 36px rgba(5,51,102,.07),0 2px 10px rgba(5,51,102,.04);
@@ -368,14 +352,12 @@ const CSS = `
     border-color:#C8EDF5;
     box-shadow:0 16px 48px rgba(2,175,207,.10),0 4px 16px rgba(2,175,207,.06);
   }
-  /* Accent gauche */
   .mission-card::before {
     content:'';
     position:absolute; top:0; bottom:0; left:0; width:4px;
     background:linear-gradient(180deg,#02AFCF,#053366);
     border-radius:20px 0 0 20px;
   }
-  /* Cercle décoratif fond */
   .mission-card::after {
     content:'';
     position:absolute; bottom:-80px; right:-80px;
@@ -400,18 +382,134 @@ const CSS = `
   .mission-line.visible { animation:lineGrow .6s .1s ease both; }
 
   /* ══════════════════════════════
-     RESPONSIVE
+     FOOTER RESPONSIVE
   ══════════════════════════════ */
-  @media(max-width:900px){
-    .stats-grid  { grid-template-columns:1fr 1fr!important; }
-    .values-grid { grid-template-columns:1fr 1fr!important; }
-    .team-grid   { grid-template-columns:1fr 1fr!important; }
-    .hero-grid   { grid-template-columns:1fr!important; }
+  .footer-inner {
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    flex-wrap:wrap;
+    gap:12px;
   }
-  @media(max-width:560px){
-    .values-grid { grid-template-columns:1fr!important; }
-    .team-grid   { grid-template-columns:1fr!important; }
-    .stats-grid  { grid-template-columns:1fr!important; }
+
+  /* ══════════════════════════════
+     LAYOUT GRIDS — Base (desktop)
+  ══════════════════════════════ */
+  .hero-grid {
+    display:grid;
+    gap:48px;
+    align-items:center;
+  }
+  .stats-grid {
+    display:grid;
+    gap:16px;
+  }
+  .values-grid {
+    display:grid;
+    gap:16px;
+  }
+  .team-grid {
+    display:grid;
+    gap:20px;
+  }
+
+  /* ══════════════════════════════
+     RESPONSIVE — Tablette ≤ 900px
+  ══════════════════════════════ */
+  @media (max-width: 900px) {
+    /* Hero */
+    .hero-section { padding: 64px 24px !important; }
+    .hero-grid    { grid-template-columns: 1fr !important; gap: 32px !important; }
+    .hero-img-frame { height: 280px !important; }
+    .hero-img-frame img { height: 280px !important; }
+    .hero-sub     { max-width: 100% !important; }
+
+    /* Mission */
+    .mission-section { padding: 64px 24px !important; }
+    .mission-card     { padding: 32px 28px 28px !important; }
+
+    /* Stats */
+    .stats-section { padding: 60px 24px !important; }
+    .stats-grid    { grid-template-columns: repeat(2, 1fr) !important; }
+
+    /* Values */
+    .values-section { padding: 64px 24px !important; }
+    .values-grid    { grid-template-columns: repeat(2, 1fr) !important; }
+
+    /* Team */
+    .team-section { padding: 64px 24px !important; }
+    .team-grid    { grid-template-columns: repeat(2, 1fr) !important; }
+
+    /* CTA */
+    .cta-section  { padding: 72px 24px !important; }
+
+    /* Footer */
+    .footer-inner { flex-direction: column; align-items: flex-start; }
+  }
+
+  /* ══════════════════════════════
+     RESPONSIVE — Mobile ≤ 640px
+  ══════════════════════════════ */
+  @media (max-width: 640px) {
+    /* Global padding */
+    section { padding-left: 16px !important; padding-right: 16px !important; }
+
+    /* Hero */
+    .hero-section     { padding: 48px 16px !important; }
+    .hero-text-card   { padding: 24px 20px 22px !important; border-radius: 16px !important; }
+    .hero-title       { font-size: clamp(26px, 7vw, 36px) !important; letter-spacing: -1px !important; margin-bottom: 14px !important; }
+    .hero-sub         { font-size: 15px !important; margin-bottom: 18px !important; }
+    .hero-badge       { font-size: 10px !important; padding: 6px 12px !important; margin-bottom: 14px !important; }
+    .hero-img-frame   { height: 220px !important; border-radius: 14px !important; }
+    .hero-img-frame img { height: 220px !important; }
+
+    /* Mission */
+    .mission-section  { padding: 48px 16px !important; }
+    .mission-card     { padding: 24px 20px 22px !important; border-radius: 16px !important; }
+    .mission-card h2  { font-size: clamp(20px, 5vw, 28px) !important; }
+
+    /* Stats */
+    .stats-section    { padding: 48px 16px !important; }
+    .stats-grid       { grid-template-columns: repeat(2, 1fr) !important; gap: 12px !important; }
+    .stat-card        { padding: 22px 12px !important; }
+    .stat-card .stat-value { font-size: 34px !important; }
+
+    /* Values */
+    .values-section   { padding: 48px 16px !important; }
+    .values-grid      { grid-template-columns: 1fr !important; gap: 12px !important; }
+    .value-card       { padding: 20px !important; }
+
+    /* Team */
+    .team-section     { padding: 48px 16px !important; }
+    .team-grid        { grid-template-columns: 1fr !important; gap: 16px !important; }
+    .team-card .photo-wrap { height: 200px !important; }
+    .team-card .photo-wrap img { height: 200px !important; }
+    .team-card-avatar { height: 200px !important; }
+
+    /* CTA */
+    .cta-section      { padding: 56px 16px !important; }
+    .cta-btn          { width: 100%; justify-content: center; padding: 14px 20px !important; font-size: 14px !important; }
+
+    /* Section labels & dividers */
+    .section-label    { font-size: 10px !important; letter-spacing: 2px !important; }
+
+    /* Rich content */
+    .rich-content p   { font-size: 15px !important; }
+
+    /* Footer */
+    footer            { padding: 20px 16px !important; }
+    .footer-inner     { flex-direction: column; align-items: flex-start; gap: 10px; }
+    .footer-links     { flex-direction: column; gap: 10px !important; }
+  }
+
+  /* ══════════════════════════════
+     RESPONSIVE — Très petit ≤ 380px
+  ══════════════════════════════ */
+  @media (max-width: 380px) {
+    .hero-title       { font-size: 24px !important; letter-spacing: -.5px !important; }
+    .stats-grid       { grid-template-columns: 1fr !important; }
+    .stat-card .stat-value { font-size: 30px !important; }
+    .mission-card h2  { font-size: 18px !important; }
   }
 `;
 
@@ -466,25 +564,23 @@ export default async function AboutPage() {
       <div style={{ paddingTop:64 }} />
 
       {/* ══════════════════════════════
-          HERO  — Animation d'entrée
+          HERO
       ══════════════════════════════ */}
       {hero && (
         <section
           aria-label="Présentation"
+          className="hero-section"
           style={{ background:"#F9FAFB", borderBottom:"1px solid #E5E7EB", padding:"88px 40px" }}
         >
           <div style={{ maxWidth:1100, margin:"0 auto" }}>
             <div
               className="hero-grid"
               style={{
-                display:"grid",
                 gridTemplateColumns: hero.image_url ? "1fr 1fr" : "1fr",
-                gap:72,
-                alignItems:"center",
                 maxWidth: hero.image_url ? "100%" : 720,
               }}
             >
-              {/* Texte — carte animée depuis la gauche */}
+              {/* Texte */}
               <div className="hero-text-card">
                 <div className="hero-badge">
                   <span className="hero-badge-dot" />
@@ -511,7 +607,7 @@ export default async function AboutPage() {
                 )}
               </div>
 
-              {/* Image — pop depuis le bas */}
+              {/* Image */}
               {hero.image_url && (
                 <div className="hero-img-frame" style={{ height:400 }}>
                   <img
@@ -532,12 +628,11 @@ export default async function AboutPage() {
       {mission && (
         <section
           aria-labelledby="mission-heading"
-          className="reveal"
+          className="reveal mission-section"
           style={{ padding:"88px 40px", background:"#F9FAFB" }}
         >
           <div style={{ maxWidth:860, margin:"0 auto" }}>
             <div className="mission-card">
-              {/* Trait dégradé animé */}
               <div className="mission-line reveal" style={{ marginBottom:14 }} />
 
               <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:14 }}>
@@ -549,7 +644,7 @@ export default async function AboutPage() {
                   id="mission-heading"
                   style={{
                     fontFamily:"'Playfair Display',serif",
-                    fontSize:"clamp(24px,3vw,40px)",
+                    fontSize:"clamp(22px,3vw,40px)",
                     fontWeight:900, color:"#053366",
                     letterSpacing:"-1px", marginBottom:12, lineHeight:1.12,
                   }}
@@ -558,7 +653,7 @@ export default async function AboutPage() {
                 </h2>
               )}
               {mission.subtitle && (
-                <p style={{ fontSize:17, color:"#6B7280", marginBottom:24, lineHeight:1.65 }}>
+                <p style={{ fontSize:16, color:"#6B7280", marginBottom:24, lineHeight:1.65 }}>
                   {mission.subtitle}
                 </p>
               )}
@@ -576,7 +671,7 @@ export default async function AboutPage() {
       {stats && (stats.meta?.items as { value:string; label:string }[])?.length > 0 && (
         <section
           aria-labelledby="stats-heading"
-          className="reveal"
+          className="reveal stats-section"
           style={{ padding:"80px 40px", background:"#F9FAFB", borderTop:"1px solid #E5E7EB", borderBottom:"1px solid #E5E7EB" }}
         >
           <div style={{ maxWidth:1100, margin:"0 auto" }}>
@@ -585,8 +680,8 @@ export default async function AboutPage() {
                 id="stats-heading"
                 style={{
                   fontFamily:"'Playfair Display',serif",
-                  fontSize:30, fontWeight:900, color:"#053366",
-                  textAlign:"center", marginBottom:44, letterSpacing:"-.5px",
+                  fontSize:"clamp(22px,3vw,30px)", fontWeight:900, color:"#053366",
+                  textAlign:"center", marginBottom:36, letterSpacing:"-.5px",
                 }}
               >
                 {stats.title}
@@ -595,18 +690,19 @@ export default async function AboutPage() {
             <div
               className="stats-grid"
               style={{
-                display:"grid",
                 gridTemplateColumns:`repeat(${Math.min((stats.meta.items as []).length,4)},1fr)`,
-                gap:18,
               }}
             >
               {(stats.meta.items as { value:string; label:string }[]).map((item, i) => (
                 <div key={i} className="stat-card">
-                  <p style={{
-                    fontFamily:"'Playfair Display',serif",
-                    fontSize:44, fontWeight:900, color:"#053366",
-                    marginBottom:8, lineHeight:1,
-                  }}>
+                  <p
+                    className="stat-value"
+                    style={{
+                      fontFamily:"'Playfair Display',serif",
+                      fontSize:44, fontWeight:900, color:"#053366",
+                      marginBottom:8, lineHeight:1,
+                    }}
+                  >
                     {item.value}
                   </p>
                   <p style={{ fontSize:13, fontWeight:600, color:"#6B7280" }}>{item.label}</p>
@@ -623,12 +719,11 @@ export default async function AboutPage() {
       {values && (values.meta?.items as { icon:string; title:string; text:string }[])?.length > 0 && (
         <section
           aria-labelledby="values-heading"
-          className="reveal"
+          className="reveal values-section"
           style={{ padding:"88px 40px", background:"#ffffff" }}
         >
           <div style={{ maxWidth:1100, margin:"0 auto" }}>
-            {/* Header centré */}
-            <div style={{ textAlign:"center", marginBottom:56 }}>
+            <div style={{ textAlign:"center", marginBottom:48 }}>
               <div style={{ display:"flex", alignItems:"center", gap:10, justifyContent:"center", marginBottom:14 }}>
                 <div className="divider" />
                 <p className="section-label">Ce qui nous guide</p>
@@ -639,7 +734,7 @@ export default async function AboutPage() {
                   id="values-heading"
                   style={{
                     fontFamily:"'Playfair Display',serif",
-                    fontSize:"clamp(24px,3vw,40px)",
+                    fontSize:"clamp(22px,3vw,40px)",
                     fontWeight:900, color:"#053366",
                     letterSpacing:"-1px", lineHeight:1.1, marginBottom:10,
                   }}
@@ -654,13 +749,10 @@ export default async function AboutPage() {
               )}
             </div>
 
-            {/* Grille */}
             <div
               className="values-grid"
               style={{
-                display:"grid",
                 gridTemplateColumns:`repeat(${Math.min((values.meta.items as []).length,4)},1fr)`,
-                gap:18,
               }}
             >
               {(values.meta.items as { icon:string; title:string; text:string }[]).map((item, i) => (
@@ -691,12 +783,11 @@ export default async function AboutPage() {
       {team && (
         <section
           aria-labelledby="team-heading"
-          className="reveal"
+          className="reveal team-section"
           style={{ padding:"88px 40px", background:"#F9FAFB", borderTop:"1px solid #E5E7EB" }}
         >
           <div style={{ maxWidth:1100, margin:"0 auto" }}>
-            {/* Header centré */}
-            <div style={{ textAlign:"center", marginBottom:56 }}>
+            <div style={{ textAlign:"center", marginBottom:48 }}>
               <div style={{ display:"flex", alignItems:"center", gap:10, justifyContent:"center", marginBottom:14 }}>
                 <div className="divider" />
                 <p className="section-label">Notre équipe</p>
@@ -707,7 +798,7 @@ export default async function AboutPage() {
                   id="team-heading"
                   style={{
                     fontFamily:"'Playfair Display',serif",
-                    fontSize:"clamp(24px,3vw,40px)",
+                    fontSize:"clamp(22px,3vw,40px)",
                     fontWeight:900, color:"#053366",
                     letterSpacing:"-1px", lineHeight:1.1, marginBottom:10,
                   }}
@@ -727,11 +818,10 @@ export default async function AboutPage() {
               )}
             </div>
 
-            {/* Membres */}
             {((team.meta?.members ?? []) as { name:string; role:string; photo:string; bio:string }[]).length > 0 && (
               <div
                 className="team-grid"
-                style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:22 }}
+                style={{ gridTemplateColumns:"repeat(3,1fr)" }}
               >
                 {(team.meta.members as { name:string; role:string; photo:string; bio:string }[]).map((m, i) => (
                   <article
@@ -759,7 +849,7 @@ export default async function AboutPage() {
                         </div>
                       )}
                     </div>
-                    <div style={{ padding:"22px" }}>
+                    <div style={{ padding:"20px" }}>
                       <h3 style={{ fontSize:15, fontWeight:800, color:"#053366", marginBottom:4 }}>
                         {m.name}
                       </h3>
@@ -787,7 +877,7 @@ export default async function AboutPage() {
       {cta && (
         <section
           aria-labelledby="cta-heading"
-          className="reveal"
+          className="reveal cta-section"
           style={{
             padding:"96px 40px",
             background:"linear-gradient(135deg,#F0F9FB 0%,#F9FAFB 50%,#EEF2FF 100%)",
@@ -797,7 +887,6 @@ export default async function AboutPage() {
             overflow:"hidden",
           }}
         >
-          {/* Cercle décoratif */}
           <div style={{
             position:"absolute", top:"-100px", left:"50%", transform:"translateX(-50%)",
             width:500, height:500, borderRadius:"50%",
@@ -817,7 +906,7 @@ export default async function AboutPage() {
                 id="cta-heading"
                 style={{
                   fontFamily:"'Playfair Display',serif",
-                  fontSize:"clamp(26px,3.5vw,48px)",
+                  fontSize:"clamp(24px,3.5vw,48px)",
                   fontWeight:900, color:"#053366",
                   letterSpacing:"-1.5px", lineHeight:1.08, marginBottom:14,
                 }}
@@ -826,14 +915,14 @@ export default async function AboutPage() {
               </h2>
             )}
             {cta.subtitle && (
-              <p style={{ fontSize:17, color:"#6B7280", marginBottom:14, lineHeight:1.65 }}>
+              <p style={{ fontSize:16, color:"#6B7280", marginBottom:14, lineHeight:1.65 }}>
                 {cta.subtitle}
               </p>
             )}
             {cta.content && (
               <div
                 className="rich-content"
-                style={{ marginBottom:36 }}
+                style={{ marginBottom:32 }}
                 dangerouslySetInnerHTML={{ __html: cta.content }}
               />
             )}
@@ -855,23 +944,22 @@ export default async function AboutPage() {
       <footer style={{
         background:"#F3F4F6", borderTop:"1px solid #E5E7EB",
         padding:"24px 40px",
-        display:"flex", justifyContent:"space-between", alignItems:"center",
-        flexWrap:"wrap", gap:12,
       }}>
-        <p style={{ color:"#9CA3AF", fontSize:13 }}>
-          © 2026 VoyajAime — Tourisme authentique en Tunisie
-        </p>
-        <div style={{ display:"flex", gap:24 }}>
-          <Link href="/excursions" style={{ color:"#6B7280", fontSize:13, textDecoration:"none", fontWeight:500 }}>
-            Excursions →
-          </Link>
-          <Link href="/contact" style={{ color:"#6B7280", fontSize:13, textDecoration:"none", fontWeight:500 }}>
-            Contact →
-          </Link>
+        <div className="footer-inner">
+          <p style={{ color:"#9CA3AF", fontSize:13 }}>
+            © 2026 VoyajAime — Tourisme authentique en Tunisie
+          </p>
+          <div className="footer-links" style={{ display:"flex", gap:24 }}>
+            <Link href="/excursions" style={{ color:"#6B7280", fontSize:13, textDecoration:"none", fontWeight:500 }}>
+              Excursions →
+            </Link>
+            <Link href="/contact" style={{ color:"#6B7280", fontSize:13, textDecoration:"none", fontWeight:500 }}>
+              Contact →
+            </Link>
+          </div>
         </div>
       </footer>
 
-      {/* ══ Script scroll reveal ══ */}
       <script dangerouslySetInnerHTML={{ __html: SCROLL_REVEAL_SCRIPT }} />
     </>
   );
