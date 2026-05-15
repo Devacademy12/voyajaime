@@ -8,7 +8,7 @@ import {
   Heart, Star, Clock, MapPin, ArrowRight,
   SlidersHorizontal, Loader, Compass, Eye,
 } from "lucide-react";
-import ExcursionClient from "@/app/excursions/[id]/ExcursionClient";
+import ExcursionClient from "@/app/components/excursions/ExcursionDetailModal";
 
 /* ── Types ─────────────────────────────────────────────────────── */
 interface DateDispo {
