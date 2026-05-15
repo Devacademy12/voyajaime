@@ -320,23 +320,9 @@ export default function FavorisClient({
 
       {/* ══ CheckoutModal — toute la logique de réservation reste là-dedans ══ */}
       {modalExc && (
-        <CheckoutModal
-          reservation={{
-            id: `temp-${Date.now()}`,
-            touriste_id: userId,
-            excursion_id: modalExc.id,
-            excursion_title: modalExc.title,
-            excursion_price: modalExc.price_per_person,
-            quantite: 1,
-            status: 'pending',
-            total_price: modalExc.price_per_person,
-            paiement_id: null,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-          } as any}
-          onClose={() => setModalExc(null)}
-          onPaid={() => setModalExc(null)}
-        />
+        <CheckoutModal exc={modalExc} onClose={() => setModalExc(null)}
+                    
+                  />
       )}
     </>
   );

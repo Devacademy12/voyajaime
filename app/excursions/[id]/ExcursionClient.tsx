@@ -1620,22 +1620,7 @@ export default function ExcursionClient({
 
       {/* ── MODAL RESERVATION ── */}
       {showCheckout && (
-        <CheckoutModal 
-          reservation={{ 
-            id: `temp-${Date.now()}`,
-            touriste_id: user?.id || '',
-            excursion_id: exc.id,
-            excursion_title: exc.title,
-            excursion_price: exc.price_per_person,
-            quantite: 1,
-            status: 'pending',
-            total_price: exc.price_per_person,
-            paiement_id: null,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-          } as any}
-          onClose={() => setShowCheckout(false)} 
-          onPaid={() => setShowCheckout(false)}
+        <CheckoutModal exc={exc} onClose={() => setShowCheckout(false)}
         />
       )}
 
