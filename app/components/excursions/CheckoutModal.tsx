@@ -1,587 +1,1572 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useRef } from "react";
 import { createClient } from "@/lib/supabaseClient";
-import { sanitizeText } from "@/app/lib/sanitize";
+import Link from "next/link";
 import {
-  X, CalendarDays, Users, MapPin, Clock, Tag,
-  Check, Minus, Plus, ShieldCheck, RefreshCcw, Lock,
-  Loader2, CheckCircle, AlertCircle, ChevronLeft, ChevronRight,
-  CreditCard, MessageSquare, Timer, History, ArrowRight, Phone, Navigation, Ticket
+  CalendarDays, MapPin, Wallet, Building2,
+  ChevronRight, ChevronLeft, MessageSquare, X, Loader2,
+  ShieldCheck, Ticket, Navigation,
+  AlertCircle, Timer, History, Users,
+  CheckCircle,
 } from "lucide-react";
 
-interface TimeSlot {
-  time: string;
-  language?: string;
-  price: number;
-  slots: number;
-  groupPrice?: boolean;
-  start_time?: string;
-  end_time?: string;
-}
-
-interface DateDispo {
-  date: string;
-  dateObj: Date;
-  dayName: string;
-  slots: TimeSlot[];
-}
-
+// ─── Types ────────────────────────────────────────────────────────────
 interface Excursion {
   id: string;
   title: string;
   city: string;
+  photos: string[];
   duration_hours: number;
   price_per_person: number;
-  max_people: number;
-  available_dates?: any[] | null;
+  meeting_point?: string;
+  rating?: number;
 }
 
-interface Props {
-  exc?: Excursion;
-  excursion?: Excursion;
-  userId?: string;
-  onClose: () => void;
+interface Reservation {
+  id: string;
+  booking_code: string;
+  date: string;
+  time: string;
+  people_count: number;
+  total_price: number;
+  platform_fee: number;
+  status: string;
+  payment_status?: string | null;
+  payment_deadline?: string | null;
+  excursion_id?: string;
+  excursion: Excursion | null;
 }
 
-const MONTHS_FR = ["Janvier", "Février", "Mars", "Avril", "Mai", "Juin", "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre"];
-const DAYS_FR = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"];
+// ─── Constants ────────────────────────────────────────────────────────
+type PayMethod = "cash" | "bank";
 
-function formatDateLabel(date: Date): string {
-  const today = new Date();
-  const tomorrow = new Date(today);
-  tomorrow.setDate(tomorrow.getDate() + 1);
-  
-  today.setHours(0, 0, 0, 0);
-  tomorrow.setHours(0, 0, 0, 0);
-  const checkDate = new Date(date);
-  checkDate.setHours(0, 0, 0, 0);
-  
-  if (checkDate.getTime() === today.getTime()) {
-    return "Aujourd'hui " + date.toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
-  } else if (checkDate.getTime() === tomorrow.getTime()) {
-    return "Demain " + date.toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
-  } else {
-    return date.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "short" });
+const PAY_METHODS: {
+  id: PayMethod;
+  label: string;
+  sub: string;
+  Icon: React.ElementType;
+}[] = [
+  {
+    id: "cash",
+    label: "Espèces sur place",
+    sub: "Paiement à la rencontre avec le guide",
+    Icon: Wallet,
+  },
+  {
+    id: "bank",
+    label: "Virement bancaire",
+    sub: "RIB transmis par email après confirmation",
+    Icon: Building2,
+  },
+];
+
+const STEPS = ["Récapitulatif", "Informations", "Paiement"];
+
+// ─── Helpers ──────────────────────────────────────────────────────────
+function fmtDate(d: string, short = false) {
+  if (!d) return "";
+  const dt = new Date(d + "T00:00:00");
+  if (short)
+    return dt.toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
+  return dt.toLocaleDateString("fr-FR", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
+}
+
+// ─── CSS ──────────────────────────────────────────────────────────────
+const CSS = `
+  @import url('https://fonts.googleapis.com/css2?family=Clash+Display:wght@500;600;700&family=Satoshi:wght@400;500;600;700&display=swap');
+  @import url('https://api.fontshare.com/v2/css?f[]=clash-display@500,600,700&f[]=satoshi@400,500,600,700&display=swap');
+
+  @keyframes cm-spin    { to { transform: rotate(360deg) } }
+  @keyframes cm-fadeIn  { from { opacity: 0 } to { opacity: 1 } }
+  @keyframes cm-slideUp { from { opacity: 0; transform: translateY(24px) } to { opacity: 1; transform: none } }
+  @keyframes cm-pulse   { 0%,100%{opacity:1} 50%{opacity:.45} }
+
+  .cm-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, .82);
+    backdrop-filter: blur(14px);
+    z-index: 2000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    animation: cm-fadeIn .15s ease;
   }
-}
 
-function TimeSlotPicker({ 
-  dateObj, 
-  slots, 
-  selectedSlot, 
-  onSelectSlot,
-  currency = "TND"
-}: { 
-  dateObj: DateDispo;
-  slots: TimeSlot[];
-  selectedSlot: TimeSlot | null;
-  onSelectSlot: (slot: TimeSlot) => void;
-  currency?: string;
-}) {
-  const [expanded, setExpanded] = useState(true);
-  
-  return (
-    <div style={{ 
-      border: "1px solid #E5E7EB", 
-      borderRadius: 16, 
-      overflow: "hidden",
-      marginBottom: 16,
-      background: "white"
-    }}>
-      <div 
-        onClick={() => setExpanded(!expanded)}
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          padding: "14px 18px",
-          background: "#F9FAFB",
-          borderBottom: expanded ? "1px solid #E5E7EB" : "none",
-          cursor: "pointer",
-          transition: "all .15s"
-        }}
-      >
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <CalendarDays size={18} color="#2B96A8" />
-          <span style={{ fontSize: 16, fontWeight: 800, color: "#111827" }}>{dateObj.dayName}</span>
-        </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <span style={{ fontSize: 12, color: "#6B7280" }}>
-            {slots.reduce((acc, s) => acc + s.slots, 0)} places disponibles
-          </span>
-          <ChevronRight 
-            size={18} 
-            style={{ 
-              transform: expanded ? "rotate(90deg)" : "rotate(0deg)",
-              transition: "transform .2s"
-            }} 
-          />
-        </div>
-      </div>
+  .cm-box {
+    background: #0D1117;
+    border: 1px solid #1E293B;
+    border-radius: 26px;
+    width: 100%;
+    max-width: 460px;
+    max-height: 92vh;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 48px 120px rgba(0,0,0,.7);
+    overflow: hidden;
+    font-family: 'Satoshi', 'DM Sans', system-ui, sans-serif;
+    animation: cm-slideUp .25s cubic-bezier(.22,1,.36,1);
+  }
 
-      {expanded && (
-        <div style={{ padding: "12px" }}>
-          {slots.map((slot, idx) => {
-            const isSelected = selectedSlot === slot;
-            const isAvailable = slot.slots > 0;
-            const isLowStock = slot.slots <= 3 && slot.slots > 0;
-            
-            return (
-              <div
-                key={idx}
-                onClick={() => isAvailable && onSelectSlot(slot)}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  padding: "14px 16px",
-                  marginBottom: idx < slots.length - 1 ? 8 : 0,
-                  background: isSelected ? "#EFF9FB" : "white",
-                  border: `1.5px solid ${isSelected ? "#2B96A8" : isAvailable ? "#E5E7EB" : "#FEE2E2"}`,
-                  borderRadius: 12,
-                  cursor: isAvailable ? "pointer" : "not-allowed",
-                  opacity: isAvailable ? 1 : 0.6,
-                  transition: "all .15s",
-                  position: "relative"
-                }}
-              >
-                {!isAvailable && (
-                  <div style={{
-                    position: "absolute",
-                    top: -8,
-                    right: 12,
-                    background: "#EF4444",
-                    color: "white",
-                    fontSize: 10,
-                    fontWeight: 700,
-                    padding: "2px 8px",
-                    borderRadius: 20,
-                  }}>
-                    Complet
-                  </div>
-                )}
-                
-                {isLowStock && isAvailable && (
-                  <div style={{
-                    position: "absolute",
-                    top: -8,
-                    right: 12,
-                    background: "#F59E0B",
-                    color: "white",
-                    fontSize: 10,
-                    fontWeight: 700,
-                    padding: "2px 8px",
-                    borderRadius: 20,
-                  }}>
-                    Dernières places !
-                  </div>
-                )}
+  /* Head */
+  .cm-head {
+    padding: 22px 24px 18px;
+    border-bottom: 1px solid #111825;
+    flex-shrink: 0;
+  }
+  .cm-head-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0;
+  }
 
-                <div style={{ flex: 2 }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
-                    <span style={{ 
-                      fontSize: 15, 
-                      fontWeight: 800, 
-                      color: isAvailable ? "#111827" : "#9CA3AF"
-                    }}>
-                      {slot.time}
-                    </span>
-                    {slot.language && (
-                      <span style={{
-                        fontSize: 11,
-                        fontWeight: 600,
-                        color: "#6B7280",
-                        background: "#F3F4F6",
-                        padding: "2px 8px",
-                        borderRadius: 20,
-                      }}>
-                        {slot.language}
-                      </span>
-                    )}
-                  </div>
-                  
-                  {slot.groupPrice && (
-                    <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 4 }}>
-                      <Users size={11} color="#10B981" />
-                      <span style={{ fontSize: 11, color: "#10B981", fontWeight: 600 }}>
-                        Tarif de groupe disponible
-                      </span>
-                    </div>
-                  )}
-                </div>
+  /* Progress */
+  .cm-progress {
+    display: flex;
+    gap: 5px;
+    margin: 16px 0 10px;
+  }
+  .cm-prog-seg {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+  }
+  .cm-prog-bar {
+    height: 2px;
+    width: 100%;
+    border-radius: 99px;
+    transition: background .3s;
+  }
+  .cm-prog-done     { background: #3DD6AC; }
+  .cm-prog-current  { background: #3DD6AC; }
+  .cm-prog-pending  { background: #1A2233; }
+  .cm-prog-lbl {
+    font-size: 9px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
 
-                <div style={{ textAlign: "right" }}>
-                  {isAvailable ? (
-                    <>
-                      <div style={{ fontSize: 18, fontWeight: 900, color: "#2B96A8" }}>
-                        {slot.price} {currency}
-                        <span style={{ fontSize: 11, fontWeight: 500, color: "#9CA3AF" }}>
-                          /pers.
-                        </span>
-                      </div>
-                      <div style={{ 
-                        fontSize: 12, 
-                        color: isLowStock ? "#F59E0B" : "#6B7280",
-                        fontWeight: isLowStock ? 700 : 500,
-                        marginTop: 2
-                      }}>
-                        {slot.slots} place{slot.slots > 1 ? "s" : ""} disponible{slot.slots > 1 ? "s" : ""}
-                      </div>
-                    </>
-                  ) : (
-                    <div style={{ fontSize: 14, fontWeight: 700, color: "#EF4444" }}>
-                      Complet
-                    </div>
-                  )}
-                </div>
+  /* Timer */
+  .cm-timer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 9px 13px;
+    border-radius: 10px;
+    border: 1px solid;
+  }
+  .cm-timer-ok     { background: #051A11; border-color: #0D3B26; }
+  .cm-timer-urgent { background: #1A0505; border-color: #3B0D0D; animation: cm-pulse .85s ease infinite; }
 
-                {isAvailable && (
-                  <div style={{ marginLeft: 12, flexShrink: 0 }}>
-                    <div style={{
-                      width: 20,
-                      height: 20,
-                      borderRadius: "50%",
-                      border: `2px solid ${isSelected ? "#2B96A8" : "#D1D5DB"}`,
-                      background: isSelected ? "#2B96A8" : "white",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                    }}>
-                      {isSelected && <div style={{ width: 10, height: 10, borderRadius: "50%", background: "white" }} />}
-                    </div>
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      )}
-    </div>
-  );
-}
+  /* Scrollable body */
+  .cm-body {
+    padding: 22px 24px;
+    overflow-y: auto;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .cm-body::-webkit-scrollbar { width: 3px; }
+  .cm-body::-webkit-scrollbar-thumb { background: #1E293B; border-radius: 3px; }
 
-const MODAL_CSS = `
-  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@400;500;600;700;800&display=swap');
-  .co-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:1000;display:flex;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(4px);animation:coFadeIn .2s ease}
-  .co-modal{background:white;border-radius:24px;padding:28px;width:100%;max-width:520px;max-height:92vh;overflow-y:auto;box-shadow:0 28px 80px rgba(0,0,0,0.28);animation:coSlideUp .28s cubic-bezier(0.34,1.56,0.64,1);font-family:'DM Sans',sans-serif}
-  .co-modal::-webkit-scrollbar{width:4px}
-  .co-modal::-webkit-scrollbar-thumb{background:#E5E7EB;border-radius:4px}
-  .co-close-btn{background:#F3F4F6;border:none;cursor:pointer;color:#9CA3AF;width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;transition:all .15s;flex-shrink:0}
-  .co-close-btn:hover{background:#E5E7EB;color:#6B7280}
-  .co-counter-btn{width:42px;height:42px;border:none;background:#F3F4F6;border-radius:10px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s}
-  .co-counter-btn:hover:not(:disabled){background:#E5E7EB}
-  .co-counter-btn:disabled{opacity:.35;cursor:not-allowed}
-  .co-cta{width:100%;padding:15px;border:none;border-radius:14px;font-size:15px;font-weight:800;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:8px}
-  .co-cta.active{background:#2B96A8;color:white}
-  .co-cta.active:hover{background:#1e7a8a;transform:translateY(-1px);box-shadow:0 8px 20px rgba(43,150,168,.3)}
-  .co-cta.disabled{background:#E5E7EB;color:#9CA3AF;cursor:not-allowed}
-  .co-cta.loading{background:#7CC4D1;color:white;cursor:not-allowed}
-  .co-textarea{width:100%;padding:11px 14px;min-height:72px;border:1.5px solid #E5E7EB;border-radius:12px;font-size:13px;font-family:'DM Sans',sans-serif;color:#374151;resize:vertical;outline:none;transition:all .2s;background:#FAFAFA}
-  .co-textarea:focus{border-color:#2B96A8;box-shadow:0 0 0 3px rgba(43,150,168,.08)}
-  @keyframes coFadeIn{from{opacity:0}to{opacity:1}}
-  @keyframes coSlideUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
-  @keyframes coSpin{to{transform:rotate(360deg)}}
+  /* Section label */
+  .cm-section-lbl {
+    font-size: 9px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: #334155;
+    margin-bottom: 10px;
+  }
+
+  /* Info grid */
+  .cm-info-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+  .cm-info-cell {
+    background: #0A0C10;
+    border: 1px solid #151C28;
+    border-radius: 11px;
+    padding: 11px 13px;
+  }
+  .cm-info-cell-lbl {
+    font-size: 9px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .7px;
+    color: #334155;
+    margin-bottom: 4px;
+  }
+  .cm-info-cell-val {
+    font-size: 13px;
+    font-weight: 700;
+    color: #94A3B8;
+  }
+
+  /* Price breakdown */
+  .cm-price-box {
+    border: 1px solid #1A2233;
+    border-radius: 14px;
+    overflow: hidden;
+  }
+  .cm-price-head {
+    background: #0A0C10;
+    padding: 11px 15px;
+    border-bottom: 1px solid #111825;
+    font-size: 9px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: #334155;
+  }
+  .cm-price-body {
+    padding: 14px 15px;
+    display: flex;
+    flex-direction: column;
+    gap: 9px;
+  }
+  .cm-price-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 13px;
+    color: #475569;
+  }
+  .cm-price-row span:last-child { font-weight: 700; color: #94A3B8; }
+  .cm-price-divider { height: 1px; background: #111825; }
+  .cm-price-total {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 13px;
+    font-weight: 700;
+    color: #F1F5F9;
+  }
+  .cm-price-total-num {
+    font-family: 'Clash Display', sans-serif;
+    font-size: 22px;
+    font-weight: 700;
+    color: #3DD6AC;
+    letter-spacing: -.5px;
+  }
+
+  /* Total hero */
+  .cm-total-hero {
+    background: #0A0C10;
+    border: 1px solid #1A2233;
+    border-radius: 16px;
+    padding: 22px;
+    text-align: center;
+  }
+
+  /* Payment method button */
+  .cm-method {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 15px;
+    border-radius: 13px;
+    border: 1px solid;
+    cursor: pointer;
+    font-family: inherit;
+    text-align: left;
+    transition: all .15s;
+    width: 100%;
+    background: none;
+  }
+  .cm-method-active   { background: #051A11; border-color: #3DD6AC; }
+  .cm-method-inactive { background: #0A0C10; border-color: #1A2233; }
+  .cm-method-inactive:hover { border-color: #2D3F55; background: #0D1117; }
+
+  /* Buttons */
+  .cm-btn-primary {
+    width: 100%;
+    padding: 15px;
+    background: #3DD6AC;
+    color: #08090C;
+    border: none;
+    border-radius: 13px;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    font-family: inherit;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 9px;
+    transition: all .2s;
+  }
+  .cm-btn-primary:hover:not(:disabled) {
+    background: #5FDFBA;
+    box-shadow: 0 8px 24px rgba(61,214,172,.28);
+  }
+  .cm-btn-primary:disabled { opacity: .45; cursor: not-allowed; }
+
+  .cm-btn-ghost {
+    flex: 1;
+    padding: 13px;
+    background: #0A0C10;
+    color: #475569;
+    border: 1px solid #1A2233;
+    border-radius: 13px;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    font-family: inherit;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    transition: all .2s;
+  }
+  .cm-btn-ghost:hover { background: #111825; color: #64748B; }
+
+  /* Success ticket */
+  .cm-ticket {
+    border: 1px solid #1A2233;
+    border-radius: 18px;
+    overflow: hidden;
+  }
+  .cm-ticket-head {
+    background: linear-gradient(135deg, #0A1628, #0D2240);
+    padding: 20px 22px;
+  }
+  .cm-ticket-body {
+    padding: 18px 22px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+  .cm-ticket-foot {
+    border-top: 1.5px dashed #1A2233;
+    padding: 12px 22px;
+    background: #0A0C10;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .cm-ticket-info { display: flex; align-items: flex-start; gap: 13px; }
+  .cm-ticket-icon {
+    width: 34px;
+    height: 34px;
+    border-radius: 9px;
+    background: #0A0C10;
+    border: 1px solid #151C28;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .cm-ticket-lbl { font-size: 9px; color: #334155; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; margin-bottom: 3px; }
+  .cm-ticket-val { font-size: 13px; font-weight: 700; color: #E2E8F0; }
+
+  /* Error banner */
+  .cm-error {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 11px 14px;
+    background: rgba(239,68,68,.07);
+    border: 1px solid rgba(239,68,68,.2);
+    border-radius: 10px;
+    font-size: 13px;
+    color: #EF4444;
+  }
+
+  /* Expired state */
+  .cm-expired-icon {
+    width: 68px;
+    height: 68px;
+    border-radius: 18px;
+    background: rgba(239,68,68,.1);
+    border: 1px solid rgba(239,68,68,.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 18px;
+  }
+
+  /* Icon button */
+  .cm-icon-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    border: 1px solid #1E293B;
+    background: #0A0C10;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all .15s;
+  }
+  .cm-icon-btn:hover { background: #111825; }
+
+  textarea:focus { outline: none; }
 `;
 
-const genBookingCode = () =>
-  "VJ-" + Date.now().toString(36).toUpperCase() + "-" +
-  Math.random().toString(36).substring(2, 5).toUpperCase();
-
-export default function CheckoutModal({ exc, excursion, onClose }: Props) {
+// ═══════════════════════════════════════════════════════════════════════
+//  CheckoutModal
+// ═══════════════════════════════════════════════════════════════════════
+export default function CheckoutModal({
+  reservation,
+  onClose,
+  onPaid,
+  autoStart = false,
+}: {
+  reservation: Reservation;
+  onClose: () => void;
+  onPaid: (id: string) => void;
+  autoStart?: boolean;
+}) {
   const supabase = createClient();
-  const data = exc ?? excursion;
-  
-  const [selectedDate, setSelectedDate] = useState("");
-  const [selectedSlot, setSelectedSlot] = useState<TimeSlot | null>(null);
-  const [people, setPeople] = useState(1);
-  const [specialNeeds, setSpecialNeeds] = useState("");
-  const [status, setStatus] = useState<"idle"|"loading"|"success"|"error">("idle");
-  const [errorMsg, setErrorMsg] = useState("");
-  const [bookingCode, setBookingCode] = useState("");
+  const exc = reservation.excursion;
 
-  // Transformer les données disponibles
-  const groupedDates = useMemo(() => {
-    if (!data?.available_dates || !Array.isArray(data.available_dates)) return [];
-    
-    const groups = new Map<string, TimeSlot[]>();
-    
-    data.available_dates.forEach((item: any) => {
-      const date = item.date;
-      if (!date) return;
-      
-      if (!groups.has(date)) {
-        groups.set(date, []);
-      }
-      
-      const timeStr = item.time || `${item.start_time || "09:00"} – ${item.end_time || "17:00"}`;
-      
-      groups.get(date)!.push({
-        time: timeStr,
-        language: item.language,
-        price: item.price_per_person || data.price_per_person,
-        slots: item.slots || 0,
-        groupPrice: item.group_discount_available || false,
-        start_time: item.start_time,
-        end_time: item.end_time,
-      });
-    });
-    
-    return Array.from(groups.entries())
-      .map(([date, slots]) => ({
-        date,
-        dateObj: new Date(date),
-        dayName: formatDateLabel(new Date(date)),
-        slots: slots.sort((a, b) => a.time.localeCompare(b.time))
-      }))
-      .sort((a, b) => a.date.localeCompare(b.date));
-  }, [data]);
+  const [step, setStep] = useState<1 | 2 | 3 | 4>(autoStart ? 3 : 1);
+  const [specialNote, setSpecialNote] = useState("");
+  const [payMethod, setPayMethod] = useState<PayMethod>("cash");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [cancelled, setCancelled] = useState(false);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // Mettre à jour le prix total
-  const currentPrice = selectedSlot?.price || data?.price_per_person || 0;
-  const totalPrice = currentPrice * people;
-  const platformFee = Math.round(totalPrice * 0.1);
-  const grandTotal = totalPrice + platformFee;
-  
-  const canSubmit = !!selectedSlot && selectedSlot.slots >= people && status === "idle";
-  const maxPeopleForSlot = selectedSlot?.slots || data?.max_people || 1;
-
-  useEffect(() => {
-    if (people > maxPeopleForSlot) {
-      setPeople(Math.max(1, maxPeopleForSlot));
-    }
-  }, [selectedSlot, maxPeopleForSlot, people]);
-
-  const handleSelectSlot = (dateObj: DateDispo, slot: TimeSlot) => {
-    setSelectedSlot(slot);
-    setSelectedDate(dateObj.date);
-  };
-
-  const handleReserve = async () => {
-    if (!canSubmit) return;
-    setStatus("loading");
-    setErrorMsg("");
-    
-    try {
-      const { data: { user }, error: authErr } = await supabase.auth.getUser();
-      if (authErr || !user) {
-        setErrorMsg("Vous devez être connecté pour réserver.");
-        setStatus("error");
-        return;
-      }
-      
-      const code = genBookingCode();
-      
-      const result = await supabase.from("reservations").insert([{
-        touriste_id: user.id,
-        excursion_id: data!.id,
-        date: selectedDate,
-        time: selectedSlot?.time,
-        people_count: people,
-        total_price: grandTotal,
-        platform_fee: platformFee,
-        status: "pending",
-        special_needs: specialNeeds.trim() || null,
-        booking_code: code,
-        payment_status: "unpaid",
-        payment_method: null,
-        special_notes: null,
-      }]).select();
-
-      if (result.error) {
-        setErrorMsg(result.error.message || "Erreur lors de la réservation.");
-        setStatus("error");
-        return;
-      }
-      
-      // Appeler la fonction RPC pour décrémenter les slots
-      const { error: rpcError } = await supabase.rpc('decrement_slot', {
-        exc_id: data!.id,
-        date_str: selectedDate,
-        qty: people
-      });
-      
-      if (rpcError) {
-        console.error("Erreur décrémentation:", rpcError);
-        // La réservation est créée mais les slots n'ont pas été mis à jour
-        // Vous pourriez vouloir annuler la réservation ici
-      }
-      
-      setBookingCode(code);
-      setStatus("success");
-    } catch (err) {
-      setErrorMsg(err instanceof Error ? err.message : "Erreur inconnue.");
-      setStatus("error");
-    }
-  };
-
-  if (status === "success") {
-    return (
-      <>
-        <style>{MODAL_CSS}</style>
-        <div className="co-overlay" onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
-          <div className="co-modal" style={{ textAlign: "center", padding: "40px 32px" }}>
-            <div style={{ width: 72, height: 72, borderRadius: "50%", background: "linear-gradient(135deg,#D1FAE5,#A7F3D0)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 20px", boxShadow: "0 8px 24px rgba(5,150,105,.2)" }}>
-              <CheckCircle size={36} color="#059669" strokeWidth={2}/>
-            </div>
-            <h2 style={{ fontFamily: "'Playfair Display',serif", fontSize: 24, fontWeight: 900, color: "#111827", marginBottom: 8 }}>
-              Réservation confirmée !
-            </h2>
-            <p style={{ fontSize: 14, color: "#6B7280", marginBottom: 24, lineHeight: 1.65 }}>
-              <strong style={{ color: "#111827" }}>{sanitizeText(data!.title)}</strong><br/>
-              le <strong style={{ color: "#111827" }}>
-                {new Date(selectedDate).toLocaleDateString("fr-FR",{ day:"numeric", month:"long", year:"numeric" })}
-              </strong> à <strong>{selectedSlot?.time}</strong> pour {people} personne{people > 1 ? "s" : ""}
-            </p>
-            <div style={{ background: "linear-gradient(135deg,#EFF9FB,#D0F0F5)", border: "1px solid rgba(43,150,168,.25)", borderRadius: 16, padding: "18px 24px", marginBottom: 22 }}>
-              <p style={{ fontSize: 11, fontWeight: 700, color: "#2B96A8", textTransform: "uppercase", letterSpacing: "1px", margin: "0 0 6px" }}>N° de réservation</p>
-              <p style={{ fontSize: 22, fontWeight: 900, color: "#111827", margin: 0, letterSpacing: "2px", fontFamily: "'Playfair Display',serif" }}>{bookingCode}</p>
-            </div>
-            <button className="co-cta active" onClick={onClose}><Check size={16}/> Fermer</button>
-          </div>
-        </div>
-      </>
+  function getSecondsLeft() {
+    if (!reservation.payment_deadline) return 3600;
+    return Math.max(
+      0,
+      Math.floor(
+        (new Date(reservation.payment_deadline).getTime() - Date.now()) / 1000
+      )
     );
   }
 
+  const [timeLeft, setTimeLeft] = useState<number>(getSecondsLeft);
+
+  useEffect(() => {
+    if (step === 4 || cancelled) return;
+    const remaining = getSecondsLeft();
+    if (remaining <= 0) {
+      triggerCancel();
+      return;
+    }
+    setTimeLeft(remaining);
+    timerRef.current = setInterval(() => {
+      const left = getSecondsLeft();
+      setTimeLeft(left);
+      if (left <= 0) {
+        clearInterval(timerRef.current!);
+        triggerCancel();
+      }
+    }, 1000);
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step, cancelled]);
+
+  async function triggerCancel() {
+    setCancelled(true);
+    try {
+      await supabase.rpc("restore_slots_on_cancel", {
+        p_reservation_id: reservation.id,
+      });
+      await supabase
+        .from("reservations")
+        .update({ status: "cancelled", payment_status: "expired" })
+        .eq("id", reservation.id)
+        .eq("status", "pending");
+    } catch (e) {
+      console.warn("Auto-cancel:", e);
+    }
+  }
+
+  function fmtCountdown(secs: number) {
+    const m = Math.floor(secs / 60)
+      .toString()
+      .padStart(2, "0");
+    const s = (secs % 60).toString().padStart(2, "0");
+    return `${m}:${s}`;
+  }
+
+  const isUrgent = timeLeft <= 300;
+  const base = reservation.total_price - reservation.platform_fee;
+  const fee = reservation.platform_fee;
+  const total = reservation.total_price;
+
+  // ── Add to history ─────────────────────────────────────────────────
+  async function addToHistory(paymentMethod: PayMethod) {
+    try {
+      const { data: res, error } = await supabase
+        .from("reservations")
+        .select(
+          "id, booking_code, date, time, people_count, total_price, platform_fee, excursion_id, excursions:excursions!reservations_excursion_id_fkey(id, title, city)"
+        )
+        .eq("id", reservation.id)
+        .single();
+      if (error || !res) return;
+      const excursionData = Array.isArray(res.excursions)
+        ? res.excursions[0]
+        : res.excursions;
+      await supabase.from("historique_reservations").insert({
+        original_reservation_id: res.id,
+        booking_code: res.booking_code,
+        excursion_id: excursionData?.id || null,
+        excursion_title: excursionData?.title || null,
+        excursion_city: excursionData?.city || null,
+        date: res.date,
+        time: res.time,
+        people_count: res.people_count,
+        total_price: res.total_price,
+        platform_fee: res.platform_fee,
+        payment_method: paymentMethod,
+        payment_status: "paid",
+        payment_date: new Date().toISOString(),
+      });
+    } catch (e) {
+      console.warn("addToHistory:", e);
+    }
+  }
+
+  // ── Notify n8n ─────────────────────────────────────────────────────
+  async function notifyN8n(method: PayMethod) {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    fetch("/api/n8n-trigger", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        event: "payment_confirmed",
+        touriste_name:
+          user?.user_metadata?.full_name || user?.email || "Touriste",
+        touriste_email: user?.email || "",
+        excursion_title: exc?.title || "Excursion",
+        excursion_city: exc?.city || "",
+        booking_code: reservation.booking_code,
+        date: reservation.date,
+        people_count: reservation.people_count,
+        total_price: total,
+        payment_method: method,
+        special_notes: specialNote || "",
+      }),
+    }).catch((err) => console.warn("[n8n]:", err));
+  }
+
+  // ── Confirm payment ────────────────────────────────────────────────
+  async function handleConfirm() {
+    setLoading(true);
+    setError("");
+    try {
+      const { error: e1 } = await supabase
+        .from("reservations")
+        .update({
+          payment_status: "paid",
+          payment_method: payMethod,
+          special_notes: specialNote || null,
+          status: "confirmed",
+          paid_at: new Date().toISOString(),
+        })
+        .eq("id", reservation.id);
+      if (e1) throw e1;
+      await addToHistory(payMethod);
+      await notifyN8n(payMethod);
+      if (timerRef.current) clearInterval(timerRef.current);
+      setStep(4);
+      onPaid(reservation.id);
+    } catch (e) {
+      setError(
+        e instanceof Error ? e.message : "Erreur lors de la confirmation."
+      );
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  // ── Back button ────────────────────────────────────────────────────
+  function goBack() {
+    setError("");
+    setStep((s) => (s - 1) as 1 | 2 | 3 | 4);
+  }
+
+  // ─────────────────────────────────────────────────────────────────
   return (
     <>
-      <style>{MODAL_CSS}</style>
-      <div className="co-overlay" onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
-        <div className="co-modal">
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
-            <div>
-              <h2 style={{ fontFamily: "'Playfair Display',serif", fontSize: 22, fontWeight: 900, color: "#111827", marginBottom: 2 }}>Réserver</h2>
-              <p style={{ fontSize: 12, color: "#9CA3AF", margin: 0 }}>Choisissez votre créneau horaire</p>
-            </div>
-            <button className="co-close-btn" onClick={onClose}><X size={16}/></button>
-          </div>
-
-          <div style={{ background: "#F9FAFB", borderRadius: 14, padding: "12px 14px", marginBottom: 18, border: "1px solid #F0F0F0" }}>
-            <p style={{ fontSize: 14, fontWeight: 700, color: "#111827", margin: "0 0 6px" }}>{sanitizeText(data!.title)}</p>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
-              <span style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12, color: "#6B7280" }}><MapPin size={11} color="#2B96A8"/>{sanitizeText(data!.city)}</span>
-              <span style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12, color: "#6B7280" }}><Clock size={11}/>{data!.duration_hours}h</span>
-            </div>
-          </div>
-
-          {status === "error" && (
-            <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "11px 14px", background: "#FEF2F2", border: "1px solid #FCA5A5", borderRadius: 10, marginBottom: 16, fontSize: 13, color: "#DC2626", fontWeight: 600 }}>
-              <AlertCircle size={15}/>{errorMsg}
-            </div>
-          )}
-
-          {groupedDates.length === 0 ? (
-            <div style={{ textAlign: "center", padding: "40px 20px", background: "#FFF7ED", borderRadius: 16, border: "1px solid #FED7AA" }}>
-              <CalendarDays size={32} color="#F97316" style={{ marginBottom: 10 }} />
-              <p style={{ fontSize: 14, fontWeight: 700, color: "#9A3412", margin: "0 0 6px" }}>Aucune date disponible</p>
-              <p style={{ fontSize: 12, color: "#C2410C", margin: 0 }}>De nouvelles dates seront bientôt ajoutées</p>
-            </div>
-          ) : (
-            <>
-              <div style={{ marginBottom: 20 }}>
-                <label style={{ display: "flex", alignItems: "center", gap: 7, fontSize: 13, fontWeight: 700, color: "#111827", marginBottom: 12 }}>
-                  <CalendarDays size={14} color="#2B96A8" />
-                  Choisissez votre créneau horaire
-                </label>
-
-                {groupedDates.map((dateGroup) => (
-                  <TimeSlotPicker
-                    key={dateGroup.date}
-                    dateObj={dateGroup}
-                    slots={dateGroup.slots}
-                    selectedSlot={selectedSlot}
-                    onSelectSlot={(slot) => handleSelectSlot(dateGroup, slot)}
-                    currency="TND"
-                  />
-                ))}
+      <style>{CSS}</style>
+      <div
+        className="cm-overlay"
+        onClick={(e) => {
+          if (e.target === e.currentTarget && step !== 4) onClose();
+        }}
+      >
+        <div className="cm-box">
+          {/* ── HEAD ── */}
+          <div className="cm-head">
+            <div className="cm-head-row">
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                {step > 1 && step < 4 && !cancelled && (
+                  <button className="cm-icon-btn" onClick={goBack}>
+                    <ChevronLeft size={14} color="#64748B" />
+                  </button>
+                )}
+                <div>
+                  {step !== 4 && !cancelled && (
+                    <p
+                      style={{
+                        fontSize: 9,
+                        fontWeight: 700,
+                        color: "#334155",
+                        textTransform: "uppercase",
+                        letterSpacing: 1.5,
+                        marginBottom: 3,
+                      }}
+                    >
+                      Étape {step} / 3
+                    </p>
+                  )}
+                  <h2
+                    style={{
+                      fontFamily: "'Clash Display', sans-serif",
+                      fontSize: 18,
+                      fontWeight: 700,
+                      color: "#F1F5F9",
+                      letterSpacing: "-.4px",
+                    }}
+                  >
+                    {cancelled && "Réservation expirée"}
+                    {!cancelled && step === 1 && "Récapitulatif"}
+                    {!cancelled && step === 2 && "Vos informations"}
+                    {!cancelled && step === 3 && "Mode de paiement"}
+                    {!cancelled && step === 4 && "Paiement confirmé"}
+                  </h2>
+                </div>
               </div>
 
-              {selectedSlot && (
-                <div style={{ marginBottom: 20 }}>
-                  <label style={{ display: "flex", alignItems: "center", gap: 7, fontSize: 13, fontWeight: 700, color: "#111827", marginBottom: 12 }}>
-                    <Users size={14} color="#2B96A8" />
-                    Nombre de personnes
-                  </label>
-                  
-                  <div style={{ display: "flex", alignItems: "center", gap: 14, padding: "8px 16px", border: "1.5px solid #E5E7EB", borderRadius: 12, background: "white" }}>
-                    <button
-                      onClick={() => setPeople(p => Math.max(1, p - 1))}
-                      disabled={people <= 1}
-                      className="co-counter-btn"
-                    >
-                      <Minus size={15}/>
-                    </button>
-                    <span style={{ flex: 1, textAlign: "center", fontSize: 22, fontWeight: 900, color: "#111827", fontFamily: "'Playfair Display',serif" }}>
-                      {people}
-                    </span>
-                    <button
-                      onClick={() => setPeople(p => Math.min(maxPeopleForSlot, p + 1))}
-                      disabled={people >= maxPeopleForSlot}
-                      className="co-counter-btn"
-                    >
-                      <Plus size={15}/>
-                    </button>
-                  </div>
-                  
-                  <p style={{ fontSize: 12, color: "#6B7280", marginTop: 6 }}>
-                    Maximum {maxPeopleForSlot} personne{maxPeopleForSlot > 1 ? "s" : ""}
-                    {selectedSlot && ` · ${selectedSlot.slots} place${selectedSlot.slots > 1 ? "s" : ""} disponible${selectedSlot.slots > 1 ? "s" : ""}`}
-                  </p>
-                </div>
+              {step !== 4 && (
+                <button className="cm-icon-btn" onClick={onClose}>
+                  <X size={14} color="#64748B" />
+                </button>
               )}
+            </div>
 
-              <div style={{ marginBottom: 18 }}>
-                <label style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 11, fontWeight: 700, color: "#374151", letterSpacing: .5, textTransform: "uppercase", marginBottom: 7 }}>
-                  <MessageSquare size={12} color="#2B96A8"/> Besoins spéciaux
-                  <span style={{ color: "#9CA3AF", fontWeight: 400, textTransform: "none", fontSize: 11 }}>(optionnel)</span>
-                </label>
-                <textarea className="co-textarea" value={specialNeeds} onChange={e => setSpecialNeeds(e.target.value)} placeholder="Allergies, mobilité réduite, préférences alimentaires..."/>
-              </div>
+            {/* Progress + Timer (steps 1-3, not cancelled) */}
+            {step !== 4 && !cancelled && (
+              <>
+                <div className="cm-progress">
+                  {STEPS.map((s, i) => (
+                    <div key={s} className="cm-prog-seg">
+                      <div
+                        className={`cm-prog-bar ${
+                          i < step
+                            ? "cm-prog-done"
+                            : i === step - 1
+                            ? "cm-prog-current"
+                            : "cm-prog-pending"
+                        }`}
+                      />
+                      <span
+                        className="cm-prog-lbl"
+                        style={{
+                          color:
+                            i < step
+                              ? "#3DD6AC"
+                              : i === step - 1
+                              ? "#94A3B8"
+                              : "#334155",
+                        }}
+                      >
+                        {s}
+                      </span>
+                    </div>
+                  ))}
+                </div>
 
-              <div style={{ background: "#F9FAFB", borderRadius: 14, padding: "16px", marginBottom: 20, border: "1px solid #F0F0F0" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, color: "#6B7280", marginBottom: 8 }}>
-                  <span>{currentPrice} TND × {people} personne{people > 1 ? "s" : ""}</span>
-                  <span style={{ fontWeight: 600, color: "#374151" }}>{totalPrice} TND</span>
+                <div
+                  className={`cm-timer ${
+                    isUrgent ? "cm-timer-urgent" : "cm-timer-ok"
+                  }`}
+                >
+                  <div
+                    style={{ display: "flex", alignItems: "center", gap: 6 }}
+                  >
+                    <Timer
+                      size={12}
+                      color={isUrgent ? "#EF4444" : "#3DD6AC"}
+                    />
+                    <span
+                      style={{
+                        fontSize: 12,
+                        fontWeight: 600,
+                        color: isUrgent ? "#EF4444" : "#3DD6AC",
+                      }}
+                    >
+                      {isUrgent ? "Payez maintenant !" : "Temps restant"}
+                    </span>
+                  </div>
+                  <span
+                    style={{
+                      fontFamily: "monospace",
+                      fontSize: 15,
+                      fontWeight: 900,
+                      color: isUrgent ? "#EF4444" : "#3DD6AC",
+                      background: isUrgent
+                        ? "rgba(239,68,68,.1)"
+                        : "rgba(61,214,172,.1)",
+                      padding: "3px 12px",
+                      borderRadius: 8,
+                    }}
+                  >
+                    {fmtCountdown(timeLeft)}
+                  </span>
                 </div>
-                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, color: "#6B7280", paddingBottom: 12, borderBottom: "1px dashed #E5E7EB", marginBottom: 12 }}>
-                  <span>Frais de service (10%)</span>
-                  <span style={{ fontWeight: 600, color: "#374151" }}>{platformFee} TND</span>
-                </div>
-                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 17, fontWeight: 900, color: "#111827" }}>
-                  <span>Total</span>
-                  <span style={{ color: "#2B96A8", fontFamily: "'Playfair Display',serif" }}>{grandTotal} TND</span>
-                </div>
-              </div>
+              </>
+            )}
+          </div>
 
-              <button
-                className={`co-cta ${!selectedSlot ? "disabled" : status === "loading" ? "loading" : "active"}`}
-                disabled={!canSubmit}
-                onClick={handleReserve}
+          {/* ── BODY ── */}
+          <div className="cm-body">
+
+            {/* ── EXPIRED ── */}
+            {cancelled && (
+              <div
+                style={{
+                  textAlign: "center",
+                  padding: "10px 0 20px",
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  gap: 16,
+                }}
               >
-                {status === "loading"
-                  ? <><Loader2 size={16} style={{ animation: "coSpin .7s linear infinite" }}/> Réservation en cours...</>
-                  : !selectedSlot
-                  ? <><CalendarDays size={15}/> Choisissez un créneau disponible</>
-                  : <><Check size={16}/> Réserver — {grandTotal} TND</>
-                }
-              </button>
-
-              <div style={{ marginTop: 16, display: "flex", flexDirection: "column", gap: 7 }}>
-                {[
-                  { icon:<Lock size={12} color="#059669"/>, text:"Paiement 100% sécurisé" },
-                  { icon:<RefreshCcw size={12} color="#2563EB"/>, text:"Annulation gratuite 24h avant" },
-                  { icon:<ShieldCheck size={12} color="#8B5CF6"/>, text:"Réservation confirmée instantanément" },
-                ].map(g => (
-                  <p key={g.text} style={{ fontSize: 12, color: "#9CA3AF", display: "flex", alignItems: "center", gap: 7, margin: 0 }}>
-                    {g.icon}{g.text}
+                <div className="cm-expired-icon">
+                  <Timer size={30} color="#EF4444" strokeWidth={1.5} />
+                </div>
+                <div>
+                  <h3
+                    style={{
+                      fontFamily: "'Clash Display',sans-serif",
+                      fontSize: 20,
+                      fontWeight: 700,
+                      color: "#F1F5F9",
+                      marginBottom: 8,
+                      letterSpacing: "-.4px",
+                    }}
+                  >
+                    Délai expiré
+                  </h3>
+                  <p
+                    style={{
+                      fontSize: 13,
+                      color: "#64748B",
+                      lineHeight: 1.8,
+                    }}
+                  >
+                    La réservation{" "}
+                    <span
+                      style={{
+                        fontFamily: "monospace",
+                        color: "#94A3B8",
+                        fontSize: 12,
+                      }}
+                    >
+                      #{reservation.booking_code}
+                    </span>{" "}
+                    a été annulée automatiquement.
                   </p>
-                ))}
+                </div>
+                <div
+                  style={{
+                    background: "rgba(245,158,11,.07)",
+                    border: "1px solid rgba(245,158,11,.2)",
+                    borderRadius: 12,
+                    padding: "13px 16px",
+                  }}
+                >
+                  <p
+                    style={{
+                      fontSize: 13,
+                      color: "#F59E0B",
+                      fontWeight: 600,
+                    }}
+                  >
+                    Créez une nouvelle réservation depuis les excursions.
+                  </p>
+                </div>
+                <button
+                  onClick={onClose}
+                  style={{
+                    padding: "13px 36px",
+                    background: "#3DD6AC",
+                    color: "#08090C",
+                    border: "none",
+                    borderRadius: 12,
+                    fontSize: 14,
+                    fontWeight: 700,
+                    cursor: "pointer",
+                    fontFamily: "inherit",
+                  }}
+                >
+                  Fermer
+                </button>
               </div>
-            </>
-          )}
+            )}
+
+            {!cancelled && (
+              <>
+                {/* ── STEP 1 — Review ── */}
+                {step === 1 && (
+                  <>
+                    {/* Excursion photo + title */}
+                    <div
+                      style={{
+                        borderRadius: 13,
+                        overflow: "hidden",
+                        height: 150,
+                        position: "relative",
+                        background:
+                          "linear-gradient(135deg,#0A1A2E,#0D2240)",
+                        flexShrink: 0,
+                      }}
+                    >
+                      {exc?.photos?.[0] && (
+                        <img
+                          src={exc.photos[0]}
+                          alt=""
+                          style={{
+                            width: "100%",
+                            height: "100%",
+                            objectFit: "cover",
+                            filter: "brightness(.72)",
+                          }}
+                        />
+                      )}
+                      <div
+                        style={{
+                          position: "absolute",
+                          inset: 0,
+                          background:
+                            "linear-gradient(to top,rgba(8,9,12,.85),transparent 55%)",
+                        }}
+                      />
+                      <div
+                        style={{
+                          position: "absolute",
+                          bottom: 13,
+                          left: 15,
+                          right: 15,
+                        }}
+                      >
+                        <p
+                          style={{
+                            fontFamily: "'Clash Display',sans-serif",
+                            fontSize: 16,
+                            fontWeight: 700,
+                            color: "#F1F5F9",
+                            marginBottom: 5,
+                            letterSpacing: "-.3px",
+                          }}
+                        >
+                          {exc?.title}
+                        </p>
+                        <p
+                          style={{
+                            fontSize: 11,
+                            color: "rgba(255,255,255,.6)",
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 4,
+                          }}
+                        >
+                          <MapPin size={10} />
+                          {exc?.city}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Details grid */}
+                    <div className="cm-info-grid">
+                      {[
+                        { lbl: "Date", val: fmtDate(reservation.date, true) },
+                        { lbl: "Heure", val: reservation.time },
+                        {
+                          lbl: "Voyageurs",
+                          val: `${reservation.people_count} pers.`,
+                        },
+                        {
+                          lbl: "Durée",
+                          val: `${exc?.duration_hours ?? "–"}h`,
+                        },
+                      ].map(({ lbl, val }) => (
+                        <div key={lbl} className="cm-info-cell">
+                          <p className="cm-info-cell-lbl">{lbl}</p>
+                          <p className="cm-info-cell-val">{val}</p>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Price breakdown */}
+                    <div className="cm-price-box">
+                      <div className="cm-price-head">Détail des frais</div>
+                      <div className="cm-price-body">
+                        <div className="cm-price-row">
+                          <span>
+                            {exc?.price_per_person} EUR ×{" "}
+                            {reservation.people_count} pers.
+                          </span>
+                          <span>{base} EUR</span>
+                        </div>
+                        <div className="cm-price-row">
+                          <span>Frais de service</span>
+                          <span>{fee} EUR</span>
+                        </div>
+                        <div className="cm-price-divider" />
+                        <div className="cm-price-total">
+                          <span>Total</span>
+                          <span className="cm-price-total-num">
+                            {total} EUR
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Free cancellation */}
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 8,
+                        padding: "10px 13px",
+                        background: "rgba(61,214,172,.05)",
+                        border: "1px solid rgba(61,214,172,.15)",
+                        borderRadius: 10,
+                      }}
+                    >
+                      <ShieldCheck size={13} color="#3DD6AC" />
+                      <span
+                        style={{
+                          fontSize: 12,
+                          color: "#3DD6AC",
+                          fontWeight: 600,
+                        }}
+                      >
+                        Annulation gratuite jusqu'à 24h avant
+                      </span>
+                    </div>
+
+                    <button
+                      className="cm-btn-primary"
+                      onClick={() => setStep(2)}
+                    >
+                      Continuer <ChevronRight size={15} />
+                    </button>
+                  </>
+                )}
+
+                {/* ── STEP 2 — Info / special needs ── */}
+                {step === 2 && (
+                  <>
+                    {/* Mini recap */}
+                    <div
+                      style={{
+                        display: "flex",
+                        gap: 11,
+                        background: "#0A0C10",
+                        border: "1px solid #151C28",
+                        borderRadius: 13,
+                        padding: "13px 15px",
+                        alignItems: "center",
+                      }}
+                    >
+                      <div
+                        style={{
+                          width: 42,
+                          height: 42,
+                          borderRadius: 9,
+                          overflow: "hidden",
+                          flexShrink: 0,
+                          background: "#1A2233",
+                        }}
+                      >
+                        {exc?.photos?.[0] && (
+                          <img
+                            src={exc.photos[0]}
+                            alt=""
+                            style={{
+                              width: "100%",
+                              height: "100%",
+                              objectFit: "cover",
+                            }}
+                          />
+                        )}
+                      </div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <p
+                          style={{
+                            fontSize: 13,
+                            fontWeight: 700,
+                            color: "#E2E8F0",
+                            margin: "0 0 3px",
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                            whiteSpace: "nowrap",
+                          }}
+                        >
+                          {exc?.title}
+                        </p>
+                        <p style={{ fontSize: 11, color: "#475569", margin: 0 }}>
+                          {fmtDate(reservation.date)} · {reservation.people_count} pers.
+                        </p>
+                      </div>
+                      <p
+                        style={{
+                          fontFamily: "'Clash Display',sans-serif",
+                          fontSize: 17,
+                          fontWeight: 700,
+                          color: "#3DD6AC",
+                          flexShrink: 0,
+                        }}
+                      >
+                        {total}{" "}
+                        <span
+                          style={{
+                            fontSize: 10,
+                            fontWeight: 500,
+                            color: "#334155",
+                          }}
+                        >
+                          EUR
+                        </span>
+                      </p>
+                    </div>
+
+                    {/* Special needs */}
+                    <div>
+                      <label
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 6,
+                          fontSize: 12,
+                          fontWeight: 700,
+                          color: "#94A3B8",
+                          marginBottom: 10,
+                        }}
+                      >
+                        <MessageSquare size={12} color="#3DD6AC" />
+                        Besoins spéciaux
+                        <span
+                          style={{
+                            fontSize: 11,
+                            color: "#334155",
+                            fontWeight: 400,
+                          }}
+                        >
+                          — optionnel
+                        </span>
+                      </label>
+                      <textarea
+                        value={specialNote}
+                        onChange={(e) => setSpecialNote(e.target.value)}
+                        placeholder="Handicap, allergies, préférences particulières…"
+                        rows={4}
+                        style={{
+                          width: "100%",
+                          padding: "12px 13px",
+                          border: "1px solid #1A2233",
+                          borderRadius: 11,
+                          fontSize: 13,
+                          fontFamily: "inherit",
+                          resize: "vertical",
+                          color: "#E2E8F0",
+                          background: "#0A0C10",
+                          boxSizing: "border-box",
+                          lineHeight: 1.6,
+                          transition: "border-color .2s",
+                        }}
+                        onFocus={(e) =>
+                          (e.target.style.borderColor = "#3DD6AC")
+                        }
+                        onBlur={(e) =>
+                          (e.target.style.borderColor = "#1A2233")
+                        }
+                      />
+                    </div>
+
+                    <button
+                      className="cm-btn-primary"
+                      onClick={() => setStep(3)}
+                    >
+                      Choisir le paiement <ChevronRight size={15} />
+                    </button>
+                  </>
+                )}
+
+                {/* ── STEP 3 — Payment method ── */}
+                {step === 3 && (
+                  <>
+                    {/* Total hero */}
+                    <div className="cm-total-hero">
+                      <p
+                        style={{
+                          fontSize: 9,
+                          fontWeight: 700,
+                          color: "#334155",
+                          textTransform: "uppercase",
+                          letterSpacing: 2,
+                          marginBottom: 8,
+                        }}
+                      >
+                        Montant total
+                      </p>
+                      <p
+                        style={{
+                          fontFamily: "'Clash Display',sans-serif",
+                          fontSize: 44,
+                          fontWeight: 700,
+                          color: "#F1F5F9",
+                          letterSpacing: "-2px",
+                          lineHeight: 1,
+                          marginBottom: 6,
+                        }}
+                      >
+                        {total}
+                        <span
+                          style={{
+                            fontSize: 16,
+                            fontWeight: 500,
+                            color: "#334155",
+                            marginLeft: 8,
+                          }}
+                        >
+                          EUR
+                        </span>
+                      </p>
+                      <p style={{ fontSize: 11, color: "#334155" }}>
+                        dont {fee} EUR de frais de service
+                      </p>
+                    </div>
+
+                    {/* Methods */}
+                    <div>
+                      <p className="cm-section-lbl">Méthode de paiement</p>
+                      <div
+                        style={{
+                          display: "flex",
+                          flexDirection: "column",
+                          gap: 8,
+                        }}
+                      >
+                        {PAY_METHODS.map((m) => (
+                          <button
+                            key={m.id}
+                            className={`cm-method ${
+                              payMethod === m.id
+                                ? "cm-method-active"
+                                : "cm-method-inactive"
+                            }`}
+                            onClick={() => {
+                              setPayMethod(m.id);
+                              setError("");
+                            }}
+                          >
+                            {/* Icon */}
+                            <div
+                              style={{
+                                width: 42,
+                                height: 42,
+                                borderRadius: 10,
+                                background:
+                                  payMethod === m.id
+                                    ? "rgba(61,214,172,.15)"
+                                    : "#151C28",
+                                border: `1px solid ${
+                                  payMethod === m.id
+                                    ? "rgba(61,214,172,.3)"
+                                    : "#1A2233"
+                                }`,
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                flexShrink: 0,
+                                transition: "all .15s",
+                              }}
+                            >
+                              <m.Icon
+                                size={17}
+                                color={
+                                  payMethod === m.id ? "#3DD6AC" : "#475569"
+                                }
+                                strokeWidth={1.5}
+                              />
+                            </div>
+
+                            {/* Text */}
+                            <div style={{ flex: 1 }}>
+                              <p
+                                style={{
+                                  fontSize: 13,
+                                  fontWeight: 700,
+                                  color:
+                                    payMethod === m.id ? "#E2E8F0" : "#64748B",
+                                  margin: "0 0 2px",
+                                }}
+                              >
+                                {m.label}
+                              </p>
+                              <p
+                                style={{
+                                  fontSize: 11,
+                                  color: "#334155",
+                                  margin: 0,
+                                }}
+                              >
+                                {m.sub}
+                              </p>
+                            </div>
+
+                            {/* Radio */}
+                            <div
+                              style={{
+                                width: 18,
+                                height: 18,
+                                borderRadius: "50%",
+                                border: `2px solid ${
+                                  payMethod === m.id ? "#3DD6AC" : "#334155"
+                                }`,
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                flexShrink: 0,
+                              }}
+                            >
+                              {payMethod === m.id && (
+                                <div
+                                  style={{
+                                    width: 8,
+                                    height: 8,
+                                    borderRadius: "50%",
+                                    background: "#3DD6AC",
+                                  }}
+                                />
+                              )}
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Info note per method */}
+                    <div
+                      style={{
+                        padding: "11px 13px",
+                        background:
+                          payMethod === "cash"
+                            ? "rgba(245,158,11,.07)"
+                            : "rgba(96,165,250,.07)",
+                        border: `1px solid ${
+                          payMethod === "cash"
+                            ? "rgba(245,158,11,.2)"
+                            : "rgba(96,165,250,.2)"
+                        }`,
+                        borderRadius: 10,
+                        fontSize: 12,
+                        color: payMethod === "cash" ? "#F59E0B" : "#60A5FA",
+                        fontWeight: 600,
+                        lineHeight: 1.6,
+                      }}
+                    >
+                      {payMethod === "cash"
+                        ? "💵 Vous paierez directement le guide au point de rendez-vous. Munissez-vous du montant exact."
+                        : "🏦 Vous recevrez le RIB par email après confirmation. Le paiement doit être effectué sous 48h."}
+                    </div>
+
+                    {/* Error */}
+                    {error && (
+                      <div className="cm-error">
+                        <AlertCircle size={14} style={{ flexShrink: 0 }} />
+                        {error}
+                      </div>
+                    )}
+
+                    {/* Confirm button */}
+                    <button
+                      className="cm-btn-primary"
+                      onClick={handleConfirm}
+                      disabled={loading}
+                    >
+                      {loading ? (
+                        <>
+                          <Loader2
+                            size={15}
+                            style={{ animation: "cm-spin 1s linear infinite" }}
+                          />
+                          Confirmation…
+                        </>
+                      ) : (
+                        <>
+                          <CheckCircle size={15} />
+                          Confirmer la réservation · {total} EUR
+                        </>
+                      )}
+                    </button>
+
+                    <p
+                      style={{
+                        textAlign: "center",
+                        fontSize: 11,
+                        color: "#334155",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        gap: 5,
+                      }}
+                    >
+                      <ShieldCheck size={11} /> Réservation sécurisée ·
+                      VoyajAime
+                    </p>
+                  </>
+                )}
+
+                {/* ── STEP 4 — Success ── */}
+                {step === 4 && (
+                  <>
+                    {/* Success header */}
+                    <div style={{ textAlign: "center", paddingTop: 6 }}>
+                      <div
+                        style={{
+                          width: 62,
+                          height: 62,
+                          borderRadius: 16,
+                          background: "rgba(61,214,172,.1)",
+                          border: "1px solid rgba(61,214,172,.2)",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          margin: "0 auto 14px",
+                        }}
+                      >
+                        <CheckCircle
+                          size={30}
+                          color="#3DD6AC"
+                          strokeWidth={1.5}
+                        />
+                      </div>
+                      <h3
+                        style={{
+                          fontFamily: "'Clash Display',sans-serif",
+                          fontSize: 20,
+                          fontWeight: 700,
+                          color: "#F1F5F9",
+                          marginBottom: 6,
+                          letterSpacing: "-.4px",
+                        }}
+                      >
+                        Réservation confirmée
+                      </h3>
+                      <p style={{ fontSize: 13, color: "#475569" }}>
+                        Un email de confirmation vous a été envoyé.
+                      </p>
+                    </div>
+
+                    {/* Ticket */}
+                    <div className="cm-ticket">
+                      <div className="cm-ticket-head">
+                        <div
+                          style={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                            alignItems: "flex-start",
+                          }}
+                        >
+                          <div>
+                            <p
+                              style={{
+                                fontSize: 9,
+                                color: "rgba(255,255,255,.4)",
+                                fontWeight: 700,
+                                textTransform: "uppercase",
+                                letterSpacing: 1.5,
+                                marginBottom: 5,
+                              }}
+                            >
+                              Excursion
+                            </p>
+                            <p
+                              style={{
+                                fontFamily: "'Clash Display',sans-serif",
+                                fontSize: 15,
+                                fontWeight: 700,
+                                color: "white",
+                                marginBottom: 5,
+                                letterSpacing: "-.3px",
+                              }}
+                            >
+                              {exc?.title}
+                            </p>
+                            <p
+                              style={{
+                                fontSize: 11,
+                                color: "rgba(255,255,255,.5)",
+                                display: "flex",
+                                alignItems: "center",
+                                gap: 4,
+                              }}
+                            >
+                              <MapPin size={10} />
+                              {exc?.city}
+                            </p>
+                          </div>
+                          <div style={{ textAlign: "right" }}>
+                            <p
+                              style={{
+                                fontSize: 9,
+                                color: "rgba(255,255,255,.4)",
+                                fontWeight: 700,
+                                textTransform: "uppercase",
+                                letterSpacing: 1.5,
+                                marginBottom: 5,
+                              }}
+                            >
+                              Montant
+                            </p>
+                            <p
+                              style={{
+                                fontFamily: "'Clash Display',sans-serif",
+                                fontSize: 22,
+                                fontWeight: 700,
+                                color: "#3DD6AC",
+                              }}
+                            >
+                              {total} EUR
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="cm-ticket-body">
+                        {[
+                          {
+                            Icon: Ticket,
+                            lbl: "Code",
+                            val: reservation.booking_code,
+                          },
+                          {
+                            Icon: CalendarDays,
+                            lbl: "Date · Heure",
+                            val: `${fmtDate(reservation.date, true)} · ${reservation.time}`,
+                          },
+                          {
+                            Icon: Users,
+                            lbl: "Voyageurs",
+                            val: `${reservation.people_count} personne${reservation.people_count > 1 ? "s" : ""}`,
+                          },
+                          {
+                            Icon: Navigation,
+                            lbl: "Point de RDV",
+                            val:
+                              exc?.meeting_point ||
+                              exc?.city ||
+                              "Communiqué par le prestataire",
+                          },
+                        ].map(({ Icon, lbl, val }) => (
+                          <div key={lbl} className="cm-ticket-info">
+                            <div className="cm-ticket-icon">
+                              <Icon
+                                size={13}
+                                color="#3DD6AC"
+                                strokeWidth={1.5}
+                              />
+                            </div>
+                            <div>
+                              <p className="cm-ticket-lbl">{lbl}</p>
+                              <p className="cm-ticket-val">{val}</p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+
+                      <div className="cm-ticket-foot">
+                        <div
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 6,
+                          }}
+                        >
+                          <div
+                            style={{
+                              width: 7,
+                              height: 7,
+                              borderRadius: "50%",
+                              background: "#3DD6AC",
+                            }}
+                          />
+                          <span
+                            style={{
+                              fontSize: 11,
+                              fontWeight: 700,
+                              color: "#3DD6AC",
+                            }}
+                          >
+                            Confirmée
+                          </span>
+                        </div>
+                        <span
+                          style={{
+                            fontSize: 10,
+                            color: "#334155",
+                            fontFamily: "monospace",
+                          }}
+                        >
+                          #{reservation.booking_code}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Actions */}
+                    <div style={{ display: "flex", gap: 10 }}>
+                      <button className="cm-btn-ghost" onClick={onClose}>
+                        Fermer
+                      </button>
+                      <Link
+                        href="/touriste/historique"
+                        onClick={onClose}
+                        style={{
+                          flex: 2,
+                          padding: 13,
+                          background: "#3DD6AC",
+                          color: "#08090C",
+                          borderRadius: 13,
+                          textDecoration: "none",
+                          fontSize: 13,
+                          fontWeight: 700,
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          gap: 7,
+                        }}
+                      >
+                        <History size={14} /> Voir l'historique
+                      </Link>
+                    </div>
+                  </>
+                )}
+              </>
+            )}
+          </div>
         </div>
       </div>
     </>
   );
-}   
+}
