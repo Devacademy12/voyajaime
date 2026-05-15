@@ -23,7 +23,7 @@ export async function POST(req: Request) {
       type: "recovery",
       email,
       options: {
-        redirectTo: `${siteUrl}/auth/reset-password`,
+      redirectTo: "https://voyajaime.com/auth/reset-password",
       },
     });
 
