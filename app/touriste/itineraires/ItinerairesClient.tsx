@@ -748,8 +748,9 @@ export default function ItinerairesClient() {
 
         {/* Checkout modal */}
         {checkoutExcs && checkoutExcs.length > 0 && (
-          <CheckoutModal excursions={checkoutExcs} onClose={() => setCheckoutExcs(null)}
-           
+          <CheckoutModal
+            exc={checkoutExcs[0]}
+            onClose={() => setCheckoutExcs(null)}
           />
         )}
       </div>
