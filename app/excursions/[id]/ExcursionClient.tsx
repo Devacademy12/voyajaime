@@ -881,23 +881,7 @@ export default function ExcursionClient({
               </div>
             )}
 
-            {/* Dates disponibles */}
-            {exc.available_dates &&
-              Array.isArray(exc.available_dates) &&
-              exc.available_dates.length > 0 && (
-                <div className="glass-card glass-card-padded">
-                  <h2 className="s-heading">Dates disponibles</h2>
-                  <div className="exc-dates-grid">
-                    {exc.available_dates.map((date, i) => (
-                      <span key={i} className="exc-date-chip">
-                        <CalendarDays size={12} />
-                        {formatDate(date)}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
-
+          
             {/* ── REVIEWS SECTION ── */}
             <div>
               <div className="exc-reviews-header">
