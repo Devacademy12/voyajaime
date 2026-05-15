@@ -599,7 +599,7 @@ export default function ItinerairesClient() {
                       <button
                         className="it-reserve-all-btn"
                         disabled={!hasBookable}
-                        onClick={() => openItineraryCheckout(it)}
+                        onClick={(e) => { e.stopPropagation(); openItineraryCheckout(it); }}
                       >
                         <ShoppingCart size={13} /> Réserver
                       </button>
