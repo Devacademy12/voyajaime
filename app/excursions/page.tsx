@@ -63,6 +63,8 @@ function isFullyBooked(exc: Excursion, reservations: ReservationsMap): boolean {
   return !hasAvailableDate;
 }
 
+const DEFAULT_LIMIT = 12;
+
 export default function ExcursionsPage() {
   const [excursions,    setExcursions]    = useState<Excursion[]>([]);
   const [filtered,      setFiltered]      = useState<Excursion[]>([]);
@@ -83,9 +85,21 @@ export default function ExcursionsPage() {
   const [activeTab,     setActiveTab]     = useState<"ville" | "categorie" | "journee" | "heure" | null>(null);
   const [filterJournee, setFilterJournee] = useState(false);
   const [filterHeure,   setFilterHeure]   = useState(false);
-  const [currentPage, setCurrentPage] = useState(1);
 
   const supabase = createClient();
+
+  // Détermine si un filtre ou une recherche est actif
+  const isFiltering =
+    selectedCities.length > 0 ||
+    selectedCategories.length > 0 ||
+    filterJournee ||
+    filterHeure ||
+    search.trim() !== "";
+
+  // Excursions à afficher :
+  // - Sans filtre : les 12 premières seulement
+  // - Avec filtre/recherche : tous les résultats filtrés
+  const displayed = isFiltering ? filtered : filtered.slice(0, DEFAULT_LIMIT);
 
   useEffect(() => {
     (async () => {
@@ -107,16 +121,13 @@ export default function ExcursionsPage() {
       setExcursions(excs);
 
       // Réservations groupées par excursion_id + date
-      // On récupère toutes les réservations futures pour les excursions chargées
       if (excs.length > 0) {
         const ids = excs.map(e => e.id);
         const { data: resData } = await supabase
           .from("reservations")
           .select("excursion_id, date, people_count")
           .in("excursion_id", ids);
-        // On garde toutes les dates — le filtrage futur/passé se fait dans isFullyBooked
 
-        // Construire la map excursion_id -> { date -> totalPeople }
         const resMap: ReservationsMap = {};
         (resData || []).forEach((r: { excursion_id: string; date: string; people_count: number }) => {
           if (!resMap[r.excursion_id]) resMap[r.excursion_id] = {};
@@ -153,7 +164,6 @@ export default function ExcursionsPage() {
     else if (sort === "rating")     list.sort((a, b) => b.rating - a.rating);
     else                            list.sort((a, b) => b.reviews_count - a.reviews_count);
     setFiltered(list);
-    setCurrentPage(1);
   }, [excursions, selectedCities, selectedCategories, search, sort, filterJournee, filterHeure]);
 
   const toggleFav = async (excId: string) => {
@@ -183,11 +193,6 @@ export default function ExcursionsPage() {
   };
 
   const hasFilters = selectedCities.length > 0 || selectedCategories.length > 0 || filterJournee || filterHeure;
-
-  const ITEMS_PER_PAGE = 12;
-  const totalPages = Math.max(1, Math.ceil(filtered.length / ITEMS_PER_PAGE));
-  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-  const paginated = filtered.slice(startIndex, startIndex + ITEMS_PER_PAGE);
 
   const renderDropdown = () => {
     if (!activeTab || (activeTab !== "ville" && activeTab !== "categorie")) return null;
@@ -232,6 +237,28 @@ export default function ExcursionsPage() {
   const catLabel = selectedCategories.length === 0
     ? "Catégorie"
     : selectedCategories.length === 1 ? selectedCategories[0] : `${selectedCategories.length} catégories`;
+
+  // Texte du compteur adapté selon le mode d'affichage
+  const countLabel = (() => {
+    if (loading) return "Chargement…";
+    if (isFiltering) {
+      return (
+        <>
+          <span className={styles.countBold}>{filtered.length}</span>
+          {" "}résultat{filtered.length > 1 ? "s" : ""} trouvé{filtered.length > 1 ? "s" : ""}
+        </>
+      );
+    }
+    return (
+      <>
+        <span className={styles.countBold}>{Math.min(filtered.length, DEFAULT_LIMIT)}</span>
+        {" "}excursion{filtered.length > 1 ? "s" : ""} affichée{filtered.length > 1 ? "s" : ""}
+        {filtered.length > DEFAULT_LIMIT && (
+          <> sur <span className={styles.countBold}>{filtered.length}</span> — utilisez les filtres pour affiner</>
+        )}
+      </>
+    );
+  })();
 
   return (
     <>
@@ -351,14 +378,7 @@ export default function ExcursionsPage() {
 
           {/* Count + Sort */}
           <div className={styles.sortBar}>
-            <p className={styles.countText}>
-              {loading ? "Chargement…" : (
-                <>
-                  <span className={styles.countBold}>{filtered.length}</span>
-                  {" "}excursion{filtered.length > 1 ? "s" : ""} disponible{filtered.length > 1 ? "s" : ""}
-                </>
-              )}
-            </p>
+            <p className={styles.countText}>{countLabel}</p>
             <select className={styles.sortSelect} value={sort} onChange={e => setSort(e.target.value)}>
               <option value="popular">Plus populaires</option>
               <option value="rating">Meilleures notes</option>
@@ -395,7 +415,7 @@ export default function ExcursionsPage() {
           {/* Cards grid */}
           {!loading && filtered.length > 0 && (
             <div className={styles.excGrid}>
-              {filtered.map((exc, i) => {
+              {displayed.map((exc, i) => {
                 const unavailable = isFullyBooked(exc, reservations);
 
                 return (
@@ -502,8 +522,6 @@ export default function ExcursionsPage() {
                           </button>
                         )}
                       </div>
-
-
                     </div>
                   </div>
                 );

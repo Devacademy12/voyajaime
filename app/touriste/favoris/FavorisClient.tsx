@@ -8,7 +8,7 @@ import {
   Heart, Star, Clock, MapPin, ArrowRight,
   SlidersHorizontal, Loader, Compass, Eye,
 } from "lucide-react";
-import ExcursionClient from "@/app/excursions/[id]/ExcursionClient";
+import CheckoutModal from "@/app/components/excursions/CheckoutModal";
 
 /* ── Types ─────────────────────────────────────────────────────── */
 interface DateDispo {
@@ -320,10 +320,9 @@ export default function FavorisClient({
 
       {/* ══ CheckoutModal — toute la logique de réservation reste là-dedans ══ */}
       {modalExc && (
-        <ExcursionClient
-          exc={modalExc}
-          onClose={() => setModalExc(null)}
-        />
+        <CheckoutModal exc={modalExc} onClose={() => setModalExc(null)}
+                    
+                  />
       )}
     </>
   );
