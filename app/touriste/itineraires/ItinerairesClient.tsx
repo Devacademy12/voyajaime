@@ -266,12 +266,12 @@ export default function ItinerairesClient() {
   const [excDetails, setExcDetails] = useState<Record<string, any>>({});
   const [titleToId, setTitleToId] = useState<Record<string, string>>({});
 
-  // ✅ CORRECTION 1 : state pour CheckoutModalItineraire
-  // checkoutItineraire contient toutes les excursions de l'itinéraire sélectionné
+  // État pour CheckoutModalItineraire
   const [checkoutItineraire, setCheckoutItineraire] = useState<{
     excursions: ExcursionForCheckout[];
     itineraireId: string;
   } | null>(null);
+  const [checkoutLoading, setCheckoutLoading] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -446,32 +446,88 @@ export default function ItinerairesClient() {
   const isAssisted = (raw: RawPlan) =>
     !!raw && !Array.isArray(raw) && typeof raw === "object" && "days" in raw;
 
-  // ✅ CORRECTION 1 : ouvre CheckoutModalItineraire avec toutes les excursions
-  const openItineraryCheckout = (it: Itineraire) => {
-    const plan = normalizePlan(it.plan);
-    const seen = new Set<string>();
-    const excursions: ExcursionForCheckout[] = [];
+  // Ouvre CheckoutModalItineraire en chargeant les vraies données depuis Supabase
+  const openItineraryCheckout = async (it: Itineraire) => {
+    setCheckoutLoading(true);
+    try {
+      const plan = normalizePlan(it.plan);
 
-    plan.forEach(day => {
-      (day.activities || []).forEach(act => {
-        if (!act.excursion?.price_per_person) return;
-        const realId = resolveExcursionId(act);
-        if (!realId || seen.has(realId)) return;
-        seen.add(realId);
-        excursions.push({
-          id: realId,
-          title: act.excursion.title,
-          city: act.excursion.city,
-          duration_hours: act.excursion.duration_hours,
-          price_per_person: act.excursion.price_per_person,
-          max_people: 20,
-          available_dates: null,
+      // 1. Collecte les IDs résolus + infos du plan (date, time, jour)
+      // On utilise un objet simple pour éviter les problèmes de typage Map générique
+      const seen: Record<string, {
+        plan_date?: string;
+        plan_time?: "matin" | "aprem" | "soir";
+        plan_day?: number;
+      }> = {};
+
+      plan.forEach((day, di) => {
+        (day.activities || []).forEach(act => {
+          const realId = resolveExcursionId(act);
+          if (!realId || seen[realId]) return;
+          seen[realId] = {
+            plan_date: act.date || act.excursion?.start_date || undefined,
+            plan_time: act.time || undefined,
+            plan_day: di + 1,
+          };
         });
       });
-    });
 
-    if (excursions.length > 0) {
+      const seenIds = Object.keys(seen);
+      if (seenIds.length === 0) {
+        setCheckoutLoading(false);
+        return;
+      }
+
+      // 2. Charge les vraies données depuis Supabase (available_dates, max_people, prix réel…)
+      const { data: dbExcs, error: fetchErr } = await sb
+        .from("excursions")
+        .select("id, title, city, duration_hours, price_per_person, max_people, available_dates, photos")
+        .in("id", seenIds)
+        .eq("is_active", true);
+
+      if (fetchErr || !dbExcs?.length) {
+        // Fallback : ouvre quand même avec les données du plan (sans available_dates)
+        const fallbackExcs: ExcursionForCheckout[] = seenIds.map((id: string) => {
+          const meta = seen[id];
+          let planAct: ActivityItem | undefined;
+          plan.forEach(day => {
+            day.activities?.forEach(act => {
+              if (resolveExcursionId(act) === id) planAct = act;
+            });
+          });
+          return {
+            id,
+            title: planAct?.excursion?.title || id,
+            city: planAct?.excursion?.city || "",
+            duration_hours: planAct?.excursion?.duration_hours || 2,
+            price_per_person: planAct?.excursion?.price_per_person || 0,
+            max_people: 20,
+            available_dates: null,
+            ...meta,
+          };
+        });
+        setCheckoutItineraire({ excursions: fallbackExcs, itineraireId: it.id });
+        setCheckoutLoading(false);
+        return;
+      }
+
+      // 3. Fusionne les données DB + méta du plan
+      const excursions: ExcursionForCheckout[] = (dbExcs as any[]).map(exc => ({
+        id: exc.id as string,
+        title: exc.title as string,
+        city: exc.city as string,
+        duration_hours: exc.duration_hours as number,
+        price_per_person: exc.price_per_person as number,
+        max_people: (exc.max_people as number) || 20,
+        available_dates: (exc.available_dates as any[] | null) ?? null,
+        ...(seen[exc.id] || {}),
+      }));
+
       setCheckoutItineraire({ excursions, itineraireId: it.id });
+    } catch (e) {
+      console.error("openItineraryCheckout error:", e);
+    } finally {
+      setCheckoutLoading(false);
     }
   };
 
@@ -595,13 +651,16 @@ export default function ItinerairesClient() {
                           ? <Loader2 size={13} style={{ animation: "spin .8s linear infinite" }} />
                           : <Trash2 size={13} />}
                       </button>
-                      {/* ✅ CORRECTION 1 : bouton Réserver ouvre CheckoutModalItineraire */}
+                      {/* Bouton Réserver — charge les données Supabase avant d'ouvrir */}
                       <button
                         className="it-reserve-all-btn"
-                        disabled={!hasBookable}
+                        disabled={!hasBookable || checkoutLoading}
                         onClick={(e) => { e.stopPropagation(); openItineraryCheckout(it); }}
                       >
-                        <ShoppingCart size={13} /> Réserver
+                        {checkoutLoading
+                          ? <><Loader2 size={13} style={{ animation: "spin .8s linear infinite" }} /> Chargement…</>
+                          : <><ShoppingCart size={13} /> Réserver</>
+                        }
                       </button>
                     </div>
 
