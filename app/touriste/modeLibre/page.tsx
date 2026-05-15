@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, Suspense, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import TouristeNav from "../components/touriste/TouristeNav";
+import TouristeNav from "@/app/components/touriste/TouristeNav";
 
 import { createClient } from "@/lib/supabaseClient";
 import {
