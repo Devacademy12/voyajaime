@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabaseClient";
 import {
   Map, Trash2, Pencil, ChevronDown, ChevronUp,
@@ -10,7 +9,7 @@ import {
   Bot, PenLine, Image as ImageIcon, ExternalLink,
   Calendar, Flag,
 } from "lucide-react";
-import ExcursionClient from "@/app/excursions/[id]/ExcursionClient";
+import { ExcursionDetailModal } from "@/app/excursions/[id]/ExcursionClient";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -53,16 +52,6 @@ type ExcursionForCheckout = {
   price_per_person: number;
   max_people: number;
   available_dates?: any[] | null;
-};
-
-// ─── DB excursion row (full) ─────────────────────────────────────────────────
-type DbExcursion = {
-  id: string;
-  title: string;
-  city: string;
-  photos: string[];
-  meeting_point: string | null;
-  depart_time: string | null;
 };
 
 // ─── Constants ───────────────────────────────────────────────────────────────
@@ -108,12 +97,14 @@ function normalizePlan(raw: RawPlan): DayPlan[] {
   return [];
 }
 
-function isValidUUID(str?: string | null): boolean {
-  if (!str) return false;
+function isValidUUID(str: string): boolean {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str);
 }
 
-/** Normalise un titre pour la comparaison : minuscule, sans accents, sans ponctuation */
+/**
+ * Normalise un titre pour comparaison floue :
+ * minuscules + sans accents + sans ponctuation + espaces normalisés
+ */
 function normalizeTitle(str: string): string {
   return str
     .toLowerCase()
@@ -122,15 +113,6 @@ function normalizeTitle(str: string): string {
     .replace(/[^a-z0-9\s]/g, "")
     .replace(/\s+/g, " ")
     .trim();
-}
-
-/** Score de similarité entre deux chaînes normalisées (0..1) */
-function similarity(a: string, b: string): number {
-  const wa = a.split(" ").filter(w => w.length > 2);
-  const wb = b.split(" ").filter(w => w.length > 2);
-  if (wa.length === 0 || wb.length === 0) return 0;
-  const common = wa.filter(w => wb.includes(w)).length;
-  return common / Math.max(wa.length, wb.length);
 }
 
 function formatDate(dateStr: string) {
@@ -208,39 +190,6 @@ const RESPONSIVE_CSS = `
     margin-bottom:32px;
   }
 
-  /* ── Bouton Voir détail ── */
-  .btn-voir-detail {
-    margin-top: 10px;
-    padding: 6px 14px;
-    background: white;
-    border: 1.5px solid #2B96A8;
-    border-radius: 20px;
-    font-size: 11px;
-    font-weight: 700;
-    color: #2B96A8;
-    cursor: pointer;
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
-    transition: all .18s;
-    font-family: 'DM Sans', sans-serif;
-    text-decoration: none;
-  }
-  .btn-voir-detail:hover {
-    background: #2B96A8;
-    color: white;
-    box-shadow: 0 3px 10px rgba(43,150,168,.3);
-    transform: translateY(-1px);
-  }
-  .btn-voir-detail:disabled {
-    border-color: #E5E7EB;
-    color: #9CA3AF;
-    cursor: not-allowed;
-    transform: none;
-    box-shadow: none;
-    background: #F9FAFB;
-  }
-
   @media (max-width: 900px) {
     .it-wrap { padding: 24px 24px 48px; }
   }
@@ -269,23 +218,18 @@ const RESPONSIVE_CSS = `
 
 export default function ItinerairesClient() {
   const sb = createClient();
-  const router = useRouter();
-
   const [items, setItems] = useState<Itineraire[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [deleting, setDeleting] = useState<string | null>(null);
   const [expanded, setExpanded] = useState<string | null>(null);
-
-  /**
-   * allExcursions : toutes les excursions chargées depuis Supabase.
-   * On garde le tableau brut pour pouvoir faire des recherches flexibles.
-   */
-  const [allExcursions, setAllExcursions] = useState<DbExcursion[]>([]);
-
+  const [excPhotos, setExcPhotos] = useState<Record<string, string[]>>({});
+  const [excDetails, setExcDetails] = useState<Record<string, any>>({});
+  // titre normalisé → UUID Supabase réel
+  const [titleToId, setTitleToId] = useState<Record<string, string>>({});
   const [checkoutExcs, setCheckoutExcs] = useState<ExcursionForCheckout[] | null>(null);
+  const [modalExcursion, setModalExcursion] = useState<any | null>(null);
 
-  // ── Chargement ────────────────────────────────────────────────────────────
   useEffect(() => {
     (async () => {
       setLoading(true);
@@ -298,7 +242,6 @@ export default function ItinerairesClient() {
         return;
       }
 
-      // 1. Charger les itinéraires
       const { data, error: fErr } = await sb
         .from("itineraires")
         .select("*")
@@ -310,137 +253,186 @@ export default function ItinerairesClient() {
       const itineraires: Itineraire[] = data || [];
       setItems(itineraires);
 
-      // 2. Collecter tous les UUIDs et toutes les villes présents dans les plans
-      const candidateUUIDs = new Set<string>();
+      // ── Collecter IDs valides + villes du plan ──────────────────────────
+      const candidateIds = new Set<string>();
       const planCities = new Set<string>();
 
       itineraires.forEach(it => {
-        (it.villes_selectionnees || []).forEach(v => { if (v?.trim()) planCities.add(v.trim()); });
+        it.villes_selectionnees?.forEach(v => { if (v?.trim()) planCities.add(v.trim()); });
         normalizePlan(it.plan).forEach(day => {
           if (day.city?.trim()) planCities.add(day.city.trim());
-          (day.activities || []).forEach(act => {
-            if (isValidUUID(act.id)) candidateUUIDs.add(act.id);
-            if (isValidUUID(act.excursion_id)) candidateUUIDs.add(act.excursion_id!);
+          day.activities?.forEach(act => {
+            if (act.id && isValidUUID(act.id)) candidateIds.add(act.id);
+            if (act.excursion_id && isValidUUID(act.excursion_id)) candidateIds.add(act.excursion_id);
+            if (act.excursion?.city?.trim()) planCities.add(act.excursion.city.trim());
           });
         });
       });
 
-      // 3. Charger TOUTES les excursions potentiellement concernées en une seule passe :
-      //    — par UUID direct ET par ville, sans filtre is_active
-      //    (une excursion peut exister dans la DB même si désactivée)
-      const fetched: DbExcursion[] = [];
-      const seen = new Set<string>();
+      // ── Maps locaux ─────────────────────────────────────────────────────
+      const photoMap: Record<string, string[]> = {};
+      const detailsMap: Record<string, any> = {};
+      const titleMap: Record<string, string> = {};
 
-      const addExc = (e: DbExcursion) => {
-        if (!seen.has(e.id)) { seen.add(e.id); fetched.push(e); }
+      // Indexe une excursion Supabase dans les 3 maps
+      const indexExc = (e: any) => {
+        photoMap[e.id] = e.photos || [];
+        detailsMap[e.id] = {
+          meeting_point: e.meeting_point,
+          start_date: e.start_date,
+          start_time: e.depart_time,
+          city: e.city,
+          title: e.title,
+        };
+        if (e.title) {
+          // clé normalisée (robuste aux accents / casse / ponctuation)
+          titleMap[normalizeTitle(e.title)] = e.id;
+          // clé exacte minuscule (double sécurité)
+          titleMap[e.title.trim().toLowerCase()] = e.id;
+        }
       };
 
-      // 3a. Par UUIDs
-      if (candidateUUIDs.size > 0) {
-        const { data: byId } = await sb
+      // 1. Par UUIDs présents dans le plan (plan manuel ou IA avec bons IDs)
+      if (candidateIds.size > 0) {
+        const { data: excs } = await sb
           .from("excursions")
-          .select("id, title, city, photos, meeting_point, depart_time")
-          .in("id", Array.from(candidateUUIDs));
-        (byId || []).forEach(addExc);
+          .select("id, title, city, photos, meeting_point, start_date, depart_time")
+          .in("id", Array.from(candidateIds));
+        excs?.forEach(indexExc);
       }
 
-      // 3b. Par villes (sans limit pour couvrir tous les cas de matching par titre)
+      // 2. Par villes — charge TOUT le catalogue des villes du plan.
+      //    Stratégie clé : le plan IA peut avoir de mauvais IDs ou des titres
+      //    légèrement différents. En chargeant toutes les excursions des villes
+      //    concernées, on peut ensuite matcher par titre normalisé.
       if (planCities.size > 0) {
-        const { data: byCity } = await sb
+        const { data: excsByCity } = await sb
           .from("excursions")
-          .select("id, title, city, photos, meeting_point, depart_time")
+          .select("id, title, city, photos, meeting_point, start_date, depart_time")
           .in("city", Array.from(planCities));
-        (byCity || []).forEach(addExc);
+        excsByCity?.forEach(indexExc);
       }
 
-      // 3c. Fallback : toutes les excursions actives (couvre les villes mal orthographiées)
-      {
-        const { data: all } = await sb
-          .from("excursions")
-          .select("id, title, city, photos, meeting_point, depart_time")
-          .eq("is_active", true);
-        (all || []).forEach(addExc);
-      }
-
-      setAllExcursions(fetched);
+      setExcPhotos(photoMap);
+      setExcDetails(detailsMap);
+      setTitleToId(titleMap);
       setLoading(false);
     })();
   }, []);
 
   // ── Résolution UUID réel ───────────────────────────────────────────────────
   /**
-   * Stratégie en cascade :
-   * 1. act.excursion_id  → UUID valide et présent dans allExcursions
-   * 2. act.id            → UUID valide et présent dans allExcursions
-   * 3. Titre exact       → normalizeTitle match parfait
-   * 4. Titre partiel     → inclusion dans l'un ou l'autre sens
-   * 5. Score mots ≥ 0.5  → au moins la moitié des mots en commun
-   * 6. UUID brut         → dernier recours même si pas trouvé dans le cache
+   * Cascade :
+   * 1. act.id  → UUID valide + connu en base
+   * 2. act.excursion_id → UUID valide + connu en base
+   * 3. Titre normalisé exact
+   * 4. Titre exact minuscule
+   * 5. Titre normalisé inclus dans une clé du map (ou vice-versa)
+   * 6. Score de mots communs ≥ 60 %
+   * 7. Dernier recours : UUID brut (même sans confirmation)
    */
   const resolveExcursionId = (act: ActivityItem): string | null => {
-    // 1. excursion_id UUID valide connu
-    if (isValidUUID(act.excursion_id)) {
-      const found = allExcursions.find(e => e.id === act.excursion_id);
-      if (found) return found.id;
-      // UUID valide mais pas encore dans le cache → on le retourne quand même
-      return act.excursion_id!;
+    if (isValidUUID(act.id) && excDetails[act.id]) return act.id;
+    if (act.excursion_id && isValidUUID(act.excursion_id) && excDetails[act.excursion_id])
+      return act.excursion_id;
+
+    const title = act.excursion?.title;
+    if (title) {
+      const norm = normalizeTitle(title);
+      const lower = title.trim().toLowerCase();
+
+      if (titleToId[norm]) return titleToId[norm];
+      if (titleToId[lower]) return titleToId[lower];
+
+      const entries = Object.entries(titleToId);
+
+      // Inclusion partielle
+      const contained = entries.find(([key]) =>
+        key.includes(norm) || norm.includes(key)
+      );
+      if (contained) return contained[1];
+
+      // Score de mots communs
+      const planWords = norm.split(" ").filter(w => w.length > 2);
+      if (planWords.length > 0) {
+        const best = entries
+          .map(([key, id]) => {
+            const dbWords = key.split(" ").filter(w => w.length > 2);
+            const common = planWords.filter(w => dbWords.includes(w)).length;
+            const score = common / Math.max(planWords.length, dbWords.length);
+            return { id, score };
+          })
+          .filter(m => m.score >= 0.6)
+          .sort((a, b) => b.score - a.score)[0];
+        if (best) return best.id;
+      }
     }
 
-    // 2. act.id UUID valide connu
-    if (isValidUUID(act.id)) {
-      const found = allExcursions.find(e => e.id === act.id);
-      if (found) return found.id;
-      return act.id;
-    }
-
-    // Pas d'UUID → essai par titre
-    const rawTitle = act.excursion?.title;
-    if (!rawTitle?.trim()) return null;
-
-    const normAct = normalizeTitle(rawTitle);
-
-    // 3. Match exact normalisé
-    const exact = allExcursions.find(e => normalizeTitle(e.title) === normAct);
-    if (exact) return exact.id;
-
-    // 4. Inclusion (plan ⊂ db ou db ⊂ plan)
-    const contained = allExcursions.find(e => {
-      const normDb = normalizeTitle(e.title);
-      return normDb.includes(normAct) || normAct.includes(normDb);
-    });
-    if (contained) return contained.id;
-
-    // 5. Score mots ≥ 0.5
-    let bestId: string | null = null;
-    let bestScore = 0;
-    for (const e of allExcursions) {
-      const s = similarity(normAct, normalizeTitle(e.title));
-      if (s > bestScore) { bestScore = s; bestId = e.id; }
-    }
-    if (bestScore >= 0.5 && bestId) return bestId;
-
+    // Dernier recours
+    if (act.excursion_id && isValidUUID(act.excursion_id)) return act.excursion_id;
+    if (isValidUUID(act.id)) return act.id;
     return null;
   };
 
-  const getExcById = (id: string | null): DbExcursion | undefined =>
-    id ? allExcursions.find(e => e.id === id) : undefined;
-
   const getActPhoto = (act: ActivityItem): string | undefined => {
     const id = resolveExcursionId(act);
-    return getExcById(id)?.photos?.[0] || act.excursion?.photos?.[0];
+    return (id ? excPhotos[id]?.[0] : undefined) || act.excursion?.photos?.[0];
   };
 
-  const getActDetails = (act: ActivityItem) => {
+  const getActDetails = (act: ActivityItem): any => {
     const id = resolveExcursionId(act);
-    return getExcById(id);
+    return id ? excDetails[id] : undefined;
   };
 
-  const navigateToExcursion = (act: ActivityItem) => {
+  const openExcursionDetails = async (act: ActivityItem) => {
     const id = resolveExcursionId(act);
-    if (id) {
-      router.push(`/excursions/${id}`);
-    } else {
-      alert(`Impossible de trouver l'excursion "${act.excursion?.title || "inconnue"}" dans la base de données.`);
+    if (!id) {
+      // fallback: open list page or do nothing
+      return;
+    }
+
+    try {
+      const { data: exc, error: eErr } = await sb
+        .from("excursions")
+        .select("*")
+        .eq("id", id)
+        .maybeSingle();
+
+      if (eErr || !exc) {
+        // fallback to opening the dedicated page if fetch fails
+        window.open(`/excursions/${id}`, "_blank");
+        return;
+      }
+
+      const excursionDetail = {
+        id: exc.id,
+        title: exc.title || "",
+        city: exc.city || "",
+        region: exc.region || null,
+        description: exc.description || "",
+        duration_hours: exc.duration_hours || exc.duration || 0,
+        price_per_person: exc.price_per_person || exc.price || 0,
+        max_people: exc.max_people || 0,
+        categories: exc.categories || [],
+        languages: exc.languages || [],
+        inclusions: exc.inclusions || [],
+        photos: exc.photos || [],
+        rating: exc.rating || 0,
+        reviews_count: exc.reviews_count || 0,
+        meeting_point: exc.meeting_point || null,
+        difficulty: exc.difficulty || null,
+        min_age: exc.min_age || null,
+        what_to_bring: exc.what_to_bring || null,
+        not_included: exc.not_included || null,
+        important_info: exc.important_info || null,
+        cancel_policy: exc.cancel_policy || null,
+        available_dates: exc.available_dates || null,
+        depart_time: exc.depart_time || exc.start_time || null,
+      };
+
+      setModalExcursion(excursionDetail);
+    } catch (e) {
+      window.open(`/excursions/${id}`, "_blank");
     }
   };
 
@@ -469,14 +461,14 @@ export default function ItinerairesClient() {
 
   const openItineraryCheckout = (it: Itineraire) => {
     const plan = normalizePlan(it.plan);
-    const seenIds = new Set<string>();
+    const seen = new Set<string>();
     const excursions: ExcursionForCheckout[] = [];
     plan.forEach(day => {
       (day.activities || []).forEach(act => {
         if (!act.excursion?.price_per_person) return;
         const realId = resolveExcursionId(act);
-        if (!realId || seenIds.has(realId)) return;
-        seenIds.add(realId);
+        if (!realId || seen.has(realId)) return;
+        seen.add(realId);
         excursions.push({
           id: realId,
           title: act.excursion.title,
@@ -642,48 +634,35 @@ export default function ItinerairesClient() {
                             ) : (day.activities || []).map((act, ai) => {
                               const photo = getActPhoto(act);
                               const details = getActDetails(act);
-                              const startDate = act.date || details?.depart_time || act.excursion?.start_date;
-                              const startTime = act.excursion?.start_time || (details?.depart_time ? String(details.depart_time) : undefined);
+                              const startDate = act.date || details?.start_date || act.excursion?.start_date;
+                              const startTime = act.excursion?.start_time || details?.start_time;
                               const meetingPoint = details?.meeting_point || act.excursion?.meeting_point;
-                              const resolvedId = resolveExcursionId(act);
-                              const canNavigate = !!resolvedId;
 
                               return (
                                 <div key={act.id || ai} className="act-row">
 
-                                  {/* Photo cliquable */}
+                                  {/* Photo */}
                                   {photo ? (
                                     <img
                                       src={photo}
                                       alt={act.excursion?.title || ""}
                                       className="act-photo"
-                                      onClick={() => canNavigate && navigateToExcursion(act)}
+                                      onClick={() => openExcursionDetails(act)}
                                       onError={e => { (e.target as HTMLImageElement).style.display = "none"; }}
-                                      style={{ cursor: canNavigate ? "pointer" : "default" }}
                                     />
                                   ) : (
-                                    <div
-                                      className="act-photo-placeholder"
-                                      onClick={() => canNavigate && navigateToExcursion(act)}
-                                      style={{ cursor: canNavigate ? "pointer" : "default" }}
-                                    >
+                                    <div className="act-photo-placeholder" onClick={() => openExcursionDetails(act)}>
                                       <ImageIcon size={20} color="#9CA3AF" strokeWidth={1.5} />
                                     </div>
                                   )}
 
                                   <div style={{ flex: 1, minWidth: 0 }}>
-                                    {/* Titre cliquable */}
                                     <p
                                       className="excursion-title"
-                                      onClick={() => canNavigate && navigateToExcursion(act)}
-                                      style={{
-                                        fontSize: 14, fontWeight: 700, color: "#111827",
-                                        margin: "0 0 6px",
-                                        display: "flex", alignItems: "center", gap: 6,
-                                        cursor: canNavigate ? "pointer" : "default",
-                                      }}>
+                                      onClick={() => openExcursionDetails(act)}
+                                      style={{ fontSize: 14, fontWeight: 700, color: "#111827", margin: "0 0 6px", display: "flex", alignItems: "center", gap: 6 }}>
                                       {act.excursion?.title || "—"}
-                                      {canNavigate && <ExternalLink size={12} color="#9CA3AF" />}
+                                      <ExternalLink size={12} color="#9CA3AF" />
                                     </p>
 
                                     <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", marginBottom: 6 }}>
@@ -736,18 +715,18 @@ export default function ItinerairesClient() {
                                       </p>
                                     )}
 
-                                    {/* ── Bouton Voir détail ── */}
                                     <button
-                                      className="btn-voir-detail"
-                                      disabled={!canNavigate}
-                                      onClick={e => {
-                                        e.stopPropagation();
-                                        if (canNavigate) navigateToExcursion(act);
+                                      onClick={() => openExcursionDetails(act)}
+                                      style={{ marginTop: 10, padding: "6px 12px", background: "white", border: "1.5px solid #2B96A8", borderRadius: 20, fontSize: 11, fontWeight: 600, color: "#2B96A8", cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 5, transition: "all .15s" }}
+                                      onMouseEnter={e => {
+                                        (e.currentTarget as HTMLElement).style.background = "#2B96A8";
+                                        (e.currentTarget as HTMLElement).style.color = "white";
                                       }}
-                                      title={canNavigate ? `Voir ${act.excursion?.title}` : "Excursion introuvable dans la base de données"}
-                                    >
-                                      <ExternalLink size={11} />
-                                      {canNavigate ? "Voir détail" : "Introuvable"}
+                                      onMouseLeave={e => {
+                                        (e.currentTarget as HTMLElement).style.background = "white";
+                                        (e.currentTarget as HTMLElement).style.color = "#2B96A8";
+                                      }}>
+                                      <ExternalLink size={11} /> Voir détail
                                     </button>
                                   </div>
                                 </div>
@@ -764,11 +743,18 @@ export default function ItinerairesClient() {
           </div>
         )}
 
+        {/* Modal opened from 'Voir détail' */}
+        {modalExcursion && (
+          <ExcursionDetailModal
+            excursion={modalExcursion}
+            onClose={() => setModalExcursion(null)}
+          />
+        )}
+
         {/* Checkout modal */}
         {checkoutExcs && checkoutExcs.length > 0 && (
-          <ExcursionClient
-            exc={checkoutExcs[0]}
-            excursions={checkoutExcs}
+          <ExcursionDetailModal
+            excursion={checkoutExcs[0] as any}
             onClose={() => setCheckoutExcs(null)}
           />
         )}
