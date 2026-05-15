@@ -10,8 +10,8 @@ import {
   Bot, PenLine, Image as ImageIcon, ExternalLink,
   Calendar, Flag,
 } from "lucide-react";
-import ExcursionClient from "@/app/excursions/[id]/ExcursionClient";
-import CheckoutModal from "@/app/components/excursions/CheckoutModal";
+// ✅ CORRECTION 1 : import du bon composant CheckoutModalItineraire
+import CheckoutModalItineraire from "@/app/components/itineraire/Checkoutmodalitineraire";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -46,6 +46,8 @@ type Itineraire = {
   updated_at: string;
 };
 
+// ✅ CORRECTION 1 : type adapté à CheckoutModalItineraire
+// Ajuste les champs selon ce qu'attend réellement ton composant CheckoutModalItineraire
 type ExcursionForCheckout = {
   id: string;
   title: string;
@@ -263,7 +265,13 @@ export default function ItinerairesClient() {
   const [excPhotos, setExcPhotos] = useState<Record<string, string[]>>({});
   const [excDetails, setExcDetails] = useState<Record<string, any>>({});
   const [titleToId, setTitleToId] = useState<Record<string, string>>({});
-  const [checkoutExcs, setCheckoutExcs] = useState<ExcursionForCheckout[] | null>(null);
+
+  // ✅ CORRECTION 1 : state pour CheckoutModalItineraire
+  // checkoutItineraire contient toutes les excursions de l'itinéraire sélectionné
+  const [checkoutItineraire, setCheckoutItineraire] = useState<{
+    excursions: ExcursionForCheckout[];
+    itineraireId: string;
+  } | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -347,10 +355,7 @@ export default function ItinerairesClient() {
 
   // ── Résolution UUID réel ───────────────────────────────────────────────────
   const resolveExcursionId = (act: ActivityItem): string | null => {
-    // 1. act.id UUID valide et connu
     if (isValidUUID(act.id) && excDetails[act.id]) return act.id;
-
-    // 2. act.excursion_id UUID valide et connu
     if (act.excursion_id && isValidUUID(act.excursion_id) && excDetails[act.excursion_id])
       return act.excursion_id;
 
@@ -358,21 +363,13 @@ export default function ItinerairesClient() {
     if (title) {
       const norm = normalizeTitle(title);
       const lower = title.trim().toLowerCase();
-
-      // 3. Titre normalisé exact
       if (titleToId[norm]) return titleToId[norm];
-      // 4. Titre exact minuscule
       if (titleToId[lower]) return titleToId[lower];
 
       const entries = Object.entries(titleToId);
-
-      // 5. Inclusion partielle
-      const contained = entries.find(([key]) =>
-        key.includes(norm) || norm.includes(key)
-      );
+      const contained = entries.find(([key]) => key.includes(norm) || norm.includes(key));
       if (contained) return contained[1];
 
-      // 6. Score mots communs ≥ 60 %
       const planWords = norm.split(" ").filter(w => w.length > 2);
       if (planWords.length > 0) {
         const best = entries
@@ -388,7 +385,6 @@ export default function ItinerairesClient() {
       }
     }
 
-    // 7. Dernier recours : UUID brut
     if (act.excursion_id && isValidUUID(act.excursion_id)) return act.excursion_id;
     if (isValidUUID(act.id)) return act.id;
     return null;
@@ -404,25 +400,27 @@ export default function ItinerairesClient() {
     return id ? excDetails[id] : undefined;
   };
 
-  /**
-   * Navigation vers la page détail de l'excursion.
-   * Utilise router.push (même onglet) — plus fiable que window.open.
-   * Si l'UUID est résolu → /excursions/{id}
-   * Sinon → alerte utilisateur (jamais silencieux)
-   */
+  // ✅ CORRECTION 2 : navigation vers app/excursions/[id]/page via router.push
+  // Utilise toujours l'UUID résolu — jamais un titre ou un ID non validé
   const navigateToExcursion = (act: ActivityItem) => {
-    const id = resolveExcursionId(act);
-    if (id) {
-      router.push(`/excursions/${id}`);
-    } else {
-      // Fallback : on essaie quand même avec l'ID brut si c'est un UUID valide
-      const rawId = act.excursion_id || act.id;
-      if (rawId && isValidUUID(rawId)) {
-        router.push(`/excursions/${rawId}`);
-      } else {
-        alert(`Impossible de trouver l'excursion "${act.excursion?.title || "inconnue"}" dans la base de données.`);
-      }
+    const resolvedId = resolveExcursionId(act);
+
+    if (resolvedId) {
+      // Route vers app/excursions/[id]/page.tsx
+      router.push(`/excursions/${resolvedId}`);
+      return;
     }
+
+    // Fallback sur l'ID brut si UUID valide mais non résolu dans le cache local
+    const rawId = act.excursion_id || act.id;
+    if (rawId && isValidUUID(rawId)) {
+      router.push(`/excursions/${rawId}`);
+      return;
+    }
+
+    alert(
+      `Impossible de trouver l'excursion « ${act.excursion?.title || "inconnue"} » dans la base de données.`
+    );
   };
 
   // ── CRUD ──────────────────────────────────────────────────────────────────
@@ -448,10 +446,12 @@ export default function ItinerairesClient() {
   const isAssisted = (raw: RawPlan) =>
     !!raw && !Array.isArray(raw) && typeof raw === "object" && "days" in raw;
 
+  // ✅ CORRECTION 1 : ouvre CheckoutModalItineraire avec toutes les excursions
   const openItineraryCheckout = (it: Itineraire) => {
     const plan = normalizePlan(it.plan);
     const seen = new Set<string>();
     const excursions: ExcursionForCheckout[] = [];
+
     plan.forEach(day => {
       (day.activities || []).forEach(act => {
         if (!act.excursion?.price_per_person) return;
@@ -469,7 +469,10 @@ export default function ItinerairesClient() {
         });
       });
     });
-    if (excursions.length > 0) setCheckoutExcs(excursions);
+
+    if (excursions.length > 0) {
+      setCheckoutItineraire({ excursions, itineraireId: it.id });
+    }
   };
 
   // ── Render ────────────────────────────────────────────────────────────────
@@ -592,7 +595,12 @@ export default function ItinerairesClient() {
                           ? <Loader2 size={13} style={{ animation: "spin .8s linear infinite" }} />
                           : <Trash2 size={13} />}
                       </button>
-                      <button className="it-reserve-all-btn" disabled={!hasBookable} onClick={() => openItineraryCheckout(it)}>
+                      {/* ✅ CORRECTION 1 : bouton Réserver ouvre CheckoutModalItineraire */}
+                      <button
+                        className="it-reserve-all-btn"
+                        disabled={!hasBookable}
+                        onClick={() => openItineraryCheckout(it)}
+                      >
                         <ShoppingCart size={13} /> Réserver
                       </button>
                     </div>
@@ -626,14 +634,16 @@ export default function ItinerairesClient() {
                               const startDate = act.date || details?.start_date || act.excursion?.start_date;
                               const startTime = act.excursion?.start_time || details?.start_time;
                               const meetingPoint = details?.meeting_point || act.excursion?.meeting_point;
-                              // Vérifie si on peut résoudre l'ID pour activer le bouton
                               const resolvedId = resolveExcursionId(act);
-                              const canNavigate = !!resolvedId || isValidUUID(act.excursion_id || "") || isValidUUID(act.id);
+                              const canNavigate =
+                                !!resolvedId ||
+                                isValidUUID(act.excursion_id || "") ||
+                                isValidUUID(act.id);
 
                               return (
                                 <div key={act.id || ai} className="act-row">
 
-                                  {/* Photo cliquable */}
+                                  {/* Photo cliquable → page excursion */}
                                   {photo ? (
                                     <img
                                       src={photo}
@@ -653,7 +663,7 @@ export default function ItinerairesClient() {
                                   )}
 
                                   <div style={{ flex: 1, minWidth: 0 }}>
-                                    {/* Titre cliquable */}
+                                    {/* Titre cliquable → page excursion */}
                                     <p
                                       className="excursion-title"
                                       onClick={() => canNavigate && navigateToExcursion(act)}
@@ -717,7 +727,7 @@ export default function ItinerairesClient() {
                                       </p>
                                     )}
 
-                                    {/* ── Bouton Voir détail — CORRIGÉ ── */}
+                                    {/* ✅ CORRECTION 2 : Bouton Voir détail → /excursions/[id]/page */}
                                     <button
                                       className="btn-voir-detail"
                                       data-unavailable={!canNavigate ? "true" : undefined}
@@ -726,7 +736,11 @@ export default function ItinerairesClient() {
                                         e.stopPropagation();
                                         if (canNavigate) navigateToExcursion(act);
                                       }}
-                                      title={canNavigate ? `Voir ${act.excursion?.title}` : "Excursion introuvable dans la base de données"}
+                                      title={
+                                        canNavigate
+                                          ? `Voir la page de ${act.excursion?.title}`
+                                          : "Excursion introuvable dans la base de données"
+                                      }
                                     >
                                       <ExternalLink size={11} />
                                       {canNavigate ? "Voir détail" : "Introuvable"}
@@ -746,11 +760,12 @@ export default function ItinerairesClient() {
           </div>
         )}
 
-        {/* Checkout modal */}
-        {checkoutExcs && checkoutExcs.length > 0 && (
-          <CheckoutModal
-            exc={checkoutExcs[0]}
-            onClose={() => setCheckoutExcs(null)}
+        {/* ✅ CORRECTION 1 : CheckoutModalItineraire à la place de CheckoutModal */}
+        {checkoutItineraire && checkoutItineraire.excursions.length > 0 && (
+          <CheckoutModalItineraire
+            excursions={checkoutItineraire.excursions}
+            itineraireId={checkoutItineraire.itineraireId}
+            onClose={() => setCheckoutItineraire(null)}
           />
         )}
       </div>
