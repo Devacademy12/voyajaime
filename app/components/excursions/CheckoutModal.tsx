@@ -1,1569 +1,897 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabaseClient";
-import Link from "next/link";
+import { sanitizeText } from "@/app/lib/sanitize";
 import {
-  CalendarDays, MapPin, Wallet, Building2,
-  ChevronRight, ChevronLeft, MessageSquare, X, Loader2,
-  ShieldCheck, Ticket, Navigation,
-  AlertCircle, Timer, History, Users,
-  CheckCircle,
+  X, Users, MapPin, Clock,
+  Check, Minus, Plus, ShieldCheck, RefreshCcw, Lock,
+  Loader2, CheckCircle, AlertCircle, ChevronLeft, ChevronRight,
+  MessageSquare, Route,
 } from "lucide-react";
 
-// ─── Types ────────────────────────────────────────────────────────────
+/* ─── Types ─────────────────────────────────────────────────────────── */
+
+interface TimeSlot {
+  time: string;
+  language?: string;
+  price: number;
+  slots: number;
+  groupPrice?: boolean;
+  start_time?: string;
+  end_time?: string;
+}
+
 interface Excursion {
   id: string;
   title: string;
   city: string;
-  photos: string[];
   duration_hours: number;
   price_per_person: number;
-  meeting_point?: string;
-  rating?: number;
+  max_people: number;
+  available_dates?: any[] | null;
 }
 
-interface Reservation {
+interface Prestataire {
+  user_id: string;
+  full_name: string | null;
+  agency_name: string | null;
+  avatar_url: string | null;
+  city: string | null;
+  description: string | null;
+  phone: string | null;
+}
+
+interface AvisItem {
   id: string;
-  booking_code: string;
-  date: string;
-  time: string;
-  people_count: number;
-  total_price: number;
-  platform_fee: number;
-  status: string;
-  payment_status?: string | null;
-  payment_deadline?: string | null;
-  excursion_id?: string;
-  excursion: Excursion | null;
+  rating: number;
+  comment: string;
+  created_at: string;
+  prestataire_response: string | null;
+  likes_count: number;
+  touriste_name: string;
+  touriste_avatar: string | null;
 }
 
-// ─── Constants ────────────────────────────────────────────────────────
-type PayMethod = "cash" | "bank";
+interface Props {
+  exc?: Excursion;
+  excursion?: Excursion;
+  excursions?: Excursion[];
+  userId?: string;
+  itineraireId?: string;
+  onClose?: () => void;
+  prestataire?: Prestataire | null;
+  initialAvis?: AvisItem[];
+  myLikedIds?: string[];
+  categories?: unknown[];
+}
 
-const PAY_METHODS: {
-  id: PayMethod;
-  label: string;
-  sub: string;
-  Icon: React.ElementType;
-}[] = [
-  {
-    id: "cash",
-    label: "Espèces sur place",
-    sub: "Paiement à la rencontre avec le guide",
-    Icon: Wallet,
-  },
-  {
-    id: "bank",
-    label: "Virement bancaire",
-    sub: "RIB transmis par email après confirmation",
-    Icon: Building2,
-  },
+/* ─── Helpers ────────────────────────────────────────────────────────── */
+
+const DAYS_FR   = ["Lu", "Ma", "Me", "Je", "Ve", "Sa", "Di"];
+const MONTHS_FR = [
+  "Janvier","Février","Mars","Avril","Mai","Juin",
+  "Juillet","Août","Septembre","Octobre","Novembre","Décembre",
 ];
 
-const STEPS = ["Récapitulatif", "Informations", "Paiement"];
+const genBookingCode = () =>
+  "VJ-" + Date.now().toString(36).toUpperCase() + "-" +
+  Math.random().toString(36).substring(2, 5).toUpperCase();
 
-// ─── Helpers ──────────────────────────────────────────────────────────
-function fmtDate(d: string, short = false) {
-  if (!d) return "";
-  const dt = new Date(d + "T00:00:00");
-  if (short)
-    return dt.toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
-  return dt.toLocaleDateString("fr-FR", {
-    weekday: "long",
-    day: "numeric",
-    month: "long",
-    year: "numeric",
+function buildDateMap(exc: Excursion): Map<string, TimeSlot[]> {
+  const map = new Map<string, TimeSlot[]>();
+  if (!exc.available_dates || !Array.isArray(exc.available_dates)) return map;
+  exc.available_dates.forEach((item: any) => {
+    const d = item.date;
+    if (!d) return;
+    if (!map.has(d)) map.set(d, []);
+    const depTimes: string[] =
+      item.departure_times && Array.isArray(item.departure_times) && item.departure_times.length > 0
+        ? item.departure_times
+        : [item.departure_time || item.time || item.start_time || "09:00"];
+    depTimes.forEach(t => {
+      map.get(d)!.push({
+        time:       t.slice(0, 5),
+        language:   item.language,
+        price:      item.price_per_person || exc.price_per_person,
+        slots:      item.slots ?? 0,
+        groupPrice: item.group_discount_available || false,
+        start_time: item.start_time,
+        end_time:   item.end_time,
+      });
+    });
   });
+  return map;
 }
 
-// ─── CSS ──────────────────────────────────────────────────────────────
+/* ─── CSS ────────────────────────────────────────────────────────────── */
+
 const CSS = `
-  @import url('https://fonts.googleapis.com/css2?family=Clash+Display:wght@500;600;700&family=Satoshi:wght@400;500;600;700&display=swap');
-  @import url('https://api.fontshare.com/v2/css?f[]=clash-display@500,600,700&f[]=satoshi@400,500,600,700&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=DM+Sans:wght@400;500;600;700;800&display=swap');
 
-  @keyframes cm-spin    { to { transform: rotate(360deg) } }
-  @keyframes cm-fadeIn  { from { opacity: 0 } to { opacity: 1 } }
-  @keyframes cm-slideUp { from { opacity: 0; transform: translateY(24px) } to { opacity: 1; transform: none } }
-  @keyframes cm-pulse   { 0%,100%{opacity:1} 50%{opacity:.45} }
-
-  .cm-overlay {
-    position: fixed;
-    inset: 0;
-    background: rgba(0, 0, 0, .82);
-    backdrop-filter: blur(14px);
-    z-index: 2000;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+  .co2-overlay {
+    position: fixed; inset: 0; z-index: 1000;
+    display: flex; align-items: center; justify-content: center;
     padding: 16px;
-    animation: cm-fadeIn .15s ease;
+    background: rgba(10,20,35,0.68);
+    backdrop-filter: blur(8px);
+    animation: co2Fade .2s ease;
   }
-
-  .cm-box {
-    background: #0D1117;
-    border: 1px solid #1E293B;
-    border-radius: 26px;
-    width: 100%;
-    max-width: 460px;
-    max-height: 92vh;
-    display: flex;
-    flex-direction: column;
-    box-shadow: 0 48px 120px rgba(0,0,0,.7);
+  .co2-shell {
+    background: #FAFBFC;
+    border-radius: 28px;
+    width: 100%; max-width: 860px;
+    box-shadow: 0 32px 80px rgba(0,0,0,.32);
     overflow: hidden;
-    font-family: 'Satoshi', 'DM Sans', system-ui, sans-serif;
-    animation: cm-slideUp .25s cubic-bezier(.22,1,.36,1);
+    display: flex;
+    animation: co2Up .3s cubic-bezier(.34,1.4,.64,1);
+    font-family: 'DM Sans', sans-serif;
+    max-height: 96vh;
   }
 
-  /* Head */
-  .cm-head {
-    padding: 22px 24px 18px;
-    border-bottom: 1px solid #111825;
-    flex-shrink: 0;
+  /* Left */
+  .co2-left {
+    width: 340px; flex-shrink: 0;
+    background: linear-gradient(160deg,#0B3D52 0%,#0E5068 55%,#0B7EA3 100%);
+    padding: 32px 28px;
+    display: flex; flex-direction: column; gap: 20px;
+    color: white; position: relative; overflow: hidden;
   }
-  .cm-head-row {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 0;
+  .co2-left::before {
+    content: ''; position: absolute; top: -60px; right: -60px;
+    width: 200px; height: 200px; border-radius: 50%;
+    background: rgba(255,255,255,.06);
   }
-
-  /* Progress */
-  .cm-progress {
-    display: flex;
-    gap: 5px;
-    margin: 16px 0 10px;
-  }
-  .cm-prog-seg {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 5px;
-  }
-  .cm-prog-bar {
-    height: 2px;
-    width: 100%;
-    border-radius: 99px;
-    transition: background .3s;
-  }
-  .cm-prog-done     { background: #3DD6AC; }
-  .cm-prog-current  { background: #3DD6AC; }
-  .cm-prog-pending  { background: #1A2233; }
-  .cm-prog-lbl {
-    font-size: 9px;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 1px;
+  .co2-left::after {
+    content: ''; position: absolute; bottom: -40px; left: -40px;
+    width: 160px; height: 160px; border-radius: 50%;
+    background: rgba(255,255,255,.04);
   }
 
-  /* Timer */
-  .cm-timer {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 9px 13px;
-    border-radius: 10px;
-    border: 1px solid;
-  }
-  .cm-timer-ok     { background: #051A11; border-color: #0D3B26; }
-  .cm-timer-urgent { background: #1A0505; border-color: #3B0D0D; animation: cm-pulse .85s ease infinite; }
-
-  /* Scrollable body */
-  .cm-body {
-    padding: 22px 24px;
-    overflow-y: auto;
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-  }
-  .cm-body::-webkit-scrollbar { width: 3px; }
-  .cm-body::-webkit-scrollbar-thumb { background: #1E293B; border-radius: 3px; }
-
-  /* Section label */
-  .cm-section-lbl {
-    font-size: 9px;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 1.5px;
-    color: #334155;
-    margin-bottom: 10px;
+  /* Right */
+  .co2-right { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+  .co2-right-scroll { flex: 1; overflow-y: auto; padding: 28px 28px 0; }
+  .co2-right-scroll::-webkit-scrollbar { width: 3px }
+  .co2-right-scroll::-webkit-scrollbar-thumb { background: #E5E7EB; border-radius: 3px }
+  .co2-right-footer {
+    padding: 20px 28px 24px;
+    border-top: 1px solid #F3F4F6;
+    background: #FAFBFC;
   }
 
-  /* Info grid */
-  .cm-info-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 8px;
+  /* Calendar grid */
+  .cal-grid { display: grid; grid-template-columns: repeat(7,1fr); gap: 4px; margin-top: 8px; }
+  .cal-day-btn {
+    aspect-ratio: 1; border-radius: 10px; border: none;
+    font-size: 13px; font-weight: 600; cursor: pointer;
+    font-family: 'DM Sans', sans-serif; transition: all .15s;
+    position: relative; display: flex; align-items: center;
+    justify-content: center; flex-direction: column; gap: 1px;
   }
-  .cm-info-cell {
-    background: #0A0C10;
-    border: 1px solid #151C28;
-    border-radius: 11px;
-    padding: 11px 13px;
+  .cal-day-btn.empty { background: transparent; cursor: default }
+  .cal-day-btn.past { background: #F3F4F6; color: #D1D5DB; cursor: not-allowed; text-decoration: line-through }
+  .cal-day-btn.unavailable { background: #F9FAFB; color: #9CA3AF; cursor: not-allowed; }
+  .cal-day-btn.unavailable::before {
+    content: ''; position: absolute;
+    left: 10%; right: 10%; top: 50%;
+    height: 1.5px; background: #D1D5DB;
+    transform: rotate(-12deg); border-radius: 2px;
   }
-  .cm-info-cell-lbl {
-    font-size: 9px;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: .7px;
-    color: #334155;
-    margin-bottom: 4px;
+  .cal-day-btn.available { background: white; color: #111827; border: 1.5px solid #E5E7EB; }
+  .cal-day-btn.available:hover {
+    background: #EFF9FB; border-color: #2B96A8; color: #2B96A8;
+    transform: translateY(-1px); box-shadow: 0 4px 12px rgba(43,150,168,.15);
   }
-  .cm-info-cell-val {
-    font-size: 13px;
-    font-weight: 700;
-    color: #94A3B8;
+  .cal-day-btn.selected {
+    background: #2B96A8 !important; color: white !important;
+    border-color: #2B96A8 !important;
+    box-shadow: 0 4px 14px rgba(43,150,168,.35);
+    transform: translateY(-1px);
   }
+  .cal-day-btn.today-mark::after {
+    content: ''; position: absolute; bottom: 3px;
+    width: 4px; height: 4px; border-radius: 50%;
+    background: currentColor; opacity: .6;
+  }
+  .cal-dot { width: 4px; height: 4px; border-radius: 50%; background: #10B981; flex-shrink: 0 }
 
-  /* Price breakdown */
-  .cm-price-box {
-    border: 1px solid #1A2233;
-    border-radius: 14px;
-    overflow: hidden;
+  /* Slots */
+  .slot-pill {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 13px 16px; border-radius: 14px;
+    border: 1.5px solid #E5E7EB; background: white;
+    cursor: pointer; transition: all .15s;
+    margin-bottom: 8px; position: relative;
   }
-  .cm-price-head {
-    background: #0A0C10;
-    padding: 11px 15px;
-    border-bottom: 1px solid #111825;
-    font-size: 9px;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    color: #334155;
-  }
-  .cm-price-body {
-    padding: 14px 15px;
-    display: flex;
-    flex-direction: column;
-    gap: 9px;
-  }
-  .cm-price-row {
-    display: flex;
-    justify-content: space-between;
-    font-size: 13px;
-    color: #475569;
-  }
-  .cm-price-row span:last-child { font-weight: 700; color: #94A3B8; }
-  .cm-price-divider { height: 1px; background: #111825; }
-  .cm-price-total {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    font-size: 13px;
-    font-weight: 700;
-    color: #F1F5F9;
-  }
-  .cm-price-total-num {
-    font-family: 'Clash Display', sans-serif;
-    font-size: 22px;
-    font-weight: 700;
-    color: #3DD6AC;
-    letter-spacing: -.5px;
-  }
+  .slot-pill:last-child { margin-bottom: 0 }
+  .slot-pill.sel { background: #EFF9FB; border-color: #2B96A8 }
+  .slot-pill.full { opacity: .55; cursor: not-allowed; border-color: #FEE2E2 }
+  .slot-pill:not(.full):not(.sel):hover { border-color: #2B96A8; background: #F8FDFE }
 
-  /* Total hero */
-  .cm-total-hero {
-    background: #0A0C10;
-    border: 1px solid #1A2233;
-    border-radius: 16px;
-    padding: 22px;
-    text-align: center;
+  /* Counter */
+  .co2-counter-btn {
+    width: 36px; height: 36px; border: none; border-radius: 10px;
+    background: #F3F4F6; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: all .15s; font-family: 'DM Sans', sans-serif;
   }
+  .co2-counter-btn:hover:not(:disabled) { background: #E5E7EB }
+  .co2-counter-btn:disabled { opacity: .3; cursor: not-allowed }
 
-  /* Payment method button */
-  .cm-method {
-    display: flex;
-    align-items: center;
-    gap: 14px;
-    padding: 14px 15px;
-    border-radius: 13px;
-    border: 1px solid;
-    cursor: pointer;
-    font-family: inherit;
-    text-align: left;
-    transition: all .15s;
-    width: 100%;
-    background: none;
+  /* CTA */
+  .co2-cta {
+    width: 100%; padding: 15px; border: none; border-radius: 14px;
+    font-size: 15px; font-weight: 800; cursor: pointer;
+    font-family: 'DM Sans', sans-serif; transition: all .2s;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
   }
-  .cm-method-active   { background: #051A11; border-color: #3DD6AC; }
-  .cm-method-inactive { background: #0A0C10; border-color: #1A2233; }
-  .cm-method-inactive:hover { border-color: #2D3F55; background: #0D1117; }
+  .co2-cta.on { background: linear-gradient(135deg,#2B96A8,#1b7a90); color: white }
+  .co2-cta.on:hover { transform: translateY(-1px); box-shadow: 0 8px 22px rgba(43,150,168,.35) }
+  .co2-cta.off { background: #E5E7EB; color: #9CA3AF; cursor: not-allowed }
+  .co2-cta.spin { background: #7CC4D1; color: white; cursor: not-allowed }
 
-  /* Buttons */
-  .cm-btn-primary {
-    width: 100%;
-    padding: 15px;
-    background: #3DD6AC;
-    color: #08090C;
-    border: none;
-    border-radius: 13px;
-    font-size: 14px;
-    font-weight: 700;
-    cursor: pointer;
-    font-family: inherit;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 9px;
-    transition: all .2s;
+  .co2-textarea {
+    width: 100%; padding: 10px 13px; min-height: 64px;
+    border: 1.5px solid #E5E7EB; border-radius: 12px;
+    font-size: 13px; font-family: 'DM Sans', sans-serif;
+    color: #374151; resize: none; outline: none;
+    background: #F9FAFB; box-sizing: border-box; transition: border .15s;
   }
-  .cm-btn-primary:hover:not(:disabled) {
-    background: #5FDFBA;
-    box-shadow: 0 8px 24px rgba(61,214,172,.28);
-  }
-  .cm-btn-primary:disabled { opacity: .45; cursor: not-allowed; }
+  .co2-textarea:focus { border-color: #2B96A8; background: white }
 
-  .cm-btn-ghost {
-    flex: 1;
-    padding: 13px;
-    background: #0A0C10;
-    color: #475569;
-    border: 1px solid #1A2233;
-    border-radius: 13px;
-    font-size: 13px;
-    font-weight: 700;
-    cursor: pointer;
-    font-family: inherit;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 7px;
-    transition: all .2s;
+  .itin-badge {
+    display: inline-flex; align-items: center; gap: 5px;
+    background: rgba(255,255,255,.15); border: 1px solid rgba(255,255,255,.25);
+    border-radius: 20px; padding: 4px 10px;
+    font-size: 11px; font-weight: 700; color: white;
+    letter-spacing: .5px; text-transform: uppercase;
   }
-  .cm-btn-ghost:hover { background: #111825; color: #64748B; }
+  .itin-progress { display: flex; align-items: center; gap: 4px; margin-bottom: 6px; }
+  .itin-step { height: 3px; border-radius: 3px; flex: 1; transition: background .3s; }
 
-  /* Success ticket */
-  .cm-ticket {
-    border: 1px solid #1A2233;
-    border-radius: 18px;
-    overflow: hidden;
-  }
-  .cm-ticket-head {
-    background: linear-gradient(135deg, #0A1628, #0D2240);
-    padding: 20px 22px;
-  }
-  .cm-ticket-body {
-    padding: 18px 22px;
-    display: flex;
-    flex-direction: column;
-    gap: 14px;
-  }
-  .cm-ticket-foot {
-    border-top: 1.5px dashed #1A2233;
-    padding: 12px 22px;
-    background: #0A0C10;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-  }
-  .cm-ticket-info { display: flex; align-items: flex-start; gap: 13px; }
-  .cm-ticket-icon {
-    width: 34px;
-    height: 34px;
-    border-radius: 9px;
-    background: #0A0C10;
-    border: 1px solid #151C28;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-  }
-  .cm-ticket-lbl { font-size: 9px; color: #334155; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; margin-bottom: 3px; }
-  .cm-ticket-val { font-size: 13px; font-weight: 700; color: #E2E8F0; }
+  @keyframes co2Fade { from { opacity: 0 } to { opacity: 1 } }
+  @keyframes co2Up { from { opacity: 0; transform: translateY(22px) } to { opacity: 1; transform: translateY(0) } }
+  @keyframes coSpin { to { transform: rotate(360deg) } }
 
-  /* Error banner */
-  .cm-error {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 11px 14px;
-    background: rgba(239,68,68,.07);
-    border: 1px solid rgba(239,68,68,.2);
-    border-radius: 10px;
-    font-size: 13px;
-    color: #EF4444;
+  @media (max-width: 680px) {
+    .co2-shell { flex-direction: column; }
+    .co2-left { width: 100%; padding: 22px 20px; gap: 14px; }
   }
-
-  /* Expired state */
-  .cm-expired-icon {
-    width: 68px;
-    height: 68px;
-    border-radius: 18px;
-    background: rgba(239,68,68,.1);
-    border: 1px solid rgba(239,68,68,.2);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin: 0 auto 18px;
-  }
-
-  /* Icon button */
-  .cm-icon-btn {
-    width: 32px;
-    height: 32px;
-    border-radius: 8px;
-    border: 1px solid #1E293B;
-    background: #0A0C10;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all .15s;
-  }
-  .cm-icon-btn:hover { background: #111825; }
-
-  textarea:focus { outline: none; }
 `;
 
-// ═══════════════════════════════════════════════════════════════════════
-//  CheckoutModal
-// ═══════════════════════════════════════════════════════════════════════
-export default function CheckoutModal({
-  reservation,
-  onClose,
-  onPaid,
-  autoStart = false,
+/* ─── MiniCalendar ───────────────────────────────────────────────────── */
+
+function MiniCalendar({
+  dateMap, selectedDate, onSelect,
 }: {
-  reservation: Reservation;
-  onClose: () => void;
-  onPaid: (id: string) => void;
-  autoStart?: boolean;
+  dateMap: Map<string, TimeSlot[]>;
+  selectedDate: string;
+  onSelect: (d: string) => void;
 }) {
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const firstAvailable = Array.from(dateMap.keys()).sort()[0];
+  const initDate = firstAvailable ? new Date(firstAvailable) : today;
+  const [viewYear,  setViewYear]  = useState(initDate.getFullYear());
+  const [viewMonth, setViewMonth] = useState(initDate.getMonth());
+
+  const daysInMonth  = new Date(viewYear, viewMonth + 1, 0).getDate();
+  const firstWeekday = (new Date(viewYear, viewMonth, 1).getDay() + 6) % 7;
+  const cells: (number | null)[] = [
+    ...Array(firstWeekday).fill(null),
+    ...Array.from({ length: daysInMonth }, (_, i) => i + 1),
+  ];
+  const pad = (n: number) => String(n).padStart(2, "0");
+
+  return (
+    <div>
+      <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:10 }}>
+        <button onClick={() => { const d = new Date(viewYear, viewMonth - 1); setViewYear(d.getFullYear()); setViewMonth(d.getMonth()); }}
+          style={{ background:"rgba(255,255,255,.12)", border:"none", borderRadius:8, width:30, height:30, cursor:"pointer", color:"white", display:"flex", alignItems:"center", justifyContent:"center" }}>
+          <ChevronLeft size={15}/>
+        </button>
+        <span style={{ fontSize:14, fontWeight:700, color:"white" }}>
+          {MONTHS_FR[viewMonth]} {viewYear}
+        </span>
+        <button onClick={() => { const d = new Date(viewYear, viewMonth + 1); setViewYear(d.getFullYear()); setViewMonth(d.getMonth()); }}
+          style={{ background:"rgba(255,255,255,.12)", border:"none", borderRadius:8, width:30, height:30, cursor:"pointer", color:"white", display:"flex", alignItems:"center", justifyContent:"center" }}>
+          <ChevronRight size={15}/>
+        </button>
+      </div>
+
+      <div className="cal-grid" style={{ marginBottom:4 }}>
+        {DAYS_FR.map(d => (
+          <div key={d} style={{ textAlign:"center", fontSize:11, fontWeight:700, color:"rgba(255,255,255,.5)", padding:"4px 0" }}>{d}</div>
+        ))}
+      </div>
+
+      <div className="cal-grid">
+        {cells.map((day, i) => {
+          if (!day) return <div key={i} className="cal-day-btn empty"/>;
+          const dateStr  = `${viewYear}-${pad(viewMonth + 1)}-${pad(day)}`;
+          const cellDate = new Date(viewYear, viewMonth, day);
+          const isPast   = cellDate < today;
+          const slots    = dateMap.get(dateStr);
+          const hasSlots = slots ? slots.some(s => s.slots > 0) : false;
+          const isInMap  = dateMap.has(dateStr);
+          const isSel    = dateStr === selectedDate;
+          const isToday  = cellDate.getTime() === today.getTime();
+
+          let cls = "cal-day-btn ";
+          if (isPast)             cls += "past";
+          else if (!isInMap)      cls += "unavailable";
+          else if (!hasSlots)     cls += "unavailable";
+          else if (isSel)         cls += "selected";
+          else                    cls += "available";
+          if (isToday && !isPast) cls += " today-mark";
+
+          return (
+            <button key={i} className={cls} style={{ color: isSel ? "white" : undefined }}
+              onClick={() => !isPast && isInMap && hasSlots && onSelect(dateStr)}>
+              {day}
+              {isInMap && hasSlots && !isSel && <span className="cal-dot"/>}
+            </button>
+          );
+        })}
+      </div>
+
+      <div style={{ display:"flex", gap:14, marginTop:12, flexWrap:"wrap" }}>
+        {[
+          { color:"#10B981", label:"Disponible" },
+          { color:"rgba(255,255,255,.3)", label:"Indisponible", cross:true },
+        ].map(l => (
+          <div key={l.label} style={{ display:"flex", alignItems:"center", gap:5, fontSize:11, color:"rgba(255,255,255,.6)" }}>
+            <div style={{ width:10, height:10, borderRadius:3, background:l.color, position:"relative" }}>
+              {l.cross && (
+                <div style={{ position:"absolute", inset:0, display:"flex", alignItems:"center", justifyContent:"center" }}>
+                  <div style={{ width:"110%", height:1.5, background:"rgba(255,255,255,.5)", transform:"rotate(-12deg)" }}/>
+                </div>
+              )}
+            </div>
+            {l.label}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* ─── SlotList ───────────────────────────────────────────────────────── */
+
+function SlotList({ slots, selected, onSelect }: {
+  slots: TimeSlot[];
+  selected: TimeSlot | null;
+  onSelect: (s: TimeSlot) => void;
+}) {
+  return (
+    <div>
+      {slots.map((slot, i) => {
+        const avail    = slot.slots > 0;
+        const isSel    = selected === slot;
+        const lowStock = avail && slot.slots <= 3;
+        return (
+          <div key={i} className={`slot-pill ${isSel ? "sel" : ""} ${!avail ? "full" : ""}`}
+            onClick={() => avail && onSelect(slot)}>
+            {!avail && (
+              <span style={{ position:"absolute", top:-8, right:10, background:"#EF4444", color:"white", fontSize:10, fontWeight:700, padding:"2px 8px", borderRadius:20 }}>Complet</span>
+            )}
+            {lowStock && avail && (
+              <span style={{ position:"absolute", top:-8, right:10, background:"#F59E0B", color:"white", fontSize:10, fontWeight:700, padding:"2px 8px", borderRadius:20 }}>Dernières places !</span>
+            )}
+            <div>
+              <span style={{ fontSize:14, fontWeight:800, color: avail ? "#111827" : "#9CA3AF" }}>{slot.time}</span>
+              {slot.language && (
+                <span style={{ marginLeft:8, fontSize:11, background:"#F3F4F6", color:"#6B7280", padding:"2px 7px", borderRadius:20, fontWeight:600 }}>{slot.language}</span>
+              )}
+              {slot.groupPrice && (
+                <div style={{ fontSize:11, color:"#10B981", fontWeight:600, marginTop:3, display:"flex", alignItems:"center", gap:4 }}>
+                  <Users size={10}/> Tarif groupe dispo
+                </div>
+              )}
+            </div>
+            <div style={{ textAlign:"right" }}>
+              {avail ? (
+                <>
+                  <div style={{ fontSize:16, fontWeight:900, color:"#2B96A8" }}>
+                    {slot.price} EUR <span style={{ fontSize:11, color:"#9CA3AF", fontWeight:500 }}>/pers.</span>
+                  </div>
+                  <div style={{ fontSize:11, color: lowStock ? "#F59E0B" : "#9CA3AF", fontWeight: lowStock ? 700 : 400 }}>
+                    {slot.slots} place{slot.slots > 1 ? "s" : ""}
+                  </div>
+                </>
+              ) : (
+                <span style={{ fontSize:13, fontWeight:700, color:"#EF4444" }}>Complet</span>
+              )}
+            </div>
+            {avail && (
+              <div style={{ marginLeft:10, flexShrink:0 }}>
+                <div style={{ width:18, height:18, borderRadius:"50%", border:`2px solid ${isSel ? "#2B96A8" : "#D1D5DB"}`, background: isSel ? "#2B96A8" : "white", display:"flex", alignItems:"center", justifyContent:"center" }}>
+                  {isSel && <div style={{ width:8, height:8, borderRadius:"50%", background:"white" }}/>}
+                </div>
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+/* ─── Main Modal ─────────────────────────────────────────────────────── */
+
+export default function CheckoutModal({
+  exc, excursion, excursions, itineraireId: propItineraireId, onClose,
+}: Props) {
   const supabase = createClient();
-  const exc = reservation.excursion;
 
-  const [step, setStep] = useState<1 | 2 | 3 | 4>(autoStart ? 3 : 1);
-  const [specialNote, setSpecialNote] = useState("");
-  const [payMethod, setPayMethod] = useState<PayMethod>("cash");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-  const [cancelled, setCancelled] = useState(false);
-  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const isItinerary = !!(excursions && excursions.length > 1);
+  const singleData  = exc ?? excursion ?? excursions?.[0];
+  const allExc      = isItinerary ? excursions! : (singleData ? [singleData] : []);
 
-  function getSecondsLeft() {
-    if (!reservation.payment_deadline) return 3600;
-    return Math.max(
-      0,
-      Math.floor(
-        (new Date(reservation.payment_deadline).getTime() - Date.now()) / 1000
-      )
+  const [perExc, setPerExc] = useState(() =>
+    allExc.map(e => ({
+      exc:          e,
+      dateMap:      buildDateMap(e),
+      selectedDate: "",
+      selectedSlot: null as TimeSlot | null,
+      people:       1,
+      specialNeeds: "",
+    }))
+  );
+
+  const [activeIdx,    setActiveIdx]    = useState(0);
+  const [status,       setStatus]       = useState<"idle"|"loading"|"success"|"error">("idle");
+  const [errorMsg,     setErrorMsg]     = useState("");
+  const [bookingCodes, setBookingCodes] = useState<string[]>([]);
+  const [savedItinId,  setSavedItinId]  = useState<string | null>(null);
+
+  const patch = (idx: number, p: Partial<typeof perExc[0]>) =>
+    setPerExc(prev => prev.map((x, i) => i === idx ? { ...x, ...p } : x));
+
+  const lineItems = perExc.map(p => ({
+    title:    p.exc.title,
+    subtotal: (p.selectedSlot?.price || 0) * p.people,
+    selected: !!p.selectedSlot,
+  }));
+  const subtotal    = lineItems.reduce((s, l) => s + l.subtotal, 0);
+  const platformFee = Math.round(subtotal * 0.1);
+  const grandTotal  = subtotal + platformFee;
+
+  const configuredCount = perExc.filter(p => !!p.selectedSlot).length;
+  const isLoading       = status === "loading";
+
+  const canSubmit =
+    perExc.some(p => !!p.selectedSlot) &&
+    perExc.every(p => !p.selectedSlot || p.selectedSlot.slots >= p.people) &&
+    !isLoading;
+
+  // Clamp people when slot changes
+  useEffect(() => {
+    perExc.forEach((p, i) => {
+      const max = p.selectedSlot?.slots || p.exc.max_people || 1;
+      if (p.people > max) patch(i, { people: Math.max(1, max) });
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [perExc.map(p => p.selectedSlot?.time).join(",")]);
+
+  /* ── Reserve ── */
+  const handleReserve = async () => {
+    if (!canSubmit) return;
+    setStatus("loading"); setErrorMsg("");
+
+    try {
+      const { data: { user }, error: authErr } = await supabase.auth.getUser();
+      if (authErr || !user) { setErrorMsg("Vous devez être connecté."); setStatus("error"); return; }
+
+      let itineraireId: string | null = propItineraireId ?? null;
+
+      if (isItinerary && !itineraireId) {
+        const villes    = [...new Set(perExc.map(p => p.exc.city))];
+        const planItems = perExc.filter(p => p.selectedSlot).map((p, idx) => ({
+          jour: idx + 1, excursion_id: p.exc.id, titre: p.exc.title, ville: p.exc.city,
+          date: p.selectedDate, heure: p.selectedSlot!.time, personnes: p.people,
+          prix_total: (p.selectedSlot!.price * p.people) + Math.round(p.selectedSlot!.price * p.people * 0.1),
+        }));
+
+        const { data: newItin, error: itinErr } = await supabase
+          .from("itineraires")
+          .insert([{ user_id: user.id, nb_jours: planItems.length, villes_selectionnees: villes, categories_selectionnees: [], plan: planItems }])
+          .select("id").single();
+
+        if (itinErr || !newItin) { setErrorMsg(`Erreur itinéraire : ${itinErr?.message ?? "inconnue"}`); setStatus("error"); return; }
+        itineraireId = newItin.id;
+        setSavedItinId(newItin.id);
+      } else if (isItinerary) {
+        setSavedItinId(itineraireId);
+      }
+
+      const codes: string[] = [];
+
+      for (const p of perExc) {
+        if (!p.selectedSlot) continue;
+
+        const { data: existing, error: checkErr } = await supabase
+          .from("reservations").select("id")
+          .eq("touriste_id", user.id).eq("excursion_id", p.exc.id).eq("date", p.selectedDate)
+          .not("status", "eq", "cancelled").maybeSingle();
+
+        if (checkErr) { setErrorMsg(`Erreur vérification : ${checkErr.message}`); setStatus("error"); return; }
+        if (existing) { setErrorMsg(`Vous avez déjà une réservation pour "${p.exc.title}" à cette date.`); setStatus("error"); return; }
+
+        const code = genBookingCode();
+        const tot  = p.selectedSlot.price * p.people;
+        const fee  = Math.round(tot * 0.1);
+
+        const { error: insErr } = await supabase.from("reservations").insert([{
+          touriste_id:    user.id,
+          excursion_id:   p.exc.id,
+          itineraire_id:  itineraireId,
+          date:           p.selectedDate,
+          time:           p.selectedSlot.time,
+          people_count:   p.people,
+          total_price:    tot + fee,
+          platform_fee:   fee,
+          status:         "pending",
+          special_needs:  p.specialNeeds.trim() || null,
+          booking_code:   code,
+          payment_status: "unpaid",
+          payment_method: null,
+          special_notes:  null,
+        }]);
+
+        if (insErr) { setErrorMsg(`Erreur : ${insErr.message}`); setStatus("error"); return; }
+
+        await supabase.rpc("decrement_slot", { exc_id: p.exc.id, date_str: p.selectedDate, qty: p.people });
+        codes.push(code);
+      }
+
+      setBookingCodes(codes);
+      setStatus("success");
+
+    } catch (err) {
+      setErrorMsg(err instanceof Error ? err.message : "Erreur inconnue.");
+      setStatus("error");
+    }
+  };
+
+  /* ── Success ── */
+  if (status === "success") {
+    const confirmedItems = perExc.filter(p => p.selectedSlot);
+    return (
+      <>
+        <style>{CSS}</style>
+        <div className="co2-overlay" onClick={e => { if (e.target === e.currentTarget) onClose?.(); }}>
+          <div className="co2-shell" style={{ maxWidth:500, display:"block", padding:"40px 36px", textAlign:"center" }}>
+            <div style={{ width:72, height:72, borderRadius:"50%", background:"linear-gradient(135deg,#D1FAE5,#A7F3D0)", display:"flex", alignItems:"center", justifyContent:"center", margin:"0 auto 20px", boxShadow:"0 8px 24px rgba(5,150,105,.2)" }}>
+              <CheckCircle size={36} color="#059669"/>
+            </div>
+
+            <h2 style={{ fontFamily:"'Cormorant Garamond',serif", fontSize:28, fontWeight:700, color:"#111827", marginBottom:8 }}>
+              {isItinerary ? "Itinéraire réservé !" : "Réservation confirmée !"}
+            </h2>
+            <p style={{ fontSize:13, color:"#6B7280", marginBottom: savedItinId ? 10 : 22 }}>
+              {confirmedItems.length} excursion{confirmedItems.length > 1 ? "s" : ""} confirmée{confirmedItems.length > 1 ? "s" : ""}
+            </p>
+
+            {isItinerary && savedItinId && (
+              <div style={{ display:"inline-flex", alignItems:"center", gap:6, background:"linear-gradient(135deg,#EFF9FB,#D0F0F5)", border:"1px solid rgba(43,150,168,.3)", borderRadius:10, padding:"8px 14px", marginBottom:20, fontSize:12 }}>
+                <Route size={13} color="#2B96A8"/>
+                <span style={{ fontWeight:700, color:"#2B96A8" }}>Itinéraire</span>
+                <span style={{ color:"#6B7280", fontFamily:"monospace", fontSize:11 }}>#{savedItinId.slice(0,8).toUpperCase()}</span>
+              </div>
+            )}
+
+            {confirmedItems.map((p, i) => (
+              <div key={i} style={{ background:"linear-gradient(135deg,#EFF9FB,#D0F0F5)", border:"1px solid rgba(43,150,168,.25)", borderRadius:14, padding:"14px 18px", marginBottom:10, textAlign:"left" }}>
+                <p style={{ margin:"0 0 2px", fontSize:13, fontWeight:700, color:"#111827" }}>{sanitizeText(p.exc.title)}</p>
+                <p style={{ margin:"0 0 6px", fontSize:12, color:"#6B7280" }}>
+                  {new Date(p.selectedDate).toLocaleDateString("fr-FR",{day:"numeric",month:"long",year:"numeric"})} · {p.selectedSlot!.time} · {p.people} pers.
+                </p>
+                <p style={{ margin:0, fontSize:11, fontWeight:700, color:"#2B96A8", letterSpacing:"1px", textTransform:"uppercase" }}>
+                  N° {bookingCodes[i]}
+                </p>
+              </div>
+            ))}
+
+            <div style={{ background:"#FFFBEB", border:"1px solid #FDE68A", borderRadius:12, padding:"12px 16px", marginBottom:20, marginTop:4 }}>
+              <p style={{ fontSize:12, color:"#92400E", fontWeight:600 }}>
+                💳 Rendez-vous dans <strong>Mes réservations</strong> pour finaliser le paiement.
+              </p>
+            </div>
+
+            <button className="co2-cta on" onClick={() => onClose?.()}>
+              <Check size={15}/> Fermer
+            </button>
+          </div>
+        </div>
+      </>
     );
   }
 
-  const [timeLeft, setTimeLeft] = useState<number>(getSecondsLeft);
+  /* ── Main form ── */
+  const cur          = perExc[activeIdx];
+  const slotsForDate = cur.selectedDate ? (cur.dateMap.get(cur.selectedDate) || []) : [];
+  const maxPeople    = cur.selectedSlot?.slots || cur.exc.max_people || 1;
+  const curPrice     = cur.selectedSlot?.price || cur.exc.price_per_person || 0;
+  const curTotal     = curPrice * cur.people;
+  const curFee       = Math.round(curTotal * 0.1);
+  const curGrand     = curTotal + curFee;
 
-  useEffect(() => {
-    if (step === 4 || cancelled) return;
-    const remaining = getSecondsLeft();
-    if (remaining <= 0) {
-      triggerCancel();
-      return;
-    }
-    setTimeLeft(remaining);
-    timerRef.current = setInterval(() => {
-      const left = getSecondsLeft();
-      setTimeLeft(left);
-      if (left <= 0) {
-        clearInterval(timerRef.current!);
-        triggerCancel();
-      }
-    }, 1000);
-    return () => {
-      if (timerRef.current) clearInterval(timerRef.current);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [step, cancelled]);
-
-  async function triggerCancel() {
-    setCancelled(true);
-    try {
-      await supabase.rpc("restore_slots_on_cancel", {
-        p_reservation_id: reservation.id,
-      });
-      await supabase
-        .from("reservations")
-        .update({ status: "cancelled", payment_status: "expired" })
-        .eq("id", reservation.id)
-        .eq("status", "pending");
-    } catch (e) {
-      console.warn("Auto-cancel:", e);
-    }
-  }
-
-  function fmtCountdown(secs: number) {
-    const m = Math.floor(secs / 60)
-      .toString()
-      .padStart(2, "0");
-    const s = (secs % 60).toString().padStart(2, "0");
-    return `${m}:${s}`;
-  }
-
-  const isUrgent = timeLeft <= 300;
-  const base = reservation.total_price - reservation.platform_fee;
-  const fee = reservation.platform_fee;
-  const total = reservation.total_price;
-
-  // ── Add to history ─────────────────────────────────────────────────
-  async function addToHistory(paymentMethod: PayMethod) {
-    try {
-      const { data: res, error } = await supabase
-        .from("reservations")
-        .select(
-          "id, booking_code, date, time, people_count, total_price, platform_fee, excursion_id, excursions:excursions!reservations_excursion_id_fkey(id, title, city)"
-        )
-        .eq("id", reservation.id)
-        .single();
-      if (error || !res) return;
-      const excursionData = Array.isArray(res.excursions)
-        ? res.excursions[0]
-        : res.excursions;
-      await supabase.from("historique_reservations").insert({
-        original_reservation_id: res.id,
-        booking_code: res.booking_code,
-        excursion_id: excursionData?.id || null,
-        excursion_title: excursionData?.title || null,
-        excursion_city: excursionData?.city || null,
-        date: res.date,
-        time: res.time,
-        people_count: res.people_count,
-        total_price: res.total_price,
-        platform_fee: res.platform_fee,
-        payment_method: paymentMethod,
-        payment_status: "paid",
-        payment_date: new Date().toISOString(),
-      });
-    } catch (e) {
-      console.warn("addToHistory:", e);
-    }
-  }
-
-  // ── Notify n8n ─────────────────────────────────────────────────────
-  async function notifyN8n(method: PayMethod) {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    fetch("/api/n8n-trigger", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        event: "payment_confirmed",
-        touriste_name:
-          user?.user_metadata?.full_name || user?.email || "Touriste",
-        touriste_email: user?.email || "",
-        excursion_title: exc?.title || "Excursion",
-        excursion_city: exc?.city || "",
-        booking_code: reservation.booking_code,
-        date: reservation.date,
-        people_count: reservation.people_count,
-        total_price: total,
-        payment_method: method,
-        special_notes: specialNote || "",
-      }),
-    }).catch((err) => console.warn("[n8n]:", err));
-  }
-
-  // ── Confirm payment ────────────────────────────────────────────────
-  async function handleConfirm() {
-    setLoading(true);
-    setError("");
-    try {
-      const { error: e1 } = await supabase
-        .from("reservations")
-        .update({
-          payment_status: "paid",
-          payment_method: payMethod,
-          special_notes: specialNote || null,
-          status: "confirmed",
-          paid_at: new Date().toISOString(),
-        })
-        .eq("id", reservation.id);
-      if (e1) throw e1;
-      await addToHistory(payMethod);
-      await notifyN8n(payMethod);
-      if (timerRef.current) clearInterval(timerRef.current);
-      setStep(4);
-      onPaid(reservation.id);
-    } catch (e) {
-      setError(
-        e instanceof Error ? e.message : "Erreur lors de la confirmation."
-      );
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  // ── Back button ────────────────────────────────────────────────────
-  function goBack() {
-    setError("");
-    setStep((s) => (s - 1) as 1 | 2 | 3 | 4);
-  }
-
-  // ─────────────────────────────────────────────────────────────────
   return (
     <>
       <style>{CSS}</style>
-      <div
-        className="cm-overlay"
-        onClick={(e) => {
-          if (e.target === e.currentTarget && step !== 4) onClose();
-        }}
-      >
-        <div className="cm-box">
-          {/* ── HEAD ── */}
-          <div className="cm-head">
-            <div className="cm-head-row">
-              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                {step > 1 && step < 4 && !cancelled && (
-                  <button className="cm-icon-btn" onClick={goBack}>
-                    <ChevronLeft size={14} color="#64748B" />
-                  </button>
-                )}
-                <div>
-                  {step !== 4 && !cancelled && (
-                    <p
-                      style={{
-                        fontSize: 9,
-                        fontWeight: 700,
-                        color: "#334155",
-                        textTransform: "uppercase",
-                        letterSpacing: 1.5,
-                        marginBottom: 3,
-                      }}
-                    >
-                      Étape {step} / 3
-                    </p>
-                  )}
-                  <h2
-                    style={{
-                      fontFamily: "'Clash Display', sans-serif",
-                      fontSize: 18,
-                      fontWeight: 700,
-                      color: "#F1F5F9",
-                      letterSpacing: "-.4px",
-                    }}
-                  >
-                    {cancelled && "Réservation expirée"}
-                    {!cancelled && step === 1 && "Récapitulatif"}
-                    {!cancelled && step === 2 && "Vos informations"}
-                    {!cancelled && step === 3 && "Mode de paiement"}
-                    {!cancelled && step === 4 && "Paiement confirmé"}
-                  </h2>
-                </div>
-              </div>
+      <div className="co2-overlay" onClick={e => { if (e.target === e.currentTarget) onClose?.(); }}>
+        <div className="co2-shell">
 
-              {step !== 4 && (
-                <button className="cm-icon-btn" onClick={onClose}>
-                  <X size={14} color="#64748B" />
-                </button>
+          {/* ── LEFT PANEL ── */}
+          <div className="co2-left">
+
+            {/* Title */}
+            <div style={{ position:"relative", zIndex:1 }}>
+              {isItinerary && (
+                <div className="itin-badge" style={{ marginBottom:10 }}>
+                  <Route size={10}/> Itinéraire · {allExc.length} excursions
+                </div>
               )}
+              <p style={{ fontSize:11, fontWeight:700, color:"rgba(255,255,255,.5)", textTransform:"uppercase", letterSpacing:"1.5px", margin:"0 0 6px" }}>
+                {isItinerary ? `Étape ${activeIdx + 1} / ${allExc.length}` : "Excursion"}
+              </p>
+              <h2 style={{ fontFamily:"'Cormorant Garamond',serif", fontSize:22, fontWeight:700, color:"white", margin:"0 0 10px", lineHeight:1.3 }}>
+                {sanitizeText(cur.exc.title)}
+              </h2>
+              <div style={{ display:"flex", flexWrap:"wrap", gap:8 }}>
+                <span style={{ fontSize:12, color:"rgba(255,255,255,.7)", display:"flex", alignItems:"center", gap:4 }}>
+                  <MapPin size={11}/> {sanitizeText(cur.exc.city)}
+                </span>
+                <span style={{ fontSize:12, color:"rgba(255,255,255,.7)", display:"flex", alignItems:"center", gap:4 }}>
+                  <Clock size={11}/> {cur.exc.duration_hours}h
+                </span>
+              </div>
             </div>
 
-            {/* Progress + Timer (steps 1-3, not cancelled) */}
-            {step !== 4 && !cancelled && (
-              <>
-                <div className="cm-progress">
-                  {STEPS.map((s, i) => (
-                    <div key={s} className="cm-prog-seg">
-                      <div
-                        className={`cm-prog-bar ${
-                          i < step
-                            ? "cm-prog-done"
-                            : i === step - 1
-                            ? "cm-prog-current"
-                            : "cm-prog-pending"
-                        }`}
-                      />
-                      <span
-                        className="cm-prog-lbl"
-                        style={{
-                          color:
-                            i < step
-                              ? "#3DD6AC"
-                              : i === step - 1
-                              ? "#94A3B8"
-                              : "#334155",
-                        }}
-                      >
-                        {s}
-                      </span>
-                    </div>
+            {/* Itinerary progress */}
+            {isItinerary && (
+              <div style={{ position:"relative", zIndex:1 }}>
+                <div style={{ display:"flex", justifyContent:"space-between", fontSize:11, color:"rgba(255,255,255,.5)", marginBottom:6 }}>
+                  <span>Progression</span>
+                  <span style={{ fontWeight:700, color:"white" }}>{configuredCount}/{allExc.length} configurée{configuredCount>1?"s":""}</span>
+                </div>
+                <div className="itin-progress">
+                  {allExc.map((_, i) => (
+                    <div key={i} className="itin-step"
+                      style={{ background: perExc[i].selectedSlot ? "#10B981" : i===activeIdx ? "rgba(255,255,255,.5)" : "rgba(255,255,255,.15)" }}
+                    />
                   ))}
                 </div>
+              </div>
+            )}
 
-                <div
-                  className={`cm-timer ${
-                    isUrgent ? "cm-timer-urgent" : "cm-timer-ok"
-                  }`}
-                >
-                  <div
-                    style={{ display: "flex", alignItems: "center", gap: 6 }}
-                  >
-                    <Timer
-                      size={12}
-                      color={isUrgent ? "#EF4444" : "#3DD6AC"}
-                    />
-                    <span
-                      style={{
-                        fontSize: 12,
-                        fontWeight: 600,
-                        color: isUrgent ? "#EF4444" : "#3DD6AC",
-                      }}
-                    >
-                      {isUrgent ? "Payez maintenant !" : "Temps restant"}
-                    </span>
-                  </div>
-                  <span
+            {/* Itinerary tabs */}
+            {isItinerary && (
+              <div style={{ display:"flex", flexDirection:"column", gap:6, position:"relative", zIndex:1, overflowY:"auto", maxHeight:180 }}>
+                {allExc.map((e, i) => (
+                  <button key={e.id} onClick={() => setActiveIdx(i)}
                     style={{
-                      fontFamily: "monospace",
-                      fontSize: 15,
-                      fontWeight: 900,
-                      color: isUrgent ? "#EF4444" : "#3DD6AC",
-                      background: isUrgent
-                        ? "rgba(239,68,68,.1)"
-                        : "rgba(61,214,172,.1)",
-                      padding: "3px 12px",
-                      borderRadius: 8,
-                    }}
-                  >
-                    {fmtCountdown(timeLeft)}
-                  </span>
-                </div>
-              </>
+                      background: i===activeIdx ? "rgba(255,255,255,.18)" : "rgba(255,255,255,.07)",
+                      border: `1px solid ${i===activeIdx ? "rgba(255,255,255,.35)" : "rgba(255,255,255,.1)"}`,
+                      borderRadius:10, padding:"8px 12px", cursor:"pointer",
+                      display:"flex", alignItems:"center", justifyContent:"space-between",
+                      color:"white", fontFamily:"'DM Sans',sans-serif", fontSize:12, fontWeight:600,
+                      transition:"all .15s", flexShrink:0,
+                    }}>
+                    <div style={{ display:"flex", alignItems:"center", gap:6, overflow:"hidden" }}>
+                      <span style={{ flexShrink:0, width:18, height:18, borderRadius:"50%", background: i===activeIdx ? "rgba(255,255,255,.25)" : "rgba(255,255,255,.1)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:10, fontWeight:800 }}>{i+1}</span>
+                      <span style={{ overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{sanitizeText(e.title)}</span>
+                    </div>
+                    {perExc[i].selectedSlot
+                      ? <Check size={13} color="#10B981" style={{ flexShrink:0 }}/>
+                      : <div style={{ width:13, height:13, borderRadius:"50%", border:"1.5px solid rgba(255,255,255,.35)", flexShrink:0 }}/>
+                    }
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {/* Calendar */}
+            <div style={{ position:"relative", zIndex:1 }}>
+              <p style={{ fontSize:11, fontWeight:700, color:"rgba(255,255,255,.5)", textTransform:"uppercase", letterSpacing:"1.5px", margin:"0 0 4px" }}>
+                Choisissez une date
+              </p>
+              <MiniCalendar
+                dateMap={cur.dateMap}
+                selectedDate={cur.selectedDate}
+                onSelect={d => patch(activeIdx, { selectedDate: d, selectedSlot: null })}
+              />
+            </div>
+
+            {/* Price summary */}
+            {subtotal > 0 && (
+              <div style={{ marginTop:"auto", background:"rgba(255,255,255,.1)", borderRadius:14, padding:"14px 16px", position:"relative", zIndex:1 }}>
+                {isItinerary ? (
+                  <>
+                    {lineItems.filter(l=>l.selected).map((l,i)=>(
+                      <div key={i} style={{ display:"flex", justifyContent:"space-between", fontSize:12, color:"rgba(255,255,255,.75)", marginBottom:4 }}>
+                        <span style={{ overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", maxWidth:"65%" }}>{sanitizeText(l.title)}</span>
+                        <span>{l.subtotal} EUR</span>
+                      </div>
+                    ))}
+                    <div style={{ height:1, background:"rgba(255,255,255,.2)", margin:"8px 0" }}/>
+                    <div style={{ display:"flex", justifyContent:"space-between", fontSize:12, color:"rgba(255,255,255,.6)", marginBottom:4 }}>
+                      <span>Frais de service (10%)</span><span>{platformFee} EUR</span>
+                    </div>
+                    <div style={{ display:"flex", justifyContent:"space-between", fontSize:15, fontWeight:800, color:"white" }}>
+                      <span>Total</span><span>{grandTotal} EUR</span>
+                    </div>
+                  </>
+                ) : cur.selectedSlot && (
+                  <div style={{ display:"flex", justifyContent:"space-between", fontSize:15, fontWeight:800, color:"white" }}>
+                    <span>Total</span><span>{curGrand} EUR</span>
+                  </div>
+                )}
+              </div>
             )}
           </div>
 
-          {/* ── BODY ── */}
-          <div className="cm-body">
+          {/* ── RIGHT PANEL ── */}
+          <div className="co2-right">
+            <div className="co2-right-scroll">
 
-            {/* ── EXPIRED ── */}
-            {cancelled && (
-              <div
-                style={{
-                  textAlign: "center",
-                  padding: "10px 0 20px",
-                  display: "flex",
-                  flexDirection: "column",
-                  alignItems: "center",
-                  gap: 16,
-                }}
-              >
-                <div className="cm-expired-icon">
-                  <Timer size={30} color="#EF4444" strokeWidth={1.5} />
-                </div>
+              {/* Header */}
+              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:22 }}>
                 <div>
-                  <h3
-                    style={{
-                      fontFamily: "'Clash Display',sans-serif",
-                      fontSize: 20,
-                      fontWeight: 700,
-                      color: "#F1F5F9",
-                      marginBottom: 8,
-                      letterSpacing: "-.4px",
-                    }}
-                  >
-                    Délai expiré
+                  <h3 style={{ fontFamily:"'Cormorant Garamond',serif", fontSize:20, fontWeight:700, color:"#111827", margin:"0 0 2px" }}>
+                    {cur.selectedDate
+                      ? new Date(cur.selectedDate).toLocaleDateString("fr-FR",{weekday:"long",day:"numeric",month:"long"})
+                      : "Sélectionnez une date"}
                   </h3>
-                  <p
-                    style={{
-                      fontSize: 13,
-                      color: "#64748B",
-                      lineHeight: 1.8,
-                    }}
-                  >
-                    La réservation{" "}
-                    <span
-                      style={{
-                        fontFamily: "monospace",
-                        color: "#94A3B8",
-                        fontSize: 12,
-                      }}
-                    >
-                      #{reservation.booking_code}
-                    </span>{" "}
-                    a été annulée automatiquement.
+                  <p style={{ fontSize:12, color:"#9CA3AF", margin:0 }}>
+                    {cur.selectedDate ? `${slotsForDate.length} créneau${slotsForDate.length>1?"x":""}` : "← sur le calendrier"}
                   </p>
                 </div>
-                <div
-                  style={{
-                    background: "rgba(245,158,11,.07)",
-                    border: "1px solid rgba(245,158,11,.2)",
-                    borderRadius: 12,
-                    padding: "13px 16px",
-                  }}
-                >
-                  <p
-                    style={{
-                      fontSize: 13,
-                      color: "#F59E0B",
-                      fontWeight: 600,
-                    }}
-                  >
-                    Créez une nouvelle réservation depuis les excursions.
-                  </p>
-                </div>
-                <button
-                  onClick={onClose}
-                  style={{
-                    padding: "13px 36px",
-                    background: "#3DD6AC",
-                    color: "#08090C",
-                    border: "none",
-                    borderRadius: 12,
-                    fontSize: 14,
-                    fontWeight: 700,
-                    cursor: "pointer",
-                    fontFamily: "inherit",
-                  }}
-                >
-                  Fermer
+                <button onClick={() => onClose?.()}
+                  style={{ width:34, height:34, borderRadius:"50%", border:"none", background:"#F3F4F6", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", color:"#9CA3AF", flexShrink:0 }}>
+                  <X size={16}/>
                 </button>
               </div>
-            )}
 
-            {!cancelled && (
-              <>
-                {/* ── STEP 1 — Review ── */}
-                {step === 1 && (
-                  <>
-                    {/* Excursion photo + title */}
-                    <div
-                      style={{
-                        borderRadius: 13,
-                        overflow: "hidden",
-                        height: 150,
-                        position: "relative",
-                        background:
-                          "linear-gradient(135deg,#0A1A2E,#0D2240)",
-                        flexShrink: 0,
-                      }}
-                    >
-                      {exc?.photos?.[0] && (
-                        <img
-                          src={exc.photos[0]}
-                          alt=""
-                          style={{
-                            width: "100%",
-                            height: "100%",
-                            objectFit: "cover",
-                            filter: "brightness(.72)",
-                          }}
-                        />
-                      )}
-                      <div
-                        style={{
-                          position: "absolute",
-                          inset: 0,
-                          background:
-                            "linear-gradient(to top,rgba(8,9,12,.85),transparent 55%)",
-                        }}
-                      />
-                      <div
-                        style={{
-                          position: "absolute",
-                          bottom: 13,
-                          left: 15,
-                          right: 15,
-                        }}
-                      >
-                        <p
-                          style={{
-                            fontFamily: "'Clash Display',sans-serif",
-                            fontSize: 16,
-                            fontWeight: 700,
-                            color: "#F1F5F9",
-                            marginBottom: 5,
-                            letterSpacing: "-.3px",
-                          }}
-                        >
-                          {exc?.title}
-                        </p>
-                        <p
-                          style={{
-                            fontSize: 11,
-                            color: "rgba(255,255,255,.6)",
-                            display: "flex",
-                            alignItems: "center",
-                            gap: 4,
-                          }}
-                        >
-                          <MapPin size={10} />
-                          {exc?.city}
-                        </p>
-                      </div>
-                    </div>
+              {/* Error banner */}
+              {status === "error" && (
+                <div style={{ display:"flex", alignItems:"center", gap:8, padding:"11px 14px", background:"#FEF2F2", border:"1px solid #FCA5A5", borderRadius:10, marginBottom:16, fontSize:13, color:"#DC2626", fontWeight:600 }}>
+                  <AlertCircle size={15}/>{errorMsg}
+                </div>
+              )}
 
-                    {/* Details grid */}
-                    <div className="cm-info-grid">
-                      {[
-                        { lbl: "Date", val: fmtDate(reservation.date, true) },
-                        { lbl: "Heure", val: reservation.time },
-                        {
-                          lbl: "Voyageurs",
-                          val: `${reservation.people_count} pers.`,
-                        },
-                        {
-                          lbl: "Durée",
-                          val: `${exc?.duration_hours ?? "–"}h`,
-                        },
-                      ].map(({ lbl, val }) => (
-                        <div key={lbl} className="cm-info-cell">
-                          <p className="cm-info-cell-lbl">{lbl}</p>
-                          <p className="cm-info-cell-val">{val}</p>
-                        </div>
-                      ))}
-                    </div>
+              {/* Slots */}
+              {!cur.selectedDate ? (
+                <div style={{ textAlign:"center", padding:"40px 20px", background:"#F9FAFB", borderRadius:16, border:"1.5px dashed #E5E7EB", marginBottom:20 }}>
+                  <p style={{ fontSize:13, color:"#9CA3AF", margin:0 }}>Choisissez une date sur le calendrier pour voir les créneaux disponibles</p>
+                </div>
+              ) : slotsForDate.length === 0 ? (
+                <div style={{ textAlign:"center", padding:"30px 20px", background:"#FFF7ED", borderRadius:16, border:"1px solid #FED7AA", marginBottom:20 }}>
+                  <p style={{ fontSize:13, fontWeight:700, color:"#9A3412", margin:"0 0 4px" }}>Aucun créneau disponible</p>
+                  <p style={{ fontSize:12, color:"#C2410C", margin:0 }}>Choisissez une autre date</p>
+                </div>
+              ) : (
+                <div style={{ marginBottom:20 }}>
+                  <p style={{ fontSize:12, fontWeight:700, color:"#374151", marginBottom:10, display:"flex", alignItems:"center", gap:5 }}>
+                    <Clock size={12} color="#2B96A8"/> Créneaux disponibles
+                  </p>
+                  <SlotList slots={slotsForDate} selected={cur.selectedSlot} onSelect={s => patch(activeIdx, { selectedSlot: s })}/>
+                </div>
+              )}
 
-                    {/* Price breakdown */}
-                    <div className="cm-price-box">
-                      <div className="cm-price-head">Détail des frais</div>
-                      <div className="cm-price-body">
-                        <div className="cm-price-row">
-                          <span>
-                            {exc?.price_per_person} EUR ×{" "}
-                            {reservation.people_count} pers.
-                          </span>
-                          <span>{base} EUR</span>
-                        </div>
-                        <div className="cm-price-row">
-                          <span>Frais de service</span>
-                          <span>{fee} EUR</span>
-                        </div>
-                        <div className="cm-price-divider" />
-                        <div className="cm-price-total">
-                          <span>Total</span>
-                          <span className="cm-price-total-num">
-                            {total} EUR
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Free cancellation */}
-                    <div
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 8,
-                        padding: "10px 13px",
-                        background: "rgba(61,214,172,.05)",
-                        border: "1px solid rgba(61,214,172,.15)",
-                        borderRadius: 10,
-                      }}
-                    >
-                      <ShieldCheck size={13} color="#3DD6AC" />
-                      <span
-                        style={{
-                          fontSize: 12,
-                          color: "#3DD6AC",
-                          fontWeight: 600,
-                        }}
-                      >
-                        Annulation gratuite jusqu'à 24h avant
-                      </span>
-                    </div>
-
-                    <button
-                      className="cm-btn-primary"
-                      onClick={() => setStep(2)}
-                    >
-                      Continuer <ChevronRight size={15} />
+              {/* People counter */}
+              {cur.selectedSlot && (
+                <div style={{ marginBottom:20 }}>
+                  <p style={{ fontSize:12, fontWeight:700, color:"#374151", marginBottom:10, display:"flex", alignItems:"center", gap:5 }}>
+                    <Users size={12} color="#2B96A8"/> Nombre de personnes
+                  </p>
+                  <div style={{ display:"flex", alignItems:"center", gap:12, padding:"8px 16px", border:"1.5px solid #E5E7EB", borderRadius:12, background:"white" }}>
+                    <button className="co2-counter-btn" disabled={cur.people<=1} onClick={() => patch(activeIdx, { people: cur.people - 1 })}>
+                      <Minus size={14}/>
                     </button>
-                  </>
-                )}
-
-                {/* ── STEP 2 — Info / special needs ── */}
-                {step === 2 && (
-                  <>
-                    {/* Mini recap */}
-                    <div
-                      style={{
-                        display: "flex",
-                        gap: 11,
-                        background: "#0A0C10",
-                        border: "1px solid #151C28",
-                        borderRadius: 13,
-                        padding: "13px 15px",
-                        alignItems: "center",
-                      }}
-                    >
-                      <div
-                        style={{
-                          width: 42,
-                          height: 42,
-                          borderRadius: 9,
-                          overflow: "hidden",
-                          flexShrink: 0,
-                          background: "#1A2233",
-                        }}
-                      >
-                        {exc?.photos?.[0] && (
-                          <img
-                            src={exc.photos[0]}
-                            alt=""
-                            style={{
-                              width: "100%",
-                              height: "100%",
-                              objectFit: "cover",
-                            }}
-                          />
-                        )}
-                      </div>
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <p
-                          style={{
-                            fontSize: 13,
-                            fontWeight: 700,
-                            color: "#E2E8F0",
-                            margin: "0 0 3px",
-                            overflow: "hidden",
-                            textOverflow: "ellipsis",
-                            whiteSpace: "nowrap",
-                          }}
-                        >
-                          {exc?.title}
-                        </p>
-                        <p style={{ fontSize: 11, color: "#475569", margin: 0 }}>
-                          {fmtDate(reservation.date)} · {reservation.people_count} pers.
-                        </p>
-                      </div>
-                      <p
-                        style={{
-                          fontFamily: "'Clash Display',sans-serif",
-                          fontSize: 17,
-                          fontWeight: 700,
-                          color: "#3DD6AC",
-                          flexShrink: 0,
-                        }}
-                      >
-                        {total}{" "}
-                        <span
-                          style={{
-                            fontSize: 10,
-                            fontWeight: 500,
-                            color: "#334155",
-                          }}
-                        >
-                          EUR
-                        </span>
-                      </p>
-                    </div>
-
-                    {/* Special needs */}
-                    <div>
-                      <label
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          gap: 6,
-                          fontSize: 12,
-                          fontWeight: 700,
-                          color: "#94A3B8",
-                          marginBottom: 10,
-                        }}
-                      >
-                        <MessageSquare size={12} color="#3DD6AC" />
-                        Besoins spéciaux
-                        <span
-                          style={{
-                            fontSize: 11,
-                            color: "#334155",
-                            fontWeight: 400,
-                          }}
-                        >
-                          — optionnel
-                        </span>
-                      </label>
-                      <textarea
-                        value={specialNote}
-                        onChange={(e) => setSpecialNote(e.target.value)}
-                        placeholder="Handicap, allergies, préférences particulières…"
-                        rows={4}
-                        style={{
-                          width: "100%",
-                          padding: "12px 13px",
-                          border: "1px solid #1A2233",
-                          borderRadius: 11,
-                          fontSize: 13,
-                          fontFamily: "inherit",
-                          resize: "vertical",
-                          color: "#E2E8F0",
-                          background: "#0A0C10",
-                          boxSizing: "border-box",
-                          lineHeight: 1.6,
-                          transition: "border-color .2s",
-                        }}
-                        onFocus={(e) =>
-                          (e.target.style.borderColor = "#3DD6AC")
-                        }
-                        onBlur={(e) =>
-                          (e.target.style.borderColor = "#1A2233")
-                        }
-                      />
-                    </div>
-
-                    <button
-                      className="cm-btn-primary"
-                      onClick={() => setStep(3)}
-                    >
-                      Choisir le paiement <ChevronRight size={15} />
+                    <span style={{ flex:1, textAlign:"center", fontSize:22, fontWeight:900, color:"#111827", fontFamily:"'Cormorant Garamond',serif" }}>
+                      {cur.people}
+                    </span>
+                    <button className="co2-counter-btn" disabled={cur.people>=maxPeople} onClick={() => patch(activeIdx, { people: cur.people + 1 })}>
+                      <Plus size={14}/>
                     </button>
-                  </>
-                )}
+                  </div>
+                  <p style={{ fontSize:11, color:"#9CA3AF", marginTop:5 }}>
+                    Max {maxPeople} · {cur.selectedSlot.slots} place{cur.selectedSlot.slots>1?"s":""} dispo
+                  </p>
+                </div>
+              )}
 
-                {/* ── STEP 3 — Payment method ── */}
-                {step === 3 && (
-                  <>
-                    {/* Total hero */}
-                    <div className="cm-total-hero">
-                      <p
-                        style={{
-                          fontSize: 9,
-                          fontWeight: 700,
-                          color: "#334155",
-                          textTransform: "uppercase",
-                          letterSpacing: 2,
-                          marginBottom: 8,
-                        }}
-                      >
-                        Montant total
-                      </p>
-                      <p
-                        style={{
-                          fontFamily: "'Clash Display',sans-serif",
-                          fontSize: 44,
-                          fontWeight: 700,
-                          color: "#F1F5F9",
-                          letterSpacing: "-2px",
-                          lineHeight: 1,
-                          marginBottom: 6,
-                        }}
-                      >
-                        {total}
-                        <span
-                          style={{
-                            fontSize: 16,
-                            fontWeight: 500,
-                            color: "#334155",
-                            marginLeft: 8,
-                          }}
-                        >
-                          EUR
-                        </span>
-                      </p>
-                      <p style={{ fontSize: 11, color: "#334155" }}>
-                        dont {fee} EUR de frais de service
-                      </p>
-                    </div>
-
-                    {/* Methods */}
-                    <div>
-                      <p className="cm-section-lbl">Méthode de paiement</p>
-                      <div
-                        style={{
-                          display: "flex",
-                          flexDirection: "column",
-                          gap: 8,
-                        }}
-                      >
-                        {PAY_METHODS.map((m) => (
-                          <button
-                            key={m.id}
-                            className={`cm-method ${
-                              payMethod === m.id
-                                ? "cm-method-active"
-                                : "cm-method-inactive"
-                            }`}
-                            onClick={() => {
-                              setPayMethod(m.id);
-                              setError("");
-                            }}
-                          >
-                            {/* Icon */}
-                            <div
-                              style={{
-                                width: 42,
-                                height: 42,
-                                borderRadius: 10,
-                                background:
-                                  payMethod === m.id
-                                    ? "rgba(61,214,172,.15)"
-                                    : "#151C28",
-                                border: `1px solid ${
-                                  payMethod === m.id
-                                    ? "rgba(61,214,172,.3)"
-                                    : "#1A2233"
-                                }`,
-                                display: "flex",
-                                alignItems: "center",
-                                justifyContent: "center",
-                                flexShrink: 0,
-                                transition: "all .15s",
-                              }}
-                            >
-                              <m.Icon
-                                size={17}
-                                color={
-                                  payMethod === m.id ? "#3DD6AC" : "#475569"
-                                }
-                                strokeWidth={1.5}
-                              />
-                            </div>
-
-                            {/* Text */}
-                            <div style={{ flex: 1 }}>
-                              <p
-                                style={{
-                                  fontSize: 13,
-                                  fontWeight: 700,
-                                  color:
-                                    payMethod === m.id ? "#E2E8F0" : "#64748B",
-                                  margin: "0 0 2px",
-                                }}
-                              >
-                                {m.label}
-                              </p>
-                              <p
-                                style={{
-                                  fontSize: 11,
-                                  color: "#334155",
-                                  margin: 0,
-                                }}
-                              >
-                                {m.sub}
-                              </p>
-                            </div>
-
-                            {/* Radio */}
-                            <div
-                              style={{
-                                width: 18,
-                                height: 18,
-                                borderRadius: "50%",
-                                border: `2px solid ${
-                                  payMethod === m.id ? "#3DD6AC" : "#334155"
-                                }`,
-                                display: "flex",
-                                alignItems: "center",
-                                justifyContent: "center",
-                                flexShrink: 0,
-                              }}
-                            >
-                              {payMethod === m.id && (
-                                <div
-                                  style={{
-                                    width: 8,
-                                    height: 8,
-                                    borderRadius: "50%",
-                                    background: "#3DD6AC",
-                                  }}
-                                />
-                              )}
-                            </div>
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Info note per method */}
-                    <div
-                      style={{
-                        padding: "11px 13px",
-                        background:
-                          payMethod === "cash"
-                            ? "rgba(245,158,11,.07)"
-                            : "rgba(96,165,250,.07)",
-                        border: `1px solid ${
-                          payMethod === "cash"
-                            ? "rgba(245,158,11,.2)"
-                            : "rgba(96,165,250,.2)"
-                        }`,
-                        borderRadius: 10,
-                        fontSize: 12,
-                        color: payMethod === "cash" ? "#F59E0B" : "#60A5FA",
-                        fontWeight: 600,
-                        lineHeight: 1.6,
-                      }}
-                    >
-                      {payMethod === "cash"
-                        ? "💵 Vous paierez directement le guide au point de rendez-vous. Munissez-vous du montant exact."
-                        : "🏦 Vous recevrez le RIB par email après confirmation. Le paiement doit être effectué sous 48h."}
-                    </div>
-
-                    {/* Error */}
-                    {error && (
-                      <div className="cm-error">
-                        <AlertCircle size={14} style={{ flexShrink: 0 }} />
-                        {error}
-                      </div>
-                    )}
-
-                    {/* Confirm button */}
-                    <button
-                      className="cm-btn-primary"
-                      onClick={handleConfirm}
-                      disabled={loading}
-                    >
-                      {loading ? (
-                        <>
-                          <Loader2
-                            size={15}
-                            style={{ animation: "cm-spin 1s linear infinite" }}
-                          />
-                          Confirmation…
-                        </>
-                      ) : (
-                        <>
-                          <CheckCircle size={15} />
-                          Confirmer la réservation · {total} EUR
-                        </>
-                      )}
+              {/* Navigation (itinerary) */}
+              {isItinerary && (
+                <div style={{ display:"flex", gap:8, marginBottom:20 }}>
+                  {activeIdx > 0 && (
+                    <button onClick={() => setActiveIdx(activeIdx - 1)}
+                      style={{ flex:1, padding:"10px 14px", borderRadius:12, border:"1.5px solid #E5E7EB", background:"white", cursor:"pointer", fontSize:12, fontWeight:700, color:"#374151", display:"flex", alignItems:"center", justifyContent:"center", gap:5, fontFamily:"'DM Sans',sans-serif" }}>
+                      <ChevronLeft size={13}/> Précédent
                     </button>
+                  )}
+                  {activeIdx < allExc.length - 1 && (
+                    <button onClick={() => setActiveIdx(activeIdx + 1)}
+                      style={{ flex:1, padding:"10px 14px", borderRadius:12, border:"1.5px solid #2B96A8", background:"#EFF9FB", cursor:"pointer", fontSize:12, fontWeight:700, color:"#2B96A8", display:"flex", alignItems:"center", justifyContent:"center", gap:5, fontFamily:"'DM Sans',sans-serif" }}>
+                      Suivant <ChevronRight size={13}/>
+                    </button>
+                  )}
+                </div>
+              )}
 
-                    <p
-                      style={{
-                        textAlign: "center",
-                        fontSize: 11,
-                        color: "#334155",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        gap: 5,
-                      }}
-                    >
-                      <ShieldCheck size={11} /> Réservation sécurisée ·
-                      VoyajAime
-                    </p>
-                  </>
-                )}
+              {/* Special needs */}
+              <div style={{ marginBottom:8 }}>
+                <label style={{ fontSize:11, fontWeight:700, color:"#374151", display:"flex", alignItems:"center", gap:5, marginBottom:6, textTransform:"uppercase", letterSpacing:".5px" }}>
+                  <MessageSquare size={11} color="#2B96A8"/>
+                  Besoins spéciaux
+                  <span style={{ color:"#9CA3AF", fontWeight:400, textTransform:"none" }}>(optionnel)</span>
+                </label>
+                <textarea
+                  className="co2-textarea"
+                  value={cur.specialNeeds}
+                  onChange={e => patch(activeIdx, { specialNeeds: e.target.value })}
+                  placeholder="Allergies, mobilité réduite, préférences alimentaires…"
+                />
+              </div>
+            </div>
 
-                {/* ── STEP 4 — Success ── */}
-                {step === 4 && (
-                  <>
-                    {/* Success header */}
-                    <div style={{ textAlign: "center", paddingTop: 6 }}>
-                      <div
-                        style={{
-                          width: 62,
-                          height: 62,
-                          borderRadius: 16,
-                          background: "rgba(61,214,172,.1)",
-                          border: "1px solid rgba(61,214,172,.2)",
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          margin: "0 auto 14px",
-                        }}
-                      >
-                        <CheckCircle
-                          size={30}
-                          color="#3DD6AC"
-                          strokeWidth={1.5}
-                        />
-                      </div>
-                      <h3
-                        style={{
-                          fontFamily: "'Clash Display',sans-serif",
-                          fontSize: 20,
-                          fontWeight: 700,
-                          color: "#F1F5F9",
-                          marginBottom: 6,
-                          letterSpacing: "-.4px",
-                        }}
-                      >
-                        Réservation confirmée
-                      </h3>
-                      <p style={{ fontSize: 13, color: "#475569" }}>
-                        Un email de confirmation vous a été envoyé.
-                      </p>
-                    </div>
+            {/* Footer */}
+            <div className="co2-right-footer">
 
-                    {/* Ticket */}
-                    <div className="cm-ticket">
-                      <div className="cm-ticket-head">
-                        <div
-                          style={{
-                            display: "flex",
-                            justifyContent: "space-between",
-                            alignItems: "flex-start",
-                          }}
-                        >
-                          <div>
-                            <p
-                              style={{
-                                fontSize: 9,
-                                color: "rgba(255,255,255,.4)",
-                                fontWeight: 700,
-                                textTransform: "uppercase",
-                                letterSpacing: 1.5,
-                                marginBottom: 5,
-                              }}
-                            >
-                              Excursion
-                            </p>
-                            <p
-                              style={{
-                                fontFamily: "'Clash Display',sans-serif",
-                                fontSize: 15,
-                                fontWeight: 700,
-                                color: "white",
-                                marginBottom: 5,
-                                letterSpacing: "-.3px",
-                              }}
-                            >
-                              {exc?.title}
-                            </p>
-                            <p
-                              style={{
-                                fontSize: 11,
-                                color: "rgba(255,255,255,.5)",
-                                display: "flex",
-                                alignItems: "center",
-                                gap: 4,
-                              }}
-                            >
-                              <MapPin size={10} />
-                              {exc?.city}
-                            </p>
-                          </div>
-                          <div style={{ textAlign: "right" }}>
-                            <p
-                              style={{
-                                fontSize: 9,
-                                color: "rgba(255,255,255,.4)",
-                                fontWeight: 700,
-                                textTransform: "uppercase",
-                                letterSpacing: 1.5,
-                                marginBottom: 5,
-                              }}
-                            >
-                              Montant
-                            </p>
-                            <p
-                              style={{
-                                fontFamily: "'Clash Display',sans-serif",
-                                fontSize: 22,
-                                fontWeight: 700,
-                                color: "#3DD6AC",
-                              }}
-                            >
-                              {total} EUR
-                            </p>
-                          </div>
-                        </div>
-                      </div>
+              {/* Price recap (single) */}
+              {!isItinerary && cur.selectedSlot && (
+                <div style={{ background:"#F9FAFB", borderRadius:12, padding:"12px 14px", marginBottom:14, border:"1px solid #F0F0F0" }}>
+                  <div style={{ display:"flex", justifyContent:"space-between", fontSize:12, color:"#6B7280", marginBottom:5 }}>
+                    <span>{curPrice} EUR × {cur.people} pers.</span>
+                    <span style={{ fontWeight:600, color:"#374151" }}>{curTotal} EUR</span>
+                  </div>
+                  <div style={{ display:"flex", justifyContent:"space-between", fontSize:12, color:"#6B7280", paddingBottom:10, borderBottom:"1px dashed #E5E7EB", marginBottom:10 }}>
+                    <span>Frais de service (10%)</span>
+                    <span style={{ fontWeight:600, color:"#374151" }}>{curFee} EUR</span>
+                  </div>
+                  <div style={{ display:"flex", justifyContent:"space-between", fontSize:16, fontWeight:900, color:"#111827" }}>
+                    <span>Total</span>
+                    <span style={{ color:"#2B96A8", fontFamily:"'Cormorant Garamond',serif" }}>{curGrand} EUR</span>
+                  </div>
+                </div>
+              )}
 
-                      <div className="cm-ticket-body">
-                        {[
-                          {
-                            Icon: Ticket,
-                            lbl: "Code",
-                            val: reservation.booking_code,
-                          },
-                          {
-                            Icon: CalendarDays,
-                            lbl: "Date · Heure",
-                            val: `${fmtDate(reservation.date, true)} · ${reservation.time}`,
-                          },
-                          {
-                            Icon: Users,
-                            lbl: "Voyageurs",
-                            val: `${reservation.people_count} personne${reservation.people_count > 1 ? "s" : ""}`,
-                          },
-                          {
-                            Icon: Navigation,
-                            lbl: "Point de RDV",
-                            val:
-                              exc?.meeting_point ||
-                              exc?.city ||
-                              "Communiqué par le prestataire",
-                          },
-                        ].map(({ Icon, lbl, val }) => (
-                          <div key={lbl} className="cm-ticket-info">
-                            <div className="cm-ticket-icon">
-                              <Icon
-                                size={13}
-                                color="#3DD6AC"
-                                strokeWidth={1.5}
-                              />
-                            </div>
-                            <div>
-                              <p className="cm-ticket-lbl">{lbl}</p>
-                              <p className="cm-ticket-val">{val}</p>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
+              {/* Itinerary partial warning */}
+              {isItinerary && configuredCount > 0 && configuredCount < allExc.length && (
+                <div style={{ background:"#FFFBEB", border:"1px solid #FDE68A", borderRadius:10, padding:"9px 12px", marginBottom:12, fontSize:12, color:"#92400E", display:"flex", alignItems:"center", gap:7 }}>
+                  <AlertCircle size={13} color="#F59E0B"/>
+                  {allExc.length - configuredCount} excursion{allExc.length - configuredCount > 1 ? "s" : ""} encore sans créneau — vous pouvez quand même réserver les excursions configurées.
+                </div>
+              )}
 
-                      <div className="cm-ticket-foot">
-                        <div
-                          style={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: 6,
-                          }}
-                        >
-                          <div
-                            style={{
-                              width: 7,
-                              height: 7,
-                              borderRadius: "50%",
-                              background: "#3DD6AC",
-                            }}
-                          />
-                          <span
-                            style={{
-                              fontSize: 11,
-                              fontWeight: 700,
-                              color: "#3DD6AC",
-                            }}
-                          >
-                            Confirmée
-                          </span>
-                        </div>
-                        <span
-                          style={{
-                            fontSize: 10,
-                            color: "#334155",
-                            fontFamily: "monospace",
-                          }}
-                        >
-                          #{reservation.booking_code}
-                        </span>
-                      </div>
-                    </div>
+              <button
+                className={`co2-cta ${isLoading ? "spin" : !canSubmit ? "off" : "on"}`}
+                disabled={!canSubmit || isLoading}
+                onClick={handleReserve}
+              >
+                {isLoading
+                  ? <><Loader2 size={15} style={{ animation:"coSpin .7s linear infinite" }}/> Réservation en cours…</>
+                  : !canSubmit
+                  ? "Choisissez un créneau"
+                  : isItinerary
+                  ? <><Route size={15}/> Réserver l'itinéraire ({configuredCount} exc.) — {grandTotal} EUR</>
+                  : <><Check size={15}/> Réserver — {curGrand} EUR</>
+                }
+              </button>
 
-                    {/* Actions */}
-                    <div style={{ display: "flex", gap: 10 }}>
-                      <button className="cm-btn-ghost" onClick={onClose}>
-                        Fermer
-                      </button>
-                      <Link
-                        href="/touriste/historique"
-                        onClick={onClose}
-                        style={{
-                          flex: 2,
-                          padding: 13,
-                          background: "#3DD6AC",
-                          color: "#08090C",
-                          borderRadius: 13,
-                          textDecoration: "none",
-                          fontSize: 13,
-                          fontWeight: 700,
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          gap: 7,
-                        }}
-                      >
-                        <History size={14} /> Voir l'historique
-                      </Link>
-                    </div>
-                  </>
-                )}
-              </>
-            )}
+              <div style={{ display:"flex", justifyContent:"center", gap:20, marginTop:12, flexWrap:"wrap" }}>
+                {[
+                  { icon:<Lock size={11} color="#059669"/>,        text:"Paiement sécurisé" },
+                  { icon:<RefreshCcw size={11} color="#2563EB"/>,  text:"Annulation 24h" },
+                  { icon:<ShieldCheck size={11} color="#8B5CF6"/>, text:"Confirmé instantanément" },
+                ].map(g => (
+                  <span key={g.text} style={{ fontSize:11, color:"#9CA3AF", display:"flex", alignItems:"center", gap:5 }}>
+                    {g.icon}{g.text}
+                  </span>
+                ))}
+              </div>
+            </div>
           </div>
         </div>
       </div>
