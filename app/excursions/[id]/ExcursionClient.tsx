@@ -5,7 +5,7 @@ import Link from "next/link";
 import "@/public/style/excursion-client.css";
 import { createClient } from "@/lib/supabaseClient";
 import { sanitizeText } from "@/app/lib/sanitize";
-import CheckoutModal from "@/app/components/excursions/CheckoutModal";
+import { ExcursionDetailModal } from "@/app/components/excursions/ExcursionDetailModal";
 import {
   Heart, MapPin, Clock, Users, Star, MessageCircle,
   ChevronLeft, ChevronRight, Check, Globe, Send, X,
@@ -1620,7 +1620,7 @@ export default function ExcursionClient({
 
       {/* ── MODAL RESERVATION ── */}
       {showCheckout && (
-        <CheckoutModal exc={exc} onClose={() => setShowCheckout(false)} />
+        <ExcursionDetailModal excursion={exc as any} onClose={() => setShowCheckout(false)} />
       )}
 
       {/* ── MODAL PRESTATAIRE ── */}
