@@ -9,7 +9,7 @@ import {
   Bot, PenLine, Image as ImageIcon, ExternalLink,
   Calendar, Flag,
 } from "lucide-react";
-import { ExcursionDetailModal } from "@/app/excursions/[id]/ExcursionClient";
+import { ExcursionDetailModal } from "@/app/components/excursions/ExcursionDetailModal";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
