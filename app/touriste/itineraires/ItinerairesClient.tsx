@@ -63,7 +63,7 @@ type ExcursionForCheckout = {
 const TIME_ICON = {
   matin: <Sunrise size={11} color="#F59E0B" />,
   aprem: <Sun size={11} color="#2B96A8" />,
-  soir: <Moon size={11} color="#8B5CF6" />,
+  soir:  <Moon size={11} color="#8B5CF6" />,
 };
 const TIME_LABEL = { matin: "Matin", aprem: "Après-midi", soir: "Soir" };
 
@@ -80,7 +80,7 @@ function normalizePlan(raw: RawPlan): DayPlan[] {
         ? (dd.activities as Record<string, unknown>[]).map(a => ({
             id: String(a.id || a.excursion_id || ""),
             excursion_id: String(a.excursion_id || a.id || ""),
-            note: String(a.description || ""),
+            note: String(a.description || a.note || ""),
             time: (a.time as "matin" | "aprem" | "soir") || "matin",
             date: String(a.date || dd.date || ""),
             excursion: {
@@ -105,7 +105,7 @@ function isValidUUID(str: string): boolean {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str);
 }
 
-function normalizeTitle(str: string): string {
+function normalizeStr(str: string): string {
   return str
     .toLowerCase()
     .normalize("NFD")
@@ -191,53 +191,23 @@ const RESPONSIVE_CSS = `
   }
 
   .btn-voir-detail {
-    margin-top: 10px;
-    padding: 6px 14px;
-    background: white;
-    border: 1.5px solid #2B96A8;
-    border-radius: 20px;
-    font-size: 11px;
-    font-weight: 700;
-    color: #2B96A8;
-    cursor: pointer;
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
-    transition: all .18s;
-    font-family: 'DM Sans', sans-serif;
-    text-decoration: none;
+    margin-top: 10px; padding: 6px 14px; background: white;
+    border: 1.5px solid #2B96A8; border-radius: 20px;
+    font-size: 11px; font-weight: 700; color: #2B96A8; cursor: pointer;
+    display: inline-flex; align-items: center; gap: 5px; transition: all .18s;
+    font-family: 'DM Sans', sans-serif; text-decoration: none;
   }
-  .btn-voir-detail:hover {
-    background: #2B96A8;
-    color: white;
-    box-shadow: 0 3px 10px rgba(43,150,168,.3);
-    transform: translateY(-1px);
-  }
+  .btn-voir-detail:hover { background: #2B96A8; color: white; box-shadow: 0 3px 10px rgba(43,150,168,.3); transform: translateY(-1px); }
   .btn-voir-detail:disabled,
-  .btn-voir-detail[data-unavailable="true"] {
-    border-color: #E5E7EB;
-    color: #9CA3AF;
-    cursor: not-allowed;
-    transform: none;
-    box-shadow: none;
-  }
-  .btn-voir-detail[data-unavailable="true"]:hover {
-    background: #F9FAFB;
-    color: #9CA3AF;
-  }
+  .btn-voir-detail[data-unavailable="true"] { border-color: #E5E7EB; color: #9CA3AF; cursor: not-allowed; transform: none; box-shadow: none; }
+  .btn-voir-detail[data-unavailable="true"]:hover { background: #F9FAFB; color: #9CA3AF; }
 
-  @media (max-width: 900px) {
-    .it-wrap { padding: 24px 24px 48px; }
-  }
+  @media (max-width: 900px) { .it-wrap { padding: 24px 24px 48px; } }
   @media (max-width: 640px) {
     .it-wrap { padding: 16px 12px 40px; }
     .it-card-header { flex-wrap:wrap; gap:10px; padding:14px 14px; }
-    .it-card-actions {
-      width:100%; flex-wrap:wrap; gap:6px;
-      justify-content:flex-start; padding-top:4px;
-    }
-    .it-card-actions a,
-    .it-card-actions button { font-size:11px !important; padding:6px 10px !important; }
+    .it-card-actions { width:100%; flex-wrap:wrap; gap:6px; justify-content:flex-start; padding-top:4px; }
+    .it-card-actions a, .it-card-actions button { font-size:11px !important; padding:6px 10px !important; }
     .it-reserve-all-btn { font-size:11px; padding:7px 12px; }
     .act-photo, .act-photo-placeholder { width:50px; height:50px; border-radius:10px; }
     .it-day-block { padding-left:10px !important; }
@@ -253,27 +223,28 @@ const RESPONSIVE_CSS = `
 // ─── Component ───────────────────────────────────────────────────────────────
 
 export default function ItinerairesClient() {
-  const sb = createClient();
+  const sb     = createClient();
   const router = useRouter();
 
-  const [items, setItems] = useState<Itineraire[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [items,    setItems]    = useState<Itineraire[]>([]);
+  const [loading,  setLoading]  = useState(true);
+  const [error,    setError]    = useState<string | null>(null);
   const [deleting, setDeleting] = useState<string | null>(null);
   const [expanded, setExpanded] = useState<string | null>(null);
-  const [excPhotos, setExcPhotos] = useState<Record<string, string[]>>({});
-  const [excDetails, setExcDetails] = useState<Record<string, any>>({});
-  const [titleToId, setTitleToId] = useState<Record<string, string>>({});
 
-  // ✅ FIX 1 : loadingItinId (string | null) au lieu de checkoutLoading (boolean global)
-  // Cela permet de tracker quel itinéraire est en cours de chargement individuellement,
-  // sans bloquer tous les autres boutons Réserver.
+  // Cache enrichi au chargement
+  const [excPhotos,  setExcPhotos]  = useState<Record<string, string[]>>({});
+  const [excDetails, setExcDetails] = useState<Record<string, any>>({});
+  const [titleToId,  setTitleToId]  = useState<Record<string, string>>({});
+
+  // Checkout
   const [checkoutItineraire, setCheckoutItineraire] = useState<{
     excursions: ExcursionForCheckout[];
     itineraireId: string;
   } | null>(null);
   const [loadingItinId, setLoadingItinId] = useState<string | null>(null);
 
+  // ── Chargement initial ────────────────────────────────────────────────────
   useEffect(() => {
     (async () => {
       setLoading(true);
@@ -298,7 +269,7 @@ export default function ItinerairesClient() {
       setItems(itineraires);
 
       const candidateIds = new Set<string>();
-      const planCities = new Set<string>();
+      const planCities   = new Set<string>();
 
       itineraires.forEach(it => {
         it.villes_selectionnees?.forEach(v => { if (v?.trim()) planCities.add(v.trim()); });
@@ -312,25 +283,26 @@ export default function ItinerairesClient() {
         });
       });
 
-      const photoMap: Record<string, string[]> = {};
-      const detailsMap: Record<string, any> = {};
-      const titleMap: Record<string, string> = {};
+      const photoMap:   Record<string, string[]> = {};
+      const detailsMap: Record<string, any>      = {};
+      const titleMap:   Record<string, string>   = {};
 
       const indexExc = (e: any) => {
-        photoMap[e.id] = e.photos || [];
+        photoMap[e.id]   = e.photos || [];
         detailsMap[e.id] = {
           meeting_point: e.meeting_point,
-          start_date: e.start_date,
-          start_time: e.depart_time,
-          city: e.city,
-          title: e.title,
+          start_date:    e.start_date,
+          start_time:    e.depart_time,
+          city:          e.city,
+          title:         e.title,
         };
         if (e.title) {
-          titleMap[normalizeTitle(e.title)] = e.id;
+          titleMap[normalizeStr(e.title)]        = e.id;
           titleMap[e.title.trim().toLowerCase()] = e.id;
         }
       };
 
+      // 1) UUIDs connus
       if (candidateIds.size > 0) {
         const { data: excs } = await sb
           .from("excursions")
@@ -339,6 +311,7 @@ export default function ItinerairesClient() {
         excs?.forEach(indexExc);
       }
 
+      // 2) Par ville
       if (planCities.size > 0) {
         const { data: excsByCity } = await sb
           .from("excursions")
@@ -347,6 +320,13 @@ export default function ItinerairesClient() {
         excsByCity?.forEach(indexExc);
       }
 
+      // 3) Filet ultime : toutes les excursions (couvre les plans IA avec villes orthographiées différemment)
+      const { data: allExcs } = await sb
+        .from("excursions")
+        .select("id, title, city, photos, meeting_point, start_date, depart_time")
+        .limit(500);
+      allExcs?.forEach(indexExc);
+
       setExcPhotos(photoMap);
       setExcDetails(detailsMap);
       setTitleToId(titleMap);
@@ -354,67 +334,66 @@ export default function ItinerairesClient() {
     })();
   }, []);
 
-  // ── Résolution UUID réel ───────────────────────────────────────────────────
+  // ── Résolution ID depuis une activité du plan ─────────────────────────────
   const resolveExcursionId = (act: ActivityItem): string | null => {
+    // 1. UUID direct dans le cache
     if (isValidUUID(act.id) && excDetails[act.id]) return act.id;
     if (act.excursion_id && isValidUUID(act.excursion_id) && excDetails[act.excursion_id])
       return act.excursion_id;
 
+    // 2-4. Matching par titre (couvre les plans IA sans UUID)
     const title = act.excursion?.title;
     if (title) {
-      const norm = normalizeTitle(title);
+      const norm  = normalizeStr(title);
       const lower = title.trim().toLowerCase();
-      if (titleToId[norm]) return titleToId[norm];
+
+      if (titleToId[norm])  return titleToId[norm];
       if (titleToId[lower]) return titleToId[lower];
 
       const entries = Object.entries(titleToId);
+
+      // Correspondance partielle
       const contained = entries.find(([key]) => key.includes(norm) || norm.includes(key));
       if (contained) return contained[1];
 
+      // Score de mots communs (seuil 50 %)
       const planWords = norm.split(" ").filter(w => w.length > 2);
       if (planWords.length > 0) {
         const best = entries
           .map(([key, id]) => {
             const dbWords = key.split(" ").filter(w => w.length > 2);
-            const common = planWords.filter(w => dbWords.includes(w)).length;
-            const score = common / Math.max(planWords.length, dbWords.length);
+            const common  = planWords.filter(w => dbWords.includes(w)).length;
+            const score   = common / Math.max(planWords.length, dbWords.length);
             return { id, score };
           })
-          .filter(m => m.score >= 0.6)
+          .filter(m => m.score >= 0.5)
           .sort((a, b) => b.score - a.score)[0];
         if (best) return best.id;
       }
     }
 
+    // 5. UUID brut en dernier recours
     if (act.excursion_id && isValidUUID(act.excursion_id)) return act.excursion_id;
     if (isValidUUID(act.id)) return act.id;
     return null;
   };
 
-  const getActPhoto = (act: ActivityItem): string | undefined => {
+  const getActPhoto = (act: ActivityItem) => {
     const id = resolveExcursionId(act);
     return (id ? excPhotos[id]?.[0] : undefined) || act.excursion?.photos?.[0];
   };
 
-  const getActDetails = (act: ActivityItem): any => {
+  const getActDetails = (act: ActivityItem) => {
     const id = resolveExcursionId(act);
     return id ? excDetails[id] : undefined;
   };
 
   const navigateToExcursion = (act: ActivityItem) => {
     const resolvedId = resolveExcursionId(act);
-    if (resolvedId) {
-      router.push(`/excursions/${resolvedId}`);
-      return;
-    }
+    if (resolvedId) { router.push(`/excursions/${resolvedId}`); return; }
     const rawId = act.excursion_id || act.id;
-    if (rawId && isValidUUID(rawId)) {
-      router.push(`/excursions/${rawId}`);
-      return;
-    }
-    alert(
-      `Impossible de trouver l'excursion « ${act.excursion?.title || "inconnue"} » dans la base de données.`
-    );
+    if (rawId && isValidUUID(rawId)) { router.push(`/excursions/${rawId}`); return; }
+    alert(`Impossible de trouver l'excursion « ${act.excursion?.title || "inconnue"} ».`);
   };
 
   // ── CRUD ──────────────────────────────────────────────────────────────────
@@ -440,89 +419,199 @@ export default function ItinerairesClient() {
   const isAssisted = (raw: RawPlan) =>
     !!raw && !Array.isArray(raw) && typeof raw === "object" && "days" in raw;
 
-  // ✅ FIX 1 + FIX 2 + FIX 3 : fonction openItineraryCheckout corrigée
+  // ── Ouvre le modal de réservation ─────────────────────────────────────────
+  //
+  // Nouvelle stratégie robuste pour les plans IA (sans UUID) :
+  //   Étape A → UUIDs résolus via le cache local
+  //   Étape B → Matching titre+ville en DB pour les non-résolus
+  //   Étape C → Fallback données du plan (modal s'ouvre quand même)
+  //
   const openItineraryCheckout = async (it: Itineraire) => {
-    // FIX 1 : on track l'id de l'itinéraire en cours, pas un booléen global
     setLoadingItinId(it.id);
 
     try {
       const plan = normalizePlan(it.plan);
 
-      const seen: Record<string, {
-        plan_date?: string;
-        plan_time?: "matin" | "aprem" | "soir";
-        plan_day?: number;
-      }> = {};
-
+      // Collecte toutes les activités avec leur index de jour
+      type ActMeta = { planAct: ActivityItem; dayIndex: number };
+      const allActs: ActMeta[] = [];
       plan.forEach((day, di) => {
-        (day.activities || []).forEach(act => {
-          const realId = resolveExcursionId(act);
-          if (!realId || seen[realId]) return;
-          seen[realId] = {
-            plan_date: act.date || act.excursion?.start_date || undefined,
-            plan_time: act.time || undefined,
-            plan_day: di + 1,
-          };
-        });
+        (day.activities || []).forEach(act => allActs.push({ planAct: act, dayIndex: di }));
       });
 
-      const seenIds = Object.keys(seen);
-
-      // FIX 3 : guard explicite si aucun ID résolvable
-      if (seenIds.length === 0) {
-        alert("Aucune excursion identifiable dans cet itinéraire. Vérifiez que les activités sont bien liées à des excursions existantes.");
+      if (allActs.length === 0) {
+        alert("Cet itinéraire ne contient aucune activité.");
         return;
       }
 
-      // FIX 2 : suppression du filtre .eq("is_active", true) qui empêchait
-      // de trouver les excursions sans ce champ ou avec is_active = false
-      const { data: dbExcs, error: fetchErr } = await sb
-        .from("excursions")
-        .select("id, title, city, duration_hours, price_per_person, max_people, available_dates, photos")
-        .in("id", seenIds);
+      // ── Étape A : UUIDs résolus via le cache ──────────────────────────
+      const resolvedByUUID: Record<string, ActMeta> = {};
+      allActs.forEach(meta => {
+        const dbId = resolveExcursionId(meta.planAct);
+        if (dbId && !resolvedByUUID[dbId]) resolvedByUUID[dbId] = meta;
+      });
 
-      if (fetchErr || !dbExcs?.length) {
-        // Fallback : on utilise les données du plan si la DB ne répond pas
-        const fallbackExcs: ExcursionForCheckout[] = seenIds.map((id: string) => {
-          let planAct: ActivityItem | undefined;
-          plan.forEach(day => {
-            day.activities?.forEach(act => {
-              if (resolveExcursionId(act) === id) planAct = act;
-            });
-          });
-          return {
-            id,
-            title: planAct?.excursion?.title || id,
-            city: planAct?.excursion?.city || "",
-            duration_hours: planAct?.excursion?.duration_hours || 2,
-            price_per_person: planAct?.excursion?.price_per_person || 0,
-            max_people: 20,
-            available_dates: null,
-            ...(seen[id] || {}),
-          };
-        });
+      // Activités non encore résolues
+      const unresolvedActs = allActs.filter(meta => !resolveExcursionId(meta.planAct));
 
-        // FIX 3 : guard si fallback aussi vide
-        if (fallbackExcs.length === 0) {
-          alert("Impossible de charger les excursions de cet itinéraire.");
-          return;
+      // ── Étape B : recherche DB par ville pour les non-résolus ─────────
+      let extraDbExcs: any[] = [];
+
+      const extraCities = [...new Set(
+        unresolvedActs
+          .map(({ planAct, dayIndex }) =>
+            planAct.excursion?.city?.trim() || plan[dayIndex]?.city?.trim() || ""
+          )
+          .filter(Boolean)
+      )];
+
+      if (extraCities.length > 0) {
+        const { data } = await sb
+          .from("excursions")
+          .select("id, title, city, duration_hours, price_per_person, max_people, available_dates, photos")
+          .in("city", extraCities);
+        if (data) extraDbExcs = data;
+      }
+
+      // Si toujours rien, charge tout (filet ultime)
+      if (extraDbExcs.length === 0 && unresolvedActs.length > 0) {
+        const { data } = await sb
+          .from("excursions")
+          .select("id, title, city, duration_hours, price_per_person, max_people, available_dates, photos")
+          .limit(500);
+        if (data) extraDbExcs = data;
+      }
+
+      // Construit un titleMap local enrichi
+      const localTitleToId: Record<string, string> = { ...titleToId };
+      extraDbExcs.forEach((e: any) => {
+        if (e.title) {
+          localTitleToId[normalizeStr(e.title)]        = e.id;
+          localTitleToId[e.title.trim().toLowerCase()] = e.id;
+        }
+      });
+
+      // Résoud les activités non résolues avec le titleMap enrichi
+      const resolvedByTitle: Record<string, { meta: ActMeta; dbRow: any }> = {};
+
+      unresolvedActs.forEach(meta => {
+        const title = meta.planAct.excursion?.title;
+        if (!title) return;
+
+        const norm  = normalizeStr(title);
+        const lower = title.trim().toLowerCase();
+        let foundId: string | null = localTitleToId[norm] || localTitleToId[lower] || null;
+
+        if (!foundId) {
+          const entries   = Object.entries(localTitleToId);
+          const contained = entries.find(([key]) => key.includes(norm) || norm.includes(key));
+          if (contained) foundId = contained[1];
         }
 
-        setCheckoutItineraire({ excursions: fallbackExcs, itineraireId: it.id });
-        return;
+        if (!foundId) {
+          const planWords = norm.split(" ").filter(w => w.length > 2);
+          if (planWords.length > 0) {
+            const entries = Object.entries(localTitleToId);
+            const best = entries
+              .map(([key, id]) => {
+                const dbWords = key.split(" ").filter(w => w.length > 2);
+                const common  = planWords.filter(w => dbWords.includes(w)).length;
+                const score   = common / Math.max(planWords.length, dbWords.length);
+                return { id, score };
+              })
+              .filter(m => m.score >= 0.5)
+              .sort((a, b) => b.score - a.score)[0];
+            if (best) foundId = best.id;
+          }
+        }
+
+        if (foundId && !resolvedByUUID[foundId] && !resolvedByTitle[foundId]) {
+          resolvedByTitle[foundId] = {
+            meta,
+            dbRow: extraDbExcs.find((e: any) => e.id === foundId) || null,
+          };
+        }
+      });
+
+      // ── Charge les données complètes pour les UUIDs résolus (lot A) ───
+      const uuidIds = Object.keys(resolvedByUUID);
+      let uuidDbRows: any[] = [];
+      if (uuidIds.length > 0) {
+        const { data } = await sb
+          .from("excursions")
+          .select("id, title, city, duration_hours, price_per_person, max_people, available_dates, photos")
+          .in("id", uuidIds);
+        if (data) uuidDbRows = data;
       }
 
-      // Fusion données DB + méta du plan
-      const excursions: ExcursionForCheckout[] = (dbExcs as any[]).map(exc => ({
-        id: exc.id as string,
-        title: exc.title as string,
-        city: exc.city as string,
-        duration_hours: exc.duration_hours as number,
-        price_per_person: exc.price_per_person as number,
-        max_people: (exc.max_people as number) || 20,
-        available_dates: (exc.available_dates as any[] | null) ?? null,
-        ...(seen[exc.id] || {}),
-      }));
+      // ── Construit la liste finale ──────────────────────────────────────
+      const excursionsMap: Record<string, ExcursionForCheckout> = {};
+
+      // Lot A (UUID)
+      uuidDbRows.forEach((row: any) => {
+        const meta = resolvedByUUID[row.id];
+        if (!meta) return;
+        excursionsMap[row.id] = {
+          id:               row.id,
+          title:            row.title,
+          city:             row.city,
+          duration_hours:   row.duration_hours  || meta.planAct.excursion?.duration_hours  || 2,
+          price_per_person: row.price_per_person || meta.planAct.excursion?.price_per_person || 0,
+          max_people:       row.max_people || 20,
+          available_dates:  row.available_dates ?? null,
+          plan_date:        meta.planAct.date || meta.planAct.excursion?.start_date || undefined,
+          plan_time:        meta.planAct.time || undefined,
+          plan_day:         meta.dayIndex + 1,
+        };
+      });
+
+      // Lot B (titre/ville)
+      Object.entries(resolvedByTitle).forEach(([dbId, { meta, dbRow }]) => {
+        if (excursionsMap[dbId]) return;
+        const row = dbRow || extraDbExcs.find((e: any) => e.id === dbId);
+        if (!row) return;
+        excursionsMap[dbId] = {
+          id:               row.id,
+          title:            row.title,
+          city:             row.city,
+          duration_hours:   row.duration_hours  || meta.planAct.excursion?.duration_hours  || 2,
+          price_per_person: row.price_per_person || meta.planAct.excursion?.price_per_person || 0,
+          max_people:       row.max_people || 20,
+          available_dates:  row.available_dates ?? null,
+          plan_date:        meta.planAct.date || meta.planAct.excursion?.start_date || undefined,
+          plan_time:        meta.planAct.time || undefined,
+          plan_day:         meta.dayIndex + 1,
+        };
+      });
+
+      const excursions = Object.values(excursionsMap);
+
+      // ── Étape C : fallback données du plan (modal s'ouvre quand même) ─
+      if (excursions.length === 0) {
+        const seen = new Set<string>();
+        const fallback: ExcursionForCheckout[] = [];
+
+        allActs.forEach(({ planAct, dayIndex }) => {
+          const key = normalizeStr(planAct.excursion?.title || planAct.id || String(dayIndex));
+          if (seen.has(key)) return;
+          seen.add(key);
+          fallback.push({
+            id:               planAct.excursion_id || planAct.id || `fallback-${dayIndex}`,
+            title:            planAct.excursion?.title || "Excursion",
+            city:             planAct.excursion?.city  || "",
+            duration_hours:   planAct.excursion?.duration_hours   || 2,
+            price_per_person: planAct.excursion?.price_per_person || 0,
+            max_people:       20,
+            available_dates:  null,
+            plan_date:        planAct.date || planAct.excursion?.start_date || undefined,
+            plan_time:        planAct.time || undefined,
+            plan_day:         dayIndex + 1,
+          });
+        });
+
+        setCheckoutItineraire({ excursions: fallback, itineraireId: it.id });
+        return;
+      }
 
       setCheckoutItineraire({ excursions, itineraireId: it.id });
 
@@ -530,7 +619,6 @@ export default function ItinerairesClient() {
       console.error("openItineraryCheckout error:", e);
       alert("Une erreur est survenue. Veuillez réessayer.");
     } finally {
-      // FIX 1 : reset dans tous les cas (succès, erreur, fallback)
       setLoadingItinId(null);
     }
   };
@@ -590,16 +678,11 @@ export default function ItinerairesClient() {
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
             {items.map((it, idx) => {
-              const plan = normalizePlan(it.plan);
-              const acts = totAct(it.plan);
-              const budget = totBudget(it.plan);
-              const isOpen = expanded === it.id;
-              const assisted = isAssisted(it.plan);
-              const hasBookable = plan.some(d =>
-                (d.activities || []).some(a => a.excursion?.price_per_person > 0)
-              );
-
-              // ✅ FIX 1 : chaque bouton vérifie son propre id, pas un booléen global
+              const plan          = normalizePlan(it.plan);
+              const acts          = totAct(it.plan);
+              const budget        = totBudget(it.plan);
+              const isOpen        = expanded === it.id;
+              const assisted      = isAssisted(it.plan);
               const isThisLoading = loadingItinId === it.id;
 
               return (
@@ -608,6 +691,7 @@ export default function ItinerairesClient() {
 
                   {/* Card header */}
                   <div className="it-card-header" onClick={() => setExpanded(isOpen ? null : it.id)}>
+
                     <div style={{ width: 46, height: 46, borderRadius: 14, background: assisted ? "linear-gradient(135deg,rgba(2,175,207,.15),rgba(37,159,252,.1))" : "linear-gradient(135deg,#EFF9FB,#D0F0F5)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, border: `1px solid ${assisted ? "rgba(2,175,207,.25)" : "rgba(43,150,168,.15)"}` }}>
                       {assisted ? <Bot size={20} color="#02AFCF" /> : <PenLine size={20} color="#2B96A8" />}
                     </div>
@@ -652,21 +736,19 @@ export default function ItinerairesClient() {
                         <Pencil size={12} /> Modifier
                       </a>
                       <button className="it-btn"
-                        onClick={() => deleteIt(it.id)} disabled={deleting === it.id}
+                        onClick={() => deleteIt(it.id)}
+                        disabled={deleting === it.id}
                         style={{ padding: "8px 14px", background: "#FEF2F2", color: "#DC2626", borderRadius: 20, fontSize: 12, fontWeight: 700, display: "flex", alignItems: "center", gap: 5 }}>
                         {deleting === it.id
                           ? <Loader2 size={13} style={{ animation: "spin .8s linear infinite" }} />
                           : <Trash2 size={13} />}
                       </button>
 
-                      {/* ✅ FIX 1 : bouton Réserver avec état individuel par itinéraire */}
+                      {/* Bouton Réserver — état individuel par itinéraire */}
                       <button
                         className="it-reserve-all-btn"
-                        disabled={!hasBookable || isThisLoading}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          openItineraryCheckout(it);
-                        }}
+                        disabled={isThisLoading}
+                        onClick={(e) => { e.stopPropagation(); openItineraryCheckout(it); }}
                       >
                         {isThisLoading
                           ? <><Loader2 size={13} style={{ animation: "spin .8s linear infinite" }} /> Chargement…</>
@@ -699,20 +781,16 @@ export default function ItinerairesClient() {
                             {(day.activities || []).length === 0 ? (
                               <p style={{ fontSize: 12, color: "#D1D5DB", fontStyle: "italic" }}>Journée libre</p>
                             ) : (day.activities || []).map((act, ai) => {
-                              const photo = getActPhoto(act);
-                              const details = getActDetails(act);
-                              const startDate = act.date || details?.start_date || act.excursion?.start_date;
-                              const startTime = act.excursion?.start_time || details?.start_time;
+                              const photo        = getActPhoto(act);
+                              const details      = getActDetails(act);
+                              const startDate    = act.date || details?.start_date || act.excursion?.start_date;
+                              const startTime    = act.excursion?.start_time || details?.start_time;
                               const meetingPoint = details?.meeting_point || act.excursion?.meeting_point;
-                              const resolvedId = resolveExcursionId(act);
-                              const canNavigate =
-                                !!resolvedId ||
-                                isValidUUID(act.excursion_id || "") ||
-                                isValidUUID(act.id);
+                              const resolvedId   = resolveExcursionId(act);
+                              const canNavigate  = !!resolvedId || isValidUUID(act.excursion_id || "") || isValidUUID(act.id);
 
                               return (
                                 <div key={act.id || ai} className="act-row">
-
                                   {photo ? (
                                     <img
                                       src={photo}
@@ -735,12 +813,7 @@ export default function ItinerairesClient() {
                                     <p
                                       className="excursion-title"
                                       onClick={() => canNavigate && navigateToExcursion(act)}
-                                      style={{
-                                        fontSize: 14, fontWeight: 700, color: "#111827",
-                                        margin: "0 0 6px",
-                                        display: "flex", alignItems: "center", gap: 6,
-                                        cursor: canNavigate ? "pointer" : "default",
-                                      }}>
+                                      style={{ fontSize: 14, fontWeight: 700, color: "#111827", margin: "0 0 6px", display: "flex", alignItems: "center", gap: 6, cursor: canNavigate ? "pointer" : "default" }}>
                                       {act.excursion?.title || "—"}
                                       {canNavigate && <ExternalLink size={12} color="#9CA3AF" />}
                                     </p>
@@ -799,15 +872,8 @@ export default function ItinerairesClient() {
                                       className="btn-voir-detail"
                                       data-unavailable={!canNavigate ? "true" : undefined}
                                       disabled={!canNavigate}
-                                      onClick={e => {
-                                        e.stopPropagation();
-                                        if (canNavigate) navigateToExcursion(act);
-                                      }}
-                                      title={
-                                        canNavigate
-                                          ? `Voir la page de ${act.excursion?.title}`
-                                          : "Excursion introuvable dans la base de données"
-                                      }
+                                      onClick={e => { e.stopPropagation(); if (canNavigate) navigateToExcursion(act); }}
+                                      title={canNavigate ? `Voir la page de ${act.excursion?.title}` : "Excursion introuvable"}
                                     >
                                       <ExternalLink size={11} />
                                       {canNavigate ? "Voir détail" : "Introuvable"}
@@ -827,7 +893,7 @@ export default function ItinerairesClient() {
           </div>
         )}
 
-        {/* Modal checkout — s'ouvre dès que checkoutItineraire est non-null */}
+        {/* Modal checkout */}
         {checkoutItineraire && checkoutItineraire.excursions.length > 0 && (
           <CheckoutModalItineraire
             excursions={checkoutItineraire.excursions}
