@@ -4,6 +4,8 @@
 // ─────────────────────────────────────────────
 
 import ModeAssiste from "../modeAssister/page";
+import BuilderPage from "../modeLibre/builder/page";
+import ModeLibrePage from "../modeLibre/page";
 
 export const ROUTES = {
 
@@ -13,6 +15,9 @@ export const ROUTES = {
   excursions: "/excursions",
   excursion:  (id: string) => `/excursions/${id}`,
   ModeAssiste : "/modeAssister",
+  ModeLibrePage: "/modeLibre",
+  BuilderPage: "/modeLibre/builder",
+  
   about:      "/about",
   blog:       "/blog",
   contact:    "/contact",
