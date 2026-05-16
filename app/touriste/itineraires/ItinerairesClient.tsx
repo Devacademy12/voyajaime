@@ -10,7 +10,6 @@ import {
   Bot, PenLine, Image as ImageIcon, ExternalLink,
   Calendar, Flag,
 } from "lucide-react";
-// ✅ CORRECTION 1 : import du bon composant CheckoutModalItineraire
 import CheckoutModalItineraire from "@/app/components/itineraire/Checkoutmodalitineraire";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -46,8 +45,6 @@ type Itineraire = {
   updated_at: string;
 };
 
-// ✅ CORRECTION 1 : type adapté à CheckoutModalItineraire
-// Ajuste les champs selon ce qu'attend réellement ton composant CheckoutModalItineraire
 type ExcursionForCheckout = {
   id: string;
   title: string;
@@ -56,6 +53,9 @@ type ExcursionForCheckout = {
   price_per_person: number;
   max_people: number;
   available_dates?: any[] | null;
+  plan_date?: string;
+  plan_time?: "matin" | "aprem" | "soir";
+  plan_day?: number;
 };
 
 // ─── Constants ───────────────────────────────────────────────────────────────
@@ -190,7 +190,6 @@ const RESPONSIVE_CSS = `
     margin-bottom:32px;
   }
 
-  /* ── Bouton Voir détail ── */
   .btn-voir-detail {
     margin-top: 10px;
     padding: 6px 14px;
@@ -266,12 +265,14 @@ export default function ItinerairesClient() {
   const [excDetails, setExcDetails] = useState<Record<string, any>>({});
   const [titleToId, setTitleToId] = useState<Record<string, string>>({});
 
-  // État pour CheckoutModalItineraire
+  // ✅ FIX 1 : loadingItinId (string | null) au lieu de checkoutLoading (boolean global)
+  // Cela permet de tracker quel itinéraire est en cours de chargement individuellement,
+  // sans bloquer tous les autres boutons Réserver.
   const [checkoutItineraire, setCheckoutItineraire] = useState<{
     excursions: ExcursionForCheckout[];
     itineraireId: string;
   } | null>(null);
-  const [checkoutLoading, setCheckoutLoading] = useState(false);
+  const [loadingItinId, setLoadingItinId] = useState<string | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -400,24 +401,17 @@ export default function ItinerairesClient() {
     return id ? excDetails[id] : undefined;
   };
 
-  // ✅ CORRECTION 2 : navigation vers app/excursions/[id]/page via router.push
-  // Utilise toujours l'UUID résolu — jamais un titre ou un ID non validé
   const navigateToExcursion = (act: ActivityItem) => {
     const resolvedId = resolveExcursionId(act);
-
     if (resolvedId) {
-      // Route vers app/excursions/[id]/page.tsx
       router.push(`/excursions/${resolvedId}`);
       return;
     }
-
-    // Fallback sur l'ID brut si UUID valide mais non résolu dans le cache local
     const rawId = act.excursion_id || act.id;
     if (rawId && isValidUUID(rawId)) {
       router.push(`/excursions/${rawId}`);
       return;
     }
-
     alert(
       `Impossible de trouver l'excursion « ${act.excursion?.title || "inconnue"} » dans la base de données.`
     );
@@ -446,14 +440,14 @@ export default function ItinerairesClient() {
   const isAssisted = (raw: RawPlan) =>
     !!raw && !Array.isArray(raw) && typeof raw === "object" && "days" in raw;
 
-  // Ouvre CheckoutModalItineraire en chargeant les vraies données depuis Supabase
+  // ✅ FIX 1 + FIX 2 + FIX 3 : fonction openItineraryCheckout corrigée
   const openItineraryCheckout = async (it: Itineraire) => {
-    setCheckoutLoading(true);
+    // FIX 1 : on track l'id de l'itinéraire en cours, pas un booléen global
+    setLoadingItinId(it.id);
+
     try {
       const plan = normalizePlan(it.plan);
 
-      // 1. Collecte les IDs résolus + infos du plan (date, time, jour)
-      // On utilise un objet simple pour éviter les problèmes de typage Map générique
       const seen: Record<string, {
         plan_date?: string;
         plan_time?: "matin" | "aprem" | "soir";
@@ -473,22 +467,23 @@ export default function ItinerairesClient() {
       });
 
       const seenIds = Object.keys(seen);
+
+      // FIX 3 : guard explicite si aucun ID résolvable
       if (seenIds.length === 0) {
-        setCheckoutLoading(false);
+        alert("Aucune excursion identifiable dans cet itinéraire. Vérifiez que les activités sont bien liées à des excursions existantes.");
         return;
       }
 
-      // 2. Charge les vraies données depuis Supabase (available_dates, max_people, prix réel…)
+      // FIX 2 : suppression du filtre .eq("is_active", true) qui empêchait
+      // de trouver les excursions sans ce champ ou avec is_active = false
       const { data: dbExcs, error: fetchErr } = await sb
         .from("excursions")
         .select("id, title, city, duration_hours, price_per_person, max_people, available_dates, photos")
-        .in("id", seenIds)
-        .eq("is_active", true);
+        .in("id", seenIds);
 
       if (fetchErr || !dbExcs?.length) {
-        // Fallback : ouvre quand même avec les données du plan (sans available_dates)
+        // Fallback : on utilise les données du plan si la DB ne répond pas
         const fallbackExcs: ExcursionForCheckout[] = seenIds.map((id: string) => {
-          const meta = seen[id];
           let planAct: ActivityItem | undefined;
           plan.forEach(day => {
             day.activities?.forEach(act => {
@@ -503,15 +498,21 @@ export default function ItinerairesClient() {
             price_per_person: planAct?.excursion?.price_per_person || 0,
             max_people: 20,
             available_dates: null,
-            ...meta,
+            ...(seen[id] || {}),
           };
         });
+
+        // FIX 3 : guard si fallback aussi vide
+        if (fallbackExcs.length === 0) {
+          alert("Impossible de charger les excursions de cet itinéraire.");
+          return;
+        }
+
         setCheckoutItineraire({ excursions: fallbackExcs, itineraireId: it.id });
-        setCheckoutLoading(false);
         return;
       }
 
-      // 3. Fusionne les données DB + méta du plan
+      // Fusion données DB + méta du plan
       const excursions: ExcursionForCheckout[] = (dbExcs as any[]).map(exc => ({
         id: exc.id as string,
         title: exc.title as string,
@@ -524,10 +525,13 @@ export default function ItinerairesClient() {
       }));
 
       setCheckoutItineraire({ excursions, itineraireId: it.id });
+
     } catch (e) {
       console.error("openItineraryCheckout error:", e);
+      alert("Une erreur est survenue. Veuillez réessayer.");
     } finally {
-      setCheckoutLoading(false);
+      // FIX 1 : reset dans tous les cas (succès, erreur, fallback)
+      setLoadingItinId(null);
     }
   };
 
@@ -595,6 +599,9 @@ export default function ItinerairesClient() {
                 (d.activities || []).some(a => a.excursion?.price_per_person > 0)
               );
 
+              // ✅ FIX 1 : chaque bouton vérifie son propre id, pas un booléen global
+              const isThisLoading = loadingItinId === it.id;
+
               return (
                 <div key={it.id} className="it-card"
                   style={{ background: "white", borderRadius: 24, border: "1px solid #E5E7EB", overflow: "hidden", boxShadow: "0 2px 10px rgba(0,0,0,.05)", animationDelay: `${idx * .06}s` }}>
@@ -651,13 +658,17 @@ export default function ItinerairesClient() {
                           ? <Loader2 size={13} style={{ animation: "spin .8s linear infinite" }} />
                           : <Trash2 size={13} />}
                       </button>
-                      {/* Bouton Réserver — charge les données Supabase avant d'ouvrir */}
+
+                      {/* ✅ FIX 1 : bouton Réserver avec état individuel par itinéraire */}
                       <button
                         className="it-reserve-all-btn"
-                        disabled={!hasBookable || checkoutLoading}
-                        onClick={(e) => { e.stopPropagation(); openItineraryCheckout(it); }}
+                        disabled={!hasBookable || isThisLoading}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          openItineraryCheckout(it);
+                        }}
                       >
-                        {checkoutLoading
+                        {isThisLoading
                           ? <><Loader2 size={13} style={{ animation: "spin .8s linear infinite" }} /> Chargement…</>
                           : <><ShoppingCart size={13} /> Réserver</>
                         }
@@ -702,7 +713,6 @@ export default function ItinerairesClient() {
                               return (
                                 <div key={act.id || ai} className="act-row">
 
-                                  {/* Photo cliquable → page excursion */}
                                   {photo ? (
                                     <img
                                       src={photo}
@@ -722,7 +732,6 @@ export default function ItinerairesClient() {
                                   )}
 
                                   <div style={{ flex: 1, minWidth: 0 }}>
-                                    {/* Titre cliquable → page excursion */}
                                     <p
                                       className="excursion-title"
                                       onClick={() => canNavigate && navigateToExcursion(act)}
@@ -786,7 +795,6 @@ export default function ItinerairesClient() {
                                       </p>
                                     )}
 
-                                    {/* ✅ CORRECTION 2 : Bouton Voir détail → /excursions/[id]/page */}
                                     <button
                                       className="btn-voir-detail"
                                       data-unavailable={!canNavigate ? "true" : undefined}
@@ -819,7 +827,7 @@ export default function ItinerairesClient() {
           </div>
         )}
 
-        {/* ✅ CORRECTION 1 : CheckoutModalItineraire à la place de CheckoutModal */}
+        {/* Modal checkout — s'ouvre dès que checkoutItineraire est non-null */}
         {checkoutItineraire && checkoutItineraire.excursions.length > 0 && (
           <CheckoutModalItineraire
             excursions={checkoutItineraire.excursions}
