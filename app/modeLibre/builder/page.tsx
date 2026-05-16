@@ -3,6 +3,7 @@
 import React, { useState, useEffect, Suspense, useMemo, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabaseClient";
+import TouristeNav from "@/app/components/touriste/TouristeNav";
 import {
   ArrowLeft, ArrowRight, Calendar, MapPin, Clock, Star,
   Trash2, FileText, Search, CheckCircle2,
@@ -584,6 +585,8 @@ function BuilderInner() {
 
   return (
     <div className={s.root}>
+      <TouristeNav />
+      
       {showDatePicker && <DatePickerModal />}
 
       {/* Toast */}
