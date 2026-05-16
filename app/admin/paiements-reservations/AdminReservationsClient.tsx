@@ -3,8 +3,7 @@
 import { useState, useMemo } from "react";
 import {
   CalendarDays, Users, CreditCard, TrendingUp, Download,
-  Search, Filter, CheckCircle2, AlertCircle, XCircle, Clock,
-  RefreshCcw, Building2,
+  Search, CheckCircle2, Building2, Clock,
 } from "lucide-react";
 
 /* ─── Types ─────────────────────────────────────────────────── */
@@ -34,11 +33,15 @@ interface ExcursionCap {
   price_per_person: number; is_active: boolean;
 }
 
+/* SlotInfo: capacite[excursion_id][slotKey] */
+interface SlotInfo { booked: number; date: string; time: string; }
+
 interface Props {
   reservations: Reservation[];
   paiements: Paiement[];
   excursions: ExcursionCap[];
-  capacite: Record<string, number>;
+  /** capacite[excursion_id]["date|time"] = { booked, date, time } */
+  capacite: Record<string, Record<string, SlotInfo>>;
 }
 
 /* ─── CSS ───────────────────────────────────────────────────── */
@@ -125,11 +128,19 @@ const CSS = `
   }
   tbody td {
     padding: 12px 16px; font-size: 13px; border-bottom: 1px solid #F1F5F9;
-    color: #2D3748; vertical-align: middle; white-space: nowrap; max-width: 180px;
+    color: #2D3748; vertical-align: middle; white-space: nowrap; max-width: 220px;
     overflow: hidden; text-overflow: ellipsis;
   }
   tbody tr:last-child td { border-bottom: none; }
   tbody tr:hover td { background: #F8FAFC; }
+
+  /* Excursion group header row */
+  .group-header td {
+    background: #F1F5F9; font-weight: 700; font-size: 12px;
+    color: #053366; padding: 8px 16px; border-bottom: 1px solid #E2E8F0;
+    letter-spacing: .03em;
+  }
+  .group-header td:first-child { border-left: 3px solid #2B96A8; }
 
   .badge {
     display: inline-block; font-size: 11px; font-weight: 700;
@@ -143,6 +154,9 @@ const CSS = `
   .b-unpaid     { background: #FFFBEB; color: #D97706; }
   .b-expired    { background: #FCEBEB; color: #A32D2D; }
   .b-refunded   { background: #EFF9FB; color: #185FA5; }
+  .b-full       { background: #FCEBEB; color: #A32D2D; }
+  .b-available  { background: #E1F5EE; color: #0F6E56; }
+  .b-low        { background: #FFFBEB; color: #D97706; }
 
   .avatar {
     width: 30px; height: 30px; border-radius: 50%;
@@ -153,9 +167,10 @@ const CSS = `
   .tourist-cell { display: flex; align-items: center; }
 
   .progress-bar {
-    height: 6px; border-radius: 3px; background: #E2E8F0; width: 120px; overflow: hidden;
+    height: 6px; border-radius: 3px; background: #E2E8F0; width: 100px; overflow: hidden;
   }
   .progress-fill { height: 100%; border-radius: 3px; }
+
   .cap-over  { color: #A32D2D; font-weight: 700; }
   .cap-low   { color: #D97706; }
   .cap-ok    { color: #0F6E56; }
@@ -164,6 +179,17 @@ const CSS = `
     background: #EFF9FB; border: 1.5px solid rgba(43,150,168,.2);
     border-radius: 12px; padding: 12px 18px; font-size: 13px;
     color: #053366; margin-bottom: 16px; display: flex; align-items: center; gap: 10px;
+  }
+
+  .slot-chip {
+    display: inline-flex; align-items: center; gap: 5px;
+    background: #E6F1FB; color: #185FA5;
+    border-radius: 8px; padding: 3px 10px; font-size: 12px; font-weight: 600;
+  }
+  .time-chip {
+    display: inline-flex; align-items: center; gap: 4px;
+    background: #F1F5F9; color: #475569;
+    border-radius: 8px; padding: 3px 9px; font-size: 12px; font-weight: 600;
   }
 
   @media (max-width: 900px) { .admin-wrap { padding: 20px 20px 48px; } }
@@ -184,6 +210,9 @@ function fmtDate(s: string | null) {
   if (!s) return "—";
   return new Date(s).toLocaleDateString("fr-FR", { day: "2-digit", month: "short", year: "numeric" });
 }
+function fmtDateShort(s: string) {
+  return new Date(s + "T00:00:00").toLocaleDateString("fr-FR", { day: "2-digit", month: "short", year: "numeric" });
+}
 
 type Tab = "reservations" | "paiements" | "capacite";
 
@@ -194,6 +223,7 @@ export default function AdminReservationsClient({ reservations, paiements, excur
   const [resaStatus, setResaStatus] = useState("");
   const [paySearch,  setPaySearch]  = useState("");
   const [payStatus,  setPayStatus]  = useState("");
+  const [capSearch,  setCapSearch]  = useState("");
 
   /* ── Filtered reservations ── */
   const filteredResa = useMemo(() => {
@@ -220,6 +250,87 @@ export default function AdminReservationsClient({ reservations, paiements, excur
     });
   }, [paiements, paySearch, payStatus]);
 
+  /* ── Capacité : flatten en rows pour affichage ── */
+  type CapRow = {
+    excursionId: string;
+    excursionTitle: string;
+    excursionCity: string;
+    maxPeople: number;
+    date: string;
+    time: string;
+    booked: number;
+  };
+
+  const capRows = useMemo((): CapRow[] => {
+    const rows: CapRow[] = [];
+    const excMap: Record<string, ExcursionCap> = {};
+    excursions.forEach((e) => { excMap[e.id] = e; });
+
+    Object.entries(capacite).forEach(([excId, slots]) => {
+      const exc = excMap[excId];
+      if (!exc) return;
+      Object.values(slots).forEach((slot) => {
+        rows.push({
+          excursionId:    excId,
+          excursionTitle: exc.title,
+          excursionCity:  exc.city,
+          maxPeople:      exc.max_people,
+          date:           slot.date,
+          time:           slot.time,
+          booked:         slot.booked,
+        });
+      });
+    });
+
+    // Sort: by excursion title, then date asc, then time asc
+    rows.sort((a, b) => {
+      const t = a.excursionTitle.localeCompare(b.excursionTitle);
+      if (t !== 0) return t;
+      const d = a.date.localeCompare(b.date);
+      if (d !== 0) return d;
+      return a.time.localeCompare(b.time);
+    });
+
+    return rows;
+  }, [capacite, excursions]);
+
+  const filteredCapRows = useMemo(() => {
+    if (!capSearch.trim()) return capRows;
+    const q = capSearch.toLowerCase();
+    return capRows.filter(
+      (r) => r.excursionTitle.toLowerCase().includes(q) || r.excursionCity.toLowerCase().includes(q)
+    );
+  }, [capRows, capSearch]);
+
+  /* Group cap rows by excursion for display */
+  const groupedCapRows = useMemo(() => {
+    const groups: { excursionId: string; excursionTitle: string; excursionCity: string; maxPeople: number; slots: CapRow[] }[] = [];
+    let currentId = "";
+    filteredCapRows.forEach((row) => {
+      if (row.excursionId !== currentId) {
+        currentId = row.excursionId;
+        groups.push({
+          excursionId:    row.excursionId,
+          excursionTitle: row.excursionTitle,
+          excursionCity:  row.excursionCity,
+          maxPeople:      row.maxPeople,
+          slots: [row],
+        });
+      } else {
+        groups[groups.length - 1].slots.push(row);
+      }
+    });
+    return groups;
+  }, [filteredCapRows]);
+
+  /* ── Cap summary stats ── */
+  const capStats = useMemo(() => {
+    const totalSlots = capRows.length;
+    const fullSlots  = capRows.filter((r) => r.booked >= r.maxPeople).length;
+    const totalBooked = capRows.reduce((a, r) => a + r.booked, 0);
+    return { totalSlots, fullSlots, totalBooked };
+  }, [capRows]);
+
   /* ── Reservation stats ── */
   const resaStats = useMemo(() => ({
     total:     reservations.length,
@@ -234,14 +345,14 @@ export default function AdminReservationsClient({ reservations, paiements, excur
     const total = paid.reduce((a, b) => a + b.amount, 0);
     return {
       total,
-      pander:    total * 0.10,
+      pander:      total * 0.10,
       prestataire: total * 0.90,
-      count:     paid.length,
+      count:       paid.length,
     };
   }, [paiements]);
 
   /* ── CSV export ── */
-  function exportCSV(type: "reservations" | "paiements") {
+  function exportCSV(type: "reservations" | "paiements" | "capacite") {
     let headers: string[];
     let rows: (string | number | null)[][];
 
@@ -258,7 +369,7 @@ export default function AdminReservationsClient({ reservations, paiements, excur
         r.status, r.payment_status || "—",
         fmtDate(r.created_at),
       ]);
-    } else {
+    } else if (type === "paiements") {
       headers = ["Touriste", "Téléphone", "Excursion", "Ville", "Date excursion", "Personnes", "Total", "Part Pander (10%)", "Part Prestataire (90%)", "Prestataire", "Payé le", "Statut"];
       rows = filteredPay.map((p) => [
         p.reservation?.touriste?.full_name || "—",
@@ -274,6 +385,13 @@ export default function AdminReservationsClient({ reservations, paiements, excur
         fmtDate(p.paid_at),
         p.status,
       ]);
+    } else {
+      headers = ["Excursion", "Ville", "Date", "Heure", "Personnes réservées", "Capacité max", "Places disponibles", "Remplissage %"];
+      rows = filteredCapRows.map((r) => {
+        const avail = Math.max(0, r.maxPeople - r.booked);
+        const pct   = Math.round((r.booked / r.maxPeople) * 100);
+        return [r.excursionTitle, r.excursionCity, r.date, r.time, r.booked, r.maxPeople, avail, pct + "%"];
+      });
     }
 
     const csv = [headers, ...rows]
@@ -368,6 +486,7 @@ export default function AdminReservationsClient({ reservations, paiements, excur
                     <th>Excursion</th>
                     <th>Ville</th>
                     <th>Date</th>
+                    <th>Heure</th>
                     <th>Pers.</th>
                     <th>Prix total</th>
                     <th>Commission</th>
@@ -378,7 +497,7 @@ export default function AdminReservationsClient({ reservations, paiements, excur
                 </thead>
                 <tbody>
                   {filteredResa.length === 0 ? (
-                    <tr><td colSpan={11} style={{ textAlign: "center", padding: "3rem", color: "#9CA3AF" }}>
+                    <tr><td colSpan={12} style={{ textAlign: "center", padding: "3rem", color: "#9CA3AF" }}>
                       Aucune réservation trouvée
                     </td></tr>
                   ) : filteredResa.map((r) => (
@@ -393,6 +512,12 @@ export default function AdminReservationsClient({ reservations, paiements, excur
                       <td title={r.excursion?.title}>{r.excursion?.title || "—"}</td>
                       <td>{r.excursion?.city || "—"}</td>
                       <td>{fmtDate(r.date)}</td>
+                      <td>
+                        <span className="time-chip">
+                          <Clock size={11} />
+                          {r.time ? String(r.time).slice(0, 5) : "—"}
+                        </span>
+                      </td>
                       <td style={{ textAlign: "center" }}>{r.people_count}</td>
                       <td style={{ fontWeight: 600 }}>{fmt(r.total_price)}</td>
                       <td style={{ color: "#2B96A8" }}>{fmt(r.platform_fee)}</td>
@@ -520,12 +645,41 @@ export default function AdminReservationsClient({ reservations, paiements, excur
         {/* ══ CAPACITE TAB ══ */}
         {tab === "capacite" && (
           <>
-            <div className="info-box" style={{ marginBottom: 20 }}>
+            {/* Metrics */}
+            <div className="metrics-row" style={{ marginBottom: 20 }}>
+              {[
+                { icon: <CalendarDays size={16} color="#2B96A8" />, bg: "#EFF9FB", num: capStats.totalSlots,  lbl: "Créneaux actifs",    numColor: "#053366" },
+                { icon: <Users        size={16} color="#0F6E56" />, bg: "#E1F5EE", num: capStats.totalBooked, lbl: "Personnes réservées", numColor: "#0F6E56" },
+                { icon: <CheckCircle2 size={16} color="#A32D2D" />, bg: "#FCEBEB", num: capStats.fullSlots,   lbl: "Créneaux complets",  numColor: "#A32D2D" },
+              ].map(({ icon, bg, num, lbl, numColor }) => (
+                <div key={lbl} className="metric-card">
+                  <div className="metric-icon" style={{ background: bg }}>{icon}</div>
+                  <p className="metric-num" style={{ color: numColor }}>{num}</p>
+                  <p className="metric-lbl">{lbl}</p>
+                </div>
+              ))}
+            </div>
+
+            <div className="info-box">
               <Users size={16} color="#2B96A8" />
               <span>
-                Les réservations sont bloquées automatiquement quand la capacité max est atteinte.
-                Les lignes en rouge indiquent un dépassement à corriger.
+                Capacité calculée <strong>par créneau (date + heure)</strong> pour chaque excursion.
+                Les réservations annulées sont exclues du calcul.
               </span>
+            </div>
+
+            <div className="toolbar">
+              <div className="search-box">
+                <Search size={13} color="#9CA3AF" />
+                <input
+                  placeholder="Rechercher excursion ou ville…"
+                  value={capSearch}
+                  onChange={(e) => setCapSearch(e.target.value)}
+                />
+              </div>
+              <button className="export-btn" onClick={() => exportCSV("capacite")}>
+                <Download size={13} /> Exporter CSV
+              </button>
             </div>
 
             <div className="table-wrap">
@@ -534,52 +688,90 @@ export default function AdminReservationsClient({ reservations, paiements, excur
                   <tr>
                     <th>Excursion</th>
                     <th>Ville</th>
-                    <th>Prix / pers.</th>
-                    <th>Max places</th>
-                    <th>Réservées</th>
-                    <th>Disponibles</th>
+                    <th>Date réservation</th>
+                    <th>Heure</th>
+                    <th>Personnes réservées</th>
+                    <th>Capacité max</th>
+                    <th>Places disponibles</th>
                     <th>Remplissage</th>
+                    <th>Statut</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {excursions.map((exc) => {
-                    const booked = capacite[exc.id] || 0;
-                    const avail  = exc.max_people - booked;
-                    const pct    = Math.min(100, Math.round((booked / exc.max_people) * 100));
-                    const over   = booked > exc.max_people;
-                    const barColor = over ? "#E24B4A" : pct > 80 ? "#EF9F27" : "#1D9E75";
-
-                    return (
-                      <tr key={exc.id}>
-                        <td style={{ fontWeight: 600 }} title={exc.title}>{exc.title}</td>
-                        <td>{exc.city}</td>
-                        <td>{fmt(exc.price_per_person)}</td>
-                        <td style={{ textAlign: "center" }}>{exc.max_people}</td>
-                        <td style={{ textAlign: "center" }}>
-                          <span className={over ? "cap-over" : ""}>{booked}</span>
-                          {over && <span style={{ fontSize: 11, color: "#A32D2D", marginLeft: 4 }}>⚠ dépassé</span>}
-                        </td>
-                        <td style={{ textAlign: "center" }}>
-                          <span className={avail <= 0 ? "cap-over" : avail <= 2 ? "cap-low" : "cap-ok"}>
-                            {Math.max(0, avail)}
+                  {groupedCapRows.length === 0 ? (
+                    <tr>
+                      <td colSpan={9} style={{ textAlign: "center", padding: "3rem", color: "#9CA3AF" }}>
+                        Aucune donnée de capacité disponible
+                      </td>
+                    </tr>
+                  ) : groupedCapRows.map((group) => (
+                    <>
+                      {/* Group header row */}
+                      <tr key={`grp-${group.excursionId}`} className="group-header">
+                        <td colSpan={9}>
+                          {group.excursionTitle}
+                          <span style={{ fontWeight: 400, color: "#64748B", marginLeft: 10, fontSize: 11 }}>
+                            {group.excursionCity} · max {group.maxPeople} pers. / créneau · {group.slots.length} créneau{group.slots.length > 1 ? "x" : ""}
                           </span>
                         </td>
-                        <td>
-                          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                            <div className="progress-bar">
-                              <div className="progress-fill" style={{ width: `${Math.min(100, pct)}%`, background: barColor }} />
-                            </div>
-                            <span style={{ fontSize: 12, color: "#9CA3AF", minWidth: 30 }}>{pct}%</span>
-                          </div>
-                        </td>
                       </tr>
-                    );
-                  })}
-                  {excursions.length === 0 && (
-                    <tr><td colSpan={7} style={{ textAlign: "center", padding: "3rem", color: "#9CA3AF" }}>
-                      Aucune excursion active
-                    </td></tr>
-                  )}
+
+                      {/* Slot rows */}
+                      {group.slots.map((slot) => {
+                        const avail    = slot.maxPeople - slot.booked;
+                        const pct      = Math.min(100, Math.round((slot.booked / slot.maxPeople) * 100));
+                        const over     = slot.booked > slot.maxPeople;
+                        const isFull   = avail <= 0;
+                        const isLow    = !isFull && avail <= Math.ceil(slot.maxPeople * 0.2);
+                        const barColor = over ? "#E24B4A" : pct > 80 ? "#EF9F27" : "#1D9E75";
+
+                        const statusLabel = over ? "Dépassé ⚠" : isFull ? "Complet" : isLow ? "Quasi-plein" : "Disponible";
+                        const statusCls   = over || isFull ? "b-full" : isLow ? "b-low" : "b-available";
+
+                        return (
+                          <tr key={`${group.excursionId}-${slot.date}-${slot.time}`}>
+                            <td style={{ color: "#9CA3AF", paddingLeft: 28 }}>
+                              {/* empty — covered by group header */}
+                            </td>
+                            <td style={{ color: "#9CA3AF" }}>{group.excursionCity}</td>
+                            <td>
+                              <span className="slot-chip">
+                                <CalendarDays size={11} />
+                                {fmtDateShort(slot.date)}
+                              </span>
+                            </td>
+                            <td>
+                              <span className="time-chip">
+                                <Clock size={11} />
+                                {slot.time}
+                              </span>
+                            </td>
+                            <td style={{ textAlign: "center", fontWeight: 700, color: over ? "#A32D2D" : "#053366" }}>
+                              {slot.booked}
+                              {over && <span style={{ fontSize: 11, color: "#A32D2D", marginLeft: 4 }}>⚠</span>}
+                            </td>
+                            <td style={{ textAlign: "center", color: "#9CA3AF" }}>{slot.maxPeople}</td>
+                            <td style={{ textAlign: "center" }}>
+                              <span className={over || isFull ? "cap-over" : isLow ? "cap-low" : "cap-ok"}>
+                                {Math.max(0, avail)}
+                              </span>
+                            </td>
+                            <td>
+                              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                                <div className="progress-bar">
+                                  <div className="progress-fill" style={{ width: `${Math.min(100, pct)}%`, background: barColor }} />
+                                </div>
+                                <span style={{ fontSize: 12, color: "#9CA3AF", minWidth: 34 }}>{pct}%</span>
+                              </div>
+                            </td>
+                            <td>
+                              <span className={`badge ${statusCls}`}>{statusLabel}</span>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </>
+                  ))}
                 </tbody>
               </table>
             </div>

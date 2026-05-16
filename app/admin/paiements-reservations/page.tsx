@@ -219,12 +219,26 @@ export default async function AdminReservationsPage() {
         .order("title")
     : { data: [] };
 
-  /* ── Capacité : places prises par excursion (hors annulés) ── */
-  const capacite: Record<string, number> = {};
+  /* ──────────────────────────────────────────────
+     CAPACITÉ — groupée par (excursion_id, date, time)
+     Structure : capacite[excursion_id][`date|time`] = { booked, date, time }
+  ────────────────────────────────────────────── */
+  type SlotInfo = { booked: number; date: string; time: string };
+  const capacite: Record<string, Record<string, SlotInfo>> = {};
+
   reservations.forEach((r) => {
-    if (r.excursion?.id && r.status !== "cancelled") {
-      capacite[r.excursion.id] = (capacite[r.excursion.id] || 0) + r.people_count;
+    if (!r.excursion?.id || r.status === "cancelled") return;
+
+    const excId = r.excursion.id;
+    // Normalize time to HH:MM
+    const timeKey = r.time ? String(r.time).slice(0, 5) : "00:00";
+    const slotKey = `${r.date}|${timeKey}`;
+
+    if (!capacite[excId]) capacite[excId] = {};
+    if (!capacite[excId][slotKey]) {
+      capacite[excId][slotKey] = { booked: 0, date: r.date, time: timeKey };
     }
+    capacite[excId][slotKey].booked += r.people_count;
   });
 
   console.log(
@@ -236,7 +250,7 @@ export default async function AdminReservationsPage() {
       reservations={reservations as any}
       paiements={paiements as any}
       excursions={(excursions || []) as any}
-      capacite={capacite}
+      capacite={capacite as any}
     />
   );
 }
