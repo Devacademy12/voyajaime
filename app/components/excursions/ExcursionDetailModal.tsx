@@ -161,7 +161,7 @@ export function ExcursionDetailModal({ excursion, onClose, onAdd }: ExcursionDet
           </div>
 
           <div className="detail-price-section">
-            <span className="detail-price">{excursion.price_per_person} TND</span>
+            <span className="detail-price">{excursion.price_per_person} EUR</span>
             <span className="detail-price-unit">/ personne</span>
           </div>
 
