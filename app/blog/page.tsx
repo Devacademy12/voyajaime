@@ -202,7 +202,7 @@ export default async function BlogPage({
                 >
                   {featured.category}
                 </span>
-                <h2 style={{ fontFamily: "'Instrument Serif',serif", fontSize: "clamp(22px,2.8vw,30px)", fontWeight: 400, color: "#0D0F14", letterSpacing: "-0.5px", lineHeight: 1.2 }}>
+                <h2 style={{  fontSize: "clamp(22px,2.8vw,30px)", fontWeight: 400, color: "#0D0F14", letterSpacing: "-0.5px", lineHeight: 1.2 }}>
                   {featured.title}
                 </h2>
                 {featured.excerpt && (
@@ -251,7 +251,7 @@ export default async function BlogPage({
 
                     {/* Body */}
                     <div style={{ padding: "18px", flex: 1, display: "flex", flexDirection: "column", gap: 8 }}>
-                      <h3 style={{ fontFamily: "'Instrument Serif',serif", fontSize: 17, fontWeight: 400, color: "#0D0F14", lineHeight: 1.3, letterSpacing: "-0.1px", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
+                      <h3 style={{ fontSize: 17, fontWeight: 400, color: "#0D0F14", lineHeight: 1.3, letterSpacing: "-0.1px", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
                         {post.title}
                       </h3>
                       {post.excerpt && (
