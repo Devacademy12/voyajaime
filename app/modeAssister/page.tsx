@@ -799,6 +799,7 @@ export default function ModeAssiste() {
   return (
     <div className={styles.root}>
       <TouristeNav />
+       <div style={{ paddingTop: 64 }} />
 
       {/* ── DEBUG PANEL (bouton flottant bas-droite) ── */}
       <DebugPanel webhookUrl={N8N_WEBHOOK_URL} />

@@ -329,6 +329,7 @@ function ConfigInner() {
     <div className="ml-root">
       <style>{STYLE}</style>
       <TouristeNav />
+       <div style={{ paddingTop: 64 }} />
 
       {/* Topbar */}
       <div className="ml-topbar">

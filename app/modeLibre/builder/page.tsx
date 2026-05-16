@@ -586,7 +586,7 @@ function BuilderInner() {
   return (
     <div className={s.root}>
       <TouristeNav />
-      
+       <div style={{ paddingTop: 64 }} />
       {showDatePicker && <DatePickerModal />}
 
       {/* Toast */}
