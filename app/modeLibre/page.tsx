@@ -316,8 +316,6 @@ function ConfigInner() {
     params.set("cities", selCities.join(","));
     if (selCats.length > 0) params.set("cats", selCats.join(","));
     router.push(`/modeLibre/builder?${params.toString()}`);
-<<<<<<< HEAD
-=======
   };
 
   const canNext = step === 1 ? true : step === 2 ? selCities.length > 0 : true;
@@ -325,7 +323,6 @@ function ConfigInner() {
   const handleNext = () => {
     if (step < 3) setStep(s => s + 1);
     else goToBuilder();
->>>>>>> d054d46c19c78f382195c2d9ad8c870c99220b34
   };
 
   return (
