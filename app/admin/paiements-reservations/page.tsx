@@ -1,20 +1,30 @@
 import { createServerSupabaseClient } from "@/lib/supabaseServer";
+import { createClient } from "@supabase/supabase-js";
 import { redirect } from "next/navigation";
 import AdminReservationsClient from "./AdminReservationsClient";
 
-/* Supabase renvoie parfois un tableau même pour une FK unique (one-to-one) */
+/* ── Client service role : bypass RLS pour l'admin ── */
+function createAdminClient() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+  if (!url || !key) throw new Error("Variables Supabase manquantes");
+  return createClient(url, key, {
+    auth: { autoRefreshToken: false, persistSession: false },
+  });
+}
+
+/* Supabase renvoie parfois un tableau pour une FK one-to-one */
 function one<T>(v: T | T[] | null | undefined): T | null {
   if (!v) return null;
   return Array.isArray(v) ? (v[0] ?? null) : v;
 }
 
 export default async function AdminReservationsPage() {
+  /* ── 1. Vérifier que l'utilisateur est bien admin (avec le client normal) ── */
   const supabase = await createServerSupabaseClient();
   const { data: { user } } = await supabase.auth.getUser();
-
   if (!user) redirect("/login");
 
-  /* ── Vérifier rôle admin ── */
   const { data: adminProfile } = await supabase
     .from("profiles")
     .select("role")
@@ -23,11 +33,13 @@ export default async function AdminReservationsPage() {
 
   if (adminProfile?.role !== "admin") redirect("/");
 
-  /* ──────────────────────────────────────────────────────
-     1. RÉSERVATIONS
-     touriste_id → auth.users donc pas de jointure profiles
-  ────────────────────────────────────────────────────── */
-  const { data: resaRaw, error: resaError } = await supabase
+  /* ── 2. Toutes les requêtes admin utilisent le service role (bypass RLS) ── */
+  const admin = createAdminClient();
+
+  /* ──────────────────────────────────────────────
+     RÉSERVATIONS — tous les statuts, tous les utilisateurs
+  ────────────────────────────────────────────── */
+  const { data: resaRaw, error: resaError } = await admin
     .from("reservations")
     .select(`
       id, booking_code, date, time, people_count, touriste_id,
@@ -41,20 +53,21 @@ export default async function AdminReservationsPage() {
     .order("created_at", { ascending: false });
 
   if (resaError) {
+    console.error("[admin] reservations error:", resaError);
     return (
       <div style={{ padding: "3rem", textAlign: "center", color: "#EF4444" }}>
-        Erreur chargement réservations : {resaError.message}
+        Erreur réservations : {resaError.message}
       </div>
     );
   }
 
-  /* ── 2. Profils touristes (batch) ── */
+  /* ── Profils touristes en batch ── */
   const touristeIds = [
     ...new Set((resaRaw || []).map((r) => r.touriste_id).filter(Boolean)),
   ] as string[];
 
   const { data: touristesProfiles } = touristeIds.length
-    ? await supabase
+    ? await admin
         .from("profiles")
         .select("user_id, full_name, phone")
         .in("user_id", touristeIds)
@@ -65,9 +78,9 @@ export default async function AdminReservationsPage() {
     profilesMap[p.user_id] = { full_name: p.full_name, phone: p.phone };
   });
 
-  /* ── 3. Normaliser réservations ── */
+  /* ── Normaliser réservations ── */
   const reservations = (resaRaw || []).map((r) => {
-    const exc = one(r.excursion as any);
+    const exc = one(r.excursion as any) as any;
     return {
       id:             r.id,
       booking_code:   r.booking_code,
@@ -90,21 +103,21 @@ export default async function AdminReservationsPage() {
         : null,
       excursion: exc
         ? {
-            id:               (exc as any).id,
-            title:            (exc as any).title,
-            city:             (exc as any).city,
-            price_per_person: Number((exc as any).price_per_person),
-            max_people:       (exc as any).max_people,
-            prestataire_id:   (exc as any).prestataire_id,
+            id:               exc.id,
+            title:            exc.title,
+            city:             exc.city,
+            price_per_person: Number(exc.price_per_person),
+            max_people:       exc.max_people,
+            prestataire_id:   exc.prestataire_id,
           }
         : null,
     };
   });
 
-  /* ──────────────────────────────────────────────────────
-     4. PAIEMENTS
-  ────────────────────────────────────────────────────── */
-  const { data: paiementsRaw, error: payError } = await supabase
+  /* ──────────────────────────────────────────────
+     PAIEMENTS
+  ────────────────────────────────────────────── */
+  const { data: paiementsRaw, error: payError } = await admin
     .from("paiements")
     .select(`
       id, amount, platform_fee, net_amount, status, paid_at, created_at,
@@ -117,10 +130,10 @@ export default async function AdminReservationsPage() {
     .order("created_at", { ascending: false });
 
   if (payError) {
-    console.error("Erreur paiements:", payError.message);
+    console.error("[admin] paiements error:", payError);
   }
 
-  /* ── 5. Profils pour paiements (batch touristes + prestataires) ── */
+  /* ── Profils pour paiements (touristes + prestataires) en batch ── */
   const payTouristeIds = [
     ...new Set(
       (paiementsRaw || [])
@@ -130,13 +143,15 @@ export default async function AdminReservationsPage() {
   ] as string[];
 
   const prestatairesIds = [
-    ...new Set((paiementsRaw || []).map((p) => p.prestataire_id).filter(Boolean)),
+    ...new Set(
+      (paiementsRaw || []).map((p) => p.prestataire_id).filter(Boolean)
+    ),
   ] as string[];
 
   const allPayIds = [...new Set([...payTouristeIds, ...prestatairesIds])];
 
   const { data: payProfiles } = allPayIds.length
-    ? await supabase
+    ? await admin
         .from("profiles")
         .select("user_id, full_name, phone, agency_name")
         .in("user_id", allPayIds)
@@ -154,11 +169,11 @@ export default async function AdminReservationsPage() {
     };
   });
 
-  /* ── 6. Normaliser paiements ── */
+  /* ── Normaliser paiements ── */
   const paiements = (paiementsRaw || []).map((p) => {
-    const resa      = one(p.reservation as any) as any;
-    const resaExc   = resa ? one(resa.excursion as any) as any : null;
-    const touristeTid: string | null = resa?.touriste_id ?? null;
+    const resa     = one(p.reservation as any) as any;
+    const resaExc  = resa ? (one(resa.excursion as any) as any) : null;
+    const tid: string | null = resa?.touriste_id ?? null;
 
     return {
       id:           p.id,
@@ -175,8 +190,8 @@ export default async function AdminReservationsPage() {
             date:         resa.date,
             people_count: resa.people_count,
             total_price:  Number(resa.total_price),
-            touriste: touristeTid
-              ? (payProfilesMap[touristeTid] ?? { full_name: null, phone: null })
+            touriste: tid
+              ? (payProfilesMap[tid] ?? { full_name: null, phone: null })
               : null,
             excursion: resaExc
               ? { title: resaExc.title, city: resaExc.city }
@@ -189,29 +204,32 @@ export default async function AdminReservationsPage() {
     };
   });
 
-  /* ──────────────────────────────────────────────────────
-     7. EXCURSIONS pour onglet capacité
-     On prend uniquement celles qui ont des réservations
-  ────────────────────────────────────────────────────── */
+  /* ──────────────────────────────────────────────
+     EXCURSIONS — uniquement celles avec des réservations
+  ────────────────────────────────────────────── */
   const excursionIds = [
     ...new Set(reservations.map((r) => r.excursion?.id).filter(Boolean)),
   ] as string[];
 
   const { data: excursions } = excursionIds.length
-    ? await supabase
+    ? await admin
         .from("excursions")
         .select("id, title, city, max_people, price_per_person, is_active")
         .in("id", excursionIds)
         .order("title")
     : { data: [] };
 
-  /* ── 8. Capacité ── */
+  /* ── Capacité : places prises par excursion (hors annulés) ── */
   const capacite: Record<string, number> = {};
   reservations.forEach((r) => {
     if (r.excursion?.id && r.status !== "cancelled") {
       capacite[r.excursion.id] = (capacite[r.excursion.id] || 0) + r.people_count;
     }
   });
+
+  console.log(
+    `[admin] réservations: ${reservations.length} | paiements: ${paiements.length} | excursions: ${excursions?.length ?? 0}`
+  );
 
   return (
     <AdminReservationsClient
