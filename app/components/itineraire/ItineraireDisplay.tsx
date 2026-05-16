@@ -2,12 +2,10 @@
 
 import React, { useState } from "react";
 import {
-  MapPin, Clock, Globe, RefreshCw, ChevronLeft,
-  ChevronRight, CheckCircle, RotateCcw, Loader2,
-  Star, Users, Calendar, DollarSign, Camera,
-  Languages, Package, Heart, X, Sparkles, Map,
-  ArrowRight, Navigation, Bookmark, Share2,
-  ChevronDown, Tag, Timer, BadgeCheck,
+  MapPin, Clock, Globe, RefreshCw, ChevronLeft, ChevronRight,
+  CheckCircle, RotateCcw, Star, Users, Calendar, DollarSign,
+  Languages, BadgeCheck, Sparkles, Navigation, ArrowRight,
+  Timer, Camera, Heart, Save, X, ChevronDown,
 } from "lucide-react";
 
 /* ─── Types ─── */
@@ -18,21 +16,20 @@ type Activity = {
   inclusion?: string | string[]; city?: string;
   rating?: number; reviews_count?: number; max_people?: number;
 };
-
 type DayPlan = { day: number; city: string; theme?: string; emoji?: string; activities: Activity[] };
 type Itinerary = { title: string; days: DayPlan[] };
 
 type ItineraireDisplayProps = {
   itinerary: Itinerary;
   selectedCities: string[];
-  selectedCats: string[];
-  categories: { id: string; nom?: string; name?: string }[];
+  selectedCats?: string[];
+  categories?: { id: string; nom?: string; name?: string }[];
   excursions: {
     id: string; title: string; city: string;
     price_per_person?: number; duration_hours?: number;
     description?: string; categories?: string[];
     photos?: string[]; languages?: string[];
-    inclusions?: string[]; rating?: number;
+    inclusions?: string[]; rating?: number; reviews_count?: number;
   }[];
   totalPrice: number;
   saving: boolean;
@@ -52,465 +49,563 @@ function parseList(val?: string | string[]): string[] {
   return val.split(/[,;|]/).map(s => s.trim()).filter(Boolean);
 }
 function parsePhotos(val?: string | string[]): string[] {
-  if (!val) return [];
   return parseList(val).filter(u => u.startsWith("http") || u.startsWith("/"));
 }
-function formatPrice(price?: number): string {
-  if (!price) return "Gratuit";
-  return `${price} EUR`;
+function fmtPrice(price?: number) {
+  if (!price) return "Inclus";
+  return `${price} TND`;
 }
 
-/* ─── Styles ─── */
-const T = "#1a2e3b";   // primary text
-const M = "#5a7a8d";   // muted text
+/* ─── CSS ─── */
 const TEAL = "#2B96A8";
-const TEAL_LIGHT = "rgba(43,150,168,0.1)";
-const TEAL_BORDER = "rgba(43,150,168,0.25)";
-const BORDER = "#e8edf2";
-const BG = "#f5f8fa";
-const WHITE = "#ffffff";
-const CARD_SHADOW = "0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04)";
-const CARD_SHADOW_HOVER = "0 4px 12px rgba(0,0,0,0.1)";
+const STYLE = `
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@400;500;600;700;800&display=swap');
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 
-const css = {
-  root: {
-    minHeight: "100vh",
-    overflowY: "auto" as const,
-    background: BG,
-    color: T,
-    fontFamily: "'DM Sans', 'Outfit', system-ui, sans-serif",
-  } as React.CSSProperties,
-
-  /* ── Header ── */
-  header: {
-    background: WHITE,
-    borderBottom: `1px solid ${BORDER}`,
-    padding: "24px 32px 20px",
-    display: "flex", alignItems: "flex-start",
-    justifyContent: "space-between", gap: 16,
-    flexWrap: "wrap" as const,
-  },
-  headerLeft: { display: "flex", flexDirection: "column" as const, gap: 8 },
-  badge: {
-    display: "inline-flex", alignItems: "center", gap: 6,
-    background: TEAL_LIGHT, border: `1px solid ${TEAL_BORDER}`,
-    color: TEAL, borderRadius: 20, padding: "3px 10px",
-    fontSize: 11, fontWeight: 600, letterSpacing: "0.06em", width: "fit-content",
-  },
-  title: { fontSize: 22, fontWeight: 700, color: T, lineHeight: 1.3, margin: 0 },
-  metaRow: {
-    display: "flex", flexWrap: "wrap" as const, gap: 12,
-    alignItems: "center", fontSize: 12, color: M,
-  },
-  metaItem: { display: "flex", alignItems: "center", gap: 4 },
-
-  /* ── Buttons ── */
-  btnPrimary: {
-    display: "inline-flex", alignItems: "center", gap: 8,
-    background: TEAL, color: "#fff", border: "none", borderRadius: 12,
-    padding: "11px 22px", fontSize: 14, fontWeight: 600,
-    cursor: "pointer", transition: "all 0.2s",
-  } as React.CSSProperties,
-  btnSecondary: {
-    display: "inline-flex", alignItems: "center", gap: 8,
-    background: WHITE, border: `1px solid ${BORDER}`,
-    color: T, borderRadius: 12, padding: "10px 20px",
-    fontSize: 13, fontWeight: 500, cursor: "pointer",
-    boxShadow: CARD_SHADOW, transition: "all 0.2s",
-  } as React.CSSProperties,
-  btnGhost: {
-    display: "inline-flex", alignItems: "center", gap: 6,
-    background: "transparent", border: "none",
-    color: M, fontSize: 12, fontWeight: 500,
-    cursor: "pointer", padding: "6px 0",
-  } as React.CSSProperties,
-
-  /* ── Day tabs ── */
-  tabsWrap: {
-    overflowX: "auto" as const,
-    padding: "0 32px",
-    borderBottom: `1px solid ${BORDER}`,
-    display: "flex", gap: 4, background: WHITE,
-    scrollbarWidth: "none" as const,
-  },
-  tab: (active: boolean): React.CSSProperties => ({
-    display: "flex", flexDirection: "column", alignItems: "center",
-    padding: "14px 20px", gap: 3,
-    border: "none", background: "transparent",
-    borderBottom: active ? `2px solid ${TEAL}` : "2px solid transparent",
-    color: active ? TEAL : M,
-    cursor: "pointer", whiteSpace: "nowrap" as const,
-    fontSize: 13, fontWeight: active ? 600 : 400,
-    transition: "all 0.15s", minWidth: 80,
-  }),
-  tabDay: { fontSize: 13, fontWeight: 600 },
-  tabCity: { fontSize: 10, opacity: 0.75 },
-
-  /* ── Day banner ── */
-  dayBanner: {
-    margin: "20px 32px 0",
-    background: WHITE,
-    border: `1px solid ${BORDER}`,
-    borderRadius: 16,
-    padding: "18px 22px",
-    display: "flex", alignItems: "center", gap: 16,
-    boxShadow: CARD_SHADOW,
-  },
-  dayEmojiBox: {
-    width: 48, height: 48, borderRadius: 12,
-    background: TEAL_LIGHT,
-    display: "flex", alignItems: "center", justifyContent: "center",
-    fontSize: 22, flexShrink: 0,
-  },
-  dayBannerTitle: { fontSize: 17, fontWeight: 700, color: T, margin: 0 },
-  dayBannerTheme: { fontSize: 12, color: M, margin: "3px 0 0", fontStyle: "italic" },
-  dayBannerCount: {
-    marginLeft: "auto", display: "flex", alignItems: "center", gap: 5,
-    background: TEAL_LIGHT, border: `1px solid ${TEAL_BORDER}`,
-    borderRadius: 8, padding: "5px 10px",
-    fontSize: 12, color: TEAL, fontWeight: 600, flexShrink: 0,
-  },
-
-  /* ── Activity list — single column ── */
-  actGrid: {
-    display: "flex",
-    flexDirection: "column" as const,
-    gap: 12,
-    padding: "20px 32px 0",
-  },
-
-  /* ── Activity card — full-width horizontal ── */
-  actCard: {
-    display: "flex", gap: 0,
-    background: WHITE,
-    border: `1px solid ${BORDER}`,
-    borderRadius: 16, overflow: "hidden",
-    boxShadow: CARD_SHADOW,
-    transition: "box-shadow 0.2s, border-color 0.2s",
-    minHeight: 150,
-  },
-
-  /* Left image column */
-  actThumbCol: {
-    width: 200, flexShrink: 0, position: "relative" as const,
-    overflow: "hidden",
-  },
-  actThumbImg: {
-    width: "100%", height: "100%", objectFit: "cover" as const,
-    display: "block",
-  },
-  actThumbPlaceholder: {
-    width: "100%", height: "100%", minHeight: 150,
-    background: BG, border: "none",
-    display: "flex", alignItems: "center", justifyContent: "center",
-    color: "#b0c4cf", flexDirection: "column" as const, gap: 6, fontSize: 11,
-  },
-  actTimeBadge: {
-    position: "absolute" as const, bottom: 8, left: 8,
-    background: "rgba(43,150,168,0.92)", color: "#fff",
-    borderRadius: 6, padding: "3px 8px",
-    fontSize: 10, fontWeight: 700, letterSpacing: "0.04em",
-  },
-
-  /* Right content column */
-  actContent: {
-    flex: 1, display: "flex", flexDirection: "column" as const,
-    padding: "14px 18px", minWidth: 0, gap: 0,
-  },
-  actNameRow: {
-    display: "flex", alignItems: "flex-start",
-    justifyContent: "space-between", gap: 10, marginBottom: 6,
-  },
-  actName: { fontSize: 15, fontWeight: 700, color: T, margin: 0, flex: 1, lineHeight: 1.35 },
-  pricePill: (free: boolean): React.CSSProperties => ({
-    display: "inline-flex", alignItems: "center", gap: 4,
-    background: free ? "rgba(5,150,105,0.1)" : TEAL_LIGHT,
-    border: `1px solid ${free ? "rgba(5,150,105,0.25)" : TEAL_BORDER}`,
-    color: free ? "#059669" : TEAL,
-    borderRadius: 8, padding: "3px 10px",
-    fontSize: 13, fontWeight: 700, flexShrink: 0, whiteSpace: "nowrap" as const,
-  }),
-  actMetaRow: { display: "flex", flexWrap: "wrap" as const, gap: 6, marginBottom: 8 },
-  actMetaChip: {
-    display: "inline-flex", alignItems: "center", gap: 4,
-    background: BG, border: `1px solid ${BORDER}`,
-    borderRadius: 6, padding: "3px 8px", fontSize: 11, color: M,
-  },
-  actDesc: {
-    fontSize: 12, color: M, lineHeight: 1.55, margin: "0 0 8px",
-    display: "-webkit-box" as const,
-    WebkitLineClamp: 3, WebkitBoxOrient: "vertical" as const, overflow: "hidden",
-  },
-  tagsRow: { display: "flex", flexWrap: "wrap" as const, gap: 5, marginBottom: 8 },
-  tag: (bg: string, color: string): React.CSSProperties => ({
-    display: "inline-flex", alignItems: "center", gap: 4,
-    background: bg, border: `1px solid ${color}22`,
-    borderRadius: 6, padding: "2px 8px", fontSize: 10, fontWeight: 500, color,
-  }),
-  actFooter: {
-    display: "flex", alignItems: "center", justifyContent: "space-between",
-    marginTop: "auto", paddingTop: 8,
-    borderTop: `1px solid ${BORDER}`,
-  },
-  changeBtn: {
-    display: "inline-flex", alignItems: "center", gap: 5,
-    background: WHITE, border: `1px solid ${BORDER}`,
-    color: M, borderRadius: 8, padding: "6px 12px",
-    fontSize: 11, fontWeight: 500, cursor: "pointer",
-    boxShadow: "0 1px 2px rgba(0,0,0,0.04)",
-  } as React.CSSProperties,
-  ratingBadge: { display: "inline-flex", alignItems: "center", gap: 4, fontSize: 12, color: "#f59e0b", fontWeight: 600 },
-
-  /* ── Alt Picker ── */
-  altPanel: {
-    background: WHITE, border: `1px solid ${TEAL_BORDER}`,
-    borderRadius: 16, overflow: "hidden",
-    boxShadow: CARD_SHADOW,
-  },
-  altHeader: {
-    display: "flex", alignItems: "center", justifyContent: "space-between",
-    padding: "14px 18px", borderBottom: `1px solid ${BORDER}`,
-    background: TEAL_LIGHT,
-  },
-  altTitle: { fontSize: 13, fontWeight: 600, color: T, margin: 0 },
-  closeBtn: {
-    background: WHITE, border: `1px solid ${BORDER}`,
-    color: M, borderRadius: 6, width: 26, height: 26,
-    display: "flex", alignItems: "center", justifyContent: "center",
-    cursor: "pointer",
-  } as React.CSSProperties,
-  altList: { display: "flex", flexDirection: "column" as const },
-  altCard: {
-    display: "flex", alignItems: "center", gap: 12,
-    padding: "12px 18px", borderBottom: `1px solid ${BORDER}`,
-    cursor: "pointer", transition: "background 0.15s",
-  } as React.CSSProperties,
-  altThumb: {
-    width: 48, height: 48, borderRadius: 8,
-    objectFit: "cover" as const, flexShrink: 0,
-    border: `1px solid ${BORDER}`,
-  },
-  altName: { fontSize: 13, fontWeight: 600, color: T },
-  altPrice: (free: boolean): React.CSSProperties => ({
-    fontSize: 11, fontWeight: 700, color: free ? "#059669" : TEAL,
-  }),
-  altMeta: { fontSize: 11, color: M, marginTop: 2 },
-  altDesc: {
-    fontSize: 11, color: "#8aa8bc",
-    display: "-webkit-box" as const, WebkitLineClamp: 1,
-    WebkitBoxOrient: "vertical" as const, overflow: "hidden",
-  },
-
-  /* ── Day nav ── */
-  dayNav: {
-    display: "flex", justifyContent: "space-between", alignItems: "center",
-    padding: "20px 32px 0", gap: 12,
-  },
-
-  /* ── Footer recap ── */
-  recap: {
-    margin: "24px 32px 32px",
-    background: WHITE,
-    border: `1px solid ${BORDER}`,
-    borderRadius: 18, padding: "20px 24px",
-    display: "flex", flexWrap: "wrap" as const,
-    alignItems: "center", gap: 20,
-    boxShadow: CARD_SHADOW,
-  },
-  recapPrice: { display: "flex", flexDirection: "column" as const, gap: 2 },
-  recapLabel: { fontSize: 11, color: M, fontWeight: 500, letterSpacing: "0.05em" },
-  recapAmount: { fontSize: 28, fontWeight: 800, color: TEAL, lineHeight: 1 },
-  recapSuffix: { fontSize: 13, color: M, fontWeight: 500 },
-  recapNote: { fontSize: 10, color: "#b0c4cf", marginTop: 2 },
-  recapActions: {
-    marginLeft: "auto", display: "flex", alignItems: "center",
-    gap: 10, flexWrap: "wrap" as const,
-  },
-  saveBtn: (status: string, saving: boolean): React.CSSProperties => ({
-    display: "inline-flex", alignItems: "center", gap: 8,
-    background: status === "ok" ? "rgba(5,150,105,0.1)" : TEAL,
-    border: status === "ok" ? "1px solid rgba(5,150,105,0.25)" : "none",
-    color: status === "ok" ? "#059669" : "#fff",
-    borderRadius: 12, padding: "11px 20px",
-    fontSize: 14, fontWeight: 600,
-    cursor: saving ? "not-allowed" : "pointer",
-    opacity: saving ? 0.7 : 1, transition: "all 0.2s",
-  }),
-  feedback: (status: string): React.CSSProperties => ({
-    width: "100%", padding: "10px 14px", borderRadius: 10,
-    background: status === "ok" ? "rgba(5,150,105,0.08)" :
-                status === "error" ? "rgba(239,68,68,0.08)" : "rgba(245,158,11,0.08)",
-    border: `1px solid ${status === "ok" ? "rgba(5,150,105,0.2)" :
-      status === "error" ? "rgba(239,68,68,0.2)" : "rgba(245,158,11,0.2)"}`,
-    color: status === "ok" ? "#059669" : status === "error" ? "#dc2626" : "#d97706",
-    fontSize: 12, display: "flex", alignItems: "center", gap: 8,
-  }),
-  spin: { animation: "spin 1s linear infinite" } as React.CSSProperties,
-} as const;
-
-/* ─── Compact Thumbnail ─── */
-function ActivityThumb({ photos, time }: { photos: string[]; time?: string }) {
-  const [idx, setIdx] = useState(0);
-  if (!photos.length) return (
-    <div style={css.actThumbPlaceholder}>
-      <Camera size={22} /><span>Aucune photo</span>
-    </div>
-  );
-  return (
-    <div style={{ position: "relative", height: "100%", minHeight: 150 }}>
-      <img src={photos[idx]} alt="" style={css.actThumbImg} />
-      {time && <div style={css.actTimeBadge}>{time}</div>}
-      {photos.length > 1 && (
-        <div style={{ position: "absolute", top: 6, right: 6, display: "flex", gap: 4 }}>
-          <button
-            style={{ background: "rgba(0,0,0,0.45)", border: "none", color: "#fff", borderRadius: 4, width: 20, height: 20, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", padding: 0 }}
-            onClick={e => { e.stopPropagation(); setIdx((idx - 1 + photos.length) % photos.length); }}
-          ><ChevronLeft size={11} /></button>
-          <button
-            style={{ background: "rgba(0,0,0,0.45)", border: "none", color: "#fff", borderRadius: 4, width: 20, height: 20, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", padding: 0 }}
-            onClick={e => { e.stopPropagation(); setIdx((idx + 1) % photos.length); }}
-          ><ChevronRight size={11} /></button>
-        </div>
-      )}
-      {photos.length > 1 && (
-        <div style={{ position: "absolute", bottom: 8, right: 8, background: "rgba(0,0,0,0.45)", color: "#fff", borderRadius: 4, padding: "2px 6px", fontSize: 9 }}>
-          {idx + 1}/{photos.length}
-        </div>
-      )}
-    </div>
-  );
+.itin-root {
+  min-height: 100vh;
+  background: #F5F8FA;
+  font-family: 'DM Sans', system-ui, sans-serif;
+  color: #1a2e3b;
 }
 
-/* ─── Activity Card — full-width horizontal ─── */
-function ActivityCard({ activity, onEdit }: { activity: Activity; onEdit: () => void }) {
-  const [hovered, setHovered] = useState(false);
-  const photos = parsePhotos(activity.photos);
+/* ── Header ── */
+.itin-header {
+  background: white;
+  border-bottom: 1px solid #e8edf2;
+  padding: 24px 40px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap;
+  box-shadow: 0 2px 12px rgba(0,0,0,.04);
+}
+.itin-badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: rgba(43,150,168,.1);
+  border: 1px solid rgba(43,150,168,.2);
+  color: #2B96A8; border-radius: 20px;
+  padding: 3px 12px; font-size: 11px; font-weight: 700;
+  letter-spacing: .06em; margin-bottom: 8px;
+}
+.itin-title {
+  font-family: 'Playfair Display', serif;
+  font-size: 24px; font-weight: 900; color: #111827;
+  margin-bottom: 10px; line-height: 1.3;
+}
+.itin-meta {
+  display: flex; flex-wrap: wrap; gap: 16px;
+  font-size: 13px; color: #6B7280;
+}
+.itin-meta span {
+  display: flex; align-items: center; gap: 5px;
+}
+.itin-header-actions {
+  display: flex; gap: 10px; align-items: center; flex-shrink: 0;
+}
+.itin-btn-ghost {
+  display: flex; align-items: center; gap: 7px;
+  padding: 10px 18px; border-radius: 11px;
+  border: 1.5px solid #E5E7EB; background: white;
+  color: #374151; font-size: 13px; font-weight: 600;
+  cursor: pointer; font-family: inherit; transition: all .15s;
+}
+.itin-btn-ghost:hover { border-color: #2B96A8; color: #2B96A8; }
+.itin-btn-primary {
+  display: flex; align-items: center; gap: 7px;
+  padding: 10px 22px; border-radius: 11px;
+  background: #2B96A8; border: none;
+  color: white; font-size: 13px; font-weight: 700;
+  cursor: pointer; font-family: inherit;
+  box-shadow: 0 4px 12px rgba(43,150,168,.3);
+  transition: all .2s;
+}
+.itin-btn-primary:hover { background: #248899; box-shadow: 0 6px 18px rgba(43,150,168,.4); }
+
+/* ── Day tabs ── */
+.itin-tabs {
+  background: white;
+  border-bottom: 1px solid #e8edf2;
+  padding: 0 40px;
+  display: flex;
+  gap: 4px;
+  overflow-x: auto;
+}
+.itin-tabs::-webkit-scrollbar { height: 3px; }
+.itin-tab {
+  display: flex; flex-direction: column;
+  align-items: center; padding: 14px 20px;
+  border: none; background: none; cursor: pointer;
+  font-family: inherit; border-bottom: 3px solid transparent;
+  transition: all .2s; white-space: nowrap; min-width: 80px;
+}
+.itin-tab:hover { background: rgba(43,150,168,.04); }
+.itin-tab.active { border-bottom-color: #2B96A8; }
+.itin-tab-day {
+  font-size: 11px; font-weight: 700; color: #9CA3AF;
+  text-transform: uppercase; letter-spacing: .06em;
+}
+.itin-tab.active .itin-tab-day { color: #2B96A8; }
+.itin-tab-city { font-size: 13px; font-weight: 700; color: #374151; margin-top: 2px; }
+.itin-tab.active .itin-tab-city { color: #111827; }
+.itin-tab-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: #E5E7EB; margin-top: 4px;
+}
+.itin-tab.active .itin-tab-dot { background: #2B96A8; }
+
+/* ── Day header ── */
+.itin-day-header {
+  background: linear-gradient(135deg, #0F172A 0%, #1a3a4a 100%);
+  padding: 28px 40px;
+  display: flex; align-items: center; gap: 18px;
+  position: relative; overflow: hidden;
+}
+.itin-day-header::after {
+  content: '';
+  position: absolute; top: 0; right: 0;
+  width: 200px; height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(43,150,168,.1));
+}
+.itin-day-emoji {
+  width: 56px; height: 56px; border-radius: 16px;
+  background: rgba(255,255,255,.08);
+  border: 1px solid rgba(255,255,255,.12);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 26px; flex-shrink: 0;
+}
+.itin-day-title {
+  font-family: 'Playfair Display', serif;
+  font-size: 22px; font-weight: 900; color: white;
+}
+.itin-day-theme {
+  font-size: 13px; color: rgba(255,255,255,.55); margin-top: 4px;
+}
+.itin-day-count {
+  margin-left: auto;
+  display: flex; align-items: center; gap: 6px;
+  padding: 6px 14px; border-radius: 20px;
+  background: rgba(43,150,168,.25);
+  border: 1px solid rgba(43,150,168,.4);
+  font-size: 12px; font-weight: 700; color: #7EDCED;
+  flex-shrink: 0; z-index: 1;
+}
+
+/* ── Activities list ── */
+.itin-acts {
+  padding: 32px 40px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  max-width: 900px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+/* ── Activity card ── */
+.itin-act-card {
+  background: white;
+  border-radius: 20px;
+  border: 1px solid #e8edf2;
+  box-shadow: 0 2px 8px rgba(0,0,0,.05);
+  overflow: hidden;
+  transition: all .25s;
+}
+.itin-act-card:hover {
+  box-shadow: 0 8px 24px rgba(0,0,0,.1);
+  transform: translateY(-2px);
+  border-color: rgba(43,150,168,.25);
+}
+
+/* Timeline dot */
+.itin-act-time-row {
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px 24px;
+  background: linear-gradient(135deg, #F8FAFB, #F0F4F7);
+  border-bottom: 1px solid #EEF1F5;
+}
+.itin-act-time-dot {
+  width: 32px; height: 32px; border-radius: 10px;
+  background: #2B96A8;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.itin-act-time-label {
+  font-size: 13px; font-weight: 800; color: #2B96A8; letter-spacing: .02em;
+}
+.itin-act-num {
+  margin-left: auto;
+  width: 24px; height: 24px; border-radius: 8px;
+  background: rgba(43,150,168,.1); color: #2B96A8;
+  font-size: 11px; font-weight: 800;
+  display: flex; align-items: center; justify-content: center;
+}
+
+/* Card body */
+.itin-act-body {
+  display: flex; gap: 0;
+}
+.itin-act-photo {
+  width: 200px; flex-shrink: 0;
+  position: relative; overflow: hidden;
+  background: linear-gradient(135deg, #1a3a4a, #0F172A);
+}
+.itin-act-photo img {
+  width: 100%; height: 100%; object-fit: cover;
+  transition: transform .4s;
+}
+.itin-act-card:hover .itin-act-photo img { transform: scale(1.05); }
+.itin-act-photo-placeholder {
+  width: 100%; height: 100%;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 8px; color: rgba(255,255,255,.35);
+  font-size: 11px; font-weight: 600;
+  min-height: 180px;
+}
+.itin-act-photo-overlay {
+  position: absolute; inset: 0;
+  background: linear-gradient(to right, transparent 60%, white);
+}
+
+/* Card content */
+.itin-act-content {
+  flex: 1; padding: 20px 24px;
+  display: flex; flex-direction: column; gap: 10px;
+}
+.itin-act-name-row {
+  display: flex; align-items: flex-start;
+  justify-content: space-between; gap: 12px;
+}
+.itin-act-name {
+  font-family: 'Playfair Display', serif;
+  font-size: 18px; font-weight: 700; color: #111827;
+  line-height: 1.3; flex: 1;
+}
+.itin-price-pill {
+  padding: 5px 12px; border-radius: 20px;
+  font-size: 13px; font-weight: 800;
+  flex-shrink: 0;
+  background: rgba(43,150,168,.1);
+  color: #2B96A8;
+  border: 1px solid rgba(43,150,168,.2);
+}
+.itin-price-pill.free {
+  background: rgba(16,185,129,.1);
+  color: #059669;
+  border-color: rgba(16,185,129,.2);
+}
+
+/* Meta chips */
+.itin-act-meta {
+  display: flex; flex-wrap: wrap; gap: 7px;
+}
+.itin-chip {
+  display: flex; align-items: center; gap: 4px;
+  padding: 4px 10px; border-radius: 8px;
+  font-size: 12px; font-weight: 600;
+  background: #F3F4F6; color: #6B7280;
+}
+
+/* Description */
+.itin-act-desc {
+  font-size: 13px; color: #6B7280; line-height: 1.7;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Tags */
+.itin-tags { display: flex; flex-wrap: wrap; gap: 6px; }
+.itin-tag {
+  display: flex; align-items: center; gap: 4px;
+  padding: 3px 9px; border-radius: 6px;
+  font-size: 11px; font-weight: 600;
+}
+.itin-tag-lang { background: rgba(43,150,168,.08); color: #2B96A8; }
+.itin-tag-inc  { background: #F3F4F6; color: #6B7280; }
+
+/* Footer */
+.itin-act-footer {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-top: auto; padding-top: 8px;
+  border-top: 1px solid #F3F4F6;
+}
+.itin-rating {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 13px; font-weight: 700; color: #111827;
+}
+.itin-change-btn {
+  display: flex; align-items: center; gap: 6px;
+  padding: 7px 14px; border-radius: 9px;
+  border: 1.5px solid #E5E7EB; background: white;
+  color: #6B7280; font-size: 12px; font-weight: 600;
+  cursor: pointer; font-family: inherit; transition: all .15s;
+}
+.itin-change-btn:hover { border-color: #2B96A8; color: #2B96A8; background: rgba(43,150,168,.04); }
+
+/* ── Total bar ── */
+.itin-total-bar {
+  background: white; border-top: 1px solid #e8edf2;
+  padding: 20px 40px;
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 16px; flex-wrap: wrap;
+  box-shadow: 0 -4px 16px rgba(0,0,0,.04);
+  position: sticky; bottom: 0; z-index: 10;
+}
+.itin-total-label { font-size: 13px; color: #6B7280; font-weight: 500; }
+.itin-total-amount {
+  font-family: 'Playfair Display', serif;
+  font-size: 28px; font-weight: 900; color: #111827;
+}
+.itin-total-amount span { font-size: 14px; color: #9CA3AF; font-weight: 400; margin-left: 4px; }
+.itin-total-actions { display: flex; gap: 10px; }
+
+/* ── Alternative picker modal ── */
+.itin-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,.6);
+  backdrop-filter: blur(6px);
+  z-index: 1000;
+  display: flex; align-items: center; justify-content: center;
+  padding: 20px;
+}
+.itin-alt-box {
+  background: white; border-radius: 24px;
+  width: 100%; max-width: 560px;
+  max-height: 80vh; overflow-y: auto;
+  box-shadow: 0 24px 80px rgba(0,0,0,.25);
+  animation: itin-slide-up .25s ease;
+}
+@keyframes itin-slide-up {
+  from { opacity: 0; transform: translateY(24px); }
+  to   { opacity: 1; transform: none; }
+}
+.itin-alt-header {
+  padding: 20px 24px;
+  border-bottom: 1px solid #F3F4F6;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.itin-alt-title { font-size: 16px; font-weight: 800; color: #111827; }
+.itin-close-btn {
+  width: 32px; height: 32px; border-radius: 8px;
+  border: none; background: #F3F4F6;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; transition: background .15s;
+}
+.itin-close-btn:hover { background: #E5E7EB; }
+.itin-alt-list { padding: 16px; display: flex; flex-direction: column; gap: 10px; }
+.itin-alt-item {
+  display: flex; gap: 14px; padding: 14px; border-radius: 14px;
+  border: 1.5px solid #E5E7EB; cursor: pointer;
+  transition: all .15s; align-items: center;
+}
+.itin-alt-item:hover { border-color: #2B96A8; background: rgba(43,150,168,.03); }
+.itin-alt-thumb {
+  width: 64px; height: 64px; border-radius: 10px;
+  overflow: hidden; flex-shrink: 0; background: #F3F4F6;
+}
+.itin-alt-thumb img { width: 100%; height: 100%; object-fit: cover; }
+.itin-alt-name { font-size: 14px; font-weight: 700; color: #111827; margin-bottom: 4px; }
+.itin-alt-meta { font-size: 12px; color: #6B7280; display: flex; gap: 8px; flex-wrap: wrap; }
+
+/* Save status */
+.itin-save-ok    { color: #059669; }
+.itin-save-err   { color: #DC2626; }
+.itin-save-login { color: #D97706; }
+
+@keyframes spin { to { transform: rotate(360deg); } }
+`;
+
+/* ─── ActivityCard ─── */
+function ActivityCard({
+  activity, actIdx, onEdit,
+}: { activity: Activity; actIdx: number; onEdit: () => void }) {
+  const photos    = parsePhotos(activity.photos);
   const languages = parseList(activity.languages);
   const inclusions = parseList(activity.inclusion);
-  const price = activity.price || 0;
-  const free = price === 0;
+  const price  = activity.price || 0;
+  const free   = price === 0;
+  const photo  = photos[0];
 
   return (
-    <div
-      style={{ ...css.actCard, boxShadow: hovered ? CARD_SHADOW_HOVER : CARD_SHADOW, borderColor: hovered ? TEAL_BORDER : BORDER }}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-    >
-      {/* Left: image */}
-      <div style={css.actThumbCol}>
-        <ActivityThumb photos={photos} time={activity.time} />
+    <div className="itin-act-card">
+      {/* Time row */}
+      <div className="itin-act-time-row">
+        <div className="itin-act-time-dot">
+          <Timer size={14} color="white" />
+        </div>
+        <span className="itin-act-time-label">
+          {activity.time || `Activité ${actIdx + 1}`}
+        </span>
+        <div className="itin-act-num">{actIdx + 1}</div>
       </div>
 
-      {/* Right: full details */}
-      <div style={css.actContent}>
-        {/* Name + price */}
-        <div style={css.actNameRow}>
-          <h4 style={css.actName}>{activity.name}</h4>
-          <span style={css.pricePill(free)}>
-            <DollarSign size={12} />{formatPrice(price)}
-          </span>
+      {/* Body */}
+      <div className="itin-act-body">
+        {/* Photo */}
+        <div className="itin-act-photo" style={{ minHeight: 180 }}>
+          {photo ? (
+            <>
+              <img src={photo} alt={activity.name} loading="lazy" />
+              <div className="itin-act-photo-overlay" />
+            </>
+          ) : (
+            <div className="itin-act-photo-placeholder">
+              <Camera size={28} strokeWidth={1.5} />
+              <span>Photo</span>
+            </div>
+          )}
         </div>
 
-        {/* Meta chips */}
-        <div style={css.actMetaRow}>
-          {activity.duration && <span style={css.actMetaChip}><Timer size={11} />{activity.duration}</span>}
-          {activity.city && <span style={css.actMetaChip}><MapPin size={11} />{activity.city}</span>}
-          {activity.max_people && <span style={css.actMetaChip}><Users size={11} />Max {activity.max_people}</span>}
-        </div>
-
-        {/* Description — 3 lines */}
-        {activity.description && <p style={css.actDesc}>{activity.description}</p>}
-
-        {/* Tags: languages + inclusions */}
-        <div style={css.tagsRow}>
-          {languages.slice(0, 4).map((l, i) => (
-            <span key={i} style={css.tag(TEAL_LIGHT, TEAL)}><Globe size={10} />{l}</span>
-          ))}
-          {inclusions.slice(0, 4).map((inc, i) => (
-            <span key={i} style={css.tag(BG, M)}><BadgeCheck size={10} />{inc}</span>
-          ))}
-        </div>
-
-        {/* Footer */}
-        <div style={css.actFooter}>
-          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-            {activity.rating ? (
-              <span style={css.ratingBadge}>
-                <Star size={12} fill="#f59e0b" />
-                {activity.rating}
-                {activity.reviews_count && (
-                  <span style={{ color: M, fontWeight: 400, fontSize: 11 }}>({activity.reviews_count} avis)</span>
-                )}
-              </span>
-            ) : null}
+        {/* Content */}
+        <div className="itin-act-content">
+          {/* Name + price */}
+          <div className="itin-act-name-row">
+            <h4 className="itin-act-name">{activity.name}</h4>
+            <span className={`itin-price-pill ${free ? "free" : ""}`}>
+              {free ? "Inclus" : `${price} TND`}
+            </span>
           </div>
-          <button style={css.changeBtn} onClick={onEdit}>
-            <RefreshCw size={11} />Changer l&apos;activité
-          </button>
+
+          {/* Meta chips */}
+          <div className="itin-act-meta">
+            {activity.duration && (
+              <span className="itin-chip">
+                <Clock size={11} color="#2B96A8" /> {activity.duration}
+              </span>
+            )}
+            {activity.city && (
+              <span className="itin-chip">
+                <MapPin size={11} color="#2B96A8" /> {activity.city}
+              </span>
+            )}
+            {activity.max_people && (
+              <span className="itin-chip">
+                <Users size={11} /> Max {activity.max_people} pers.
+              </span>
+            )}
+          </div>
+
+          {/* Description */}
+          {activity.description && (
+            <p className="itin-act-desc">{activity.description}</p>
+          )}
+
+          {/* Tags */}
+          {(languages.length > 0 || inclusions.length > 0) && (
+            <div className="itin-tags">
+              {languages.slice(0, 3).map((l, i) => (
+                <span key={i} className="itin-tag itin-tag-lang">
+                  <Globe size={10} /> {l}
+                </span>
+              ))}
+              {inclusions.slice(0, 3).map((inc, i) => (
+                <span key={i} className="itin-tag itin-tag-inc">
+                  <BadgeCheck size={10} /> {inc}
+                </span>
+              ))}
+            </div>
+          )}
+
+          {/* Footer */}
+          <div className="itin-act-footer">
+            <div className="itin-rating">
+              {activity.rating ? (
+                <>
+                  <Star size={14} fill="#F59E0B" color="#F59E0B" />
+                  <span>{activity.rating}</span>
+                  {activity.reviews_count && (
+                    <span style={{ fontWeight: 400, color: "#9CA3AF", fontSize: 12 }}>
+                      ({activity.reviews_count} avis)
+                    </span>
+                  )}
+                </>
+              ) : (
+                <span style={{ color: "#D1D5DB", fontSize: 12 }}>Pas encore noté</span>
+              )}
+            </div>
+            <button className="itin-change-btn" onClick={onEdit}>
+              <RefreshCw size={11} /> Changer
+            </button>
+          </div>
         </div>
       </div>
     </div>
   );
 }
 
-/* ─── Alternative Picker ─── */
+/* ─── AlternativePicker ─── */
 function AlternativePicker({ alternatives, currentName, onPick, onClose }: {
-  alternatives: Activity[]; currentName: string;
-  onPick: (alt: Activity) => void; onClose: () => void;
+  alternatives: { id: string; title: string; city: string; price_per_person?: number;
+    duration_hours?: number; photos?: string[]; rating?: number }[];
+  currentName: string;
+  onPick: (alt: Activity) => void;
+  onClose: () => void;
 }) {
   return (
-    <div style={css.altPanel}>
-      <div style={css.altHeader}>
-        <h5 style={css.altTitle}>
-          <RefreshCw size={12} style={{ display: "inline", marginRight: 6, color: TEAL }} />
-          Remplacer &quot;{currentName}&quot;
-        </h5>
-        <button style={css.closeBtn} onClick={onClose}><X size={13} /></button>
-      </div>
-      {!alternatives.length ? (
-        <p style={{ textAlign: "center", padding: 20, color: M, fontSize: 12 }}>
-          Aucune alternative disponible dans cette ville.
-        </p>
-      ) : (
-        <div style={css.altList}>
-          {alternatives.map((alt, idx) => {
-            const photos = parsePhotos(alt.photos);
-            const price = alt.price || 0;
-            return (
-              <div
-                key={idx} style={css.altCard}
-                onClick={() => onPick(alt)}
-                onMouseEnter={e => (e.currentTarget.style.background = TEAL_LIGHT)}
-                onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
-              >
-                {photos[0]
-                  ? <img src={photos[0]} alt={alt.name} style={css.altThumb} />
-                  : <div style={{ ...css.altThumb, background: BG, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                      <Camera size={14} style={{ color: "#b0c4cf" }} />
-                    </div>
-                }
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", gap: 8, marginBottom: 3 }}>
-                    <span style={css.altName}>{alt.name}</span>
-                    <span style={css.altPrice(price === 0)}>{formatPrice(price)}</span>
-                  </div>
-                  <div style={css.altMeta}>
-                    {alt.duration && <span>{alt.duration}</span>}
-                    {alt.city && <span> · {alt.city}</span>}
-                  </div>
-                  {alt.description && <div style={css.altDesc}>{alt.description}</div>}
-                </div>
-                <ArrowRight size={14} style={{ color: TEAL, flexShrink: 0 }} />
-              </div>
-            );
-          })}
+    <div className="itin-overlay" onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
+      <div className="itin-alt-box">
+        <div className="itin-alt-header">
+          <div>
+            <div className="itin-alt-title">Choisir une alternative</div>
+            <div style={{ fontSize: 12, color: "#9CA3AF", marginTop: 3 }}>
+              Remplace « {currentName} »
+            </div>
+          </div>
+          <button className="itin-close-btn" onClick={onClose}>
+            <X size={16} color="#6B7280" />
+          </button>
         </div>
-      )}
+        {alternatives.length === 0 ? (
+          <div style={{ padding: "40px 24px", textAlign: "center", color: "#9CA3AF" }}>
+            <Camera size={32} strokeWidth={1.5} style={{ marginBottom: 12, opacity: .4 }} />
+            <p>Aucune alternative disponible dans cette ville</p>
+          </div>
+        ) : (
+          <div className="itin-alt-list">
+            {alternatives.map(exc => (
+              <div key={exc.id} className="itin-alt-item"
+                onClick={() => onPick({
+                  id: exc.id, name: exc.title, city: exc.city,
+                  price: exc.price_per_person || 0,
+                  duration: exc.duration_hours ? `${exc.duration_hours}h` : "2h",
+                  photos: exc.photos, rating: exc.rating,
+                })}>
+                <div className="itin-alt-thumb">
+                  {exc.photos?.[0]
+                    ? <img src={exc.photos[0]} alt={exc.title} />
+                    : <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                        <Camera size={20} color="#D1D5DB" />
+                      </div>
+                  }
+                </div>
+                <div style={{ flex: 1 }}>
+                  <div className="itin-alt-name">{exc.title}</div>
+                  <div className="itin-alt-meta">
+                    {exc.price_per_person && <span>{exc.price_per_person} TND</span>}
+                    {exc.duration_hours && <span>{exc.duration_hours}h</span>}
+                    {exc.rating && (
+                      <span style={{ display: "flex", alignItems: "center", gap: 3 }}>
+                        <Star size={10} fill="#F59E0B" color="#F59E0B" /> {exc.rating}
+                      </span>
+                    )}
+                  </div>
+                </div>
+                <ArrowRight size={16} color="#2B96A8" />
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
 
-/* ════════════════════ MAIN ════════════════════ */
+/* ═══════════════════════════════════════════════ */
+
 export default function ItineraireDisplay({
   itinerary, selectedCities, excursions, totalPrice,
   saving, saveStatus, onBack, onReset, onCheckout, onSave, onChangeActivity,
@@ -521,172 +616,148 @@ export default function ItineraireDisplay({
   const currentDay = itinerary.days[activeDay];
   const totalActivities = itinerary.days.reduce((s, d) => s + d.activities.length, 0);
 
-  const getAlternatives = (): Activity[] => {
+  const getAlternatives = () => {
     if (!editing) return [];
     const day = itinerary.days[editing.dayIdx];
-    const currentAct = day.activities[editing.actIdx];
+    const cur = day.activities[editing.actIdx];
     return excursions
-      .filter(e => e.city === day.city && e.id !== currentAct.id)
-      .slice(0, 6)
-      .map(e => ({
-        id: e.id, name: e.title, description: e.description,
-        duration: e.duration_hours ? `${e.duration_hours}h` : "2h",
-        price: e.price_per_person || 0,
-        photos: e.photos, languages: e.languages,
-        inclusion: e.inclusions, city: e.city, rating: e.rating,
-        time: currentAct.time,
-      }));
+      .filter(e => e.city === day.city && e.id !== cur.id)
+      .slice(0, 8);
   };
 
   return (
-    <div style={css.root}>
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap');
-        @keyframes spin { to { transform: rotate(360deg); } }
-        html, body, #__next, #root { height: 100%; margin: 0; padding: 0; }
-        body { overflow: hidden; }
-        ::-webkit-scrollbar { width: 5px; height: 4px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: ${TEAL_BORDER}; border-radius: 3px; }
-      `}</style>
+    <div className="itin-root">
+      <style>{STYLE}</style>
 
-      {/* ── HEADER ── */}
-      <div style={css.header}>
-        <div style={css.headerLeft}>
-          <div style={css.badge}><Sparkles size={11} />Itinéraire IA</div>
-          <h2 style={css.title}>{itinerary.title}</h2>
-          <div style={css.metaRow}>
-            <span style={css.metaItem}><Calendar size={12} style={{ color: TEAL }} />{itinerary.days.length} jours</span>
-            <span style={{ color: BORDER }}>·</span>
-            <span style={css.metaItem}><Navigation size={12} style={{ color: TEAL }} />{selectedCities.join(" → ")}</span>
-            <span style={{ color: BORDER }}>·</span>
-            <span style={css.metaItem}><CheckCircle size={12} style={{ color: TEAL }} />{totalActivities} activités</span>
+      {/* Header */}
+      <div className="itin-header">
+        <div>
+          <div className="itin-badge"><Sparkles size={11} /> Itinéraire généré</div>
+          <h1 className="itin-title">{itinerary.title}</h1>
+          <div className="itin-meta">
+            <span><Calendar size={13} color={TEAL} /> {itinerary.days.length} jours</span>
+            <span>·</span>
+            <span><Navigation size={13} color={TEAL} /> {selectedCities.join(" → ")}</span>
+            <span>·</span>
+            <span><CheckCircle size={13} color={TEAL} /> {totalActivities} activités</span>
           </div>
         </div>
-        <button
-          style={css.btnSecondary}
-          onClick={onBack}
-          onMouseEnter={e => (e.currentTarget.style.boxShadow = CARD_SHADOW_HOVER)}
-          onMouseLeave={e => (e.currentTarget.style.boxShadow = CARD_SHADOW)}
-        >
-          <RefreshCw size={14} />Modifier
-        </button>
+        <div className="itin-header-actions">
+          <button className="itin-btn-ghost" onClick={onReset}>
+            <RotateCcw size={14} /> Recommencer
+          </button>
+          <button className="itin-btn-ghost" onClick={onBack}>
+            <ChevronLeft size={14} /> Modifier
+          </button>
+          <button className="itin-btn-ghost" onClick={onSave} disabled={saving}>
+            <Save size={14} />
+            {saving ? "..." : saveStatus === "ok" ? "✓ Sauvegardé" : "Sauvegarder"}
+          </button>
+        </div>
       </div>
 
-      {/* ── DAY TABS ── */}
-      <div style={css.tabsWrap}>
+      {/* Day tabs */}
+      <div className="itin-tabs">
         {itinerary.days.map((day, idx) => (
-          <button
-            key={idx}
-            style={css.tab(activeDay === idx)}
-            onClick={() => { setActiveDay(idx); setEditing(null); }}
-          >
-            <span style={css.tabDay}>Jour {day.day}</span>
-            <span style={css.tabCity}>{day.city}</span>
+          <button key={idx}
+            className={`itin-tab ${activeDay === idx ? "active" : ""}`}
+            onClick={() => { setActiveDay(idx); setEditing(null); }}>
+            <span className="itin-tab-day">Jour {day.day}</span>
+            <span className="itin-tab-city">{day.city}</span>
+            <div className="itin-tab-dot" />
           </button>
         ))}
       </div>
 
-      {/* ── DAY BANNER ── */}
-      <div style={css.dayBanner}>
-        <div style={css.dayEmojiBox}>{currentDay.emoji || "🗺️"}</div>
+      {/* Day header */}
+      <div className="itin-day-header">
+        <div className="itin-day-emoji">{currentDay.emoji || "🗺️"}</div>
         <div>
-          <h3 style={css.dayBannerTitle}>Jour {currentDay.day} — {currentDay.city}</h3>
-          {currentDay.theme && <p style={css.dayBannerTheme}>{currentDay.theme}</p>}
+          <h2 className="itin-day-title">
+            Jour {currentDay.day} — {currentDay.city}
+          </h2>
+          {currentDay.theme && (
+            <p className="itin-day-theme">{currentDay.theme}</p>
+          )}
         </div>
-        <div style={css.dayBannerCount}>
-          <CheckCircle size={12} />
+        <div className="itin-day-count">
+          <CheckCircle size={13} />
           {currentDay.activities.length} activité{currentDay.activities.length > 1 ? "s" : ""}
         </div>
       </div>
 
-      {/* ── ACTIVITIES GRID ── */}
-      <div style={css.actGrid}>
-        {currentDay.activities.map((activity, actIdx) => (
-          <div key={activity.id || actIdx}>
-            {editing?.dayIdx === activeDay && editing?.actIdx === actIdx ? (
-              <AlternativePicker
-                alternatives={getAlternatives()}
-                currentName={activity.name}
-                onPick={alt => { onChangeActivity(activeDay, actIdx, alt); setEditing(null); }}
-                onClose={() => setEditing(null)}
-              />
-            ) : (
-              <ActivityCard
-                activity={activity}
-                onEdit={() => setEditing({ dayIdx: activeDay, actIdx })}
-              />
-            )}
+      {/* Activities */}
+      <div className="itin-acts">
+        {currentDay.activities.length === 0 ? (
+          <div style={{
+            textAlign: "center", padding: "60px 20px",
+            background: "white", borderRadius: 20, border: "1px dashed #E5E7EB",
+          }}>
+            <Camera size={40} strokeWidth={1.5} color="#D1D5DB" style={{ marginBottom: 12 }} />
+            <p style={{ color: "#9CA3AF", fontSize: 15 }}>Aucune activité pour cette journée</p>
           </div>
-        ))}
-      </div>
-
-      {/* ── DAY NAVIGATION ── */}
-      <div style={css.dayNav}>
-        <button
-          style={{ ...css.btnSecondary, opacity: activeDay === 0 ? 0.4 : 1 }}
-          onClick={() => activeDay > 0 && setActiveDay(activeDay - 1)}
-          disabled={activeDay === 0}
-        >
-          <ChevronLeft size={14} />Précédent
-        </button>
-
-        {activeDay < itinerary.days.length - 1 ? (
-          <button
-            style={css.btnPrimary}
-            onClick={() => setActiveDay(activeDay + 1)}
-            onMouseEnter={e => (e.currentTarget.style.background = "#249aac")}
-            onMouseLeave={e => (e.currentTarget.style.background = TEAL)}
-          >
-            Jour suivant<ChevronRight size={14} />
-          </button>
         ) : (
-          <button
-            style={{ ...css.btnPrimary, background: "#059669" }}
-            onClick={onCheckout}
-          >
-            <Map size={14} />Finaliser la réservation
-          </button>
+          currentDay.activities.map((act, actIdx) => (
+            <ActivityCard
+              key={act.id || actIdx}
+              activity={act}
+              actIdx={actIdx}
+              onEdit={() => setEditing({ dayIdx: activeDay, actIdx })}
+            />
+          ))
         )}
-      </div>
 
-      {/* ── RECAP FOOTER ── */}
-      <div style={css.recap}>
-        <div style={css.recapPrice}>
-          <span style={css.recapLabel}>TOTAL ESTIMÉ</span>
-          <div style={{ display: "flex", alignItems: "baseline", gap: 4 }}>
-            <span style={css.recapAmount}>{totalPrice}</span>
-            <span style={css.recapSuffix}>EUR</span>
-          </div>
-          <span style={css.recapNote}>*Par personne, hors options</span>
-        </div>
-
-        <div style={css.recapActions}>
-          <button style={css.btnGhost} onClick={onReset}>
-            <RotateCcw size={12} />Nouvel itinéraire
-          </button>
-          <button style={css.saveBtn(saveStatus, saving)} onClick={onSave} disabled={saving}>
-            {saving ? (<><Loader2 size={14} style={css.spin} />Sauvegarde…</>)
-              : saveStatus === "ok" ? (<><CheckCircle size={14} />Sauvegardé</>)
-              : (<><Bookmark size={14} />Sauvegarder</>)}
+        {/* Nav jours */}
+        <div style={{ display: "flex", justifyContent: "space-between", gap: 10, marginTop: 8 }}>
+          <button
+            className="itin-btn-ghost"
+            disabled={activeDay === 0}
+            onClick={() => setActiveDay(p => p - 1)}
+            style={{ opacity: activeDay === 0 ? .4 : 1 }}>
+            <ChevronLeft size={15} /> Jour précédent
           </button>
           <button
-            style={css.btnPrimary} onClick={onCheckout}
-            onMouseEnter={e => (e.currentTarget.style.background = "#249aac")}
-            onMouseLeave={e => (e.currentTarget.style.background = TEAL)}
-          >
-            <Map size={14} />Réserver
+            className="itin-btn-ghost"
+            disabled={activeDay === itinerary.days.length - 1}
+            onClick={() => setActiveDay(p => p + 1)}
+            style={{ opacity: activeDay === itinerary.days.length - 1 ? .4 : 1 }}>
+            Jour suivant <ChevronRight size={15} />
           </button>
         </div>
-
-        {saveStatus !== "idle" && (
-          <div style={css.feedback(saveStatus)}>
-            {saveStatus === "ok" && <><CheckCircle size={13} /> Itinéraire sauvegardé avec succès !</>}
-            {saveStatus === "error" && "Erreur lors de la sauvegarde. Réessayez."}
-            {saveStatus === "login" && "Connectez-vous pour sauvegarder votre itinéraire."}
-          </div>
-        )}
       </div>
+
+      {/* Total bar */}
+      <div className="itin-total-bar">
+        <div>
+          <div className="itin-total-label">Total estimé</div>
+          <div className="itin-total-amount">
+            {totalPrice} <span>TND</span>
+          </div>
+        </div>
+        <div className="itin-total-actions">
+          {saveStatus === "login" && (
+            <span className="itin-save-login" style={{ fontSize: 13, fontWeight: 600 }}>
+              Connectez-vous pour sauvegarder
+            </span>
+          )}
+          <button className="itin-btn-primary" onClick={onCheckout}>
+            <Heart size={14} /> Réserver l'itinéraire
+          </button>
+        </div>
+      </div>
+
+      {/* Alternative picker */}
+      {editing && (
+        <AlternativePicker
+          alternatives={getAlternatives()}
+          currentName={itinerary.days[editing.dayIdx].activities[editing.actIdx].name}
+          onPick={(alt) => {
+            onChangeActivity(editing.dayIdx, editing.actIdx, alt);
+            setEditing(null);
+          }}
+          onClose={() => setEditing(null)}
+        />
+      )}
     </div>
   );
 }

@@ -9,7 +9,7 @@ import CheckoutModal from "@/app/components/excursions/CheckoutModal";
 import {
   Heart, MapPin, Clock, Users, Star, MessageCircle,
   ChevronLeft, ChevronRight, Check, Globe, Send, X,
-  Lock, ShieldCheck, RefreshCcw, HeadphonesIcon,
+  Minus, Plus, Lock, ShieldCheck, RefreshCcw, HeadphonesIcon,
   ThumbsUp, CalendarDays, Tag, Camera, ChevronDown, ChevronUp, Loader2,
   Sparkles, Award, ArrowRight, AlertCircle, Backpack, Ban, Info,
   Mountain, Baby, Navigation,
@@ -130,7 +130,7 @@ const DIFFICULTY_CONFIG: Record<
   },
 };
 
-// ── Helper: safely format a date value of any type (handles jsonb from Supabase) ──
+// Helper: safely format a date value of any type (handles jsonb from Supabase)
 function formatDate(date: unknown): string {
   try {
     if (date === null || date === undefined) return "";
@@ -138,10 +138,8 @@ function formatDate(date: unknown): string {
     let str: string;
 
     if (date instanceof Date) {
-      // Native Date object
       str = date.toISOString();
     } else if (typeof date === "object") {
-      // jsonb object from Supabase e.g. { date: "2025-06-15" } or a plain ISO string wrapped
       const obj = date as Record<string, unknown>;
       const inner = obj.date ?? obj.value ?? obj.day ?? Object.values(obj)[0];
       str = String(inner ?? "");
@@ -149,7 +147,6 @@ function formatDate(date: unknown): string {
       str = String(date);
     }
 
-    // Extract YYYY-MM-DD part only (strip time/timezone)
     const datePart = str.split("T")[0];
     const [y, m, d] = datePart.split("-").map(Number);
     if (!y || !m || !d) return str;
@@ -448,7 +445,7 @@ export default function ExcursionClient({
 
       <div className="exc-container">
 
-        {/* ── Title block ── */}
+        {/* Title block */}
         <div className="exc-title-block">
           <div className="exc-title-inner">
             <div className="exc-categories">
@@ -535,12 +532,10 @@ export default function ExcursionClient({
           </div>
         </div>
 
-        {/* ── Main grid ── */}
+        {/* Main grid */}
         <div className="exc-grid">
 
-          {/* ════════════════════════════════
-              LEFT COLUMN
-          ════════════════════════════════ */}
+          {/* LEFT COLUMN */}
           <div className="exc-left">
 
             {/* Gallery */}
@@ -703,7 +698,7 @@ export default function ExcursionClient({
               )}
             </div>
 
-            {/* ── Informations pratiques ── */}
+            {/* Informations pratiques */}
             {(exc.meeting_point ||
               exc.depart_time ||
               exc.difficulty ||
@@ -881,8 +876,7 @@ export default function ExcursionClient({
               </div>
             )}
 
-          
-            {/* ── REVIEWS SECTION ── */}
+            {/* REVIEWS SECTION */}
             <div>
               <div className="exc-reviews-header">
                 <div className="exc-reviews-title-group">
@@ -1189,9 +1183,7 @@ export default function ExcursionClient({
             </div>
           </div>
 
-          {/* ════════════════════════════════
-              RIGHT SIDEBAR
-          ════════════════════════════════ */}
+          {/* RIGHT SIDEBAR */}
           <div className="exc-right">
 
             {/* Booking card */}
@@ -1474,7 +1466,7 @@ export default function ExcursionClient({
         </div>
       </div>
 
-      {/* ── MODAL MESSAGE ── */}
+      {/* MODAL MESSAGE */}
       {showMsgModal && (
         <div
           className="overlay"
@@ -1602,13 +1594,13 @@ export default function ExcursionClient({
         </div>
       )}
 
-      {/* ── MODAL RESERVATION ── */}
+      {/* MODAL RESERVATION */}
       {showCheckout && (
         <CheckoutModal exc={exc} onClose={() => setShowCheckout(false)}
         />
       )}
 
-      {/* ── MODAL PRESTATAIRE ── */}
+      {/* MODAL PRESTATAIRE */}
       {showPrestataire && prestataire && (
         <div
           className="overlay"
