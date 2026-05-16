@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { createClient } from "@/lib/supabaseClient";
-import { ExcursionDetailModal } from "@/app/components/excursions/ExcursionDetailModal";
+import  Checkoutmodal  from "@/app/components/itineraire/Checkoutmodalitineraire";
 import TouristeNav from "@/app/components/touriste/TouristeNav";
 import ItineraireDisplay from "@/app/components/itineraire/ItineraireDisplay";
 import {
@@ -1101,7 +1101,11 @@ export default function ModeAssiste() {
       </main>
 
       {showCheckout && itineraryAsExc && (
-        <ExcursionDetailModal excursion={itineraryAsExc as any} onClose={() => setShowCheckout(false)} />
+        <Checkoutmodal
+          excursions={[itineraryAsExc]}
+          itineraireTitle={itinerary?.title}
+          onClose={() => setShowCheckout(false)}
+        />
       )}
     </div>
   );
