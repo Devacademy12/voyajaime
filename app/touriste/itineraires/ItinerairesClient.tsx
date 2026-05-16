@@ -8,7 +8,7 @@ import {
   MapPin, Clock, CalendarDays, Coins, Sunrise, Sun,
   Moon, Loader2, AlertCircle, FileText, ShoppingCart,
   Bot, PenLine, Image as ImageIcon, ExternalLink,
-  Calendar, Flag,
+  Calendar, Flag, Users, Star, ArrowRight,
 } from "lucide-react";
 import CheckoutModalItineraire from "@/app/components/itineraire/Checkoutmodalitineraire";
 
@@ -60,12 +60,11 @@ type ExcursionForCheckout = {
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
-const TIME_ICON = {
-  matin: <Sunrise size={11} color="#F59E0B" />,
-  aprem: <Sun size={11} color="#2B96A8" />,
-  soir:  <Moon size={11} color="#8B5CF6" />,
+const TIME_CONFIG = {
+  matin: { icon: <Sunrise size={12} />, label: "Matin",      color: "#F59E0B", bg: "#FFFBEB", border: "#FDE68A" },
+  aprem: { icon: <Sun size={12} />,     label: "Après-midi", color: "#2B96A8", bg: "#EFF9FB", border: "#BAE6FD" },
+  soir:  { icon: <Moon size={12} />,    label: "Soir",       color: "#8B5CF6", bg: "#F5F3FF", border: "#DDD6FE" },
 };
-const TIME_LABEL = { matin: "Matin", aprem: "Après-midi", soir: "Soir" };
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -128,95 +127,247 @@ function formatDate(dateStr: string) {
 
 const RESPONSIVE_CSS = `
   @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@400;500;600;700;800&display=swap');
-  @keyframes fadeUp { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
-  @keyframes spin   { to{transform:rotate(360deg)} }
+
+  @keyframes fadeUp   { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
+  @keyframes fadeIn   { from{opacity:0} to{opacity:1} }
+  @keyframes spin     { to{transform:rotate(360deg)} }
+  @keyframes shimmer  { 0%{background-position:-200% 0} 100%{background-position:200% 0} }
+  @keyframes slideDown{ from{opacity:0;transform:translateY(-8px)} to{opacity:1;transform:translateY(0)} }
+
+  *, *::before, *::after { box-sizing: border-box; }
 
   .it-wrap {
     font-family: 'DM Sans', system-ui, sans-serif;
-    padding: 36px 48px 60px;
-    max-width: 1200px;
+    padding: 36px 48px 80px;
+    max-width: 1100px;
     margin: 0 auto;
     width: 100%;
-    box-sizing: border-box;
   }
-  .it-card { animation:fadeUp .22s ease both; transition:box-shadow .2s,transform .18s; }
-  .it-card:hover { box-shadow:0 8px 28px -8px rgba(43,150,168,.2)!important; transform:translateY(-2px); }
-  .it-btn { transition:all .15s; cursor:pointer; font-family:inherit; border:none; outline:none; }
+
+  /* ── Itinerary card ── */
+  .it-card {
+    animation: fadeUp .28s cubic-bezier(.16,1,.3,1) both;
+    background: #ffffff;
+    border-radius: 24px;
+    border: 1.5px solid #E5E7EB;
+    overflow: hidden;
+    box-shadow: 0 2px 12px rgba(0,0,0,.04);
+    transition: box-shadow .22s, transform .22s;
+  }
+  .it-card:hover { box-shadow: 0 10px 36px -8px rgba(43,150,168,.18); transform: translateY(-2px); }
+
+  .it-card-header {
+    padding: 20px 24px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    cursor: pointer;
+    user-select: none;
+  }
+  .it-card-meta  { flex: 1; min-width: 0; }
+  .it-card-actions { display: flex; gap: 8px; flex-shrink: 0; align-items: center; flex-wrap: wrap; }
+
+  .it-btn { transition: all .15s; cursor: pointer; font-family: inherit; border: none; outline: none; }
 
   .it-reserve-all-btn {
-    display:inline-flex; align-items:center; gap:6px;
-    padding:8px 16px;
-    background:linear-gradient(135deg,#2B96A8,#1e7a8a);
-    color:white; border:none; border-radius:20px;
-    font-size:12px; font-weight:700; cursor:pointer;
-    font-family:'DM Sans',sans-serif; transition:all .18s;
-    flex-shrink:0; white-space:nowrap;
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 9px 18px;
+    background: linear-gradient(135deg,#2B96A8,#1e7a8a);
+    color: white; border: none; border-radius: 22px;
+    font-size: 12px; font-weight: 700; cursor: pointer;
+    font-family: 'DM Sans',sans-serif; transition: all .18s;
+    flex-shrink: 0; white-space: nowrap;
+    box-shadow: 0 2px 10px rgba(43,150,168,.3);
   }
-  .it-reserve-all-btn:hover { transform:translateY(-1px); box-shadow:0 4px 14px rgba(43,150,168,.4); }
-  .it-reserve-all-btn:disabled { background:#E5E7EB; color:#9CA3AF; cursor:not-allowed; transform:none; box-shadow:none; }
+  .it-reserve-all-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 18px rgba(43,150,168,.45); }
+  .it-reserve-all-btn:disabled { background: #E5E7EB; color: #9CA3AF; cursor: not-allowed; transform: none; box-shadow: none; }
 
-  .act-row {
-    display:flex; align-items:flex-start; gap:10px;
-    padding:12px 14px; background:#F9FAFB; border-radius:14px;
-    margin-bottom:8px; border:1.5px solid #F3F4F6; transition:border .15s;
+  /* ── Day section ── */
+  .it-day-section {
+    animation: slideDown .22s ease both;
+    margin-bottom: 28px;
   }
-  .act-row:hover { border-color:#2B96A8; background:#F8FAFF; }
+  .it-day-header {
+    display: flex; align-items: center; gap: 10px;
+    margin-bottom: 14px;
+    padding: 10px 14px;
+    background: linear-gradient(90deg, #F0FDFF, #F8FEFF);
+    border-radius: 14px;
+    border-left: 4px solid #2B96A8;
+  }
 
-  .act-photo {
-    width:64px; height:64px; border-radius:12px; object-fit:cover;
-    flex-shrink:0; border:1px solid #EEF2FF; cursor:pointer;
+  /* ── Excursion card (new rich design) ── */
+  .exc-card {
+    display: flex;
+    gap: 0;
+    background: #fff;
+    border-radius: 18px;
+    border: 1.5px solid #E5E7EB;
+    overflow: hidden;
+    margin-bottom: 12px;
+    transition: border-color .2s, box-shadow .2s, transform .2s;
+    animation: fadeUp .25s ease both;
   }
-  .act-photo-placeholder {
-    width:64px; height:64px; border-radius:12px; flex-shrink:0;
-    background:#EEF2FF; display:flex; align-items:center; justify-content:center;
-    border:1px solid #DCE5FF; cursor:pointer;
+  .exc-card:hover {
+    border-color: #2B96A8;
+    box-shadow: 0 6px 28px -6px rgba(43,150,168,.2);
+    transform: translateY(-2px);
   }
-  .excursion-title { cursor:pointer; transition:color .15s; }
-  .excursion-title:hover { color:#2B96A8; }
-  .info-badge {
-    display:inline-flex; align-items:center; gap:4px;
-    padding:3px 8px; background:white; border-radius:20px;
-    font-size:10px; font-weight:600; color:#374151; border:1px solid #E5E7EB;
+
+  /* Image panel */
+  .exc-img-panel {
+    position: relative;
+    width: 180px;
+    min-width: 180px;
+    flex-shrink: 0;
+    overflow: hidden;
+    background: #EEF2FF;
+    cursor: pointer;
   }
-  .it-card-header {
-    padding:20px 24px;
-    display:flex; align-items:center; gap:14px;
-    cursor:pointer;
+  .exc-img-panel img {
+    width: 100%; height: 100%;
+    object-fit: cover;
+    transition: transform .4s cubic-bezier(.25,.46,.45,.94);
+    display: block;
   }
-  .it-card-meta { flex:1; min-width:0; }
-  .it-card-actions { display:flex; gap:8px; flex-shrink:0; align-items:center; }
-  .it-page-header {
-    display:flex; justify-content:space-between; align-items:flex-start;
-    margin-bottom:32px;
+  .exc-card:hover .exc-img-panel img { transform: scale(1.06); }
+
+  .exc-img-placeholder {
+    width: 100%; height: 100%; min-height: 160px;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 8px;
+    background: linear-gradient(135deg, #EEF2FF, #E0E7FF);
+    cursor: pointer;
+  }
+
+  .exc-time-badge {
+    position: absolute; top: 10px; left: 10px;
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 4px 10px; border-radius: 20px;
+    font-size: 10px; font-weight: 700;
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(255,255,255,.4);
+  }
+
+  .exc-price-badge {
+    position: absolute; bottom: 10px; right: 10px;
+    background: rgba(0,0,0,.65);
+    color: white;
+    padding: 4px 10px; border-radius: 12px;
+    font-size: 11px; font-weight: 800;
+    backdrop-filter: blur(6px);
+    letter-spacing: .3px;
+  }
+
+  /* Content panel */
+  .exc-content {
+    flex: 1; min-width: 0;
+    padding: 16px 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+
+  .exc-title {
+    font-size: 15px; font-weight: 800; color: #0F172A;
+    margin: 0 0 6px;
+    cursor: pointer;
+    transition: color .15s;
+    line-height: 1.3;
+    display: flex; align-items: flex-start; gap: 6px;
+  }
+  .exc-title:hover { color: #2B96A8; }
+
+  .exc-city-row {
+    display: flex; align-items: center; gap: 4px;
+    font-size: 11px; color: #6B7280; font-weight: 500;
+    margin-bottom: 10px;
+  }
+
+  .exc-chips {
+    display: flex; flex-wrap: wrap; gap: 6px;
+    margin-bottom: 10px;
+  }
+  .exc-chip {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 4px 10px;
+    background: #F8FAFC; border: 1px solid #E2E8F0;
+    border-radius: 20px; font-size: 11px; font-weight: 600;
+    color: #374151; white-space: nowrap;
+  }
+  .exc-chip.green { background: #F0FDF4; border-color: #BBF7D0; color: #065F46; }
+  .exc-chip.blue  { background: #EFF9FB; border-color: #BAE6FD; color: #0369A1; }
+
+  .exc-info-row {
+    display: flex; align-items: center; gap: 6px;
+    padding: 6px 10px; border-radius: 10px;
+    font-size: 11px; font-weight: 600;
+    margin-bottom: 6px;
+  }
+  .exc-info-row.date { background: #F0FDF4; color: #065F46; border: 1px solid #D1FAE5; }
+  .exc-info-row.place { background: #FFF7ED; color: #9A3412; border: 1px solid #FED7AA; }
+
+  .exc-note {
+    font-size: 11px; color: #9CA3AF; font-style: italic;
+    display: flex; align-items: flex-start; gap: 4px;
+    margin-top: 4px; line-height: 1.5;
+  }
+
+  .exc-footer {
+    margin-top: auto; padding-top: 12px;
+    display: flex; align-items: center; justify-content: space-between;
+    border-top: 1px solid #F3F4F6;
   }
 
   .btn-voir-detail {
-    margin-top: 10px; padding: 6px 14px; background: white;
-    border: 1.5px solid #2B96A8; border-radius: 20px;
-    font-size: 11px; font-weight: 700; color: #2B96A8; cursor: pointer;
-    display: inline-flex; align-items: center; gap: 5px; transition: all .18s;
-    font-family: 'DM Sans', sans-serif; text-decoration: none;
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 7px 14px;
+    background: white; border: 1.5px solid #2B96A8;
+    border-radius: 22px; font-size: 11px; font-weight: 700;
+    color: #2B96A8; cursor: pointer; text-decoration: none;
+    transition: all .18s; font-family: 'DM Sans', sans-serif;
   }
-  .btn-voir-detail:hover { background: #2B96A8; color: white; box-shadow: 0 3px 10px rgba(43,150,168,.3); transform: translateY(-1px); }
+  .btn-voir-detail:hover { background: #2B96A8; color: white; box-shadow: 0 3px 12px rgba(43,150,168,.35); transform: translateY(-1px); }
   .btn-voir-detail:disabled,
-  .btn-voir-detail[data-unavailable="true"] { border-color: #E5E7EB; color: #9CA3AF; cursor: not-allowed; transform: none; box-shadow: none; }
-  .btn-voir-detail[data-unavailable="true"]:hover { background: #F9FAFB; color: #9CA3AF; }
+  .btn-voir-detail[data-unavailable="true"] { border-color: #E5E7EB; color: #D1D5DB; cursor: not-allowed; transform: none; }
+  .btn-voir-detail[data-unavailable="true"]:hover { background: white; color: #D1D5DB; box-shadow: none; }
 
-  @media (max-width: 900px) { .it-wrap { padding: 24px 24px 48px; } }
-  @media (max-width: 640px) {
-    .it-wrap { padding: 16px 12px 40px; }
-    .it-card-header { flex-wrap:wrap; gap:10px; padding:14px 14px; }
-    .it-card-actions { width:100%; flex-wrap:wrap; gap:6px; justify-content:flex-start; padding-top:4px; }
-    .it-card-actions a, .it-card-actions button { font-size:11px !important; padding:6px 10px !important; }
-    .it-reserve-all-btn { font-size:11px; padding:7px 12px; }
-    .act-photo, .act-photo-placeholder { width:50px; height:50px; border-radius:10px; }
-    .it-day-block { padding-left:10px !important; }
-    .it-detail { padding: 0 14px 14px !important; }
+  /* Page header */
+  .it-page-header {
+    display: flex; justify-content: space-between; align-items: flex-start;
+    margin-bottom: 32px;
   }
-  @media (max-width: 380px) {
-    .it-wrap { padding: 12px 8px 32px; }
-    .it-card-header { padding: 12px 10px; }
-    .it-reserve-all-btn { width:100%; justify-content:center; }
+
+  /* ── Mobile ── */
+  @media (max-width: 768px) {
+    .it-wrap { padding: 16px 14px 60px; }
+    .it-card-header { padding: 14px 16px; flex-wrap: wrap; }
+    .it-card-actions { width: 100%; justify-content: flex-start; padding-top: 4px; }
+
+    /* Stack excursion card on mobile */
+    .exc-card { flex-direction: column; }
+    .exc-img-panel {
+      width: 100%; min-width: 100%;
+      height: 180px;
+    }
+    .exc-img-placeholder { min-height: 140px; }
+    .exc-content { padding: 14px 14px 14px; }
+    .exc-title { font-size: 14px; }
+    .exc-footer { flex-wrap: wrap; gap: 8px; }
+
+    .it-detail { padding: 0 14px 16px !important; }
+    .it-day-header { padding: 8px 12px; border-radius: 12px; }
+    .it-reserve-all-btn { font-size: 11px; padding: 8px 14px; }
+  }
+
+  @media (max-width: 480px) {
+    .it-wrap { padding: 12px 10px 48px; }
+    .exc-img-panel { height: 160px; }
+    .it-card-actions button, .it-card-actions a {
+      font-size: 11px !important;
+      padding: 7px 12px !important;
+    }
+    .it-reserve-all-btn { width: 100%; justify-content: center; }
   }
 `;
 
@@ -232,12 +383,10 @@ export default function ItinerairesClient() {
   const [deleting, setDeleting] = useState<string | null>(null);
   const [expanded, setExpanded] = useState<string | null>(null);
 
-  // Cache enrichi au chargement
   const [excPhotos,  setExcPhotos]  = useState<Record<string, string[]>>({});
   const [excDetails, setExcDetails] = useState<Record<string, any>>({});
   const [titleToId,  setTitleToId]  = useState<Record<string, string>>({});
 
-  // Checkout
   const [checkoutItineraire, setCheckoutItineraire] = useState<{
     excursions: ExcursionForCheckout[];
     itineraireId: string;
@@ -302,7 +451,6 @@ export default function ItinerairesClient() {
         }
       };
 
-      // 1) UUIDs connus
       if (candidateIds.size > 0) {
         const { data: excs } = await sb
           .from("excursions")
@@ -310,8 +458,6 @@ export default function ItinerairesClient() {
           .in("id", Array.from(candidateIds));
         excs?.forEach(indexExc);
       }
-
-      // 2) Par ville
       if (planCities.size > 0) {
         const { data: excsByCity } = await sb
           .from("excursions")
@@ -319,8 +465,6 @@ export default function ItinerairesClient() {
           .in("city", Array.from(planCities));
         excsByCity?.forEach(indexExc);
       }
-
-      // 3) Filet ultime : toutes les excursions (couvre les plans IA avec villes orthographiées différemment)
       const { data: allExcs } = await sb
         .from("excursions")
         .select("id, title, city, photos, meeting_point, start_date, depart_time")
@@ -334,29 +478,20 @@ export default function ItinerairesClient() {
     })();
   }, []);
 
-  // ── Résolution ID depuis une activité du plan ─────────────────────────────
+  // ── Résolution ID ─────────────────────────────────────────────────────────
   const resolveExcursionId = (act: ActivityItem): string | null => {
-    // 1. UUID direct dans le cache
     if (isValidUUID(act.id) && excDetails[act.id]) return act.id;
     if (act.excursion_id && isValidUUID(act.excursion_id) && excDetails[act.excursion_id])
       return act.excursion_id;
-
-    // 2-4. Matching par titre (couvre les plans IA sans UUID)
     const title = act.excursion?.title;
     if (title) {
       const norm  = normalizeStr(title);
       const lower = title.trim().toLowerCase();
-
       if (titleToId[norm])  return titleToId[norm];
       if (titleToId[lower]) return titleToId[lower];
-
-      const entries = Object.entries(titleToId);
-
-      // Correspondance partielle
+      const entries   = Object.entries(titleToId);
       const contained = entries.find(([key]) => key.includes(norm) || norm.includes(key));
       if (contained) return contained[1];
-
-      // Score de mots communs (seuil 50 %)
       const planWords = norm.split(" ").filter(w => w.length > 2);
       if (planWords.length > 0) {
         const best = entries
@@ -371,8 +506,6 @@ export default function ItinerairesClient() {
         if (best) return best.id;
       }
     }
-
-    // 5. UUID brut en dernier recours
     if (act.excursion_id && isValidUUID(act.excursion_id)) return act.excursion_id;
     if (isValidUUID(act.id)) return act.id;
     return null;
@@ -405,216 +538,132 @@ export default function ItinerairesClient() {
     setDeleting(null);
   };
 
-  const totAct = (raw: RawPlan) =>
-    normalizePlan(raw).reduce((s, d) => s + (d.activities?.length || 0), 0);
+  const totAct    = (raw: RawPlan) => normalizePlan(raw).reduce((s, d) => s + (d.activities?.length || 0), 0);
+  const totBudget = (raw: RawPlan) => normalizePlan(raw).reduce(
+    (s, d) => s + (d.activities || []).reduce((ss, a) => ss + (a.excursion?.price_per_person || 0), 0), 0
+  );
+  const fmt = (iso: string) => new Date(iso).toLocaleDateString("fr-FR", { day: "2-digit", month: "short", year: "numeric" });
+  const isAssisted = (raw: RawPlan) => !!raw && !Array.isArray(raw) && typeof raw === "object" && "days" in raw;
 
-  const totBudget = (raw: RawPlan) =>
-    normalizePlan(raw).reduce(
-      (s, d) => s + (d.activities || []).reduce((ss, a) => ss + (a.excursion?.price_per_person || 0), 0), 0
-    );
-
-  const fmt = (iso: string) =>
-    new Date(iso).toLocaleDateString("fr-FR", { day: "2-digit", month: "short", year: "numeric" });
-
-  const isAssisted = (raw: RawPlan) =>
-    !!raw && !Array.isArray(raw) && typeof raw === "object" && "days" in raw;
-
-  // ── Ouvre le modal de réservation ─────────────────────────────────────────
-  //
-  // Nouvelle stratégie robuste pour les plans IA (sans UUID) :
-  //   Étape A → UUIDs résolus via le cache local
-  //   Étape B → Matching titre+ville en DB pour les non-résolus
-  //   Étape C → Fallback données du plan (modal s'ouvre quand même)
-  //
+  // ── Checkout ──────────────────────────────────────────────────────────────
   const openItineraryCheckout = async (it: Itineraire) => {
     setLoadingItinId(it.id);
-
     try {
       const plan = normalizePlan(it.plan);
-
-      // Collecte toutes les activités avec leur index de jour
       type ActMeta = { planAct: ActivityItem; dayIndex: number };
       const allActs: ActMeta[] = [];
       plan.forEach((day, di) => {
         (day.activities || []).forEach(act => allActs.push({ planAct: act, dayIndex: di }));
       });
+      if (allActs.length === 0) { alert("Cet itinéraire ne contient aucune activité."); return; }
 
-      if (allActs.length === 0) {
-        alert("Cet itinéraire ne contient aucune activité.");
-        return;
-      }
-
-      // ── Étape A : UUIDs résolus via le cache ──────────────────────────
       const resolvedByUUID: Record<string, ActMeta> = {};
       allActs.forEach(meta => {
         const dbId = resolveExcursionId(meta.planAct);
         if (dbId && !resolvedByUUID[dbId]) resolvedByUUID[dbId] = meta;
       });
-
-      // Activités non encore résolues
       const unresolvedActs = allActs.filter(meta => !resolveExcursionId(meta.planAct));
-
-      // ── Étape B : recherche DB par ville pour les non-résolus ─────────
       let extraDbExcs: any[] = [];
-
-      const extraCities = [...new Set(
-        unresolvedActs
-          .map(({ planAct, dayIndex }) =>
-            planAct.excursion?.city?.trim() || plan[dayIndex]?.city?.trim() || ""
-          )
-          .filter(Boolean)
-      )];
-
+      const extraCities = [...new Set(unresolvedActs.map(({ planAct, dayIndex }) =>
+        planAct.excursion?.city?.trim() || plan[dayIndex]?.city?.trim() || "").filter(Boolean))];
       if (extraCities.length > 0) {
-        const { data } = await sb
-          .from("excursions")
+        const { data } = await sb.from("excursions")
           .select("id, title, city, duration_hours, price_per_person, max_people, available_dates, photos")
           .in("city", extraCities);
         if (data) extraDbExcs = data;
       }
-
-      // Si toujours rien, charge tout (filet ultime)
       if (extraDbExcs.length === 0 && unresolvedActs.length > 0) {
-        const { data } = await sb
-          .from("excursions")
+        const { data } = await sb.from("excursions")
           .select("id, title, city, duration_hours, price_per_person, max_people, available_dates, photos")
           .limit(500);
         if (data) extraDbExcs = data;
       }
-
-      // Construit un titleMap local enrichi
       const localTitleToId: Record<string, string> = { ...titleToId };
       extraDbExcs.forEach((e: any) => {
-        if (e.title) {
-          localTitleToId[normalizeStr(e.title)]        = e.id;
-          localTitleToId[e.title.trim().toLowerCase()] = e.id;
-        }
+        if (e.title) { localTitleToId[normalizeStr(e.title)] = e.id; localTitleToId[e.title.trim().toLowerCase()] = e.id; }
       });
-
-      // Résoud les activités non résolues avec le titleMap enrichi
       const resolvedByTitle: Record<string, { meta: ActMeta; dbRow: any }> = {};
-
       unresolvedActs.forEach(meta => {
         const title = meta.planAct.excursion?.title;
         if (!title) return;
-
         const norm  = normalizeStr(title);
         const lower = title.trim().toLowerCase();
         let foundId: string | null = localTitleToId[norm] || localTitleToId[lower] || null;
-
         if (!foundId) {
-          const entries   = Object.entries(localTitleToId);
-          const contained = entries.find(([key]) => key.includes(norm) || norm.includes(key));
+          const contained = Object.entries(localTitleToId).find(([key]) => key.includes(norm) || norm.includes(key));
           if (contained) foundId = contained[1];
         }
-
         if (!foundId) {
           const planWords = norm.split(" ").filter(w => w.length > 2);
           if (planWords.length > 0) {
-            const entries = Object.entries(localTitleToId);
-            const best = entries
-              .map(([key, id]) => {
-                const dbWords = key.split(" ").filter(w => w.length > 2);
-                const common  = planWords.filter(w => dbWords.includes(w)).length;
-                const score   = common / Math.max(planWords.length, dbWords.length);
-                return { id, score };
-              })
-              .filter(m => m.score >= 0.5)
-              .sort((a, b) => b.score - a.score)[0];
+            const best = Object.entries(localTitleToId).map(([key, id]) => {
+              const dbWords = key.split(" ").filter(w => w.length > 2);
+              const common  = planWords.filter(w => dbWords.includes(w)).length;
+              return { id, score: common / Math.max(planWords.length, dbWords.length) };
+            }).filter(m => m.score >= 0.5).sort((a, b) => b.score - a.score)[0];
             if (best) foundId = best.id;
           }
         }
-
         if (foundId && !resolvedByUUID[foundId] && !resolvedByTitle[foundId]) {
-          resolvedByTitle[foundId] = {
-            meta,
-            dbRow: extraDbExcs.find((e: any) => e.id === foundId) || null,
-          };
+          resolvedByTitle[foundId] = { meta, dbRow: extraDbExcs.find((e: any) => e.id === foundId) || null };
         }
       });
-
-      // ── Charge les données complètes pour les UUIDs résolus (lot A) ───
       const uuidIds = Object.keys(resolvedByUUID);
       let uuidDbRows: any[] = [];
       if (uuidIds.length > 0) {
-        const { data } = await sb
-          .from("excursions")
+        const { data } = await sb.from("excursions")
           .select("id, title, city, duration_hours, price_per_person, max_people, available_dates, photos")
           .in("id", uuidIds);
         if (data) uuidDbRows = data;
       }
-
-      // ── Construit la liste finale ──────────────────────────────────────
       const excursionsMap: Record<string, ExcursionForCheckout> = {};
-
-      // Lot A (UUID)
       uuidDbRows.forEach((row: any) => {
         const meta = resolvedByUUID[row.id];
         if (!meta) return;
         excursionsMap[row.id] = {
-          id:               row.id,
-          title:            row.title,
-          city:             row.city,
-          duration_hours:   row.duration_hours  || meta.planAct.excursion?.duration_hours  || 2,
+          id: row.id, title: row.title, city: row.city,
+          duration_hours: row.duration_hours || meta.planAct.excursion?.duration_hours || 2,
           price_per_person: row.price_per_person || meta.planAct.excursion?.price_per_person || 0,
-          max_people:       row.max_people || 20,
-          available_dates:  row.available_dates ?? null,
-          plan_date:        meta.planAct.date || meta.planAct.excursion?.start_date || undefined,
-          plan_time:        meta.planAct.time || undefined,
-          plan_day:         meta.dayIndex + 1,
+          max_people: row.max_people || 20, available_dates: row.available_dates ?? null,
+          plan_date: meta.planAct.date || meta.planAct.excursion?.start_date || undefined,
+          plan_time: meta.planAct.time || undefined, plan_day: meta.dayIndex + 1,
         };
       });
-
-      // Lot B (titre/ville)
       Object.entries(resolvedByTitle).forEach(([dbId, { meta, dbRow }]) => {
         if (excursionsMap[dbId]) return;
         const row = dbRow || extraDbExcs.find((e: any) => e.id === dbId);
         if (!row) return;
         excursionsMap[dbId] = {
-          id:               row.id,
-          title:            row.title,
-          city:             row.city,
-          duration_hours:   row.duration_hours  || meta.planAct.excursion?.duration_hours  || 2,
+          id: row.id, title: row.title, city: row.city,
+          duration_hours: row.duration_hours || meta.planAct.excursion?.duration_hours || 2,
           price_per_person: row.price_per_person || meta.planAct.excursion?.price_per_person || 0,
-          max_people:       row.max_people || 20,
-          available_dates:  row.available_dates ?? null,
-          plan_date:        meta.planAct.date || meta.planAct.excursion?.start_date || undefined,
-          plan_time:        meta.planAct.time || undefined,
-          plan_day:         meta.dayIndex + 1,
+          max_people: row.max_people || 20, available_dates: row.available_dates ?? null,
+          plan_date: meta.planAct.date || meta.planAct.excursion?.start_date || undefined,
+          plan_time: meta.planAct.time || undefined, plan_day: meta.dayIndex + 1,
         };
       });
-
       const excursions = Object.values(excursionsMap);
-
-      // ── Étape C : fallback données du plan (modal s'ouvre quand même) ─
       if (excursions.length === 0) {
         const seen = new Set<string>();
         const fallback: ExcursionForCheckout[] = [];
-
         allActs.forEach(({ planAct, dayIndex }) => {
           const key = normalizeStr(planAct.excursion?.title || planAct.id || String(dayIndex));
           if (seen.has(key)) return;
           seen.add(key);
           fallback.push({
-            id:               planAct.excursion_id || planAct.id || `fallback-${dayIndex}`,
-            title:            planAct.excursion?.title || "Excursion",
-            city:             planAct.excursion?.city  || "",
-            duration_hours:   planAct.excursion?.duration_hours   || 2,
+            id: planAct.excursion_id || planAct.id || `fallback-${dayIndex}`,
+            title: planAct.excursion?.title || "Excursion", city: planAct.excursion?.city || "",
+            duration_hours: planAct.excursion?.duration_hours || 2,
             price_per_person: planAct.excursion?.price_per_person || 0,
-            max_people:       20,
-            available_dates:  null,
-            plan_date:        planAct.date || planAct.excursion?.start_date || undefined,
-            plan_time:        planAct.time || undefined,
-            plan_day:         dayIndex + 1,
+            max_people: 20, available_dates: null,
+            plan_date: planAct.date || planAct.excursion?.start_date || undefined,
+            plan_time: planAct.time || undefined, plan_day: dayIndex + 1,
           });
         });
-
         setCheckoutItineraire({ excursions: fallback, itineraireId: it.id });
         return;
       }
-
       setCheckoutItineraire({ excursions, itineraireId: it.id });
-
     } catch (e) {
       console.error("openItineraryCheckout error:", e);
       alert("Une erreur est survenue. Veuillez réessayer.");
@@ -650,7 +699,7 @@ export default function ItinerairesClient() {
         {/* Page header */}
         <div className="it-page-header">
           <div>
-            <h1 style={{ fontSize: "clamp(20px, 4vw, 28px)", fontWeight: 700, color: "#053366", margin: 0 }}>
+            <h1 style={{ fontSize: "clamp(20px,4vw,28px)", fontWeight: 800, color: "#053366", margin: 0, fontFamily: "'Playfair Display',serif" }}>
               Mes itinéraires
             </h1>
             <p style={{ fontSize: 13, color: "#9CA3AF", marginTop: 8, display: "flex", alignItems: "center", gap: 5 }}>
@@ -662,7 +711,7 @@ export default function ItinerairesClient() {
 
         {/* Empty state */}
         {items.length === 0 ? (
-          <div style={{ textAlign: "center", padding: "48px 16px", background: "#ffffff", borderRadius: 28, border: "1px solid #E5E7EB", boxShadow: "0 2px 12px rgba(0,0,0,.04)" }}>
+          <div style={{ textAlign: "center", padding: "64px 16px", background: "#ffffff", borderRadius: 28, border: "1px solid #E5E7EB", boxShadow: "0 2px 12px rgba(0,0,0,.04)" }}>
             <Map size={52} color="#D1D5DB" style={{ margin: "0 auto 16px" }} />
             <h2 style={{ fontFamily: "'Playfair Display',serif", fontSize: "clamp(18px,4vw,24px)", fontWeight: 900, color: "#111827", marginBottom: 10 }}>
               Aucun itinéraire sauvegardé
@@ -671,12 +720,12 @@ export default function ItinerairesClient() {
               Planifiez votre voyage en Tunisie et sauvegardez votre itinéraire
             </p>
             <a href="/touriste/itineraire"
-              style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "13px 28px", background: "#2B96A8", color: "white", borderRadius: 40, textDecoration: "none", fontSize: 14, fontWeight: 700 }}>
+              style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "13px 28px", background: "linear-gradient(135deg,#2B96A8,#1e7a8a)", color: "white", borderRadius: 40, textDecoration: "none", fontSize: 14, fontWeight: 700, boxShadow: "0 4px 16px rgba(43,150,168,.35)" }}>
               <PenLine size={15} /> Créer mon premier itinéraire
             </a>
           </div>
         ) : (
-          <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
             {items.map((it, idx) => {
               const plan          = normalizePlan(it.plan);
               const acts          = totAct(it.plan);
@@ -686,13 +735,16 @@ export default function ItinerairesClient() {
               const isThisLoading = loadingItinId === it.id;
 
               return (
-                <div key={it.id} className="it-card"
-                  style={{ background: "white", borderRadius: 24, border: "1px solid #E5E7EB", overflow: "hidden", boxShadow: "0 2px 10px rgba(0,0,0,.05)", animationDelay: `${idx * .06}s` }}>
+                <div key={it.id} className="it-card" style={{ animationDelay: `${idx * .07}s` }}>
 
-                  {/* Card header */}
+                  {/* ── Card header ── */}
                   <div className="it-card-header" onClick={() => setExpanded(isOpen ? null : it.id)}>
-
-                    <div style={{ width: 46, height: 46, borderRadius: 14, background: assisted ? "linear-gradient(135deg,rgba(2,175,207,.15),rgba(37,159,252,.1))" : "linear-gradient(135deg,#EFF9FB,#D0F0F5)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, border: `1px solid ${assisted ? "rgba(2,175,207,.25)" : "rgba(43,150,168,.15)"}` }}>
+                    <div style={{
+                      width: 46, height: 46, borderRadius: 14, flexShrink: 0,
+                      background: assisted ? "linear-gradient(135deg,rgba(2,175,207,.15),rgba(37,159,252,.1))" : "linear-gradient(135deg,#EFF9FB,#D0F0F5)",
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                      border: `1px solid ${assisted ? "rgba(2,175,207,.25)" : "rgba(43,150,168,.15)"}`,
+                    }}>
                       {assisted ? <Bot size={20} color="#02AFCF" /> : <PenLine size={20} color="#2B96A8" />}
                     </div>
 
@@ -704,13 +756,13 @@ export default function ItinerairesClient() {
                         <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 20, background: assisted ? "rgba(2,175,207,.1)" : "rgba(43,150,168,.08)", color: assisted ? "#02AFCF" : "#2B96A8" }}>
                           {assisted ? <><Bot size={10} /> Mode IA</> : <><PenLine size={10} /> Mode Libre</>}
                         </span>
-                        {it.villes_selectionnees?.slice(0, 2).map(v => (
+                        {it.villes_selectionnees?.slice(0, 3).map(v => (
                           <span key={v} style={{ display: "inline-flex", alignItems: "center", gap: 3, fontSize: 11, color: "#6B7280", background: "#F3F4F6", padding: "2px 8px", borderRadius: 20, fontWeight: 500 }}>
                             <MapPin size={9} color="#9CA3AF" /> {v}
                           </span>
                         ))}
-                        {(it.villes_selectionnees?.length || 0) > 2 && (
-                          <span style={{ fontSize: 11, color: "#9CA3AF" }}>+{it.villes_selectionnees.length - 2}</span>
+                        {(it.villes_selectionnees?.length || 0) > 3 && (
+                          <span style={{ fontSize: 11, color: "#9CA3AF" }}>+{it.villes_selectionnees.length - 3}</span>
                         )}
                       </div>
                       <div style={{ display: "flex", gap: 12, fontSize: 11, color: "#9CA3AF", flexWrap: "wrap", alignItems: "center" }}>
@@ -721,7 +773,7 @@ export default function ItinerairesClient() {
                           <MapPin size={11} /> {acts} activité{acts !== 1 ? "s" : ""}
                         </span>
                         {budget > 0 && (
-                          <span style={{ color: "#059669", fontWeight: 600, display: "flex", alignItems: "center", gap: 4 }}>
+                          <span style={{ color: "#059669", fontWeight: 700, display: "flex", alignItems: "center", gap: 4 }}>
                             <Coins size={11} /> {budget} EUR
                           </span>
                         )}
@@ -730,7 +782,7 @@ export default function ItinerairesClient() {
 
                     <div className="it-card-actions" onClick={e => e.stopPropagation()}>
                       <a href={`/touriste/itineraires/${it.id}`}
-                        style={{ padding: "8px 14px", background: "#F3F4F6", color: "#374151", borderRadius: 20, fontSize: 12, fontWeight: 700, textDecoration: "none", display: "flex", alignItems: "center", gap: 5, transition: "all .15s" }}
+                        style={{ padding: "8px 14px", background: "#F3F4F6", color: "#374151", borderRadius: 20, fontSize: 12, fontWeight: 700, textDecoration: "none", display: "flex", alignItems: "center", gap: 5 }}
                         onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = "#E5E7EB"; }}
                         onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = "#F3F4F6"; }}>
                         <Pencil size={12} /> Modifier
@@ -743,43 +795,49 @@ export default function ItinerairesClient() {
                           ? <Loader2 size={13} style={{ animation: "spin .8s linear infinite" }} />
                           : <Trash2 size={13} />}
                       </button>
-
-                      {/* Bouton Réserver — état individuel par itinéraire */}
                       <button
                         className="it-reserve-all-btn"
                         disabled={isThisLoading}
-                        onClick={(e) => { e.stopPropagation(); openItineraryCheckout(it); }}
+                        onClick={e => { e.stopPropagation(); openItineraryCheckout(it); }}
                       >
                         {isThisLoading
                           ? <><Loader2 size={13} style={{ animation: "spin .8s linear infinite" }} /> Chargement…</>
-                          : <><ShoppingCart size={13} /> Réserver</>
-                        }
+                          : <><ShoppingCart size={13} /> Réserver</>}
                       </button>
                     </div>
 
-                    <div style={{ color: "#D1D5DB", flexShrink: 0 }}>
+                    <div style={{ color: "#D1D5DB", flexShrink: 0, marginLeft: 4 }}>
                       {isOpen ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
                     </div>
                   </div>
 
-                  {/* Détail expandé */}
+                  {/* ── Détail expandé ── */}
                   {isOpen && (
-                    <div className="it-detail" style={{ padding: "0 24px 20px", borderTop: "1px solid #F3F4F6" }}>
-                      <div style={{ paddingTop: 18 }}>
+                    <div className="it-detail" style={{ padding: "0 20px 20px", borderTop: "1px solid #F3F4F6" }}>
+                      <div style={{ paddingTop: 20 }}>
                         {plan.length === 0 ? (
                           <p style={{ fontSize: 13, color: "#C4C9D0", fontStyle: "italic" }}>Aucune activité planifiée</p>
                         ) : plan.map((day, di) => (
-                          <div key={di} className="it-day-block"
-                            style={{ borderLeft: "3px solid #EEF2FF", paddingLeft: 14, marginBottom: 24 }}>
-                            <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 12 }}>
-                              <MapPin size={12} color="#02AFCF" />
-                              <p style={{ fontSize: 13, fontWeight: 800, color: "#053366", margin: 0 }}>
-                                Jour {di + 1} — {day.city}
-                              </p>
+                          <div key={di} className="it-day-section">
+
+                            {/* Day header */}
+                            <div className="it-day-header">
+                              <div style={{ width: 30, height: 30, borderRadius: 10, background: "linear-gradient(135deg,#2B96A8,#02AFCF)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                                <span style={{ fontSize: 11, fontWeight: 800, color: "white" }}>{di + 1}</span>
+                              </div>
+                              <div>
+                                <p style={{ fontSize: 13, fontWeight: 800, color: "#053366", margin: 0 }}>
+                                  Jour {di + 1} — {day.city}
+                                </p>
+                                <p style={{ fontSize: 11, color: "#9CA3AF", margin: "2px 0 0" }}>
+                                  {(day.activities || []).length} activité{(day.activities || []).length !== 1 ? "s" : ""}
+                                </p>
+                              </div>
                             </div>
 
+                            {/* Activities */}
                             {(day.activities || []).length === 0 ? (
-                              <p style={{ fontSize: 12, color: "#D1D5DB", fontStyle: "italic" }}>Journée libre</p>
+                              <p style={{ fontSize: 12, color: "#D1D5DB", fontStyle: "italic", paddingLeft: 8 }}>Journée libre</p>
                             ) : (day.activities || []).map((act, ai) => {
                               const photo        = getActPhoto(act);
                               const details      = getActDetails(act);
@@ -788,96 +846,141 @@ export default function ItinerairesClient() {
                               const meetingPoint = details?.meeting_point || act.excursion?.meeting_point;
                               const resolvedId   = resolveExcursionId(act);
                               const canNavigate  = !!resolvedId || isValidUUID(act.excursion_id || "") || isValidUUID(act.id);
+                              const timeCfg      = act.time ? TIME_CONFIG[act.time] : null;
 
                               return (
-                                <div key={act.id || ai} className="act-row">
-                                  {photo ? (
-                                    <img
-                                      src={photo}
-                                      alt={act.excursion?.title || ""}
-                                      className="act-photo"
-                                      onClick={() => navigateToExcursion(act)}
-                                      onError={e => { (e.target as HTMLImageElement).style.display = "none"; }}
-                                    />
-                                  ) : (
-                                    <div
-                                      className="act-photo-placeholder"
+                                <div
+                                  key={act.id || ai}
+                                  className="exc-card"
+                                  style={{ animationDelay: `${ai * .05}s` }}
+                                >
+                                  {/* ── Image panel ── */}
+                                  <div
+                                    className="exc-img-panel"
+                                    onClick={() => canNavigate && navigateToExcursion(act)}
+                                    style={{ cursor: canNavigate ? "pointer" : "default" }}
+                                  >
+                                    {photo ? (
+                                      <img
+                                        src={photo}
+                                        alt={act.excursion?.title || ""}
+                                        onError={e => {
+                                          const parent = (e.target as HTMLImageElement).parentElement;
+                                          if (parent) {
+                                            (e.target as HTMLImageElement).style.display = "none";
+                                            const ph = parent.querySelector(".exc-img-placeholder") as HTMLElement;
+                                            if (ph) ph.style.display = "flex";
+                                          }
+                                        }}
+                                      />
+                                    ) : null}
+                                    {!photo && (
+                                      <div className="exc-img-placeholder">
+                                        <ImageIcon size={28} color="#9CA3AF" strokeWidth={1.5} />
+                                        <span style={{ fontSize: 10, color: "#9CA3AF", fontWeight: 600 }}>Pas de photo</span>
+                                      </div>
+                                    )}
+
+                                    {/* Time badge overlay */}
+                                    {timeCfg && (
+                                      <span
+                                        className="exc-time-badge"
+                                        style={{ background: timeCfg.bg, color: timeCfg.color, border: `1px solid ${timeCfg.border}` }}
+                                      >
+                                        {timeCfg.icon} {timeCfg.label}
+                                      </span>
+                                    )}
+
+                                    {/* Price overlay */}
+                                    {act.excursion?.price_per_person > 0 && (
+                                      <span className="exc-price-badge">
+                                        {act.excursion.price_per_person} EUR
+                                      </span>
+                                    )}
+                                  </div>
+
+                                  {/* ── Content panel ── */}
+                                  <div className="exc-content">
+
+                                    {/* Title */}
+                                    <p
+                                      className="exc-title"
                                       onClick={() => canNavigate && navigateToExcursion(act)}
                                       style={{ cursor: canNavigate ? "pointer" : "default" }}
                                     >
-                                      <ImageIcon size={20} color="#9CA3AF" strokeWidth={1.5} />
-                                    </div>
-                                  )}
-
-                                  <div style={{ flex: 1, minWidth: 0 }}>
-                                    <p
-                                      className="excursion-title"
-                                      onClick={() => canNavigate && navigateToExcursion(act)}
-                                      style={{ fontSize: 14, fontWeight: 700, color: "#111827", margin: "0 0 6px", display: "flex", alignItems: "center", gap: 6, cursor: canNavigate ? "pointer" : "default" }}>
                                       {act.excursion?.title || "—"}
-                                      {canNavigate && <ExternalLink size={12} color="#9CA3AF" />}
+                                      {canNavigate && <ExternalLink size={13} color="#CBD5E1" style={{ flexShrink: 0, marginTop: 1 }} />}
                                     </p>
 
-                                    <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", marginBottom: 6 }}>
-                                      {act.time && (
-                                        <span className="info-badge">
-                                          {TIME_ICON[act.time]} {TIME_LABEL[act.time]}
-                                        </span>
-                                      )}
+                                    {/* City */}
+                                    {act.excursion?.city && (
+                                      <div className="exc-city-row">
+                                        <MapPin size={11} color="#9CA3AF" />
+                                        {act.excursion.city}
+                                      </div>
+                                    )}
+
+                                    {/* Chips row */}
+                                    <div className="exc-chips">
                                       {act.excursion?.duration_hours && (
-                                        <span className="info-badge">
+                                        <span className="exc-chip blue">
                                           <Clock size={10} /> {act.excursion.duration_hours}h
                                         </span>
                                       )}
                                       {act.excursion?.price_per_person > 0 && (
-                                        <span className="info-badge" style={{ color: "#02AFCF" }}>
-                                          <Coins size={10} /> {act.excursion.price_per_person} EUR
+                                        <span className="exc-chip green">
+                                          <Coins size={10} /> {act.excursion.price_per_person} EUR / pers.
                                         </span>
                                       )}
                                     </div>
 
+                                    {/* Date/time info */}
                                     {(startDate || startTime) && (
-                                      <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 6, padding: "4px 8px", background: "#F0FDF4", borderRadius: 8, border: "1px solid #D1FAE5" }}>
+                                      <div className="exc-info-row date">
                                         <Calendar size={12} color="#059669" />
-                                        <span style={{ fontSize: 11, fontWeight: 600, color: "#065F46" }}>
+                                        <span>
                                           {startDate && formatDate(startDate)}
                                           {startTime && ` à ${startTime}`}
                                         </span>
                                       </div>
                                     )}
 
+                                    {/* Meeting point */}
                                     {meetingPoint && (
-                                      <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 6, padding: "4px 8px", background: "#FFF7ED", borderRadius: 8, border: "1px solid #FED7AA" }}>
+                                      <div className="exc-info-row place">
                                         <Flag size={12} color="#EA580C" />
-                                        <span style={{ fontSize: 11, fontWeight: 600, color: "#9A3412" }}>
-                                          Rendez-vous : {meetingPoint}
-                                        </span>
+                                        <span>RDV : {meetingPoint}</span>
                                       </div>
                                     )}
 
-                                    {act.excursion?.city && (
-                                      <div style={{ display: "flex", alignItems: "center", gap: 4, marginBottom: 4 }}>
-                                        <MapPin size={10} color="#9CA3AF" />
-                                        <span style={{ fontSize: 11, color: "#6B7280" }}>{act.excursion.city}</span>
-                                      </div>
-                                    )}
-
+                                    {/* Note */}
                                     {act.note && (
-                                      <p style={{ fontSize: 10, color: "#9CA3AF", margin: "6px 0 0", fontStyle: "italic", display: "flex", alignItems: "center", gap: 3 }}>
-                                        <FileText size={9} /> {act.note}
+                                      <p className="exc-note">
+                                        <FileText size={10} style={{ flexShrink: 0, marginTop: 2 }} />
+                                        {act.note}
                                       </p>
                                     )}
 
-                                    <button
-                                      className="btn-voir-detail"
-                                      data-unavailable={!canNavigate ? "true" : undefined}
-                                      disabled={!canNavigate}
-                                      onClick={e => { e.stopPropagation(); if (canNavigate) navigateToExcursion(act); }}
-                                      title={canNavigate ? `Voir la page de ${act.excursion?.title}` : "Excursion introuvable"}
-                                    >
-                                      <ExternalLink size={11} />
-                                      {canNavigate ? "Voir détail" : "Introuvable"}
-                                    </button>
+                                    {/* Footer */}
+                                    <div className="exc-footer">
+                                      <button
+                                        className="btn-voir-detail"
+                                        data-unavailable={!canNavigate ? "true" : undefined}
+                                        disabled={!canNavigate}
+                                        onClick={e => { e.stopPropagation(); if (canNavigate) navigateToExcursion(act); }}
+                                        title={canNavigate ? `Voir ${act.excursion?.title}` : "Excursion introuvable"}
+                                      >
+                                        {canNavigate
+                                          ? <><ArrowRight size={11} /> Voir l'excursion</>
+                                          : <><AlertCircle size={11} /> Introuvable</>
+                                        }
+                                      </button>
+
+                                      {/* Day indicator */}
+                                      <span style={{ fontSize: 10, color: "#D1D5DB", fontWeight: 600 }}>
+                                        J{di + 1} · #{ai + 1}
+                                      </span>
+                                    </div>
                                   </div>
                                 </div>
                               );
