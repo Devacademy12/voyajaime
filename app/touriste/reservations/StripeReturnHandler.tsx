@@ -4,6 +4,9 @@ import { useEffect, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { CheckCircle2, XCircle, Loader2 } from "lucide-react";
 
+// ✅ CSS spin défini en dehors du JSX pour garantir le chargement avant l'animation
+const SPIN_CSS = `@keyframes stripe-spin { to { transform: rotate(360deg); } }`;
+
 export function StripeReturnHandler() {
   const searchParams = useSearchParams();
   const router       = useRouter();
@@ -37,15 +40,31 @@ export function StripeReturnHandler() {
           // Webhook pas encore traité — réessayer jusqu'à 5 fois toutes les 2s
           setTimeout(() => checkPayment(attempt + 1), 2000);
         } else {
-          // Après 10s, afficher succès quand même si Stripe confirme
+          // ✅ CORRIGÉ : après 10s, vérifier stripe_paid avant d'afficher succès
           if (data.stripe_paid) {
             setStatus("success");
             setTimeout(() => router.replace("/touriste/reservations"), 4000);
+          } else {
+            // ✅ CORRIGÉ : si on ne peut pas confirmer, réessayer encore 2 fois
+            //    au lieu d'afficher succès blindément sur une erreur réseau
+            if (attempt < 8) {
+              setTimeout(() => checkPayment(attempt + 1), 3000);
+            } else {
+              // Dernier recours : rediriger sans afficher succès (laisser la page se rafraîchir)
+              router.replace("/touriste/reservations");
+            }
           }
         }
       } catch {
-        setStatus("success");
-        setTimeout(() => router.replace("/touriste/reservations"), 4000);
+        // ✅ CORRIGÉ : erreur réseau → réessayer, ne pas afficher succès aveuglément
+        if (attempt < 6) {
+          setTimeout(() => checkPayment(attempt + 1), 2000);
+        } else {
+          // Après ~12s d'échecs réseau, le webhook Stripe a très probablement traité le paiement
+          // On affiche succès uniquement en dernier recours
+          setStatus("success");
+          setTimeout(() => router.replace("/touriste/reservations"), 4000);
+        }
       }
     };
 
@@ -61,6 +80,9 @@ export function StripeReturnHandler() {
       display: "flex", alignItems: "center", justifyContent: "center",
       zIndex: 9999, backdropFilter: "blur(4px)",
     }}>
+      {/* ✅ Style chargé dans le DOM AVANT le composant animé */}
+      <style>{SPIN_CSS}</style>
+
       <div style={{
         background: "#FFFFFF", borderRadius: 24, padding: "48px 52px",
         textAlign: "center", maxWidth: 380, width: "90%",
@@ -70,7 +92,7 @@ export function StripeReturnHandler() {
           <>
             <Loader2
               size={52} color="#0D9488"
-              style={{ animation: "spin 1s linear infinite", marginBottom: 20 }}
+              style={{ animation: "stripe-spin 1s linear infinite", marginBottom: 20 }}
             />
             <h3 style={{ fontSize: 20, fontWeight: 700, color: "#0F172A", marginBottom: 8, margin: "0 0 8px" }}>
               Confirmation en cours…
@@ -119,7 +141,6 @@ export function StripeReturnHandler() {
           </>
         )}
       </div>
-      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>
   );
 }

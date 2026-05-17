@@ -13,7 +13,7 @@ import ReservationCard from "@/app/components/reservation/Reservationcard";
 import CheckoutModal from "@/app/components/reservation/checkoutmodal";
 
 /* ─────────────────────────────────────────
-   Responsive CSS — same structure as itineraires
+   Responsive CSS
 ───────────────────────────────────────── */
 const RESPONSIVE_CSS = `
   @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap');
@@ -171,6 +171,21 @@ interface Props {
   autoOpenId?: string;
 }
 
+// ✅ Helper : vérifier si une réservation est vraiment expirée (date+time passée)
+function isReservationDateTimePassed(r: Reservation): boolean {
+  const timeStr = r.time
+    ? (typeof r.time === "string" ? r.time.slice(0, 5) : "23:59")
+    : "23:59";
+  const resaDateTime = new Date(`${r.date}T${timeStr}:00`).getTime();
+  return resaDateTime < Date.now();
+}
+
+// ✅ Helper : vérifier si la deadline de paiement est dépassée
+function isPaymentDeadlinePassed(r: Reservation): boolean {
+  if (!r.payment_deadline) return false;
+  return new Date(r.payment_deadline).getTime() < Date.now();
+}
+
 export default function ReservationsClient({ reservations: init, autoOpenId }: Props) {
   const supabase = createClient();
   const [reservations, setReservations] = useState(init);
@@ -181,12 +196,18 @@ export default function ReservationsClient({ reservations: init, autoOpenId }: P
   const pending   = reservations.filter(r => r.status === "pending").length;
   const confirmed = reservations.filter(r => r.status === "confirmed").length;
 
-  /* ── Move expired paid reservations to history ── */
+  /* ── Move expired PAID reservations to history ── */
   const moveExpiredToHistory = useCallback(async (resas: Reservation[]) => {
+    // ✅ CORRIGÉ : vérifier date ET heure, pas seulement la date
     const expired = resas.filter(r => {
-      const isPaid = r.payment_status === "paid" || r.status === "confirmed" || r.status === "completed";
-      return isPaid && r.date < TODAY;
+      const isPaid =
+        r.payment_status === "paid" ||
+        r.status === "confirmed" ||
+        r.status === "completed";
+      if (!isPaid) return false;
+      return isReservationDateTimePassed(r);
     });
+
     for (const r of expired) {
       try {
         const exc = r.excursion;
@@ -213,7 +234,7 @@ export default function ReservationsClient({ reservations: init, autoOpenId }: P
     }
   }, [supabase]);
 
-  /* ── Handle unpaid expired ── */
+  /* ── Handle unpaid expired (deadline 1h dépassée) ── */
   const handleUnpaidExpired = useCallback(async (reservationId: string) => {
     const r = reservations.find(res => res.id === reservationId);
     if (!r) return;
@@ -282,11 +303,26 @@ export default function ReservationsClient({ reservations: init, autoOpenId }: P
   useEffect(() => {
     if (autoOpenId) {
       const target = reservations.find(r => r.id === autoOpenId);
-      if (target && target.payment_status !== "paid" && target.status !== "cancelled")
+      // ✅ CORRIGÉ : ne pas ouvrir si déjà payé OU déjà confirmé OU deadline dépassée
+      if (
+        target &&
+        target.payment_status !== "paid" &&
+        target.status !== "cancelled" &&
+        target.status !== "confirmed" &&       // ✅ AJOUTÉ
+        !isPaymentDeadlinePassed(target)       // ✅ AJOUTÉ
+      ) {
         setCheckout(target);
+      }
     } else {
+      // ✅ CORRIGÉ : ne pas ouvrir le checkout si deadline dépassée
       const latestUnpaid = reservations
-        .filter(r => r.status === "pending" && !r.payment_status)
+        .filter(r => {
+          if (r.status !== "pending") return false;
+          if (r.payment_status === "paid") return false;
+          // Ne pas ouvrir si la deadline est passée
+          if (isPaymentDeadlinePassed(r)) return false;
+          return true;
+        })
         .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0];
       if (latestUnpaid) setCheckout(latestUnpaid);
     }
@@ -300,7 +336,7 @@ export default function ReservationsClient({ reservations: init, autoOpenId }: P
     setTimeout(() => refreshReservations(), 2000);
   }
 
-  /* ── Stats config — itineraires palette ── */
+  /* ── Stats config ── */
   const stats = [
     {
       icon: <CalendarDays size={15} color="#2B96A8" />,

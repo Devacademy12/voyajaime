@@ -17,6 +17,12 @@ function one<T>(v: T | T[] | null | undefined): T | null {
   return Array.isArray(v) ? (v[0] ?? null) : v;
 }
 
+// ✅ Helper : vérifier si la deadline de paiement est dépassée
+function isDeadlinePassed(deadline: string | null | undefined): boolean {
+  if (!deadline) return false;
+  return new Date(deadline).getTime() < Date.now();
+}
+
 export default async function PrestaReservationsPage() {
   /* ── 1. Auth — vérifier que c'est bien un prestataire ── */
   const supabase = await createServerSupabaseClient();
@@ -56,7 +62,7 @@ export default async function PrestaReservationsPage() {
           id, booking_code, date, time, people_count, touriste_id,
           total_price, platform_fee, status, payment_status,
           payment_method, created_at, paid_at, cancelled_at,
-          special_needs, cancel_reason,
+          special_needs, cancel_reason, payment_deadline,
           excursion:excursions (
             id, title, city, price_per_person, max_people
           )
@@ -95,23 +101,24 @@ export default async function PrestaReservationsPage() {
   const reservations = (resaRaw || []).map((r) => {
     const exc = one(r.excursion as any) as any;
     return {
-      id:             r.id,
-      booking_code:   r.booking_code,
-      date:           r.date,
-      time:           r.time ? String(r.time).slice(0, 5) : "—",
-      people_count:   r.people_count,
-      touriste_id:    r.touriste_id,
-      total_price:    Number(r.total_price),
-      platform_fee:   Number(r.platform_fee),
-      net_amount:     Number(r.total_price) - Number(r.platform_fee),
-      status:         r.status,
-      payment_status: r.payment_status ?? null,
-      payment_method: (r as any).payment_method ?? null,
-      created_at:     r.created_at,
-      paid_at:        (r as any).paid_at ?? null,
-      cancelled_at:   (r as any).cancelled_at ?? null,
-      special_needs:  (r as any).special_needs ?? null,
-      cancel_reason:  (r as any).cancel_reason ?? null,
+      id:               r.id,
+      booking_code:     r.booking_code,
+      date:             r.date,
+      time:             r.time ? String(r.time).slice(0, 5) : "—",
+      people_count:     r.people_count,
+      touriste_id:      r.touriste_id,
+      total_price:      Number(r.total_price),
+      platform_fee:     Number(r.platform_fee),
+      net_amount:       Number(r.total_price) - Number(r.platform_fee),
+      status:           r.status,
+      payment_status:   r.payment_status ?? null,
+      payment_method:   (r as any).payment_method ?? null,
+      payment_deadline: (r as any).payment_deadline ?? null,   // ✅ AJOUTÉ
+      created_at:       r.created_at,
+      paid_at:          (r as any).paid_at ?? null,
+      cancelled_at:     (r as any).cancelled_at ?? null,
+      special_needs:    (r as any).special_needs ?? null,
+      cancel_reason:    (r as any).cancel_reason ?? null,
       touriste: r.touriste_id
         ? (profilesMap[r.touriste_id] ?? { full_name: null, phone: null })
         : null,
@@ -164,19 +171,17 @@ export default async function PrestaReservationsPage() {
   });
 
   /* ── Normaliser paiements ── */
+  // ✅ CORRIGÉ : utiliser platform_fee et net_amount depuis la DB, pas recalculés
   const paiements = (paiementsRaw || []).map((p) => {
     const resa    = one(p.reservation as any) as any;
     const resaExc = resa ? (one(resa.excursion as any) as any) : null;
     const tid: string | null = resa?.touriste_id ?? null;
-    const amount  = Number(p.amount);
-    const fee     = amount * 0.10;
-    const net     = amount * 0.90;
 
     return {
       id:           p.id,
-      amount,
-      platform_fee: fee,
-      net_amount:   net,
+      amount:       Number(p.amount),
+      platform_fee: Number(p.platform_fee),   // ✅ depuis DB
+      net_amount:   Number(p.net_amount),     // ✅ depuis DB
       status:       p.status,
       paid_at:      p.paid_at ?? null,
       created_at:   p.created_at,
@@ -201,12 +206,19 @@ export default async function PrestaReservationsPage() {
 
   /* ──────────────────────────────────────────────
      CAPACITÉ — par (excursion_id, date, time)
+     ✅ CORRIGÉ : exclure les pending avec deadline expirée
   ────────────────────────────────────────────── */
   type SlotInfo = { booked: number; date: string; time: string };
   const capacite: Record<string, Record<string, SlotInfo>> = {};
 
   reservations.forEach((r) => {
     if (!r.excursion?.id || r.status === "cancelled") return;
+
+    // ✅ AJOUTÉ : ne pas compter les pending dont la deadline est dépassée
+    if (r.status === "pending" && r.payment_status !== "paid") {
+      if (isDeadlinePassed(r.payment_deadline)) return;
+    }
+
     const excId   = r.excursion.id;
     const timeKey = r.time || "00:00";
     const slotKey = `${r.date}|${timeKey}`;

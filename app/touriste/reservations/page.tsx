@@ -6,7 +6,9 @@ import { StripeReturnHandler } from "./StripeReturnHandler";
 type Reservation = {
   id: string; booking_code: string; date: string; time: string;
   people_count: number; total_price: number; platform_fee: number;
-  status: string; payment_status: string | null; payment_deadline?: string | null;
+  status: string; payment_status: string | null;
+  payment_deadline?: string | null;
+  paid_at?: string | null;           // ✅ AJOUTÉ
   excursion: {
     id: string; title: string; city: string; photos: string[];
     duration_hours: number; price_per_person: number; rating?: number;
@@ -39,7 +41,7 @@ export default async function TouristeReservations({
     .select(`
       id, booking_code, date, time, people_count,
       total_price, platform_fee, status, payment_status,
-      created_at, payment_deadline,
+      created_at, payment_deadline, paid_at,
       excursion:excursions(id, title, city, photos, duration_hours, price_per_person, rating)
     `)
     .eq("touriste_id", user.id)
@@ -67,7 +69,8 @@ export default async function TouristeReservations({
         platform_fee: r.platform_fee,
         status: r.status,
         payment_status: r.payment_status || null,
-        payment_deadline: r.payment_deadline,
+        payment_deadline: r.payment_deadline || null,
+        paid_at: (r as any).paid_at || null,   // ✅ AJOUTÉ
         excursion: excursionData ? {
           id: excursionData.id,
           title: excursionData.title || "Excursion inconnue",

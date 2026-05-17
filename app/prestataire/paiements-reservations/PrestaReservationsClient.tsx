@@ -14,6 +14,7 @@ interface Reservation {
   id: string; booking_code: string; date: string; time: string;
   people_count: number; total_price: number; platform_fee: number; net_amount: number;
   status: string; payment_status: string | null; payment_method: string | null;
+  payment_deadline: string | null;   // ✅ AJOUTÉ
   created_at: string; paid_at: string | null; cancelled_at: string | null;
   special_needs: string | null; cancel_reason: string | null;
   touriste: TouristeProfile | null;
@@ -50,10 +51,6 @@ const CSS = `
   @keyframes fadeUp {
     from { opacity: 0; transform: translateY(10px); }
     to   { opacity: 1; transform: translateY(0); }
-  }
-  @keyframes shimmer {
-    0%   { background-position: -200% center; }
-    100% { background-position: 200% center; }
   }
 
   *, *::before, *::after { box-sizing: border-box; }
@@ -317,12 +314,28 @@ function initials(name: string | null) {
   return name.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase();
 }
 function fmt(n: number) { return n.toFixed(2) + " DT"; }
+
+// ✅ CORRIGÉ : ajouter T00:00:00 pour éviter le décalage UTC sur les dates sans heure
 function fmtDate(s: string | null) {
   if (!s) return "—";
-  return new Date(s).toLocaleDateString("fr-FR", { day: "2-digit", month: "short", year: "numeric" });
+  const d = s.includes("T") ? new Date(s) : new Date(s + "T00:00:00");
+  return d.toLocaleDateString("fr-FR", { day: "2-digit", month: "short", year: "numeric" });
 }
 function fmtDateShort(s: string) {
   return new Date(s + "T00:00:00").toLocaleDateString("fr-FR", { day: "2-digit", month: "short", year: "numeric" });
+}
+
+// ✅ Helper : détecter expiration côté client même si la DB n'est pas encore mise à jour
+function getEffectivePaymentStatus(r: Reservation): string {
+  if (r.payment_status === "paid") return "paid";
+  if (r.payment_status === "expired") return "expired";
+  // Détecter expiration si pending et deadline passée
+  if (r.status === "pending" && r.payment_deadline) {
+    if (new Date(r.payment_deadline).getTime() < Date.now()) {
+      return "expired";
+    }
+  }
+  return r.payment_status || "unpaid";
 }
 
 type Tab = "reservations" | "paiements" | "capacite";
@@ -373,11 +386,12 @@ export default function PrestaReservationsClient({
   }, [reservations]);
 
   /* ── Payment stats ── */
+  // ✅ CORRIGÉ : utiliser les vraies valeurs DB (net_amount, platform_fee)
   const payStats = useMemo(() => {
-    const paid    = paiements.filter((p) => p.status === "paid");
-    const gross   = paid.reduce((a, b) => a + b.amount, 0);
-    const netTotal = gross * 0.90;
-    const feeTotal = gross * 0.10;
+    const paid     = paiements.filter((p) => p.status === "paid");
+    const gross    = paid.reduce((a, b) => a + b.amount, 0);
+    const netTotal = paid.reduce((a, b) => a + b.net_amount, 0);
+    const feeTotal = paid.reduce((a, b) => a + b.platform_fee, 0);
     return { gross, netTotal, feeTotal, count: paid.length, pending: paiements.filter((p) => p.status === "pending").length };
   }, [paiements]);
 
@@ -471,7 +485,9 @@ export default function PrestaReservationsClient({
         p.reservation?.date || "—",
         p.reservation?.time || "—",
         p.reservation?.people_count || 0,
-        p.amount, p.platform_fee.toFixed(2), p.net_amount.toFixed(2),
+        p.amount,
+        p.platform_fee.toFixed(2),   // ✅ depuis DB
+        p.net_amount.toFixed(2),     // ✅ depuis DB
         fmtDate(p.paid_at), p.status,
       ]);
     } else {
@@ -597,63 +613,70 @@ export default function PrestaReservationsClient({
                     <tr><td colSpan={12} style={{ textAlign: "center", padding: "3rem", color: "#94A3B8" }}>
                       Aucune réservation trouvée
                     </td></tr>
-                  ) : filteredResa.map((r) => (
-                    <tr key={r.id}>
-                      <td>
-                        <div className="tc">
-                          <span className="avatar">{initials(r.touriste?.full_name ?? null)}</span>
-                          <span>{r.touriste?.full_name || "—"}</span>
-                        </div>
-                      </td>
-                      <td style={{ color: "#94A3B8" }}>{r.touriste?.phone || "—"}</td>
-                      <td title={r.excursion?.title}>{r.excursion?.title || "—"}</td>
-                      <td>
-                        {r.excursion?.city
-                          ? <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                              <MapPin size={11} color="#94A3B8" />{r.excursion.city}
-                            </span>
-                          : "—"}
-                      </td>
-                      <td>
-                        <span className="chip-date">
-                          <CalendarDays size={11} />{fmtDate(r.date)}
-                        </span>
-                      </td>
-                      <td>
-                        <span className="chip-time">
-                          <Clock size={11} />{r.time}
-                        </span>
-                      </td>
-                      <td style={{ textAlign: "center", fontWeight: 600 }}>{r.people_count}</td>
-                      <td>
-                        <span style={{ color: "#CBD5E1", fontSize: 13 }}>{fmt(r.total_price)}</span>
-                      </td>
-                      <td>
-                        <span className="net-amount">{fmt(r.net_amount)}</span>
-                        <span className="gross-amount">
-                          −{fmt(r.platform_fee)} frais
-                        </span>
-                      </td>
-                      <td>
-                        <span className={`badge b-${r.status}`}>
-                          {r.status === "confirmed" ? "Confirmé"
-                            : r.status === "pending" ? "En attente"
-                            : r.status === "completed" ? "Terminé"
-                            : "Annulé"}
-                        </span>
-                      </td>
-                      <td>
-                        <span className={`badge b-${r.payment_status || "unpaid"}`}>
-                          {r.payment_status === "paid" ? "Payé"
-                            : r.payment_status === "expired" ? "Expiré"
-                            : "Non payé"}
-                        </span>
-                      </td>
-                      <td style={{ fontFamily: "monospace", fontSize: 11, color: "#2B96A8" }}>
-                        {r.booking_code}
-                      </td>
-                    </tr>
-                  ))}
+                  ) : filteredResa.map((r) => {
+                    // ✅ CORRIGÉ : utiliser le statut effectif (détecte expiration côté client)
+                    const effectivePayStatus = getEffectivePaymentStatus(r);
+
+                    return (
+                      <tr key={r.id}>
+                        <td>
+                          <div className="tc">
+                            <span className="avatar">{initials(r.touriste?.full_name ?? null)}</span>
+                            <span>{r.touriste?.full_name || "—"}</span>
+                          </div>
+                        </td>
+                        <td style={{ color: "#94A3B8" }}>{r.touriste?.phone || "—"}</td>
+                        <td title={r.excursion?.title}>{r.excursion?.title || "—"}</td>
+                        <td>
+                          {r.excursion?.city
+                            ? <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                                <MapPin size={11} color="#94A3B8" />{r.excursion.city}
+                              </span>
+                            : "—"}
+                        </td>
+                        <td>
+                          {/* ✅ CORRIGÉ : fmtDate maintenant avec T00:00:00 */}
+                          <span className="chip-date">
+                            <CalendarDays size={11} />{fmtDate(r.date)}
+                          </span>
+                        </td>
+                        <td>
+                          <span className="chip-time">
+                            <Clock size={11} />{r.time}
+                          </span>
+                        </td>
+                        <td style={{ textAlign: "center", fontWeight: 600 }}>{r.people_count}</td>
+                        <td>
+                          <span style={{ color: "#CBD5E1", fontSize: 13 }}>{fmt(r.total_price)}</span>
+                        </td>
+                        <td>
+                          <span className="net-amount">{fmt(r.net_amount)}</span>
+                          <span className="gross-amount">
+                            −{fmt(r.platform_fee)} frais
+                          </span>
+                        </td>
+                        <td>
+                          <span className={`badge b-${r.status}`}>
+                            {r.status === "confirmed" ? "Confirmé"
+                              : r.status === "pending" ? "En attente"
+                              : r.status === "completed" ? "Terminé"
+                              : "Annulé"}
+                          </span>
+                        </td>
+                        <td>
+                          {/* ✅ CORRIGÉ : badge basé sur effectivePayStatus */}
+                          <span className={`badge b-${effectivePayStatus}`}>
+                            {effectivePayStatus === "paid" ? "Payé"
+                              : effectivePayStatus === "expired" ? "Expiré"
+                              : "Non payé"}
+                          </span>
+                        </td>
+                        <td style={{ fontFamily: "monospace", fontSize: 11, color: "#2B96A8" }}>
+                          {r.booking_code}
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
@@ -675,6 +698,7 @@ export default function PrestaReservationsClient({
               <div className="payout-divider" />
               <div>
                 <div className="payout-item-lbl">Frais Pander (10%)</div>
+                {/* ✅ CORRIGÉ : utiliser les vraies valeurs DB */}
                 <div className="payout-item-val fee">−{fmt(payStats.feeTotal)}</div>
               </div>
               <div className="payout-divider" />
@@ -781,10 +805,10 @@ export default function PrestaReservationsClient({
                       {/* Gross */}
                       <td style={{ color: "#CBD5E1" }}>{fmt(p.amount)}</td>
 
-                      {/* Fee */}
+                      {/* Fee — ✅ depuis DB */}
                       <td style={{ color: "#E24B4A", fontWeight: 600 }}>−{fmt(p.platform_fee)}</td>
 
-                      {/* Net — highlighted */}
+                      {/* Net — ✅ depuis DB */}
                       <td>
                         <span className="net-amount" style={{ fontSize: 15 }}>
                           {fmt(p.net_amount)}
@@ -828,7 +852,7 @@ export default function PrestaReservationsClient({
               <Users size={15} color="#2B96A8" />
               <span>
                 Capacité calculée <strong>par créneau (date + heure)</strong> pour chaque excursion.
-                Les réservations annulées sont exclues du calcul.
+                Les réservations annulées et les réservations non-payées expirées sont exclues du calcul.
               </span>
             </div>
 
