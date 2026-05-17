@@ -21,10 +21,11 @@ export default async function PrestataireLayout({
   return (
     <>
       <style>{`
-        .layout-wrap { display: flex; min-height: 100vh; background: #F9FAFB; }
-        .layout-main  { flex: 1; margin-left: 240px; padding: 32px; min-height: 100vh; }
+        .layout-wrap {  min-height: 100vh; background: #F9FAFB; }
+        .layout-main  { padding: 32px; min-height: 100vh; }
         @media (max-width: 767px) {
-          .layout-main { margin-left: 0; padding: 72px 16px 24px; }
+          .layout-main {  margin-left: 240px;
+            padding: 36px 36px 48px 36px;}
         }
       `}</style>
       <div className="layout-wrap">
