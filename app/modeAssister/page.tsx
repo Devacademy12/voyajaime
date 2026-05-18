@@ -10,7 +10,6 @@ import {
   Heart, ArrowRight, CheckCircle, Euro, AlertTriangle, Bug,
 } from "lucide-react";
 import styles from "@/public/style/ModeAssiste.module.css";
-
 const N8N_WEBHOOK_URL = process.env.NEXT_PUBLIC_N8N_WEBHOOK_URL || "";
 
 /* ── Types ── */

@@ -1,521 +1,503 @@
 "use client";
 
-import React, { useState, useEffect, useMemo, Suspense } from "react";
+import React, { useState, useEffect, Suspense, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabaseClient";
 import TouristeNav from "@/app/components/touriste/TouristeNav";
 import {
-  MapPin, Calendar, Sparkles, ArrowRight, ArrowLeft,
-  CheckCircle2, Loader2, SlidersHorizontal, ChevronRight,
+  MapPin, CalendarDays, Users, Heart, Loader2,
+  CheckCircle, ChevronLeft, ChevronRight, AlertTriangle,
+  SlidersHorizontal, ArrowRight,
 } from "lucide-react";
 
+/* ─── Types ─── */
 type Ville     = { id: string; nom: string; emoji?: string; region?: string; active: boolean };
 type Categorie = { id: string; nom: string; emoji?: string; couleur?: string };
+type CityDateRange = { city: string; start: Date | null; end: Date | null };
 
-/* ─── Données des étapes ─── */
-const STEPS = [
-  { id: 1, label: "Durée",        icon: "📅", hint: "Combien de jours ?" },
-  { id: 2, label: "Destinations", icon: "🗺️", hint: "Quelles villes ?" },
-  { id: 3, label: "Intérêts",     icon: "✨", hint: "Vos centres d'intérêt" },
-];
+/* ─── Helpers ─── */
+function tog<T>(arr: T[], item: T): T[] {
+  return arr.includes(item) ? arr.filter(x => x !== item) : [...arr, item];
+}
+function daysBetween(a: Date, b: Date) {
+  return Math.round((b.getTime() - a.getTime()) / 86400000) + 1;
+}
+function fmtShort(d: Date) {
+  const M = ["Jan","Fév","Mar","Avr","Mai","Juin","Juil","Aoû","Sep","Oct","Nov","Déc"];
+  return `${d.getDate()} ${M[d.getMonth()]}`;
+}
+function getBlockedDates(cityDates: CityDateRange[], excludeCity: string) {
+  return cityDates
+    .filter(c => c.city !== excludeCity && c.start && c.end)
+    .map(c => ({ start: c.start!, end: c.end! }));
+}
+function datesOverlap(s1:Date|null,e1:Date|null,s2:Date|null,e2:Date|null) {
+  if (!s1||!e1||!s2||!e2) return false;
+  const a=new Date(s1);a.setHours(0,0,0,0);const b=new Date(e1);b.setHours(0,0,0,0);
+  const c=new Date(s2);c.setHours(0,0,0,0);const d=new Date(e2);d.setHours(0,0,0,0);
+  return a<=d&&c<=b;
+}
 
-const QUICK_DAYS = [2, 3, 5, 7, 10, 14];
-
-/* ─── CSS inline ─── */
-const STYLE = `
+/* ─── CSS ─── */
+const CSS = `
 @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@400;500;600;700;800&display=swap');
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+.ml-root{min-height:100vh;background:#F7F9FC;font-family:'DM Sans',system-ui,sans-serif;display:flex;flex-direction:column}
 
-.ml-root {
-  min-height: 100vh;
-  background: #F7F9FC;
-  font-family: 'DM Sans', system-ui, sans-serif;
-  display: flex;
-  flex-direction: column;
-}
+/* topbar */
+.ml-topbar{background:white;border-bottom:1px solid #EEF1F5;box-shadow:0 1px 6px rgba(0,0,0,.04);padding:16px 40px;display:flex;align-items:center;justify-content:center;gap:14px}
+.ml-topbar-badge{display:inline-flex;align-items:center;gap:6px;padding:4px 14px;border-radius:24px;background:rgba(43,150,168,.09);font-size:11px;font-weight:700;color:#2B96A8;letter-spacing:.06em}
+.ml-topbar h1{font-family:'Playfair Display',serif;font-size:20px;font-weight:900;color:#111827;margin:0}
+.ml-topbar h1 span{color:#2B96A8}
 
-/* ── Topbar ── */
-.ml-topbar {
-  background: white;
-  border-bottom: 1px solid #EEF1F5;
-  padding: 18px 40px;
-  text-align: center;
-  box-shadow: 0 1px 6px rgba(0,0,0,.04);
-}
-.ml-topbar-badge {
-  display: inline-flex; align-items: center; gap: 6px;
-  padding: 4px 14px; border-radius: 24px;
-  background: rgba(43,150,168,.09);
-  font-size: 11px; font-weight: 700; color: #2B96A8;
-  letter-spacing: .06em; margin-bottom: 8px;
-}
-.ml-topbar h1 {
-  font-family: 'Playfair Display', serif;
-  font-size: 22px; font-weight: 900; color: #111827;
-}
-.ml-topbar h1 span { color: #2B96A8; }
+/* layout */
+.ml-main{flex:1;display:flex;flex-direction:column;align-items:center;padding:28px 24px 48px;gap:20px}
+.ml-cards-row{display:flex;flex-direction:row;gap:18px;width:100%;max-width:1100px;align-items:stretch;min-height:500px}
 
-/* ── Progress bar ── */
-.ml-progress {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0;
-  padding: 28px 40px 0;
-  max-width: 560px;
-  margin: 0 auto;
-  width: 100%;
-}
-.ml-step-item {
-  display: flex;
-  align-items: center;
-  flex: 1;
-  position: relative;
-}
-.ml-step-circle {
-  width: 40px; height: 40px; border-radius: 50%;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 16px; flex-shrink: 0;
-  border: 2px solid #E5E7EB;
-  background: white;
-  transition: all .3s ease;
-  position: relative; z-index: 1;
-}
-.ml-step-circle.done   { background: #2B96A8; border-color: #2B96A8; }
-.ml-step-circle.active { background: white; border-color: #2B96A8; box-shadow: 0 0 0 4px rgba(43,150,168,.15); }
-.ml-step-circle.pending { background: white; border-color: #E5E7EB; }
-.ml-step-label {
-  font-size: 11px; font-weight: 600; color: #9CA3AF;
-  margin-top: 6px; white-space: nowrap;
-  position: absolute; top: 42px; left: 50%; transform: translateX(-50%);
-  transition: color .3s;
-}
-.ml-step-label.active  { color: #2B96A8; }
-.ml-step-label.done    { color: #2B96A8; }
-.ml-step-connector {
-  flex: 1; height: 2px;
-  background: #E5E7EB;
-  margin: 0 -2px;
-  position: relative;
-  transition: background .3s;
-}
-.ml-step-connector.done { background: #2B96A8; }
+/* card */
+.ml-card{flex:1;min-width:0;background:white;border-radius:22px;border:1px solid #EEF1F5;box-shadow:0 4px 20px rgba(0,0,0,.06);display:flex;flex-direction:column;overflow:hidden;transition:box-shadow .22s}
+.ml-card:hover{box-shadow:0 8px 32px rgba(43,150,168,.1)}
+.ml-card-disabled{opacity:.55;pointer-events:none}
+.ml-card-header{padding:18px 22px 14px;border-bottom:1px solid #F3F4F6;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.ml-card-header-left{display:flex;align-items:center;gap:12px}
+.ml-card-icon{width:36px;height:36px;border-radius:12px;background:rgba(43,150,168,.1);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.ml-card-title{font-size:14px;font-weight:800;color:#111827;margin-bottom:2px}
+.ml-card-sub{font-size:12px;color:#9CA3AF}
+.ml-badge-count{font-size:11px;font-weight:700;color:#2B96A8;background:rgba(43,150,168,.09);padding:3px 10px;border-radius:20px}
+.ml-badge-days{font-size:11px;font-weight:700;color:#2B96A8;background:rgba(43,150,168,.09);padding:3px 10px;border-radius:20px}
+.ml-card-body{flex:1;padding:16px 20px;overflow-y:auto}
 
-/* ── Content ── */
-.ml-content {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 60px 24px 40px;
-}
-.ml-card {
-  background: white;
-  border-radius: 24px;
-  border: 1px solid #EEF1F5;
-  box-shadow: 0 4px 24px rgba(0,0,0,.06);
-  padding: 40px;
-  width: 100%;
-  max-width: 580px;
-  animation: ml-fadein .3s ease;
-}
-@keyframes ml-fadein {
-  from { opacity: 0; transform: translateY(16px); }
-  to   { opacity: 1; transform: none; }
-}
-.ml-card-icon {
-  width: 56px; height: 56px; border-radius: 16px;
-  background: rgba(43,150,168,.1);
-  display: flex; align-items: center; justify-content: center;
-  font-size: 26px; margin-bottom: 20px;
-}
-.ml-card h2 {
-  font-family: 'Playfair Display', serif;
-  font-size: 24px; font-weight: 900; color: #111827;
-  margin-bottom: 6px;
-}
-.ml-card p.sub {
-  font-size: 14px; color: #6B7280; margin-bottom: 28px; line-height: 1.6;
-}
+/* cities */
+.ml-cities-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+.ml-city-btn{padding:10px 12px;border-radius:12px;border:2px solid #E5E7EB;background:white;cursor:pointer;font-family:inherit;font-size:13px;font-weight:600;color:#374151;text-align:left;transition:all .15s;display:flex;align-items:center;gap:7px}
+.ml-city-btn:hover{border-color:#2B96A8;color:#2B96A8}
+.ml-city-btn-on{border-color:#2B96A8;background:#2B96A8;color:white;box-shadow:0 4px 12px rgba(43,150,168,.3)}
 
-/* ── Durée slider ── */
-.ml-slider-wrap {
-  background: #F8FAFC;
-  border-radius: 16px;
-  border: 1px solid #EEF1F5;
-  padding: 28px;
-  margin-bottom: 20px;
-}
-.ml-days-display {
-  text-align: center; margin-bottom: 20px;
-}
-.ml-days-num {
-  font-family: 'Playfair Display', serif;
-  font-size: 64px; font-weight: 900; color: #2B96A8;
-  line-height: 1;
-}
-.ml-days-unit {
-  font-size: 14px; color: #9CA3AF; font-weight: 600;
-  text-transform: uppercase; letter-spacing: .08em;
-  display: block; margin-top: 4px;
-}
-.ml-slider {
-  width: 100%;
-  height: 6px;
-  accent-color: #2B96A8;
-  cursor: pointer;
-  margin-bottom: 8px;
-}
-.ml-slider-labels {
-  display: flex; justify-content: space-between;
-  font-size: 11px; color: #C4C9D0;
-}
-.ml-quick-btns {
-  display: flex; gap: 8px; flex-wrap: wrap; margin-top: 16px;
-}
-.ml-quick-btn {
-  padding: 7px 16px; border-radius: 20px;
-  border: 1.5px solid #E5E7EB; background: white;
-  color: #6B7280; font-size: 12px; font-weight: 600;
-  cursor: pointer; font-family: inherit; transition: all .15s;
-}
-.ml-quick-btn:hover, .ml-quick-btn.active {
-  border-color: #2B96A8; background: #2B96A8; color: white;
-}
+/* calendar empty */
+.ml-cal-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;gap:10px;text-align:center;padding:20px}
+.ml-cal-empty-icon{width:48px;height:48px;border-radius:16px;background:#F3F4F6;display:flex;align-items:center;justify-content:center}
+.ml-cal-empty-text{font-size:13px;color:#9CA3AF;max-width:200px;line-height:1.5}
+.ml-dates-step-label{font-size:11px;font-weight:700;color:#9CA3AF;text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px}
 
-/* ── Villes grid ── */
-.ml-villes-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
-  gap: 10px;
-  max-height: 320px;
-  overflow-y: auto;
-  padding-right: 4px;
-}
-.ml-ville-btn {
-  padding: 14px 10px; border-radius: 14px;
-  border: 2px solid #EEF1F5; background: white;
-  text-align: center; cursor: pointer; font-family: inherit;
-  box-shadow: 0 1px 4px rgba(0,0,0,.04);
-  transition: all .18s; position: relative;
-}
-.ml-ville-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 18px -6px rgba(43,150,168,.22); }
-.ml-ville-btn.selected {
-  border-color: #2B96A8;
-  background: rgba(43,150,168,.05);
-  box-shadow: 0 6px 16px -6px rgba(43,150,168,.28);
-}
-.ml-ville-btn .check {
-  position: absolute; top: 6px; right: 6px;
-  width: 16px; height: 16px; background: #2B96A8; border-radius: 50%;
-  display: flex; align-items: center; justify-content: center;
-}
-.ml-ville-emoji { font-size: 22px; margin-bottom: 4px; display: block; }
-.ml-ville-name  { font-size: 12px; font-weight: 700; color: #1F2937; }
+/* city date row */
+.ml-city-date-row{background:#F8FAFC;border-radius:14px;border:1.5px solid #EEF1F5;padding:12px 14px;margin-bottom:10px}
+.ml-city-date-name{font-size:13px;font-weight:800;color:#111827;margin-bottom:10px;display:flex;align-items:center;gap:6px}
+.ml-date-row{display:flex;align-items:center;gap:8px}
+.ml-date-btn{flex:1;padding:9px 12px;border-radius:10px;border:1.5px solid #E5E7EB;background:white;font-size:12px;font-weight:600;color:#374151;cursor:pointer;font-family:inherit;text-align:left;transition:all .15s;display:flex;align-items:center;gap:6px}
+.ml-date-btn:hover{border-color:#2B96A8}
+.ml-date-btn-active{border-color:#2B96A8;color:#2B96A8;background:rgba(43,150,168,.05)}
+.ml-date-arrow{color:#D1D5DB;flex-shrink:0}
+.ml-nights-badge{font-size:10px;font-weight:700;color:#2B96A8;background:rgba(43,150,168,.08);padding:3px 8px;border-radius:20px;white-space:nowrap;flex-shrink:0}
+.ml-recap-box{margin-top:12px;padding:12px 14px;background:rgba(43,150,168,.05);border-radius:12px;border:1px solid rgba(43,150,168,.15)}
+.ml-recap-title{font-size:11px;font-weight:700;color:#2B96A8;display:flex;align-items:center;gap:5px;margin-bottom:8px;text-transform:uppercase;letter-spacing:.05em}
+.ml-recap-pills{display:flex;flex-wrap:wrap;gap:6px}
+.ml-recap-pill{display:flex;align-items:center;gap:4px;padding:3px 10px;background:white;border-radius:20px;font-size:11px;font-weight:600;color:#374151;border:1px solid #E5E7EB}
+.ml-conflict-banner{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;padding:10px 12px;margin-bottom:10px;background:#FEF2F2;border-radius:10px;border:1px solid #FECACA;font-size:11px;color:#DC2626}
+.ml-conflict-banner button{background:none;border:none;cursor:pointer;color:#DC2626;flex-shrink:0}
 
-/* ── Catégories ── */
-.ml-cats-wrap {
-  display: flex; flex-wrap: wrap; gap: 10px;
-}
-.ml-cat-chip {
-  padding: 9px 16px; border-radius: 22px;
-  border: 1.5px solid #E5E7EB; background: white;
-  color: #6B7280; font-size: 13px; font-weight: 500;
-  cursor: pointer; font-family: inherit;
-  display: flex; align-items: center; gap: 6px;
-  transition: all .15s;
-}
-.ml-cat-chip:hover { transform: translateY(-1px); box-shadow: 0 4px 10px rgba(0,0,0,.08); }
-.ml-cat-chip.active { font-weight: 700; border-width: 2px; }
+/* mini calendar popup */
+.ml-cal-pop{background:white;border-radius:16px;border:1px solid #E5E7EB;box-shadow:0 8px 32px rgba(0,0,0,.14);padding:12px;width:260px}
+.ml-cal-pop-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.ml-cal-nav-btn{width:28px;height:28px;border-radius:8px;border:1px solid #E5E7EB;background:white;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .15s}
+.ml-cal-nav-btn:hover{border-color:#2B96A8;color:#2B96A8}
+.ml-cal-month{font-size:13px;font-weight:700;color:#111827}
+.ml-cal-days-header{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;margin-bottom:4px}
+.ml-cal-day-name{font-size:9px;font-weight:700;color:#9CA3AF;text-align:center;padding:3px 0}
+.ml-cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px}
+.ml-cal-day-btn{height:32px;border-radius:8px;border:none;background:transparent;font-size:11px;font-weight:500;color:#374151;cursor:pointer;transition:all .12s}
+.ml-cal-day-btn:hover:not(:disabled){background:rgba(43,150,168,.1);color:#2B96A8}
+.ml-cal-day-btn:disabled{color:#D1D5DB;cursor:not-allowed}
+.ml-cal-day-btn-selected{background:#2B96A8!important;color:white!important;font-weight:700}
+.ml-cal-day-btn-blocked{background:#FEF2F2!important;color:#FCA5A5!important}
+.ml-cal-legend{display:flex;align-items:center;gap:5px;margin-top:8px;font-size:9px;color:#9CA3AF}
+.ml-cal-legend-dot{width:8px;height:8px;border-radius:50%}
 
-/* ── Footer navigation ── */
-.ml-footer {
-  width: 100%; max-width: 580px;
-  display: flex; align-items: center; justify-content: space-between;
-  margin-top: 24px; gap: 12px;
-}
-.ml-btn-back {
-  display: flex; align-items: center; gap: 7px;
-  padding: 13px 22px; border-radius: 13px;
-  background: white; border: 1.5px solid #E5E7EB;
-  color: #6B7280; font-size: 14px; font-weight: 600;
-  cursor: pointer; font-family: inherit; transition: all .15s;
-}
-.ml-btn-back:hover { border-color: #C4C9D0; color: #374151; }
-.ml-btn-next {
-  flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px;
-  padding: 14px 28px; border-radius: 13px;
-  background: #2B96A8; border: none;
-  color: white; font-size: 15px; font-weight: 700;
-  cursor: pointer; font-family: inherit;
-  transition: all .2s;
-  box-shadow: 0 4px 16px rgba(43,150,168,.35);
-}
-.ml-btn-next:hover:not(:disabled) {
-  background: #248899;
-  box-shadow: 0 6px 22px rgba(43,150,168,.45);
-  transform: translateY(-1px);
-}
-.ml-btn-next:disabled { opacity: .4; cursor: not-allowed; box-shadow: none; }
-.ml-btn-start {
-  background: linear-gradient(135deg, #2B96A8, #1d7a8a);
-}
+/* categories */
+.ml-cats-wrap{display:flex;flex-wrap:wrap;gap:8px}
+.ml-cat-chip{padding:8px 14px;border-radius:22px;border:1.5px solid #E5E7EB;background:white;color:#6B7280;font-size:12px;font-weight:500;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:6px;transition:all .15s}
+.ml-cat-chip:hover{transform:translateY(-1px);box-shadow:0 4px 10px rgba(0,0,0,.08)}
+.ml-cat-chip-on{font-weight:700;border-width:2px}
 
-/* ── Résumé chips ── */
-.ml-summary {
-  display: flex; flex-wrap: wrap; gap: 8px;
-  margin-top: 20px;
-}
-.ml-summary-chip {
-  display: flex; align-items: center; gap: 5px;
-  padding: 5px 12px; border-radius: 20px;
-  background: rgba(43,150,168,.08);
-  border: 1px solid rgba(43,150,168,.2);
-  font-size: 12px; font-weight: 600; color: #2B96A8;
+/* people */
+.ml-people-section{margin-top:20px;padding-top:16px;border-top:1px solid #F3F4F6}
+.ml-people-label{font-size:11px;font-weight:700;color:#9CA3AF;text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px;display:flex;align-items:center;gap:5px}
+.ml-people-row{display:flex;align-items:center;gap:12px}
+.ml-people-btn{width:36px;height:36px;border-radius:10px;border:1.5px solid #E5E7EB;background:white;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:20px;font-weight:700;color:#374151;transition:all .15s;flex-shrink:0;line-height:1}
+.ml-people-btn:hover{border-color:#2B96A8;color:#2B96A8}
+.ml-people-btn:disabled{opacity:.3;cursor:not-allowed}
+.ml-people-display{flex:1;text-align:center;background:rgba(43,150,168,.07);border-radius:10px;padding:8px 0;border:1.5px solid rgba(43,150,168,.2)}
+.ml-people-num{font-family:'Playfair Display',serif;font-size:28px;font-weight:900;color:#2B96A8;line-height:1;display:block}
+.ml-people-unit{font-size:10px;color:#9CA3AF;font-weight:600;text-transform:uppercase;letter-spacing:.05em}
+.ml-people-quick{display:flex;gap:6px;margin-top:10px}
+.ml-people-quick-btn{flex:1;padding:6px 0;border-radius:8px;border:1.5px solid #E5E7EB;background:white;font-size:11px;font-weight:600;color:#9CA3AF;cursor:pointer;font-family:inherit;transition:all .12s}
+.ml-people-quick-btn:hover,.ml-people-quick-btn.pqb-active{border-color:#2B96A8;background:#2B96A8;color:white}
+
+/* CTA */
+.ml-cta-bar{display:flex;flex-direction:column;align-items:center;gap:10px;width:100%;max-width:1100px}
+.ml-selection-pill{padding:8px 20px;background:white;border-radius:30px;border:1px solid #E5E7EB;font-size:12px;color:#374151;box-shadow:0 2px 8px rgba(0,0,0,.05);display:flex;align-items:center;gap:6px}
+.ml-hl{color:#2B96A8;font-weight:700}
+.ml-cta-btn{padding:14px 48px;background:#2B96A8;color:white;border:none;border-radius:50px;font-size:15px;font-weight:700;font-family:inherit;cursor:pointer;display:inline-flex;align-items:center;gap:10px;box-shadow:0 10px 28px -8px rgba(43,150,168,.55);transition:all .22s}
+.ml-cta-btn:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 16px 36px -10px rgba(43,150,168,.65)}
+.ml-cta-btn:disabled{background:#E5E7EB;color:#9CA3AF;box-shadow:none;cursor:not-allowed}
+
+/* utils */
+.ml-skeleton{background:#F3F4F6;border-radius:10px;animation:ml-lp 1.5s ease infinite}
+@keyframes ml-lp{0%,100%{opacity:1}50%{opacity:.4}}
+@keyframes ml-spin{to{transform:rotate(360deg)}}
+::-webkit-scrollbar{width:4px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:#E5E7EB;border-radius:4px}
+
+@media(max-width:900px){
+  .ml-cards-row{flex-direction:column;min-height:auto}
+  .ml-topbar{padding:14px 16px}
+  .ml-main{padding:16px 12px 40px}
 }
 `;
 
-/* ═══════════════════════════════════════ */
+const MONTHS_FULL = ["Janvier","Février","Mars","Avril","Mai","Juin","Juillet","Août","Septembre","Octobre","Novembre","Décembre"];
+const DAYS_FR     = ["Lun","Mar","Mer","Jeu","Ven","Sam","Dim"];
 
+/* ─────────── MiniCalPop ─────────── */
+function MiniCalPop({ value, onChange, minDate, onClose, blockedRanges }: {
+  value: Date | null; onChange: (d: Date) => void;
+  minDate?: Date | null; onClose: () => void;
+  blockedRanges?: { start: Date; end: Date }[];
+}) {
+  const today = new Date(); today.setHours(0,0,0,0);
+  const [cursor, setCursor] = useState(() => {
+    const ref = value || minDate || today;
+    return new Date(ref.getFullYear(), ref.getMonth(), 1);
+  });
+  const year = cursor.getFullYear(), month = cursor.getMonth();
+  let fd = new Date(year, month, 1).getDay();
+  fd = fd === 0 ? 6 : fd - 1;
+  const dim = new Date(year, month + 1, 0).getDate();
+  const cells: (number|null)[] = [];
+  for (let i=0;i<fd;i++) cells.push(null);
+  for (let i=1;i<=dim;i++) cells.push(i);
+
+  const isBlocked = (day: number|null) => {
+    if (!day||!blockedRanges?.length) return false;
+    const d = new Date(year,month,day); d.setHours(0,0,0,0);
+    return blockedRanges.some(r => { const s=new Date(r.start);s.setHours(0,0,0,0);const e=new Date(r.end);e.setHours(0,0,0,0); return d>=s&&d<=e; });
+  };
+  const isDisabled = (day: number|null) => {
+    if (!day) return true;
+    const d = new Date(year,month,day);
+    if (d<today) return true;
+    if (minDate){const m=new Date(minDate);m.setHours(0,0,0,0);if(d<m)return true;}
+    return isBlocked(day);
+  };
+  const isSel = (day: number|null) => day&&value ? value.getDate()===day&&value.getMonth()===month&&value.getFullYear()===year : false;
+
+  return (
+    <div className="ml-cal-pop" onClick={e=>e.stopPropagation()}>
+      <div className="ml-cal-pop-header">
+        <button className="ml-cal-nav-btn" onClick={()=>setCursor(new Date(year,month-1,1))}><ChevronLeft size={14}/></button>
+        <span className="ml-cal-month">{MONTHS_FULL[month]} {year}</span>
+        <button className="ml-cal-nav-btn" onClick={()=>setCursor(new Date(year,month+1,1))}><ChevronRight size={14}/></button>
+      </div>
+      <div className="ml-cal-days-header">{DAYS_FR.map(d=><div key={d} className="ml-cal-day-name">{d}</div>)}</div>
+      <div className="ml-cal-grid">
+        {cells.map((day,i)=>{
+          const dis=isDisabled(day),bl=isBlocked(day),sel=isSel(day);
+          return (
+            <button key={i} disabled={dis}
+              onClick={()=>{if(day&&!dis){onChange(new Date(year,month,day));onClose();}}}
+              className={["ml-cal-day-btn",sel?"ml-cal-day-btn-selected":"",bl?"ml-cal-day-btn-blocked":""].join(" ")}>
+              {day||""}
+            </button>
+          );
+        })}
+      </div>
+      {!!blockedRanges?.length && (
+        <div className="ml-cal-legend">
+          <span className="ml-cal-legend-dot" style={{background:"#FECACA"}}/>Dates réservées pour une autre ville
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ─────────── CityDateRow ─────────── */
+function CityDateRow({ cdr, onStart, onEnd, allCityDates }: {
+  cdr: CityDateRange; onStart:(d:Date)=>void; onEnd:(d:Date)=>void; allCityDates:CityDateRange[];
+}) {
+  const [openPop, setOpenPop] = useState<"start"|"end"|null>(null);
+  const minEnd = cdr.start ? new Date(cdr.start.getFullYear(),cdr.start.getMonth(),cdr.start.getDate()) : undefined;
+  const nights = cdr.start&&cdr.end ? daysBetween(cdr.start,cdr.end) : 0;
+  const blocked = getBlockedDates(allCityDates, cdr.city);
+
+  return (
+    <div className="ml-city-date-row" style={{position:"relative"}}>
+      <div className="ml-city-date-name"><MapPin size={12} color="#2B96A8"/> {cdr.city}</div>
+      <div className="ml-date-row">
+        <div style={{position:"relative",flex:1}}>
+          <button className={`ml-date-btn ${cdr.start?"ml-date-btn-active":""}`} onClick={()=>setOpenPop(openPop==="start"?null:"start")}>
+            <CalendarDays size={12}/> {cdr.start?fmtShort(cdr.start):"Arrivée"}
+          </button>
+          {openPop==="start"&&<>
+            <div style={{position:"fixed",inset:0,zIndex:9998}} onClick={()=>setOpenPop(null)}/>
+            <div style={{position:"absolute",top:"calc(100% + 6px)",left:0,zIndex:9999}}>
+              <MiniCalPop value={cdr.start} onChange={d=>{onStart(d);setOpenPop(null);}} onClose={()=>setOpenPop(null)} blockedRanges={blocked}/>
+            </div>
+          </>}
+        </div>
+        <ArrowRight size={14} className="ml-date-arrow"/>
+        <div style={{position:"relative",flex:1}}>
+          <button className={`ml-date-btn ${cdr.end?"ml-date-btn-active":""}`} onClick={()=>setOpenPop(openPop==="end"?null:"end")}>
+            <CalendarDays size={12}/> {cdr.end?fmtShort(cdr.end):"Départ"}
+          </button>
+          {openPop==="end"&&<>
+            <div style={{position:"fixed",inset:0,zIndex:9998}} onClick={()=>setOpenPop(null)}/>
+            <div style={{position:"absolute",top:"calc(100% + 6px)",right:0,zIndex:9999}}>
+              <MiniCalPop value={cdr.end} onChange={d=>{onEnd(d);setOpenPop(null);}} minDate={minEnd} onClose={()=>setOpenPop(null)} blockedRanges={blocked}/>
+            </div>
+          </>}
+        </div>
+        {nights>0&&<span className="ml-nights-badge">{nights}j</span>}
+      </div>
+    </div>
+  );
+}
+
+/* ─────────── ConfigInner ─────────── */
 function ConfigInner() {
   const router = useRouter();
-  const sb = useMemo(() => createClient(), []);
+  const sb = useMemo(()=>createClient(),[]);
 
-  const [step, setStep]         = useState(1);
-  const [days, setDays]         = useState(3);
   const [selCities, setSelCities] = useState<string[]>([]);
-  const [selCats, setSelCats]   = useState<string[]>([]);
+  const [cityDates, setCityDates] = useState<CityDateRange[]>([]);
+  const [selCats,   setSelCats]   = useState<string[]>([]);
+  const [people,    setPeople]    = useState(2);
+  const [dateError, setDateError] = useState("");
+  const [villes,    setVilles]    = useState<Ville[]>([]);
+  const [categories,setCategories]= useState<Categorie[]>([]);
+  const [loading,   setLoading]   = useState(true);
 
-  const [villes, setVilles]         = useState<Ville[]>([]);
-  const [categories, setCategories] = useState<Categorie[]>([]);
-  const [loading, setLoading]       = useState(true);
-
-  useEffect(() => {
-    (async () => {
-      const [{ data: v }, { data: c }] = await Promise.all([
-        sb.from("villes").select("*").eq("active", true).order("nom"),
+  useEffect(()=>{
+    (async()=>{
+      const [{data:v},{data:c}] = await Promise.all([
+        sb.from("villes").select("*").eq("active",true).order("nom"),
         sb.from("categories").select("*").order("nom"),
       ]);
-      setVilles((v || []) as Ville[]);
-      setCategories((c || []) as Categorie[]);
+      setVilles((v||[]) as Ville[]);
+      setCategories((c||[]) as Categorie[]);
       setLoading(false);
     })();
-  }, []);
+  },[]);
 
-  const toggleCity = (nom: string) =>
-    setSelCities(p => p.includes(nom) ? p.filter(x => x !== nom) : [...p, nom]);
-
-  const toggleCat = (id: string) =>
-    setSelCats(p => p.includes(id) ? p.filter(x => x !== id) : [...p, id]);
-
-  const goToBuilder = () => {
-    const params = new URLSearchParams();
-    params.set("days", String(days));
-    params.set("cities", selCities.join(","));
-    if (selCats.length > 0) params.set("cats", selCats.join(","));
-    router.push(`/modeLibre/builder?${params.toString()}`);
+  const toggleCity=(nom:string)=>{
+    const next=tog(selCities,nom);
+    setSelCities(next);
+    setCityDates(next.map(c=>cityDates.find(cd=>cd.city===c)??{city:c,start:null,end:null}));
   };
 
-  const canNext = step === 1 ? true : step === 2 ? selCities.length > 0 : true;
+  const updateCityStart=(city:string,d:Date)=>{
+    const me=cityDates.find(x=>x.city===city);
+    const conflict=cityDates.find(c=>c.city!==city&&c.start&&c.end&&datesOverlap(d,me?.end||d,c.start,c.end));
+    if(conflict){setDateError(`Conflit de dates avec ${conflict.city}`);return;}
+    setDateError("");
+    setCityDates(prev=>prev.map(c=>c.city===city?{...c,start:d,end:c.end&&d>c.end?null:c.end}:c));
+  };
+  const updateCityEnd=(city:string,d:Date)=>{
+    const me=cityDates.find(x=>x.city===city);
+    const conflict=cityDates.find(c=>c.city!==city&&c.start&&c.end&&datesOverlap(me?.start||d,d,c.start,c.end));
+    if(conflict){setDateError(`Conflit de dates avec ${conflict.city}`);return;}
+    setDateError("");
+    setCityDates(prev=>prev.map(c=>c.city===city?{...c,end:d}:c));
+  };
 
-  const handleNext = () => {
-    if (step < 3) setStep(s => s + 1);
-    else goToBuilder();
+  const totalDays=cityDates.reduce((acc,c)=>c.start&&c.end?acc+daysBetween(c.start,c.end):acc,0);
+  const allDatesSet=cityDates.length>0&&cityDates.every(c=>c.start&&c.end);
+  const canGo=selCities.length>0&&allDatesSet;
+
+  const goToBuilder=()=>{
+    const p=new URLSearchParams();
+    p.set("cities",selCities.join(","));
+    p.set("days",String(totalDays||selCities.length));
+    p.set("people",String(people));
+    if(selCats.length>0) p.set("cats",selCats.join(","));
+    const schedule=cityDates.filter(c=>c.start&&c.end).map(c=>({
+      city:c.city,
+      start:c.start!.toISOString().split("T")[0],
+      end:c.end!.toISOString().split("T")[0],
+    }));
+    p.set("schedule",JSON.stringify(schedule));
+    router.push(`/modeLibre/builder?${p.toString()}`);
   };
 
   return (
     <div className="ml-root">
-      <style>{STYLE}</style>
-      <TouristeNav />
+      <style>{CSS}</style>
+      <TouristeNav/>
 
       {/* Topbar */}
       <div className="ml-topbar">
-        <div className="ml-topbar-badge">
-          <SlidersHorizontal size={12} /> Mode Libre
-        </div>
+        <div className="ml-topbar-badge"><SlidersHorizontal size={12}/> Mode Libre</div>
         <h1>Construisez votre voyage <span>à votre façon</span></h1>
       </div>
 
-      {/* Progress */}
-      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", paddingTop: 28 }}>
-        <div className="ml-progress">
-          {STEPS.map((s, i) => {
-            const done   = step > s.id;
-            const active = step === s.id;
-            return (
-              <React.Fragment key={s.id}>
-                <div className="ml-step-item" style={{ flex: "none" }}>
-                  <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-                    <div className={`ml-step-circle ${done ? "done" : active ? "active" : "pending"}`}>
-                      {done
-                        ? <CheckCircle2 size={18} color="white" />
-                        : <span style={{ fontSize: 18 }}>{s.icon}</span>
-                      }
-                    </div>
-                    <span className={`ml-step-label ${done ? "done" : active ? "active" : ""}`}>
-                      {s.label}
-                    </span>
-                  </div>
+      <main className="ml-main">
+        <div className="ml-cards-row">
+
+          {/* Card 1 : Destinations */}
+          <div className="ml-card">
+            <div className="ml-card-header">
+              <div className="ml-card-header-left">
+                <div className="ml-card-icon"><MapPin size={18} color="#2B96A8"/></div>
+                <div>
+                  <p className="ml-card-title">Destinations</p>
+                  <p className="ml-card-sub">Choisissez vos villes</p>
                 </div>
-                {i < STEPS.length - 1 && (
-                  <div className={`ml-step-connector ${done ? "done" : ""}`} />
-                )}
-              </React.Fragment>
-            );
-          })}
+              </div>
+              {selCities.length>0&&<span className="ml-badge-count">{selCities.length} sélectionnée{selCities.length>1?"s":""}</span>}
+            </div>
+            <div className="ml-card-body">
+              {loading?(
+                <div style={{display:"flex",justifyContent:"center",alignItems:"center",height:80}}>
+                  <Loader2 size={22} color="#2B96A8" style={{animation:"ml-spin .7s linear infinite"}}/>
+                </div>
+              ):(
+                <div className="ml-cities-grid">
+                  {villes.map(v=>{
+                    const on=selCities.includes(v.nom);
+                    return(
+                      <button key={v.id} className={`ml-city-btn ${on?"ml-city-btn-on":""}`} onClick={()=>toggleCity(v.nom)}>
+                        {v.emoji&&<span>{v.emoji}</span>}{v.nom}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Card 2 : Calendrier */}
+          <div className={`ml-card ${selCities.length===0?"ml-card-disabled":""}`}>
+            <div className="ml-card-header">
+              <div className="ml-card-header-left">
+                <div className="ml-card-icon"><CalendarDays size={18} color="#2B96A8"/></div>
+                <div>
+                  <p className="ml-card-title">Calendrier</p>
+                  <p className="ml-card-sub">
+                    {selCities.length===0?"Sélectionnez d'abord une ville":totalDays>0?`${totalDays} jours au total`:"Définissez les dates"}
+                  </p>
+                </div>
+              </div>
+              {totalDays>0&&<span className="ml-badge-days">🗓️ {totalDays}j</span>}
+            </div>
+            <div className="ml-card-body">
+              {selCities.length===0?(
+                <div className="ml-cal-empty">
+                  <div className="ml-cal-empty-icon"><MapPin size={24} color="#9CA3AF"/></div>
+                  <p className="ml-cal-empty-text">Choisissez vos villes à gauche pour organiser votre calendrier</p>
+                </div>
+              ):(
+                <>
+                  <p className="ml-dates-step-label">
+                    {cityDates.filter(c=>c.start&&c.end).length}/{cityDates.length} étapes configurées
+                  </p>
+                  {dateError&&(
+                    <div className="ml-conflict-banner">
+                      <div style={{display:"flex",alignItems:"flex-start",gap:6}}>
+                        <AlertTriangle size={13} style={{marginTop:1,flexShrink:0}}/><span>{dateError}</span>
+                      </div>
+                      <button onClick={()=>setDateError("")}>✕</button>
+                    </div>
+                  )}
+                  {cityDates.map(cdr=>(
+                    <CityDateRow key={cdr.city} cdr={cdr} allCityDates={cityDates}
+                      onStart={d=>updateCityStart(cdr.city,d)} onEnd={d=>updateCityEnd(cdr.city,d)}/>
+                  ))}
+                  {allDatesSet&&!dateError&&(
+                    <div className="ml-recap-box">
+                      <div className="ml-recap-title"><CheckCircle size={13} color="#2B96A8"/> Récapitulatif du séjour</div>
+                      <div className="ml-recap-pills">
+                        {cityDates.map(cdr=>cdr.start&&cdr.end&&(
+                          <span key={cdr.city} className="ml-recap-pill">
+                            <MapPin size={9}/> {cdr.city} · {fmtShort(cdr.start)} → {fmtShort(cdr.end)}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          </div>
+
+          {/* Card 3 : Intérêts + Personnes */}
+          <div className={`ml-card ${!allDatesSet?"ml-card-disabled":""}`}>
+            <div className="ml-card-header">
+              <div className="ml-card-header-left">
+                <div className="ml-card-icon"><Heart size={18} color="#2B96A8"/></div>
+                <div>
+                  <p className="ml-card-title">Centres d&apos;intérêt</p>
+                  <p className="ml-card-sub">
+                    {!allDatesSet?"Définissez d'abord les dates":selCats.length===0?"Optionnel":`${selCats.length} sélectionné${selCats.length>1?"s":""}`}
+                  </p>
+                </div>
+              </div>
+            </div>
+            <div className="ml-card-body">
+              {loading?(
+                <div style={{display:"flex",flexWrap:"wrap",gap:8}}>
+                  {Array.from({length:6}).map((_,i)=><div key={i} className="ml-skeleton" style={{height:34,width:90,borderRadius:22}}/>)}
+                </div>
+              ):(
+                <div className="ml-cats-wrap">
+                  {categories.map(cat=>{
+                    const on=selCats.includes(cat.nom);
+                    return(
+                      <button key={cat.id}
+                        className={`ml-cat-chip ${on?"ml-cat-chip-on":""}`}
+                        style={on?{borderColor:cat.couleur||"#2B96A8",color:cat.couleur||"#2B96A8",background:`${cat.couleur||"#2B96A8"}12`}:{}}
+                        onClick={()=>setSelCats(tog(selCats,cat.nom))}>
+                        {cat.emoji&&<span>{cat.emoji}</span>}{cat.nom}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+
+              {/* Nombre de personnes */}
+              <div className="ml-people-section">
+                <p className="ml-people-label"><Users size={11}/> Nombre de personnes</p>
+                <div className="ml-people-row">
+                  <button className="ml-people-btn" disabled={people<=1} onClick={()=>setPeople(p=>p-1)}>−</button>
+                  <div className="ml-people-display">
+                    <span className="ml-people-num">{people}</span>
+                    <span className="ml-people-unit">{people>1?"personnes":"personne"}</span>
+                  </div>
+                  <button className="ml-people-btn" disabled={people>=20} onClick={()=>setPeople(p=>p+1)}>+</button>
+                </div>
+                <div className="ml-people-quick">
+                  {[1,2,3,4,5,6].map(n=>(
+                    <button key={n} className={`ml-people-quick-btn ${people===n?"pqb-active":""}`} onClick={()=>setPeople(n)}>{n}</button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+
         </div>
-      </div>
 
-      {/* Content */}
-      <div className="ml-content">
-
-        {/* ─── Étape 1 : Durée ─── */}
-        {step === 1 && (
-          <div className="ml-card" key="step1">
-            <div className="ml-card-icon">📅</div>
-            <h2>Combien de jours ?</h2>
-            <p className="sub">Choisissez la durée de votre séjour en Tunisie</p>
-            <div className="ml-slider-wrap">
-              <div className="ml-days-display">
-                <span className="ml-days-num">{days}</span>
-                <span className="ml-days-unit">jour{days > 1 ? "s" : ""}</span>
-              </div>
-              <input type="range" min={1} max={14} value={days}
-                onChange={e => setDays(Number(e.target.value))}
-                className="ml-slider" />
-              <div className="ml-slider-labels">
-                <span>1 jour</span><span>14 jours</span>
-              </div>
-              <div className="ml-quick-btns">
-                {QUICK_DAYS.map(d => (
-                  <button key={d} className={`ml-quick-btn ${days === d ? "active" : ""}`}
-                    onClick={() => setDays(d)}>
-                    {d}j
-                  </button>
-                ))}
-              </div>
+        {/* CTA */}
+        <div className="ml-cta-bar">
+          {selCities.length>0&&(
+            <div className="ml-selection-pill">
+              {totalDays>0&&<><span className="ml-hl">{totalDays}j</span> · </>}
+              {selCities.slice(0,3).join(", ")}
+              {selCities.length>3&&<span className="ml-hl"> +{selCities.length-3}</span>}
+              {people>1&&<> · <span className="ml-hl">{people} pers.</span></>}
             </div>
-          </div>
-        )}
-
-        {/* ─── Étape 2 : Villes ─── */}
-        {step === 2 && (
-          <div className="ml-card" key="step2">
-            <div className="ml-card-icon">🗺️</div>
-            <h2>Quelles destinations ?</h2>
-            <p className="sub">Sélectionnez les villes que vous souhaitez visiter</p>
-            {loading ? (
-              <div style={{ display: "flex", justifyContent: "center", padding: "40px 0" }}>
-                <Loader2 size={28} color="#2B96A8" style={{ animation: "spin .7s linear infinite" }} />
-                <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
-              </div>
-            ) : (
-              <div className="ml-villes-grid">
-                {villes.map(v => {
-                  const selected = selCities.includes(v.nom);
-                  return (
-                    <button key={v.id} className={`ml-ville-btn ${selected ? "selected" : ""}`}
-                      onClick={() => toggleCity(v.nom)}>
-                      {selected && (
-                        <div className="check">
-                          <CheckCircle2 size={10} color="white" />
-                        </div>
-                      )}
-                      <span className="ml-ville-emoji">{v.emoji || "📍"}</span>
-                      <span className="ml-ville-name">{v.nom}</span>
-                    </button>
-                  );
-                })}
-              </div>
-            )}
-            {selCities.length > 0 && (
-              <div className="ml-summary">
-                {selCities.map(c => (
-                  <span key={c} className="ml-summary-chip">
-                    <MapPin size={11} /> {c}
-                  </span>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* ─── Étape 3 : Catégories ─── */}
-        {step === 3 && (
-          <div className="ml-card" key="step3">
-            <div className="ml-card-icon">✨</div>
-            <h2>Vos centres d'intérêt</h2>
-            <p className="sub">Optionnel — aide à personnaliser votre itinéraire dans le builder</p>
-            {loading ? (
-              <div style={{ display: "flex", justifyContent: "center", padding: "40px 0" }}>
-                <Loader2 size={28} color="#2B96A8" style={{ animation: "spin .7s linear infinite" }} />
-                <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
-              </div>
-            ) : (
-              <div className="ml-cats-wrap">
-                {categories.map(cat => {
-                  const active = selCats.includes(cat.id);
-                  return (
-                    <button key={cat.id}
-                      className={`ml-cat-chip ${active ? "active" : ""}`}
-                      style={active ? {
-                        borderColor: cat.couleur || "#2B96A8",
-                        color: cat.couleur || "#2B96A8",
-                        background: `${cat.couleur || "#2B96A8"}12`,
-                      } : {}}
-                      onClick={() => toggleCat(cat.id)}>
-                      {cat.emoji && <span>{cat.emoji}</span>}
-                      {cat.nom}
-                    </button>
-                  );
-                })}
-              </div>
-            )}
-
-            {/* Résumé final */}
-            <div style={{
-              marginTop: 28, padding: "16px 20px",
-              background: "#F0FDF4", borderRadius: 14,
-              border: "1px solid #BBF7D0",
-            }}>
-              <p style={{ fontSize: 12, fontWeight: 700, color: "#065F46", marginBottom: 10, textTransform: "uppercase", letterSpacing: ".06em" }}>
-                Récapitulatif
-              </p>
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-                <span className="ml-summary-chip"><Calendar size={11} /> {days} jour{days > 1 ? "s" : ""}</span>
-                {selCities.map(c => (
-                  <span key={c} className="ml-summary-chip"><MapPin size={11} /> {c}</span>
-                ))}
-                {selCats.length > 0 && (
-                  <span className="ml-summary-chip"><Sparkles size={11} /> {selCats.length} intérêt{selCats.length > 1 ? "s" : ""}</span>
-                )}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Footer */}
-        <div className="ml-footer">
-          {step > 1 ? (
-            <button className="ml-btn-back" onClick={() => setStep(s => s - 1)}>
-              <ArrowLeft size={15} /> Retour
-            </button>
-          ) : <div />}
-
-          <button
-            className={`ml-btn-next ${step === 3 ? "ml-btn-start" : ""}`}
-            onClick={handleNext}
-            disabled={!canNext}>
-            {step === 3 ? (
-              <><SlidersHorizontal size={15} /> Ouvrir le builder</>
-            ) : (
-              <>Continuer <ArrowRight size={15} /></>
-            )}
+          )}
+          <button className="ml-cta-btn" onClick={goToBuilder} disabled={!canGo}>
+            Composer mon itinéraire <ArrowRight size={18}/>
           </button>
         </div>
-      </div>
+      </main>
     </div>
   );
 }
@@ -523,12 +505,12 @@ function ConfigInner() {
 export default function ModeLibrePage() {
   return (
     <Suspense fallback={
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100vh", background: "#F7F9FC" }}>
-        <Loader2 size={28} color="#2B96A8" style={{ animation: "spin .7s linear infinite" }} />
-        <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+      <div style={{display:"flex",alignItems:"center",justifyContent:"center",height:"100vh",background:"#F7F9FC"}}>
+        <Loader2 size={28} color="#2B96A8" style={{animation:"ml-spin .7s linear infinite"}}/>
+        <style>{`@keyframes ml-spin{to{transform:rotate(360deg)}}`}</style>
       </div>
     }>
-      <ConfigInner />
+      <ConfigInner/>
     </Suspense>
   );
 }
