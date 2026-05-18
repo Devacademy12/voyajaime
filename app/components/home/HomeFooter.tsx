@@ -73,16 +73,13 @@ export default function HomeFooter({ user, openAuth }: HomeFooterProps) {
         {/* Col 2 — Explorer */}
         <FooterCol title="Explorer" links={[
           { label: "Toutes les excursions",    href: ROUTES.excursions },
-          { label: "Excursions à Tunis",       href: `${ROUTES.excursions}?city=Tunis` },
-          { label: "Excursions à Djerba",      href: `${ROUTES.excursions}?city=Djerba` },
-          { label: "Excursions à Sousse",      href: `${ROUTES.excursions}?city=Sousse` },
-          { label: "Excursions à Hammamet",    href: `${ROUTES.excursions}?city=Hammamet` },
+          
         ]} />
 
         {/* Col 3 — Informations */}
         <FooterCol title="Informations" links={[
-          { label: "À propos",                      href: "/a-propos" },
-          { label: "Comment ça marche",             href: "/comment-ca-marche" },
+          { label: "À propos",                      href: "/about" },
+          { label: "Comment ça marche",             href: "#chemins" },
           { label: "Devenir prestataire",           href: "#", onClick: () => handleOpenAuth("prestataire") },
           { label: "Conditions générales",          href: "/cgv" },
           { label: "Politique de confidentialité",  href: "/confidentialite" },
