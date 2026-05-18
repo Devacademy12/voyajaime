@@ -3,6 +3,7 @@ import { Heart, ShieldCheck, Globe, Star, ArrowRight, MapPin, Users } from "luci
 import Link from "next/link";
 import type { Metadata } from "next";
 import TouristeNav from "@/app/components/touriste/TouristeNav";
+import HomeFooter from "@/app/components/home/HomeFooter";
 
 /* ══ SEO ══ */
 export async function generateMetadata(): Promise<Metadata> {
@@ -900,26 +901,9 @@ export default async function AboutPage() {
           </div>
         </section>
       )}
+      
 
-      {/* ══════════════════════════════
-          FOOTER
-      ══════════════════════════════ */}
-      <footer style={{ background: "#F3F4F6", borderTop: "1px solid #E5E7EB", padding: "24px 40px" }}>
-        <div className="footer-inner">
-          <p style={{ color: "#9CA3AF", fontSize: 13 }}>
-            © 2026 VoyajAime — Tourisme authentique en Tunisie
-          </p>
-          <div className="footer-links" style={{ display: "flex", gap: 24 }}>
-            <Link href="/excursions" style={{ color: "#6B7280", fontSize: 13, textDecoration: "none", fontWeight: 500 }}>
-              Excursions →
-            </Link>
-            <Link href="/contact" style={{ color: "#6B7280", fontSize: 13, textDecoration: "none", fontWeight: 500 }}>
-              Contact →
-            </Link>
-          </div>
-        </div>
-      </footer>
-
+      <HomeFooter user={null} />
       <script dangerouslySetInnerHTML={{ __html: SCROLL_REVEAL_SCRIPT }} />
     </>
   );

@@ -5,6 +5,8 @@ import TouristeNav from "@/app/components/touriste/TouristeNav";
 import { BlogImage } from "@/app/components/touriste/BlogImage";
 import { CommentForm } from "@/app/components/touriste/CommentForm";
 import { NewsletterWidget } from "@/app/components/touriste/NewsletterWidget";
+import HomeFooter from "@/app/components/home/HomeFooter";
+
 import {
   Calendar, Clock, Eye, ArrowLeft, ArrowRight,
   Tag, User, MessageSquare, ChevronRight,
@@ -493,13 +495,8 @@ export default async function BlogDetailPage({
         </div>
       </div>
 
-      {/* ── Footer ── */}
-      <div style={{ background: "#0D1117", padding: "22px 48px", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12 }}>
-        <p style={{ color: "#4B5563", fontSize: 12 }}>© 2026 VoyajAime — Tourisme en Tunisie</p>
-        <Link href="/excursions" style={{ color: "#6B7280", fontSize: 12, textDecoration: "none", fontWeight: 500 }}>
-          Voir les excursions →
-        </Link>
-      </div>
+     <HomeFooter user={null} />
+     
     </>
   );
 }

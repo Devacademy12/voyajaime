@@ -1,14 +1,24 @@
+"use client";
+
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { User, LogIn, MapPin, Phone, Mail, ExternalLink } from "lucide-react";
 import { ROUTES } from "@/app/lib/routes";
 import { Logo } from "@/lib/homeUtils";
 
 interface HomeFooterProps {
   user:     { email?: string; id?: string } | null | undefined;
-  openAuth: (mode: "login" | "register" | "prestataire") => void;
+  openAuth?: (mode: "login" | "register" | "prestataire") => void;
 }
 
 export default function HomeFooter({ user, openAuth }: HomeFooterProps) {
+  const router = useRouter();
+  const handleOpenAuth = (mode: "login" | "register" | "prestataire") => {
+    if (openAuth) return openAuth(mode);
+    // Fallback: navigate to auth page with optional mode query
+    const url = mode ? `/auth?mode=${mode}` : "/auth";
+    router.push(url);
+  };
   const isLoggedIn = Boolean(user?.id);
 
   return (
@@ -30,7 +40,7 @@ export default function HomeFooter({ user, openAuth }: HomeFooterProps) {
           </p>
         </div>
         <button
-          onClick={() => openAuth("prestataire")}
+          onClick={() => handleOpenAuth("prestataire")}
           style={{
             padding: "13px 28px", background: "white", color: "#2B96A8",
             borderRadius: 30, border: "none", fontSize: 14, fontWeight: 800,
@@ -73,7 +83,7 @@ export default function HomeFooter({ user, openAuth }: HomeFooterProps) {
         <FooterCol title="Informations" links={[
           { label: "À propos",                      href: "/a-propos" },
           { label: "Comment ça marche",             href: "/comment-ca-marche" },
-          { label: "Devenir prestataire",           href: "#", onClick: () => openAuth("prestataire") },
+          { label: "Devenir prestataire",           href: "#", onClick: () => handleOpenAuth("prestataire") },
           { label: "Conditions générales",          href: "/cgv" },
           { label: "Politique de confidentialité",  href: "/confidentialite" },
         ]} />
@@ -107,7 +117,7 @@ export default function HomeFooter({ user, openAuth }: HomeFooterProps) {
                 </Link>
               ) : (
                 <button
-                  onClick={() => openAuth("login")}
+                  onClick={() => handleOpenAuth("login")}
                   style={{
                     padding: "10px 20px", background: "#2B96A8", color: "white",
                     borderRadius: 30, border: "none", fontSize: 13, fontWeight: 700,
