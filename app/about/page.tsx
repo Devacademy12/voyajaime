@@ -17,7 +17,7 @@ export async function generateMetadata(): Promise<Metadata> {
     title: data?.title ? `${data.title} — À propos | VoyajAime` : "À propos de VoyajAime — Tourisme authentique en Tunisie",
     description: data?.subtitle ?? "Découvrez VoyajAime, la plateforme qui connecte les voyageurs avec les meilleures excursions et prestataires locaux de Tunisie.",
     openGraph: { title: data?.title ?? "À propos de VoyajAime", description: data?.subtitle ?? "Tourisme authentique en Tunisie", type: "website" },
-    alternates: { canonical: "/a-propos" },
+    alternates: { canonical: "/about" },
   };
 }
 
@@ -529,7 +529,7 @@ export default async function AboutPage() {
   const jsonLd = {
     "@context":"https://schema.org","@type":"TravelAgency",
     name:"VoyajAime", description: hero?.subtitle ?? "Tourisme authentique en Tunisie",
-    url:"https://voyajaime.tn/a-propos", foundingDate:"2024",
+    url:"https://voyajaime.tn/about", foundingDate:"2024",
     areaServed:{ "@type":"Country", name:"Tunisie" },
   };
 

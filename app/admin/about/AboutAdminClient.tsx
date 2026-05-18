@@ -966,7 +966,7 @@ export default function AboutAdminClient({ initialSections }: { initialSections:
             </div>
           )}
 
-          <a href="/a-propos" target="_blank" rel="noopener" className="preview-btn">
+          <a href="/about" target="_blank" rel="noopener" className="preview-btn">
             <Eye size={13}/> Voir la page
           </a>
 
@@ -999,12 +999,7 @@ export default function AboutAdminClient({ initialSections }: { initialSections:
           <SectionCard key={sec.id} sec={sec} onUpdate={updateSection} />
         ))}
 
-        {sections.length > 0 && (
-          <div style={{ padding:"12px 16px", background:"#FFFBEB", border:"1.5px solid #FDE68A", borderRadius:12, fontSize:12, color:"#92400E", lineHeight:1.6 }}>
-            <strong>💡 Astuce :</strong> Les images sont compressées et stockées directement en base — aucun bucket Storage requis.
-            Pensez à <strong>Enregistrer tout</strong> avant de quitter.
-          </div>
-        )}
+       
       </div>
     </div>
   );

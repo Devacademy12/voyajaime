@@ -148,7 +148,7 @@ export default function AboutSection() {
               {mission?.title ?? "À propos de VoyajAime"}
             </h2>
           </div>
-          <Link href="/a-propos" className="about-link" aria-label="En savoir plus sur VoyajAime">
+          <Link href="/about" className="about-link" aria-label="En savoir plus sur VoyajAime">
             En savoir plus <ArrowRight size={15} />
           </Link>
         </div>
