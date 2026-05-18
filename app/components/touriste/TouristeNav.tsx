@@ -7,7 +7,7 @@ import { createClient } from "@/lib/supabaseClient";
 import { ROUTES } from "@/app/lib/routes";
 import {
   Heart, LogOut, Menu, X, MessageCircle,
-  User, Plane, Wand2, Navigation, ChevronDown,
+  User, Plane, Wand2, Navigation, ChevronDown,Clock,
 } from "lucide-react";
 
 const Logo = () => (
@@ -624,7 +624,7 @@ export default function TouristeNav({
                       </Link>
                       {ROUTES.touriste.historique && (
                         <Link href={ROUTES.touriste.historique} className="ddi" onClick={() => setMenuOpen(false)}>
-                          <MessageCircle size={15} /> Historique
+    <Clock size={15} /> Historique
                         </Link>
                       )}
 
