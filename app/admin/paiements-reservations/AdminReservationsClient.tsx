@@ -3,7 +3,7 @@
 import { useState, useMemo } from "react";
 import {
   CalendarDays, Users, CreditCard, TrendingUp, Download,
-  Search, CheckCircle2, Building2, Clock,
+  Search, CheckCircle2, Building2, Clock, ChevronDown, ChevronUp,
 } from "lucide-react";
 
 /* ─── Types ─────────────────────────────────────────────────── */
@@ -33,14 +33,12 @@ interface ExcursionCap {
   price_per_person: number; is_active: boolean;
 }
 
-/* SlotInfo: capacite[excursion_id][slotKey] */
 interface SlotInfo { booked: number; date: string; time: string; }
 
 interface Props {
   reservations: Reservation[];
   paiements: Paiement[];
   excursions: ExcursionCap[];
-  /** capacite[excursion_id]["date|time"] = { booked, date, time } */
   capacite: Record<string, Record<string, SlotInfo>>;
 }
 
@@ -134,6 +132,23 @@ const CSS = `
   tbody tr:last-child td { border-bottom: none; }
   tbody tr:hover td { background: #F8FAFC; }
 
+  /* ── Show-all footer row ── */
+  .show-all-row td {
+    text-align: center;
+    padding: 14px 16px;
+    background: #F8FAFC;
+    border-top: 1.5px dashed #E2E8F0;
+  }
+  .show-all-btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 7px 22px; border-radius: 10px;
+    border: 1.5px solid #E2E8F0;
+    background: #FFFFFF; color: #053366;
+    font-size: 12px; font-weight: 700; font-family: 'DM Sans', sans-serif;
+    cursor: pointer; transition: all .15s;
+  }
+  .show-all-btn:hover { border-color: #2B96A8; color: #2B96A8; background: #EFF9FB; }
+
   /* Excursion group header row */
   .group-header td {
     background: #F1F5F9; font-weight: 700; font-size: 12px;
@@ -216,6 +231,8 @@ function fmtDateShort(s: string) {
 
 type Tab = "reservations" | "paiements" | "capacite";
 
+const PAGE = 10;
+
 /* ─── Component ─────────────────────────────────────────────── */
 export default function AdminReservationsClient({ reservations, paiements, excursions, capacite }: Props) {
   const [tab, setTab] = useState<Tab>("reservations");
@@ -225,8 +242,14 @@ export default function AdminReservationsClient({ reservations, paiements, excur
   const [payStatus,  setPayStatus]  = useState("");
   const [capSearch,  setCapSearch]  = useState("");
 
+  /* ── Show-all toggles (reset when filters change) ── */
+  const [showAllResa, setShowAllResa] = useState(false);
+  const [showAllPay,  setShowAllPay]  = useState(false);
+  const [showAllCap,  setShowAllCap]  = useState(false);
+
   /* ── Filtered reservations ── */
   const filteredResa = useMemo(() => {
+    setShowAllResa(false);
     return reservations.filter((r) => {
       const q = resaSearch.toLowerCase();
       const name = r.touriste?.full_name?.toLowerCase() || "";
@@ -240,6 +263,7 @@ export default function AdminReservationsClient({ reservations, paiements, excur
 
   /* ── Filtered paiements ── */
   const filteredPay = useMemo(() => {
+    setShowAllPay(false);
     return paiements.filter((p) => {
       const q    = paySearch.toLowerCase();
       const name = p.reservation?.touriste?.full_name?.toLowerCase() || "";
@@ -282,7 +306,6 @@ export default function AdminReservationsClient({ reservations, paiements, excur
       });
     });
 
-    // Sort: by excursion title, then date asc, then time asc
     rows.sort((a, b) => {
       const t = a.excursionTitle.localeCompare(b.excursionTitle);
       if (t !== 0) return t;
@@ -295,6 +318,7 @@ export default function AdminReservationsClient({ reservations, paiements, excur
   }, [capacite, excursions]);
 
   const filteredCapRows = useMemo(() => {
+    setShowAllCap(false);
     if (!capSearch.trim()) return capRows;
     const q = capSearch.toLowerCase();
     return capRows.filter(
@@ -323,10 +347,15 @@ export default function AdminReservationsClient({ reservations, paiements, excur
     return groups;
   }, [filteredCapRows]);
 
+  /* Sliced versions for display */
+  const visibleResa = showAllResa ? filteredResa : filteredResa.slice(0, PAGE);
+  const visiblePay  = showAllPay  ? filteredPay  : filteredPay.slice(0, PAGE);
+  const visibleCap  = showAllCap  ? groupedCapRows : groupedCapRows.slice(0, PAGE);
+
   /* ── Cap summary stats ── */
   const capStats = useMemo(() => {
-    const totalSlots = capRows.length;
-    const fullSlots  = capRows.filter((r) => r.booked >= r.maxPeople).length;
+    const totalSlots  = capRows.length;
+    const fullSlots   = capRows.filter((r) => r.booked >= r.maxPeople).length;
     const totalBooked = capRows.reduce((a, r) => a + r.booked, 0);
     return { totalSlots, fullSlots, totalBooked };
   }, [capRows]);
@@ -341,7 +370,7 @@ export default function AdminReservationsClient({ reservations, paiements, excur
 
   /* ── Payment stats ── */
   const payStats = useMemo(() => {
-    const paid = paiements.filter((p) => p.status === "paid");
+    const paid  = paiements.filter((p) => p.status === "paid");
     const total = paid.reduce((a, b) => a + b.amount, 0);
     return {
       total,
@@ -500,40 +529,59 @@ export default function AdminReservationsClient({ reservations, paiements, excur
                     <tr><td colSpan={12} style={{ textAlign: "center", padding: "3rem", color: "#9CA3AF" }}>
                       Aucune réservation trouvée
                     </td></tr>
-                  ) : filteredResa.map((r) => (
-                    <tr key={r.id}>
-                      <td>
-                        <div className="tourist-cell">
-                          <span className="avatar">{initials(r.touriste?.full_name ?? null)}</span>
-                          <span>{r.touriste?.full_name || "—"}</span>
-                        </div>
-                      </td>
-                      <td style={{ color: "#9CA3AF" }}>{r.touriste?.phone || "—"}</td>
-                      <td title={r.excursion?.title}>{r.excursion?.title || "—"}</td>
-                      <td>{r.excursion?.city || "—"}</td>
-                      <td>{fmtDate(r.date)}</td>
-                      <td>
-                        <span className="time-chip">
-                          <Clock size={11} />
-                          {r.time ? String(r.time).slice(0, 5) : "—"}
-                        </span>
-                      </td>
-                      <td style={{ textAlign: "center" }}>{r.people_count}</td>
-                      <td style={{ fontWeight: 600 }}>{fmt(r.total_price)}</td>
-                      <td style={{ color: "#2B96A8" }}>{fmt(r.platform_fee)}</td>
-                      <td>
-                        <span className={`badge b-${r.status}`}>
-                          {r.status === "confirmed" ? "Confirmé" : r.status === "pending" ? "En attente" : r.status === "completed" ? "Terminé" : "Annulé"}
-                        </span>
-                      </td>
-                      <td>
-                        <span className={`badge b-${r.payment_status || "unpaid"}`}>
-                          {r.payment_status === "paid" ? "Payé" : r.payment_status === "expired" ? "Expiré" : "Non payé"}
-                        </span>
-                      </td>
-                      <td style={{ fontFamily: "monospace", fontSize: 11, color: "#2B96A8" }}>{r.booking_code}</td>
-                    </tr>
-                  ))}
+                  ) : (
+                    <>
+                      {visibleResa.map((r) => (
+                        <tr key={r.id}>
+                          <td>
+                            <div className="tourist-cell">
+                              <span className="avatar">{initials(r.touriste?.full_name ?? null)}</span>
+                              <span>{r.touriste?.full_name || "—"}</span>
+                            </div>
+                          </td>
+                          <td style={{ color: "#9CA3AF" }}>{r.touriste?.phone || "—"}</td>
+                          <td title={r.excursion?.title}>{r.excursion?.title || "—"}</td>
+                          <td>{r.excursion?.city || "—"}</td>
+                          <td>{fmtDate(r.date)}</td>
+                          <td>
+                            <span className="time-chip">
+                              <Clock size={11} />
+                              {r.time ? String(r.time).slice(0, 5) : "—"}
+                            </span>
+                          </td>
+                          <td style={{ textAlign: "center" }}>{r.people_count}</td>
+                          <td style={{ fontWeight: 600 }}>{fmt(r.total_price)}</td>
+                          <td style={{ color: "#2B96A8" }}>{fmt(r.platform_fee)}</td>
+                          <td>
+                            <span className={`badge b-${r.status}`}>
+                              {r.status === "confirmed" ? "Confirmé" : r.status === "pending" ? "En attente" : r.status === "completed" ? "Terminé" : "Annulé"}
+                            </span>
+                          </td>
+                          <td>
+                            <span className={`badge b-${r.payment_status || "unpaid"}`}>
+                              {r.payment_status === "paid" ? "Payé" : r.payment_status === "expired" ? "Expiré" : "Non payé"}
+                            </span>
+                          </td>
+                          <td style={{ fontFamily: "monospace", fontSize: 11, color: "#2B96A8" }}>{r.booking_code}</td>
+                        </tr>
+                      ))}
+
+                      {/* ── Show-all / Réduire ── */}
+                      {filteredResa.length > PAGE && (
+                        <tr className="show-all-row">
+                          <td colSpan={12}>
+                            <button className="show-all-btn" onClick={() => setShowAllResa((v) => !v)}>
+                              {showAllResa ? (
+                                <><ChevronUp size={13} /> Réduire</>
+                              ) : (
+                                <><ChevronDown size={13} /> Voir tout — {filteredResa.length} réservations</>
+                              )}
+                            </button>
+                          </td>
+                        </tr>
+                      )}
+                    </>
+                  )}
                 </tbody>
               </table>
             </div>
@@ -607,35 +655,54 @@ export default function AdminReservationsClient({ reservations, paiements, excur
                     <tr><td colSpan={11} style={{ textAlign: "center", padding: "3rem", color: "#9CA3AF" }}>
                       Aucun paiement trouvé
                     </td></tr>
-                  ) : filteredPay.map((p) => {
-                    const total = p.amount;
-                    return (
-                      <tr key={p.id}>
-                        <td>
-                          <div className="tourist-cell">
-                            <span className="avatar">{initials(p.reservation?.touriste?.full_name ?? null)}</span>
-                            <span>{p.reservation?.touriste?.full_name || "—"}</span>
-                          </div>
-                        </td>
-                        <td style={{ color: "#9CA3AF" }}>{p.reservation?.touriste?.phone || "—"}</td>
-                        <td title={p.reservation?.excursion?.title}>{p.reservation?.excursion?.title || "—"}</td>
-                        <td>{p.reservation?.excursion?.city || "—"}</td>
-                        <td>{fmtDate(p.reservation?.date ?? null)}</td>
-                        <td style={{ fontWeight: 600 }}>{fmt(total)}</td>
-                        <td style={{ color: "#D97706", fontWeight: 600 }}>{fmt(total * 0.10)}</td>
-                        <td style={{ color: "#0F6E56", fontWeight: 600 }}>{fmt(total * 0.90)}</td>
-                        <td style={{ color: "#9CA3AF", fontSize: 12 }}>
-                          {p.prestataire?.agency_name || p.prestataire?.full_name || "—"}
-                        </td>
-                        <td style={{ fontSize: 12 }}>{fmtDate(p.paid_at)}</td>
-                        <td>
-                          <span className={`badge b-${p.status}`}>
-                            {p.status === "paid" ? "Payé" : p.status === "refunded" ? "Remboursé" : "En attente"}
-                          </span>
-                        </td>
-                      </tr>
-                    );
-                  })}
+                  ) : (
+                    <>
+                      {visiblePay.map((p) => {
+                        const total = p.amount;
+                        return (
+                          <tr key={p.id}>
+                            <td>
+                              <div className="tourist-cell">
+                                <span className="avatar">{initials(p.reservation?.touriste?.full_name ?? null)}</span>
+                                <span>{p.reservation?.touriste?.full_name || "—"}</span>
+                              </div>
+                            </td>
+                            <td style={{ color: "#9CA3AF" }}>{p.reservation?.touriste?.phone || "—"}</td>
+                            <td title={p.reservation?.excursion?.title}>{p.reservation?.excursion?.title || "—"}</td>
+                            <td>{p.reservation?.excursion?.city || "—"}</td>
+                            <td>{fmtDate(p.reservation?.date ?? null)}</td>
+                            <td style={{ fontWeight: 600 }}>{fmt(total)}</td>
+                            <td style={{ color: "#D97706", fontWeight: 600 }}>{fmt(total * 0.10)}</td>
+                            <td style={{ color: "#0F6E56", fontWeight: 600 }}>{fmt(total * 0.90)}</td>
+                            <td style={{ color: "#9CA3AF", fontSize: 12 }}>
+                              {p.prestataire?.agency_name || p.prestataire?.full_name || "—"}
+                            </td>
+                            <td style={{ fontSize: 12 }}>{fmtDate(p.paid_at)}</td>
+                            <td>
+                              <span className={`badge b-${p.status}`}>
+                                {p.status === "paid" ? "Payé" : p.status === "refunded" ? "Remboursé" : "En attente"}
+                              </span>
+                            </td>
+                          </tr>
+                        );
+                      })}
+
+                      {/* ── Show-all / Réduire ── */}
+                      {filteredPay.length > PAGE && (
+                        <tr className="show-all-row">
+                          <td colSpan={11}>
+                            <button className="show-all-btn" onClick={() => setShowAllPay((v) => !v)}>
+                              {showAllPay ? (
+                                <><ChevronUp size={13} /> Réduire</>
+                              ) : (
+                                <><ChevronDown size={13} /> Voir tout — {filteredPay.length} paiements</>
+                              )}
+                            </button>
+                          </td>
+                        </tr>
+                      )}
+                    </>
+                  )}
                 </tbody>
               </table>
             </div>
@@ -645,7 +712,6 @@ export default function AdminReservationsClient({ reservations, paiements, excur
         {/* ══ CAPACITE TAB ══ */}
         {tab === "capacite" && (
           <>
-            {/* Metrics */}
             <div className="metrics-row" style={{ marginBottom: 20 }}>
               {[
                 { icon: <CalendarDays size={16} color="#2B96A8" />, bg: "#EFF9FB", num: capStats.totalSlots,  lbl: "Créneaux actifs",    numColor: "#053366" },
@@ -704,74 +770,91 @@ export default function AdminReservationsClient({ reservations, paiements, excur
                         Aucune donnée de capacité disponible
                       </td>
                     </tr>
-                  ) : groupedCapRows.map((group) => (
+                  ) : (
                     <>
-                      {/* Group header row */}
-                      <tr key={`grp-${group.excursionId}`} className="group-header">
-                        <td colSpan={9}>
-                          {group.excursionTitle}
-                          <span style={{ fontWeight: 400, color: "#64748B", marginLeft: 10, fontSize: 11 }}>
-                            {group.excursionCity} · max {group.maxPeople} pers. / créneau · {group.slots.length} créneau{group.slots.length > 1 ? "x" : ""}
-                          </span>
-                        </td>
-                      </tr>
-
-                      {/* Slot rows */}
-                      {group.slots.map((slot) => {
-                        const avail    = slot.maxPeople - slot.booked;
-                        const pct      = Math.min(100, Math.round((slot.booked / slot.maxPeople) * 100));
-                        const over     = slot.booked > slot.maxPeople;
-                        const isFull   = avail <= 0;
-                        const isLow    = !isFull && avail <= Math.ceil(slot.maxPeople * 0.2);
-                        const barColor = over ? "#E24B4A" : pct > 80 ? "#EF9F27" : "#1D9E75";
-
-                        const statusLabel = over ? "Dépassé ⚠" : isFull ? "Complet" : isLow ? "Quasi-plein" : "Disponible";
-                        const statusCls   = over || isFull ? "b-full" : isLow ? "b-low" : "b-available";
-
-                        return (
-                          <tr key={`${group.excursionId}-${slot.date}-${slot.time}`}>
-                            <td style={{ color: "#9CA3AF", paddingLeft: 28 }}>
-                              {/* empty — covered by group header */}
-                            </td>
-                            <td style={{ color: "#9CA3AF" }}>{group.excursionCity}</td>
-                            <td>
-                              <span className="slot-chip">
-                                <CalendarDays size={11} />
-                                {fmtDateShort(slot.date)}
+                      {visibleCap.map((group) => (
+                        <>
+                          {/* Group header row */}
+                          <tr key={`grp-${group.excursionId}`} className="group-header">
+                            <td colSpan={9}>
+                              {group.excursionTitle}
+                              <span style={{ fontWeight: 400, color: "#64748B", marginLeft: 10, fontSize: 11 }}>
+                                {group.excursionCity} · max {group.maxPeople} pers. / créneau · {group.slots.length} créneau{group.slots.length > 1 ? "x" : ""}
                               </span>
-                            </td>
-                            <td>
-                              <span className="time-chip">
-                                <Clock size={11} />
-                                {slot.time}
-                              </span>
-                            </td>
-                            <td style={{ textAlign: "center", fontWeight: 700, color: over ? "#A32D2D" : "#053366" }}>
-                              {slot.booked}
-                              {over && <span style={{ fontSize: 11, color: "#A32D2D", marginLeft: 4 }}>⚠</span>}
-                            </td>
-                            <td style={{ textAlign: "center", color: "#9CA3AF" }}>{slot.maxPeople}</td>
-                            <td style={{ textAlign: "center" }}>
-                              <span className={over || isFull ? "cap-over" : isLow ? "cap-low" : "cap-ok"}>
-                                {Math.max(0, avail)}
-                              </span>
-                            </td>
-                            <td>
-                              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                                <div className="progress-bar">
-                                  <div className="progress-fill" style={{ width: `${Math.min(100, pct)}%`, background: barColor }} />
-                                </div>
-                                <span style={{ fontSize: 12, color: "#9CA3AF", minWidth: 34 }}>{pct}%</span>
-                              </div>
-                            </td>
-                            <td>
-                              <span className={`badge ${statusCls}`}>{statusLabel}</span>
                             </td>
                           </tr>
-                        );
-                      })}
+
+                          {/* Slot rows */}
+                          {group.slots.map((slot) => {
+                            const avail    = slot.maxPeople - slot.booked;
+                            const pct      = Math.min(100, Math.round((slot.booked / slot.maxPeople) * 100));
+                            const over     = slot.booked > slot.maxPeople;
+                            const isFull   = avail <= 0;
+                            const isLow    = !isFull && avail <= Math.ceil(slot.maxPeople * 0.2);
+                            const barColor = over ? "#E24B4A" : pct > 80 ? "#EF9F27" : "#1D9E75";
+
+                            const statusLabel = over ? "Dépassé ⚠" : isFull ? "Complet" : isLow ? "Quasi-plein" : "Disponible";
+                            const statusCls   = over || isFull ? "b-full" : isLow ? "b-low" : "b-available";
+
+                            return (
+                              <tr key={`${group.excursionId}-${slot.date}-${slot.time}`}>
+                                <td style={{ color: "#9CA3AF", paddingLeft: 28 }} />
+                                <td style={{ color: "#9CA3AF" }}>{group.excursionCity}</td>
+                                <td>
+                                  <span className="slot-chip">
+                                    <CalendarDays size={11} />
+                                    {fmtDateShort(slot.date)}
+                                  </span>
+                                </td>
+                                <td>
+                                  <span className="time-chip">
+                                    <Clock size={11} />
+                                    {slot.time}
+                                  </span>
+                                </td>
+                                <td style={{ textAlign: "center", fontWeight: 700, color: over ? "#A32D2D" : "#053366" }}>
+                                  {slot.booked}
+                                  {over && <span style={{ fontSize: 11, color: "#A32D2D", marginLeft: 4 }}>⚠</span>}
+                                </td>
+                                <td style={{ textAlign: "center", color: "#9CA3AF" }}>{slot.maxPeople}</td>
+                                <td style={{ textAlign: "center" }}>
+                                  <span className={over || isFull ? "cap-over" : isLow ? "cap-low" : "cap-ok"}>
+                                    {Math.max(0, avail)}
+                                  </span>
+                                </td>
+                                <td>
+                                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                                    <div className="progress-bar">
+                                      <div className="progress-fill" style={{ width: `${Math.min(100, pct)}%`, background: barColor }} />
+                                    </div>
+                                    <span style={{ fontSize: 12, color: "#9CA3AF", minWidth: 34 }}>{pct}%</span>
+                                  </div>
+                                </td>
+                                <td>
+                                  <span className={`badge ${statusCls}`}>{statusLabel}</span>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </>
+                      ))}
+
+                      {/* ── Show-all / Réduire ── */}
+                      {groupedCapRows.length > PAGE && (
+                        <tr className="show-all-row">
+                          <td colSpan={9}>
+                            <button className="show-all-btn" onClick={() => setShowAllCap((v) => !v)}>
+                              {showAllCap ? (
+                                <><ChevronUp size={13} /> Réduire</>
+                              ) : (
+                                <><ChevronDown size={13} /> Voir tout — {groupedCapRows.length} excursions</>
+                              )}
+                            </button>
+                          </td>
+                        </tr>
+                      )}
                     </>
-                  ))}
+                  )}
                 </tbody>
               </table>
             </div>
