@@ -409,6 +409,8 @@ function ConfigInner() {
   return (
     <div className="mlp-page">
       <TouristeNav/>
+       <div style={{ paddingTop: 64 }}/>
+
       <style>{CSS_CONFIG}</style>
 
       {/* ── Topbar ── */}
