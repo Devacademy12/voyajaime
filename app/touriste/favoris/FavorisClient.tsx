@@ -106,7 +106,7 @@ const CSS = `
   /* ── Reserve button ── */
   .reserve-btn {
     display: inline-flex; align-items: center; justify-content: center; gap: 6px;
-    padding: 10px 20px;
+    padding: 10px 15px;
     background: linear-gradient(135deg, #02AFCF, #0891b2);
     color: white; border: none; border-radius: 12px;
     font-size: 13px; font-weight: 700; cursor: pointer;
