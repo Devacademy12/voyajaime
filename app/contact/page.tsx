@@ -1,6 +1,7 @@
 import { createServerSupabaseClient } from "@/lib/supabaseServer";
 import type { Metadata } from "next";
 import TouristeNav from "@/app/components/touriste/TouristeNav";
+import HomeFooter from "@/app/components/home/HomeFooter";
 import ContactForm from "./ContactForm";
 import { Mail, Phone, MapPin, Clock } from "lucide-react";
 import Link from "next/link";
@@ -202,16 +203,8 @@ export default async function ContactPage() {
 
         </main>
 
-        {/* Footer */}
-        <footer className="contact-footer">
-          <p style={{ color:"rgba(255,255,255,.25)", fontSize:13 }}>
-            © 2026 VoyajAime — Tourisme authentique en Tunisie
-          </p>
-          <div style={{ display:"flex", gap:24 }}>
-            <Link href="/excursions" style={{ color:"rgba(255,255,255,.35)", fontSize:13, textDecoration:"none" }}>Excursions →</Link>
-            <Link href="/a-propos"   style={{ color:"rgba(255,255,255,.35)", fontSize:13, textDecoration:"none" }}>À propos →</Link>
-          </div>
-        </footer>
+             <HomeFooter user={null} />
+       
       </div>
     </>
   );
