@@ -78,10 +78,6 @@ const CSS = `
     from { transform:scaleX(0); }
     to   { transform:scaleX(1); }
   }
-  @keyframes shimmer {
-    0%   { background-position:-400px 0; }
-    100% { background-position:400px 0; }
-  }
 
   /* ══════════════════════════════
      SCROLL REVEAL
@@ -125,7 +121,7 @@ const CSS = `
 
   .hero-title {
     font-family:'Playfair Display',serif;
-    font-size:clamp(28px,5vw,64px);
+    font-size:clamp(26px,5vw,64px);
     font-weight:900; color:#053366;
     letter-spacing:-1.5px; line-height:1.06;
     margin-bottom:20px;
@@ -370,9 +366,6 @@ const CSS = `
     width:300px; height:300px; bottom:-120px; right:-120px;
   }
 
-  /* ══════════════════════════════
-     MISSION ACCENT LINE
-  ══════════════════════════════ */
   .mission-line {
     width:48px; height:3px; border-radius:2px;
     background:linear-gradient(90deg,#02AFCF,#053366);
@@ -382,18 +375,7 @@ const CSS = `
   .mission-line.visible { animation:lineGrow .6s .1s ease both; }
 
   /* ══════════════════════════════
-     FOOTER RESPONSIVE
-  ══════════════════════════════ */
-  .footer-inner {
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
-    flex-wrap:wrap;
-    gap:12px;
-  }
-
-  /* ══════════════════════════════
-     LAYOUT GRIDS — Base (desktop)
+     LAYOUT GRIDS — Base
   ══════════════════════════════ */
   .hero-grid {
     display:grid;
@@ -412,104 +394,98 @@ const CSS = `
     display:grid;
     gap:20px;
   }
+  .footer-inner {
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    flex-wrap:wrap;
+    gap:12px;
+  }
 
   /* ══════════════════════════════
      RESPONSIVE — Tablette ≤ 900px
   ══════════════════════════════ */
   @media (max-width: 900px) {
-    /* Hero */
-    .hero-section { padding: 64px 24px !important; }
-    .hero-grid    { grid-template-columns: 1fr !important; gap: 32px !important; }
+    .hero-section  { padding: 64px 28px !important; }
+    .hero-grid     { grid-template-columns: 1fr !important; gap: 28px !important; }
     .hero-img-frame { height: 280px !important; }
     .hero-img-frame img { height: 280px !important; }
-    .hero-sub     { max-width: 100% !important; }
+    .hero-sub      { max-width: 100% !important; }
 
-    /* Mission */
-    .mission-section { padding: 64px 24px !important; }
-    .mission-card     { padding: 32px 28px 28px !important; }
+    .mission-section { padding: 64px 28px !important; }
+    .mission-card    { padding: 32px 28px 28px !important; }
 
-    /* Stats */
-    .stats-section { padding: 60px 24px !important; }
+    .stats-section { padding: 60px 28px !important; }
     .stats-grid    { grid-template-columns: repeat(2, 1fr) !important; }
 
-    /* Values */
-    .values-section { padding: 64px 24px !important; }
+    .values-section { padding: 64px 28px !important; }
     .values-grid    { grid-template-columns: repeat(2, 1fr) !important; }
 
-    /* Team */
-    .team-section { padding: 64px 24px !important; }
-    .team-grid    { grid-template-columns: repeat(2, 1fr) !important; }
+    .team-section  { padding: 64px 28px !important; }
+    .team-grid     { grid-template-columns: repeat(2, 1fr) !important; }
 
-    /* CTA */
-    .cta-section  { padding: 72px 24px !important; }
+    .cta-section   { padding: 72px 28px !important; }
 
-    /* Footer */
-    .footer-inner { flex-direction: column; align-items: flex-start; }
+    .footer-inner  { flex-direction: column; align-items: flex-start; }
   }
 
   /* ══════════════════════════════
      RESPONSIVE — Mobile ≤ 640px
   ══════════════════════════════ */
   @media (max-width: 640px) {
-    /* Global padding */
-    section { padding-left: 16px !important; padding-right: 16px !important; }
-
     /* Hero */
-    .hero-section     { padding: 48px 16px !important; }
-    .hero-text-card   { padding: 24px 20px 22px !important; border-radius: 16px !important; }
-    .hero-title       { font-size: clamp(26px, 7vw, 36px) !important; letter-spacing: -1px !important; margin-bottom: 14px !important; }
-    .hero-sub         { font-size: 15px !important; margin-bottom: 18px !important; }
-    .hero-badge       { font-size: 10px !important; padding: 6px 12px !important; margin-bottom: 14px !important; }
-    .hero-img-frame   { height: 220px !important; border-radius: 14px !important; }
-    .hero-img-frame img { height: 220px !important; }
+    .hero-section     { padding: 40px 16px !important; }
+    .hero-text-card   { padding: 22px 18px 20px !important; border-radius: 16px !important; }
+    .hero-title       { font-size: clamp(24px, 7vw, 34px) !important; letter-spacing: -1px !important; margin-bottom: 12px !important; }
+    .hero-sub         { font-size: 15px !important; margin-bottom: 16px !important; }
+    .hero-badge       { font-size: 10px !important; padding: 5px 11px !important; margin-bottom: 12px !important; }
+    .hero-img-frame   { height: 210px !important; border-radius: 14px !important; }
+    .hero-img-frame img { height: 210px !important; }
 
     /* Mission */
-    .mission-section  { padding: 48px 16px !important; }
-    .mission-card     { padding: 24px 20px 22px !important; border-radius: 16px !important; }
-    .mission-card h2  { font-size: clamp(20px, 5vw, 28px) !important; }
+    .mission-section  { padding: 40px 16px !important; }
+    .mission-card     { padding: 22px 18px 20px !important; border-radius: 16px !important; }
 
     /* Stats */
-    .stats-section    { padding: 48px 16px !important; }
-    .stats-grid       { grid-template-columns: repeat(2, 1fr) !important; gap: 12px !important; }
-    .stat-card        { padding: 22px 12px !important; }
-    .stat-card .stat-value { font-size: 34px !important; }
+    .stats-section    { padding: 40px 16px !important; }
+    .stats-grid       { grid-template-columns: repeat(2, 1fr) !important; gap: 10px !important; }
+    .stat-card        { padding: 20px 12px !important; }
+    .stat-value       { font-size: 32px !important; }
 
     /* Values */
-    .values-section   { padding: 48px 16px !important; }
-    .values-grid      { grid-template-columns: 1fr !important; gap: 12px !important; }
-    .value-card       { padding: 20px !important; }
+    .values-section   { padding: 40px 16px !important; }
+    .values-grid      { grid-template-columns: 1fr !important; gap: 10px !important; }
+    .value-card       { padding: 18px !important; }
 
     /* Team */
-    .team-section     { padding: 48px 16px !important; }
-    .team-grid        { grid-template-columns: 1fr !important; gap: 16px !important; }
-    .team-card .photo-wrap { height: 200px !important; }
-    .team-card .photo-wrap img { height: 200px !important; }
-    .team-card-avatar { height: 200px !important; }
+    .team-section     { padding: 40px 16px !important; }
+    .team-grid        { grid-template-columns: 1fr !important; gap: 14px !important; }
+    .team-photo-wrap  { height: 190px !important; }
+    .team-photo-wrap img { height: 190px !important; }
+    .team-card-avatar { height: 190px !important; }
 
     /* CTA */
-    .cta-section      { padding: 56px 16px !important; }
-    .cta-btn          { width: 100%; justify-content: center; padding: 14px 20px !important; font-size: 14px !important; }
+    .cta-section      { padding: 52px 16px !important; }
+    .cta-btn          { width: 100%; justify-content: center; padding: 13px 18px !important; font-size: 14px !important; }
 
-    /* Section labels & dividers */
+    /* Misc */
     .section-label    { font-size: 10px !important; letter-spacing: 2px !important; }
-
-    /* Rich content */
     .rich-content p   { font-size: 15px !important; }
 
     /* Footer */
-    footer            { padding: 20px 16px !important; }
+    footer            { padding: 18px 16px !important; }
     .footer-inner     { flex-direction: column; align-items: flex-start; gap: 10px; }
-    .footer-links     { flex-direction: column; gap: 10px !important; }
+    .footer-links     { flex-direction: column !important; gap: 8px !important; }
   }
 
   /* ══════════════════════════════
      RESPONSIVE — Très petit ≤ 380px
   ══════════════════════════════ */
   @media (max-width: 380px) {
-    .hero-title       { font-size: 24px !important; letter-spacing: -.5px !important; }
-    .stats-grid       { grid-template-columns: 1fr !important; }
-    .stat-card .stat-value { font-size: 30px !important; }
-    .mission-card h2  { font-size: 18px !important; }
+    .hero-title  { font-size: 22px !important; letter-spacing: -.5px !important; }
+    .stats-grid  { grid-template-columns: 1fr !important; }
+    .stat-value  { font-size: 28px !important; }
+    .team-grid   { grid-template-columns: 1fr !important; }
   }
 `;
 
@@ -561,7 +537,7 @@ export default async function AboutPage() {
       <style>{CSS}</style>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       <TouristeNav />
-      <div style={{ paddingTop:64 }} />
+      <div style={{ paddingTop: 64 }} />
 
       {/* ══════════════════════════════
           HERO
@@ -570,9 +546,9 @@ export default async function AboutPage() {
         <section
           aria-label="Présentation"
           className="hero-section"
-          style={{ background:"#F9FAFB", borderBottom:"1px solid #E5E7EB", padding:"88px 40px" }}
+          style={{ background: "#F9FAFB", borderBottom: "1px solid #E5E7EB", padding: "88px 40px" }}
         >
-          <div style={{ maxWidth:1100, margin:"0 auto" }}>
+          <div style={{ maxWidth: 1100, margin: "0 auto" }}>
             <div
               className="hero-grid"
               style={{
@@ -588,20 +564,16 @@ export default async function AboutPage() {
                   À propos de VoyajAime
                 </div>
 
-                <h1 className="hero-title">
-                  {hero.title}
-                </h1>
+                <h1 className="hero-title">{hero.title}</h1>
 
                 {hero.subtitle && (
-                  <p className="hero-sub">
-                    {hero.subtitle}
-                  </p>
+                  <p className="hero-sub">{hero.subtitle}</p>
                 )}
 
                 {hero.content && (
                   <div
                     className="rich-content"
-                    style={{ animation:"heroFadeUp .7s .34s ease both", opacity:0, animationFillMode:"forwards" }}
+                    style={{ animation: "heroFadeUp .7s .34s ease both", opacity: 0, animationFillMode: "forwards" }}
                     dangerouslySetInnerHTML={{ __html: hero.content }}
                   />
                 )}
@@ -609,11 +581,11 @@ export default async function AboutPage() {
 
               {/* Image */}
               {hero.image_url && (
-                <div className="hero-img-frame" style={{ height:400 }}>
+                <div className="hero-img-frame" style={{ height: 400 }}>
                   <img
                     src={hero.image_url}
                     alt={hero.title ?? "VoyajAime"}
-                    style={{ height:400, width:"100%" }}
+                    style={{ height: 400, width: "100%" }}
                   />
                 </div>
               )}
@@ -629,13 +601,13 @@ export default async function AboutPage() {
         <section
           aria-labelledby="mission-heading"
           className="reveal mission-section"
-          style={{ padding:"88px 40px", background:"#F9FAFB" }}
+          style={{ padding: "88px 40px", background: "#F9FAFB" }}
         >
-          <div style={{ maxWidth:860, margin:"0 auto" }}>
+          <div style={{ maxWidth: 860, margin: "0 auto" }}>
             <div className="mission-card">
-              <div className="mission-line reveal" style={{ marginBottom:14 }} />
+              <div className="mission-line reveal" style={{ marginBottom: 14 }} />
 
-              <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:14 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
                 <p className="section-label">Notre mission</p>
               </div>
 
@@ -643,17 +615,17 @@ export default async function AboutPage() {
                 <h2
                   id="mission-heading"
                   style={{
-                    fontFamily:"'Playfair Display',serif",
-                    fontSize:"clamp(22px,3vw,40px)",
-                    fontWeight:900, color:"#053366",
-                    letterSpacing:"-1px", marginBottom:12, lineHeight:1.12,
+                    fontFamily: "'Playfair Display',serif",
+                    fontSize: "clamp(20px,3vw,40px)",
+                    fontWeight: 900, color: "#053366",
+                    letterSpacing: "-1px", marginBottom: 12, lineHeight: 1.12,
                   }}
                 >
                   {mission.title}
                 </h2>
               )}
               {mission.subtitle && (
-                <p style={{ fontSize:16, color:"#6B7280", marginBottom:24, lineHeight:1.65 }}>
+                <p style={{ fontSize: 16, color: "#6B7280", marginBottom: 24, lineHeight: 1.65 }}>
                   {mission.subtitle}
                 </p>
               )}
@@ -668,20 +640,20 @@ export default async function AboutPage() {
       {/* ══════════════════════════════
           STATS
       ══════════════════════════════ */}
-      {stats && (stats.meta?.items as { value:string; label:string }[])?.length > 0 && (
+      {stats && (stats.meta?.items as { value: string; label: string }[])?.length > 0 && (
         <section
           aria-labelledby="stats-heading"
           className="reveal stats-section"
-          style={{ padding:"80px 40px", background:"#F9FAFB", borderTop:"1px solid #E5E7EB", borderBottom:"1px solid #E5E7EB" }}
+          style={{ padding: "80px 40px", background: "#F9FAFB", borderTop: "1px solid #E5E7EB", borderBottom: "1px solid #E5E7EB" }}
         >
-          <div style={{ maxWidth:1100, margin:"0 auto" }}>
+          <div style={{ maxWidth: 1100, margin: "0 auto" }}>
             {stats.title && (
               <h2
                 id="stats-heading"
                 style={{
-                  fontFamily:"'Playfair Display',serif",
-                  fontSize:"clamp(22px,3vw,30px)", fontWeight:900, color:"#053366",
-                  textAlign:"center", marginBottom:36, letterSpacing:"-.5px",
+                  fontFamily: "'Playfair Display',serif",
+                  fontSize: "clamp(20px,3vw,30px)", fontWeight: 900, color: "#053366",
+                  textAlign: "center", marginBottom: 36, letterSpacing: "-.5px",
                 }}
               >
                 {stats.title}
@@ -690,22 +662,22 @@ export default async function AboutPage() {
             <div
               className="stats-grid"
               style={{
-                gridTemplateColumns:`repeat(${Math.min((stats.meta.items as []).length,4)},1fr)`,
+                gridTemplateColumns: `repeat(${Math.min((stats.meta.items as []).length, 4)},1fr)`,
               }}
             >
-              {(stats.meta.items as { value:string; label:string }[]).map((item, i) => (
+              {(stats.meta.items as { value: string; label: string }[]).map((item, i) => (
                 <div key={i} className="stat-card">
                   <p
                     className="stat-value"
                     style={{
-                      fontFamily:"'Playfair Display',serif",
-                      fontSize:44, fontWeight:900, color:"#053366",
-                      marginBottom:8, lineHeight:1,
+                      fontFamily: "'Playfair Display',serif",
+                      fontSize: 44, fontWeight: 900, color: "#053366",
+                      marginBottom: 8, lineHeight: 1,
                     }}
                   >
                     {item.value}
                   </p>
-                  <p style={{ fontSize:13, fontWeight:600, color:"#6B7280" }}>{item.label}</p>
+                  <p style={{ fontSize: 13, fontWeight: 600, color: "#6B7280" }}>{item.label}</p>
                 </div>
               ))}
             </div>
@@ -716,15 +688,15 @@ export default async function AboutPage() {
       {/* ══════════════════════════════
           VALEURS
       ══════════════════════════════ */}
-      {values && (values.meta?.items as { icon:string; title:string; text:string }[])?.length > 0 && (
+      {values && (values.meta?.items as { icon: string; title: string; text: string }[])?.length > 0 && (
         <section
           aria-labelledby="values-heading"
           className="reveal values-section"
-          style={{ padding:"88px 40px", background:"#ffffff" }}
+          style={{ padding: "88px 40px", background: "#ffffff" }}
         >
-          <div style={{ maxWidth:1100, margin:"0 auto" }}>
-            <div style={{ textAlign:"center", marginBottom:48 }}>
-              <div style={{ display:"flex", alignItems:"center", gap:10, justifyContent:"center", marginBottom:14 }}>
+          <div style={{ maxWidth: 1100, margin: "0 auto" }}>
+            <div style={{ textAlign: "center", marginBottom: 48 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10, justifyContent: "center", marginBottom: 14 }}>
                 <div className="divider" />
                 <p className="section-label">Ce qui nous guide</p>
                 <div className="divider" />
@@ -733,17 +705,17 @@ export default async function AboutPage() {
                 <h2
                   id="values-heading"
                   style={{
-                    fontFamily:"'Playfair Display',serif",
-                    fontSize:"clamp(22px,3vw,40px)",
-                    fontWeight:900, color:"#053366",
-                    letterSpacing:"-1px", lineHeight:1.1, marginBottom:10,
+                    fontFamily: "'Playfair Display',serif",
+                    fontSize: "clamp(20px,3vw,40px)",
+                    fontWeight: 900, color: "#053366",
+                    letterSpacing: "-1px", lineHeight: 1.1, marginBottom: 10,
                   }}
                 >
                   {values.title}
                 </h2>
               )}
               {values.subtitle && (
-                <p style={{ fontSize:16, color:"#6B7280", maxWidth:480, margin:"0 auto", lineHeight:1.65 }}>
+                <p style={{ fontSize: 16, color: "#6B7280", maxWidth: 480, margin: "0 auto", lineHeight: 1.65 }}>
                   {values.subtitle}
                 </p>
               )}
@@ -752,24 +724,21 @@ export default async function AboutPage() {
             <div
               className="values-grid"
               style={{
-                gridTemplateColumns:`repeat(${Math.min((values.meta.items as []).length,4)},1fr)`,
+                gridTemplateColumns: `repeat(${Math.min((values.meta.items as []).length, 4)},1fr)`,
               }}
             >
-              {(values.meta.items as { icon:string; title:string; text:string }[]).map((item, i) => (
-                <div
-                  key={i}
-                  className={`value-card reveal reveal-delay-${(i % 4) + 1}`}
-                >
+              {(values.meta.items as { icon: string; title: string; text: string }[]).map((item, i) => (
+                <div key={i} className={`value-card reveal reveal-delay-${(i % 4) + 1}`}>
                   <div className="value-icon-wrap">
                     {ICON_MAP[item.icon] ?? <Star size={20} color="#fff" strokeWidth={1.8} />}
                   </div>
                   <h3 style={{
-                    fontFamily:"'Playfair Display',serif",
-                    fontSize:17, fontWeight:800, color:"#053366", marginBottom:8,
+                    fontFamily: "'Playfair Display',serif",
+                    fontSize: 17, fontWeight: 800, color: "#053366", marginBottom: 8,
                   }}>
                     {item.title}
                   </h3>
-                  <p style={{ fontSize:14, color:"#6B7280", lineHeight:1.75 }}>{item.text}</p>
+                  <p style={{ fontSize: 14, color: "#6B7280", lineHeight: 1.75 }}>{item.text}</p>
                 </div>
               ))}
             </div>
@@ -784,11 +753,11 @@ export default async function AboutPage() {
         <section
           aria-labelledby="team-heading"
           className="reveal team-section"
-          style={{ padding:"88px 40px", background:"#F9FAFB", borderTop:"1px solid #E5E7EB" }}
+          style={{ padding: "88px 40px", background: "#F9FAFB", borderTop: "1px solid #E5E7EB" }}
         >
-          <div style={{ maxWidth:1100, margin:"0 auto" }}>
-            <div style={{ textAlign:"center", marginBottom:48 }}>
-              <div style={{ display:"flex", alignItems:"center", gap:10, justifyContent:"center", marginBottom:14 }}>
+          <div style={{ maxWidth: 1100, margin: "0 auto" }}>
+            <div style={{ textAlign: "center", marginBottom: 48 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10, justifyContent: "center", marginBottom: 14 }}>
                 <div className="divider" />
                 <p className="section-label">Notre équipe</p>
                 <div className="divider" />
@@ -797,70 +766,64 @@ export default async function AboutPage() {
                 <h2
                   id="team-heading"
                   style={{
-                    fontFamily:"'Playfair Display',serif",
-                    fontSize:"clamp(22px,3vw,40px)",
-                    fontWeight:900, color:"#053366",
-                    letterSpacing:"-1px", lineHeight:1.1, marginBottom:10,
+                    fontFamily: "'Playfair Display',serif",
+                    fontSize: "clamp(20px,3vw,40px)",
+                    fontWeight: 900, color: "#053366",
+                    letterSpacing: "-1px", lineHeight: 1.1, marginBottom: 10,
                   }}
                 >
                   {team.title}
                 </h2>
               )}
               {team.subtitle && (
-                <p style={{ fontSize:16, color:"#6B7280", lineHeight:1.6 }}>{team.subtitle}</p>
+                <p style={{ fontSize: 16, color: "#6B7280", lineHeight: 1.6 }}>{team.subtitle}</p>
               )}
               {team.content && (
                 <div
                   className="rich-content"
-                  style={{ maxWidth:580, margin:"14px auto 0" }}
+                  style={{ maxWidth: 580, margin: "14px auto 0" }}
                   dangerouslySetInnerHTML={{ __html: team.content }}
                 />
               )}
             </div>
 
-            {((team.meta?.members ?? []) as { name:string; role:string; photo:string; bio:string }[]).length > 0 && (
+            {((team.meta?.members ?? []) as { name: string; role: string; photo: string; bio: string }[]).length > 0 && (
               <div
                 className="team-grid"
-                style={{ gridTemplateColumns:"repeat(3,1fr)" }}
+                style={{ gridTemplateColumns: "repeat(3,1fr)" }}
               >
-                {(team.meta.members as { name:string; role:string; photo:string; bio:string }[]).map((m, i) => (
-                  <article
-                    key={i}
-                    className={`team-card reveal reveal-delay-${(i % 3) + 1}`}
-                  >
-                    <div className="photo-wrap" style={{ height:220 }}>
+                {(team.meta.members as { name: string; role: string; photo: string; bio: string }[]).map((m, i) => (
+                  <article key={i} className={`team-card reveal reveal-delay-${(i % 3) + 1}`}>
+                    <div className="photo-wrap team-photo-wrap" style={{ height: 220 }}>
                       {m.photo ? (
                         <img
                           src={m.photo}
                           alt={`${m.name} — ${m.role} chez VoyajAime`}
-                          style={{ width:"100%", height:220, objectFit:"cover" }}
+                          style={{ width: "100%", height: 220, objectFit: "cover" }}
                         />
                       ) : (
-                        <div
-                          className="team-card-avatar"
-                          style={{ height:220 }}
-                        >
+                        <div className="team-card-avatar" style={{ height: 220 }}>
                           <span style={{
-                            fontFamily:"'Playfair Display',serif",
-                            fontSize:56, fontWeight:900, color:"#053366", opacity:.25,
+                            fontFamily: "'Playfair Display',serif",
+                            fontSize: 56, fontWeight: 900, color: "#053366", opacity: .25,
                           }}>
                             {m.name?.[0]?.toUpperCase()}
                           </span>
                         </div>
                       )}
                     </div>
-                    <div style={{ padding:"20px" }}>
-                      <h3 style={{ fontSize:15, fontWeight:800, color:"#053366", marginBottom:4 }}>
+                    <div style={{ padding: "20px" }}>
+                      <h3 style={{ fontSize: 15, fontWeight: 800, color: "#053366", marginBottom: 4 }}>
                         {m.name}
                       </h3>
                       <p style={{
-                        fontSize:11, fontWeight:700, color:"#02AFCF",
-                        marginBottom:10, textTransform:"uppercase", letterSpacing:".6px",
+                        fontSize: 11, fontWeight: 700, color: "#02AFCF",
+                        marginBottom: 10, textTransform: "uppercase", letterSpacing: ".6px",
                       }}>
                         {m.role}
                       </p>
                       {m.bio && (
-                        <p style={{ fontSize:13, color:"#6B7280", lineHeight:1.68 }}>{m.bio}</p>
+                        <p style={{ fontSize: 13, color: "#6B7280", lineHeight: 1.68 }}>{m.bio}</p>
                       )}
                     </div>
                   </article>
@@ -879,23 +842,23 @@ export default async function AboutPage() {
           aria-labelledby="cta-heading"
           className="reveal cta-section"
           style={{
-            padding:"96px 40px",
-            background:"linear-gradient(135deg,#F0F9FB 0%,#F9FAFB 50%,#EEF2FF 100%)",
-            borderTop:"1px solid #E5E7EB",
-            textAlign:"center",
-            position:"relative",
-            overflow:"hidden",
+            padding: "96px 40px",
+            background: "linear-gradient(135deg,#F0F9FB 0%,#F9FAFB 50%,#EEF2FF 100%)",
+            borderTop: "1px solid #E5E7EB",
+            textAlign: "center",
+            position: "relative",
+            overflow: "hidden",
           }}
         >
           <div style={{
-            position:"absolute", top:"-100px", left:"50%", transform:"translateX(-50%)",
-            width:500, height:500, borderRadius:"50%",
-            background:"radial-gradient(circle,rgba(2,175,207,.07) 0%,transparent 70%)",
-            pointerEvents:"none",
+            position: "absolute", top: "-100px", left: "50%", transform: "translateX(-50%)",
+            width: 500, height: 500, borderRadius: "50%",
+            background: "radial-gradient(circle,rgba(2,175,207,.07) 0%,transparent 70%)",
+            pointerEvents: "none",
           }} />
 
-          <div style={{ maxWidth:580, margin:"0 auto", position:"relative" }}>
-            <div style={{ display:"flex", alignItems:"center", gap:10, justifyContent:"center", marginBottom:14 }}>
+          <div style={{ maxWidth: 580, margin: "0 auto", position: "relative" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10, justifyContent: "center", marginBottom: 14 }}>
               <div className="divider" />
               <p className="section-label">Prêt à partir ?</p>
               <div className="divider" />
@@ -905,24 +868,24 @@ export default async function AboutPage() {
               <h2
                 id="cta-heading"
                 style={{
-                  fontFamily:"'Playfair Display',serif",
-                  fontSize:"clamp(24px,3.5vw,48px)",
-                  fontWeight:900, color:"#053366",
-                  letterSpacing:"-1.5px", lineHeight:1.08, marginBottom:14,
+                  fontFamily: "'Playfair Display',serif",
+                  fontSize: "clamp(22px,3.5vw,48px)",
+                  fontWeight: 900, color: "#053366",
+                  letterSpacing: "-1.5px", lineHeight: 1.08, marginBottom: 14,
                 }}
               >
                 {cta.title}
               </h2>
             )}
             {cta.subtitle && (
-              <p style={{ fontSize:16, color:"#6B7280", marginBottom:14, lineHeight:1.65 }}>
+              <p style={{ fontSize: 16, color: "#6B7280", marginBottom: 14, lineHeight: 1.65 }}>
                 {cta.subtitle}
               </p>
             )}
             {cta.content && (
               <div
                 className="rich-content"
-                style={{ marginBottom:32 }}
+                style={{ marginBottom: 32 }}
                 dangerouslySetInnerHTML={{ __html: cta.content }}
               />
             )}
@@ -941,19 +904,16 @@ export default async function AboutPage() {
       {/* ══════════════════════════════
           FOOTER
       ══════════════════════════════ */}
-      <footer style={{
-        background:"#F3F4F6", borderTop:"1px solid #E5E7EB",
-        padding:"24px 40px",
-      }}>
+      <footer style={{ background: "#F3F4F6", borderTop: "1px solid #E5E7EB", padding: "24px 40px" }}>
         <div className="footer-inner">
-          <p style={{ color:"#9CA3AF", fontSize:13 }}>
+          <p style={{ color: "#9CA3AF", fontSize: 13 }}>
             © 2026 VoyajAime — Tourisme authentique en Tunisie
           </p>
-          <div className="footer-links" style={{ display:"flex", gap:24 }}>
-            <Link href="/excursions" style={{ color:"#6B7280", fontSize:13, textDecoration:"none", fontWeight:500 }}>
+          <div className="footer-links" style={{ display: "flex", gap: 24 }}>
+            <Link href="/excursions" style={{ color: "#6B7280", fontSize: 13, textDecoration: "none", fontWeight: 500 }}>
               Excursions →
             </Link>
-            <Link href="/contact" style={{ color:"#6B7280", fontSize:13, textDecoration:"none", fontWeight:500 }}>
+            <Link href="/contact" style={{ color: "#6B7280", fontSize: 13, textDecoration: "none", fontWeight: 500 }}>
               Contact →
             </Link>
           </div>

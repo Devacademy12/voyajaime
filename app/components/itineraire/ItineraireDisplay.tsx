@@ -53,7 +53,7 @@ function parsePhotos(val?: string | string[]): string[] {
 }
 function fmtPrice(price?: number) {
   if (!price) return "Inclus";
-  return `${price} TND`;
+  return `${price} EUR`;
 }
 
 /* ─── CSS ─── */
@@ -466,7 +466,7 @@ function ActivityCard({
           <div className="itin-act-name-row">
             <h4 className="itin-act-name">{activity.name}</h4>
             <span className={`itin-price-pill ${free ? "free" : ""}`}>
-              {free ? "Inclus" : `${price} TND`}
+              {free ? "Inclus" : `${price} EUR`}
             </span>
           </div>
 
@@ -585,7 +585,7 @@ function AlternativePicker({ alternatives, currentName, onPick, onClose }: {
                 <div style={{ flex: 1 }}>
                   <div className="itin-alt-name">{exc.title}</div>
                   <div className="itin-alt-meta">
-                    {exc.price_per_person && <span>{exc.price_per_person} TND</span>}
+                    {exc.price_per_person && <span>{exc.price_per_person} EUR</span>}
                     {exc.duration_hours && <span>{exc.duration_hours}h</span>}
                     {exc.rating && (
                       <span style={{ display: "flex", alignItems: "center", gap: 3 }}>
@@ -731,7 +731,7 @@ export default function ItineraireDisplay({
         <div>
           <div className="itin-total-label">Total estimé</div>
           <div className="itin-total-amount">
-            {totalPrice} <span>TND</span>
+            {totalPrice} <span>EUR</span>
           </div>
         </div>
         <div className="itin-total-actions">

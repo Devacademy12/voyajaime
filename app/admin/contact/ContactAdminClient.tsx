@@ -37,7 +37,7 @@ const CSS = `
   .topbar {
     background:white; border-bottom:1px solid #E8ECF4; padding:0 32px;
     height:64px; display:flex; justify-content:space-between; align-items:center;
-    position:sticky; top:0; z-index:100;
+  position:sticky; top:0; z-index:10;
   }
 
   .tab-btn {

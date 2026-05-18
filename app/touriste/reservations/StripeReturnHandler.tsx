@@ -1,21 +1,29 @@
+// StripeReturnHandler.tsx — version corrigée
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { CheckCircle2, XCircle, Loader2 } from "lucide-react";
+
+const SPIN_CSS = `@keyframes stripe-spin { to { transform: rotate(360deg); } }`;
+const SUCCESS_DISPLAY_MS = 3000;
 
 export function StripeReturnHandler() {
   const searchParams = useSearchParams();
   const router       = useRouter();
 
-  const [status, setStatus] = useState<"idle" | "verifying" | "success" | "cancelled">("idle");
+  const [status, setStatus] = useState<"idle"|"verifying"|"success"|"error"|"cancelled">("idle");
+  const hasRun = useRef(false);
 
   useEffect(() => {
+    if (hasRun.current) return;
+
     const sessionId = searchParams.get("session_id");
     const success   = searchParams.get("success");
     const canceled  = searchParams.get("canceled");
 
-    if (canceled) {
+    // ── Paiement annulé ──────────────────────────────────────────────
+    if (canceled === "true") {
       setStatus("cancelled");
       setTimeout(() => router.replace("/touriste/reservations"), 3500);
       return;
@@ -23,33 +31,50 @@ export function StripeReturnHandler() {
 
     if (!sessionId || success !== "true") return;
 
+    hasRun.current = true;
     setStatus("verifying");
 
-    const checkPayment = async (attempt = 0) => {
+    const confirm = async (attempt = 0) => {
       try {
-        const res  = await fetch(`/api/paiement/stripe/verify?session_id=${sessionId}`);
+        const res  = await fetch("/api/paiement/stripe/confirm", {
+          method:  "POST",
+          headers: { "Content-Type": "application/json" },
+          body:    JSON.stringify({ session_id: sessionId }),
+        });
         const data = await res.json();
 
-        if (data.paid) {
-          setStatus("success");
-          setTimeout(() => router.replace("/touriste/reservations"), 4000);
-        } else if (attempt < 5) {
-          // Webhook pas encore traité — réessayer jusqu'à 5 fois toutes les 2s
-          setTimeout(() => checkPayment(attempt + 1), 2000);
-        } else {
-          // Après 10s, afficher succès quand même si Stripe confirme
-          if (data.stripe_paid) {
-            setStatus("success");
-            setTimeout(() => router.replace("/touriste/reservations"), 4000);
-          }
+        if (!res.ok) {
+          throw new Error(data.error || "Erreur serveur");
         }
-      } catch {
+
+        if (!data.paid) {
+          // Webhook pas encore traité — réessayer
+          if (attempt < 8) {
+            setTimeout(() => confirm(attempt + 1), 2000);
+          } else {
+            // Timeout : rediriger quand même, le webhook finira le travail
+            setStatus("success");
+            setTimeout(() => router.replace("/touriste/reservations"), SUCCESS_DISPLAY_MS);
+          }
+          return;
+        }
+
+        // ── Succès ───────────────────────────────────────────────────
         setStatus("success");
-        setTimeout(() => router.replace("/touriste/reservations"), 4000);
+        setTimeout(() => router.replace("/touriste/reservations"), SUCCESS_DISPLAY_MS);
+
+      } catch (err) {
+        console.error("[StripeReturnHandler]", err);
+        if (attempt < 5) {
+          setTimeout(() => confirm(attempt + 1), 2000);
+        } else {
+          setStatus("error");
+          setTimeout(() => router.replace("/touriste/reservations"), 3000);
+        }
       }
     };
 
-    checkPayment();
+    confirm();
   }, [searchParams, router]);
 
   if (status === "idle") return null;
@@ -61,26 +86,32 @@ export function StripeReturnHandler() {
       display: "flex", alignItems: "center", justifyContent: "center",
       zIndex: 9999, backdropFilter: "blur(4px)",
     }}>
+      <style>{SPIN_CSS}</style>
+
       <div style={{
-        background: "#FFFFFF", borderRadius: 24, padding: "48px 52px",
-        textAlign: "center", maxWidth: 380, width: "90%",
+        background: "#FFFFFF", borderRadius: 24,
+        padding: "48px 52px", textAlign: "center",
+        maxWidth: 380, width: "90%",
         boxShadow: "0 32px 80px rgba(0,0,0,0.18)",
       }}>
+
+        {/* Vérification */}
         {status === "verifying" && (
           <>
             <Loader2
               size={52} color="#0D9488"
-              style={{ animation: "spin 1s linear infinite", marginBottom: 20 }}
+              style={{ animation: "stripe-spin 1s linear infinite", marginBottom: 20 }}
             />
-            <h3 style={{ fontSize: 20, fontWeight: 700, color: "#0F172A", marginBottom: 8, margin: "0 0 8px" }}>
+            <h3 style={{ fontSize: 20, fontWeight: 700, color: "#0F172A", margin: "0 0 8px" }}>
               Confirmation en cours…
             </h3>
             <p style={{ fontSize: 14, color: "#64748B", margin: 0 }}>
-              Vérification de votre paiement
+              Vérification et enregistrement de votre paiement
             </p>
           </>
         )}
 
+        {/* Succès */}
         {status === "success" && (
           <>
             <div style={{
@@ -94,12 +125,37 @@ export function StripeReturnHandler() {
             <h3 style={{ fontSize: 22, fontWeight: 700, color: "#0F172A", margin: "0 0 10px" }}>
               Paiement confirmé !
             </h3>
-            <p style={{ fontSize: 14, color: "#64748B", lineHeight: 1.7, margin: 0 }}>
-              Votre réservation est confirmée.<br />Un email de confirmation vous a été envoyé.
+            <p style={{ fontSize: 14, color: "#64748B", lineHeight: 1.7, margin: "0 0 8px" }}>
+              Votre réservation est confirmée.<br />
+              Un email de confirmation vous a été envoyé.
+            </p>
+            <p style={{ fontSize: 12, color: "#94A3B8", margin: 0 }}>
+              Redirection dans {SUCCESS_DISPLAY_MS / 1000} secondes…
             </p>
           </>
         )}
 
+        {/* Erreur réseau */}
+        {status === "error" && (
+          <>
+            <div style={{
+              width: 80, height: 80, borderRadius: "50%",
+              background: "#FEF2F2", border: "2.5px solid #FCA5A5",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              margin: "0 auto 20px",
+            }}>
+              <XCircle size={40} color="#EF4444" strokeWidth={1.5} />
+            </div>
+            <h3 style={{ fontSize: 22, fontWeight: 700, color: "#0F172A", margin: "0 0 10px" }}>
+              Erreur de vérification
+            </h3>
+            <p style={{ fontSize: 14, color: "#64748B", margin: 0 }}>
+              Votre paiement a peut-être été traité. Vérifiez vos réservations.
+            </p>
+          </>
+        )}
+
+        {/* Annulé */}
         {status === "cancelled" && (
           <>
             <div style={{
@@ -119,7 +175,6 @@ export function StripeReturnHandler() {
           </>
         )}
       </div>
-      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>
   );
 }

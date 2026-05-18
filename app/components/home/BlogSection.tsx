@@ -37,8 +37,8 @@ const CSS = `
   .bs-label  { display:inline-flex; align-items:center; gap:8px; margin-bottom:20px; animation:bs-slideRight .5s ease both; }
   .bs-dot    { width:7px; height:7px; border-radius:50%; background:#02AFCF; animation:bs-pulse 2s ease infinite; }
   .bs-label-text { font-size:11px; font-weight:700; letter-spacing:3px; text-transform:uppercase; color:#6B7280; font-family:'DM Sans',sans-serif; }
-  .bs-h2  { font-size:clamp(28px,3.5vw,40px); font-weight:800; color:#053366; margin:0 0 12px; letter-spacing:-.5px; line-height:1.15; font-family:'DM Sans',sans-serif; }
-  .bs-h2 em { font-style:italic; color:#02AFCF; font-family:'Instrument Serif',serif; font-weight:400; }
+  .bs-h2  { fontFamily: "Playfair Display", serif; font-size:clamp(28px,3.5vw,40px); font-weight:800; color:#053366; margin:0 0 12px; letter-spacing:-.5px; line-height:1.15; font-family:'DM Sans',sans-serif; }
+  .bs-h2 em { fontFamily: "Playfair Display", serif; color:#02AFCF; font-family:'Instrument Serif',serif; font-weight:400; }
   .bs-line { width:0; height:2px; background:#053366; margin:0 auto 16px; animation:bs-expandW .6s cubic-bezier(.4,0,.2,1) .2s both; }
   .bs-sub  { font-size:15px; color:#6B7280; max-width:420px; margin:0 auto; line-height:1.7; }
 

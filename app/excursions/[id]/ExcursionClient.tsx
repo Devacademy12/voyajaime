@@ -1194,7 +1194,7 @@ export default function ExcursionClient({
                     {exc.price_per_person}
                   </span>
                   <div>
-                    <span className="booking-price-currency">TND</span>
+                    <span className="booking-price-currency">EUR</span>
                     <p className="booking-price-per">par personne</p>
                   </div>
                 </div>

@@ -616,7 +616,7 @@ function BuilderInner() {
               </div>
               <div className={`${s.statChip} ${s.statChipBudget}`}>
                 <PiggyBank size={12} color={BRAND} />
-                <span>{totBudget} TND</span>
+                <span>{totBudget} EUR</span>
               </div>
             </>
           )}
@@ -780,7 +780,7 @@ function BuilderInner() {
                         <h3 className={s.cardTitle}>{exc.title}</h3>
                         <div className={s.cardPriceBlock}>
                           <span className={s.cardPrice}>{exc.price_per_person}</span>
-                          <span className={s.cardPriceSuffix}>TND<br />/personne</span>
+                          <span className={s.cardPriceSuffix}>EUR<br />/personne</span>
                         </div>
                       </div>
 
@@ -892,7 +892,7 @@ function BuilderInner() {
               <div className={s.plannerRight}>
                 <div className={s.dayTotals}>
                   <div className={s.dayBudget}>
-                    {dayBudget} <span className={s.dayBudgetUnit}>TND</span>
+                    {dayBudget} <span className={s.dayBudgetUnit}>EUR</span>
                   </div>
                   <div className={s.dayCount}>{dayActs.length} activité{dayActs.length !== 1 ? "s" : ""}</div>
                 </div>
@@ -948,7 +948,7 @@ function BuilderInner() {
                       {acts.length > 0 && (
                         <span className={s.slotTotal}>
                           <PiggyBank size={10} color="#6B7280" />
-                          {slotBudget} TND · {acts.reduce((acc, a) => acc + a.excursion.duration_hours, 0)}h
+                          {slotBudget} EUR · {acts.reduce((acc, a) => acc + a.excursion.duration_hours, 0)}h
                         </span>
                       )}
                     </div>
@@ -975,7 +975,7 @@ function BuilderInner() {
                             )}
                           </div>
                           <span className={s.actPrice}>
-                            {act.excursion.price_per_person}<small> TND</small>
+                            {act.excursion.price_per_person}<small> EUR</small>
                           </span>
                           <div className={s.actActions}>
                             <button className={s.actActionNote}
@@ -1007,7 +1007,7 @@ function BuilderInner() {
             <p className={s.slotBoxMeta}>
               <Clock size={11} /> {pendingExc.duration_hours}h
               <span style={{ margin: "0 .35rem", color: "#D1D5DB" }}>·</span>
-              <PiggyBank size={11} /> {pendingExc.price_per_person} TND
+              <PiggyBank size={11} /> {pendingExc.price_per_person} EUR
             </p>
             {currentDayDate && (
               <div className={s.slotDateConfirm}>

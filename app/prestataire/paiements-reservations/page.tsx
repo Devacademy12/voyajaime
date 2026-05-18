@@ -1,259 +1,248 @@
-// app/prestataire/paiements-reservations/page.tsx
-
 import { createServerSupabaseClient } from "@/lib/supabaseServer";
+import { createClient } from "@supabase/supabase-js";
 import { redirect } from "next/navigation";
-import PrestatairePaiementsReservationsClient from "./PrestatairePaiementsReservationsClient";
+import PrestaReservationsClient from "./PrestaReservationsClient";
 
-export const dynamic    = "force-dynamic";
-export const revalidate = 0;
+function createAdminClient() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+  if (!url || !key) throw new Error("Variables Supabase manquantes");
+  return createClient(url, key, {
+    auth: { autoRefreshToken: false, persistSession: false },
+  });
+}
 
-export default async function PrestatairePaiements() {
+function one<T>(v: T | T[] | null | undefined): T | null {
+  if (!v) return null;
+  return Array.isArray(v) ? (v[0] ?? null) : v;
+}
+
+// ✅ Helper : vérifier si la deadline de paiement est dépassée
+function isDeadlinePassed(deadline: string | null | undefined): boolean {
+  if (!deadline) return false;
+  return new Date(deadline).getTime() < Date.now();
+}
+
+export default async function PrestaReservationsPage() {
+  /* ── 1. Auth — vérifier que c'est bien un prestataire ── */
   const supabase = await createServerSupabaseClient();
-
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  // ── 1. Paiements ─────────────────────────────────────────────────────────
-  const { data: paiementsRaw = [] } = await supabase
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("role, full_name, agency_name, phone")
+    .eq("user_id", user.id)
+    .single();
+
+  if (profile?.role !== "prestataire") redirect("/");
+
+  /* ── 2. Service role pour bypass RLS ── */
+  const admin = createAdminClient();
+
+  /* ──────────────────────────────────────────────
+     EXCURSIONS du prestataire
+  ────────────────────────────────────────────── */
+  const { data: excursionsRaw } = await admin
+    .from("excursions")
+    .select("id, title, city, max_people, price_per_person, is_active")
+    .eq("prestataire_id", user.id)
+    .order("title");
+
+  const excursions = excursionsRaw || [];
+  const excursionIds = excursions.map((e) => e.id);
+
+  /* ──────────────────────────────────────────────
+     RÉSERVATIONS — uniquement pour ses excursions
+  ────────────────────────────────────────────── */
+  const { data: resaRaw, error: resaError } = excursionIds.length
+    ? await admin
+        .from("reservations")
+        .select(`
+          id, booking_code, date, time, people_count, touriste_id,
+          total_price, platform_fee, status, payment_status,
+          payment_method, created_at, paid_at, cancelled_at,
+          special_needs, cancel_reason, payment_deadline,
+          excursion:excursions (
+            id, title, city, price_per_person, max_people
+          )
+        `)
+        .in("excursion_id", excursionIds)
+        .order("created_at", { ascending: false })
+    : { data: [], error: null };
+
+  if (resaError) {
+    console.error("[presta] reservations error:", resaError);
+    return (
+      <div style={{ padding: "3rem", textAlign: "center", color: "#EF4444" }}>
+        Erreur réservations : {resaError.message}
+      </div>
+    );
+  }
+
+  /* ── Profils touristes ── */
+  const touristeIds = [
+    ...new Set((resaRaw || []).map((r) => r.touriste_id).filter(Boolean)),
+  ] as string[];
+
+  const { data: touristesProfiles } = touristeIds.length
+    ? await admin
+        .from("profiles")
+        .select("user_id, full_name, phone")
+        .in("user_id", touristeIds)
+    : { data: [] };
+
+  const profilesMap: Record<string, { full_name: string | null; phone: string | null }> = {};
+  (touristesProfiles || []).forEach((p) => {
+    profilesMap[p.user_id] = { full_name: p.full_name, phone: p.phone };
+  });
+
+  /* ── Normaliser réservations ── */
+  const reservations = (resaRaw || []).map((r) => {
+    const exc = one(r.excursion as any) as any;
+    return {
+      id:               r.id,
+      booking_code:     r.booking_code,
+      date:             r.date,
+      time:             r.time ? String(r.time).slice(0, 5) : "—",
+      people_count:     r.people_count,
+      touriste_id:      r.touriste_id,
+      total_price:      Number(r.total_price),
+      platform_fee:     Number(r.platform_fee),
+      net_amount:       Number(r.total_price) - Number(r.platform_fee),
+      status:           r.status,
+      payment_status:   r.payment_status ?? null,
+      payment_method:   (r as any).payment_method ?? null,
+      payment_deadline: (r as any).payment_deadline ?? null,   // ✅ AJOUTÉ
+      created_at:       r.created_at,
+      paid_at:          (r as any).paid_at ?? null,
+      cancelled_at:     (r as any).cancelled_at ?? null,
+      special_needs:    (r as any).special_needs ?? null,
+      cancel_reason:    (r as any).cancel_reason ?? null,
+      touriste: r.touriste_id
+        ? (profilesMap[r.touriste_id] ?? { full_name: null, phone: null })
+        : null,
+      excursion: exc
+        ? {
+            id:               exc.id,
+            title:            exc.title,
+            city:             exc.city,
+            price_per_person: Number(exc.price_per_person),
+            max_people:       exc.max_people,
+          }
+        : null,
+    };
+  });
+
+  /* ──────────────────────────────────────────────
+     PAIEMENTS — uniquement ceux du prestataire
+  ────────────────────────────────────────────── */
+  const { data: paiementsRaw } = await admin
     .from("paiements")
     .select(`
-      id, reservation_id, prestataire_id,
-      amount, platform_fee, net_amount,
-      status, paid_at, created_at,
-      reservations!paiements_reservation_id_fkey (
-        id, booking_code, date, time, people_count,
-        total_price, platform_fee, status,
-        excursion_id, touriste_id,
-        excursions!reservations_excursion_id_fkey (
-          id, title, city, description, duration_hours,
-          difficulty, max_people, price_per_person,
-          photos, inclusions
-        )
+      id, amount, platform_fee, net_amount, status, paid_at, created_at,
+      reservation:reservations (
+        id, booking_code, date, time, people_count, total_price, touriste_id,
+        excursion:excursions ( id, title, city )
       )
     `)
     .eq("prestataire_id", user.id)
     .order("created_at", { ascending: false });
 
-  // ── 2. Collecter TOUS les touriste_ids (paiements + réservations) ─────────
-  const payTouristeIds = (paiementsRaw ?? [])
-    .map((p: any) => {
-      const reservation = Array.isArray(p.reservations) ? p.reservations[0] : p.reservations;
-      return reservation?.touriste_id;
-    })
-    .filter(Boolean) as string[];
+  /* ── Profils touristes pour paiements ── */
+  const payTouristeIds = [
+    ...new Set(
+      (paiementsRaw || [])
+        .map((p) => (one(p.reservation as any) as any)?.touriste_id)
+        .filter(Boolean)
+    ),
+  ] as string[];
 
-  // ── 3. Excursions du prestataire ──────────────────────────────────────────
-  const { data: myExcursions = [] } = await supabase
-    .from("excursions")
-    .select("id, title, max_people, photos")
-    .eq("prestataire_id", user.id);
-
-  const myExcIds = (myExcursions ?? []).map((e: any) => e.id);
-
-  // ── 4. Toutes les réservations ────────────────────────────────────────────
-  const { data: allReservations = [] } = myExcIds.length > 0
-    ? await supabase
-        .from("reservations")
-        .select(`
-          id, booking_code, date, time, people_count,
-          total_price, platform_fee, status,
-          excursion_id, touriste_id,
-          excursions!reservations_excursion_id_fkey ( id, title, city, max_people )
-        `)
-        .in("excursion_id", myExcIds)
-        .order("created_at", { ascending: false })
-    : { data: [] };
-
-  const resTouristeIds = (allReservations ?? [])
-    .map((r: any) => r.touriste_id)
-    .filter(Boolean) as string[];
-
-  // ── 5. Fetch TOUS les profils en une seule requête ────────────────────────
-  const allTouristeIds = [...new Set([...payTouristeIds, ...resTouristeIds])];
-
-  const { data: profilesRaw = [] } = allTouristeIds.length > 0
-    ? await supabase
+  const { data: payProfiles } = payTouristeIds.length
+    ? await admin
         .from("profiles")
-        .select("user_id, full_name, email, avatar_url, phone")
-        .in("user_id", allTouristeIds)
+        .select("user_id, full_name, phone")
+        .in("user_id", payTouristeIds)
     : { data: [] };
 
-  // Map global user_id → profile
-  const profilesMap = Object.fromEntries(
-    (profilesRaw ?? []).map((p: any) => [p.user_id, p])
+  const payProfilesMap: Record<string, { full_name: string | null; phone: string | null }> = {};
+  (payProfiles || []).forEach((p) => {
+    payProfilesMap[p.user_id] = { full_name: p.full_name, phone: p.phone };
+  });
+
+  /* ── Normaliser paiements ── */
+  // ✅ CORRIGÉ : utiliser platform_fee et net_amount depuis la DB, pas recalculés
+  const paiements = (paiementsRaw || []).map((p) => {
+    const resa    = one(p.reservation as any) as any;
+    const resaExc = resa ? (one(resa.excursion as any) as any) : null;
+    const tid: string | null = resa?.touriste_id ?? null;
+
+    return {
+      id:           p.id,
+      amount:       Number(p.amount),
+      platform_fee: Number(p.platform_fee),   // ✅ depuis DB
+      net_amount:   Number(p.net_amount),     // ✅ depuis DB
+      status:       p.status,
+      paid_at:      p.paid_at ?? null,
+      created_at:   p.created_at,
+      reservation: resa
+        ? {
+            id:           resa.id,
+            booking_code: resa.booking_code,
+            date:         resa.date,
+            time:         resa.time ? String(resa.time).slice(0, 5) : "—",
+            people_count: resa.people_count,
+            total_price:  Number(resa.total_price),
+            touriste: tid
+              ? (payProfilesMap[tid] ?? { full_name: null, phone: null })
+              : null,
+            excursion: resaExc
+              ? { id: resaExc.id, title: resaExc.title, city: resaExc.city }
+              : null,
+          }
+        : null,
+    };
+  });
+
+  /* ──────────────────────────────────────────────
+     CAPACITÉ — par (excursion_id, date, time)
+     ✅ CORRIGÉ : exclure les pending avec deadline expirée
+  ────────────────────────────────────────────── */
+  type SlotInfo = { booked: number; date: string; time: string };
+  const capacite: Record<string, Record<string, SlotInfo>> = {};
+
+  reservations.forEach((r) => {
+    if (!r.excursion?.id || r.status === "cancelled") return;
+
+    // ✅ AJOUTÉ : ne pas compter les pending dont la deadline est dépassée
+    if (r.status === "pending" && r.payment_status !== "paid") {
+      if (isDeadlinePassed(r.payment_deadline)) return;
+    }
+
+    const excId   = r.excursion.id;
+    const timeKey = r.time || "00:00";
+    const slotKey = `${r.date}|${timeKey}`;
+    if (!capacite[excId]) capacite[excId] = {};
+    if (!capacite[excId][slotKey]) {
+      capacite[excId][slotKey] = { booked: 0, date: r.date, time: timeKey };
+    }
+    capacite[excId][slotKey].booked += r.people_count;
+  });
+
+  console.log(
+    `[presta] réservations: ${reservations.length} | paiements: ${paiements.length} | excursions: ${excursions.length}`
   );
 
-  // ── 6. Aplatir paiements — profil touriste embarqué directement ───────────
-  const paiements = (paiementsRaw ?? []).map((p: any) => {
-    const reservation = Array.isArray(p.reservations) ? p.reservations[0] : p.reservations;
-    const touristeId  = reservation?.touriste_id ?? null;
-    // ✅ Profil résolu ici côté serveur, pas côté client
-    const profile     = touristeId ? (profilesMap[touristeId] ?? null) : null;
-
-    return {
-      id:              p.id,
-      reservation_id:  p.reservation_id,
-      prestataire_id:  p.prestataire_id,
-      amount:          p.amount,
-      platform_fee:    p.platform_fee,
-      net_amount:      p.net_amount,
-      status:          p.status,
-      paid_at:         p.paid_at,
-      created_at:      p.created_at,
-      excursion_id:    reservation?.excursion_id ?? null,
-      touriste_id:     touristeId,
-      // ✅ Données touriste directement dans le paiement
-      touriste_name:   profile?.full_name  ?? null,
-      touriste_email:  profile?.email      ?? null,
-      touriste_avatar: profile?.avatar_url ?? null,
-      touriste_phone:  profile?.phone      ?? null,
-    };
-  });
-
-  const reservationsPay = (paiementsRaw ?? [])
-    .map((p: any) => {
-      const reservation = Array.isArray(p.reservations) ? p.reservations[0] : p.reservations;
-      return reservation;
-    })
-    .filter(Boolean)
-    .map((r: any) => ({
-      id:           r.id,
-      booking_code: r.booking_code,
-      date:         r.date,
-      time:         r.time,
-      people_count: r.people_count,
-      excursion_id: r.excursion_id,
-      touriste_id:  r.touriste_id,
-    }));
-
-  // Map excursions pour les paiements
-  const excursionsPayMap = new Map<string, any>();
-  for (const p of (paiementsRaw ?? [])) {
-    const reservation = Array.isArray(p.reservations) ? p.reservations[0] : p.reservations;
-    const exc = Array.isArray(reservation?.excursions)
-      ? reservation.excursions[0]
-      : reservation?.excursions;
-    if (exc?.id && !excursionsPayMap.has(exc.id)) {
-      excursionsPayMap.set(exc.id, {
-        id:               exc.id,
-        title:            exc.title,
-        city:             exc.city,
-        description:      exc.description,
-        duration:         exc.duration_hours,
-        difficulty:       exc.difficulty,
-        max_people:       exc.max_people,
-        price_per_person: exc.price_per_person,
-        photo_url: Array.isArray(exc.photos) && exc.photos.length > 0
-          ? exc.photos[0]
-          : null,
-        includes: exc.inclusions,
-      });
-    }
-  }
-  const excursionsPay = Array.from(excursionsPayMap.values());
-
-  // ✅ Liste touristes (pour tourMap dans le client, garde-fou de secours)
-  const touristes = allTouristeIds
-    .map(id => profilesMap[id])
-    .filter(Boolean)
-    .map((t: any) => ({
-      user_id:    t.user_id,
-      full_name:  t.full_name,
-      email:      t.email,
-      avatar_url: t.avatar_url,
-      phone:      t.phone,
-    }));
-
-  // ── 7. Lignes réservations avec profil touriste ───────────────────────────
-  const reservationsRows = (allReservations ?? []).map((r: any) => {
-    const profile = profilesMap[r.touriste_id] ?? null;
-    const exc = Array.isArray(r.excursions) ? r.excursions[0] : r.excursions;
-    return {
-      id:              r.id,
-      booking_code:    r.booking_code,
-      date:            r.date,
-      time:            r.time,
-      people_count:    r.people_count,
-      total_price:     r.total_price,
-      platform_fee:    r.platform_fee,
-      status:          r.status,
-      touriste_id:     r.touriste_id,
-      touriste_name:   profile?.full_name  ?? "Client inconnu",
-      touriste_email:  profile?.email      ?? "",
-      touriste_avatar: profile?.avatar_url ?? null,
-      touriste_phone:  profile?.phone      ?? null,
-      excursion_id:    r.excursion_id,
-      excursion_title: exc?.title          ?? "—",
-      excursion_city:  exc?.city           ?? "—",
-      excursion_max:   exc?.max_people     ?? 0,
-    };
-  });
-
-  // ── 8. Diagnostic ─────────────────────────────────────────────────────────
-  const allMyResas = myExcIds.length > 0
-    ? (await supabase
-        .from("reservations")
-        .select("id, excursion_id, date, people_count, status")
-        .in("excursion_id", myExcIds)
-        .neq("status", "cancelled")).data ?? []
-    : [];
-
-  const allDatesData = myExcIds.length > 0
-    ? (await supabase
-        .from("excursion_dates")
-        .select("excursion_id, date, max_people")
-        .in("excursion_id", myExcIds)
-        .order("date", { ascending: true })).data ?? []
-    : [];
-
-  const excursionStats = (myExcursions ?? []).map((exc: any) => {
-    const excResas   = allMyResas.filter((r: any) => r.excursion_id === exc.id);
-    const excDates   = allDatesData.filter((d: any) => d.excursion_id === exc.id);
-    const maxPeople  = exc.max_people ?? 0;
-    const placesRes  = excResas.reduce((s: number, r: any) => s + (r.people_count ?? 0), 0);
-    const placesRest = Math.max(0, maxPeople - placesRes);
-    const taux       = maxPeople > 0 ? Math.round((placesRes / maxPeople) * 100) : 0;
-    const hasDates   = excDates.length > 0;
-    const photoUrl   = Array.isArray(exc.photos) && exc.photos.length > 0
-      ? exc.photos[0]
-      : null;
-
-    const dateDiagnostics = hasDates
-      ? excDates.map((d: any) => {
-          const slots     = d.max_people ?? maxPeople;
-          const reserved  = excResas
-            .filter((r: any) => r.date === d.date)
-            .reduce((s: number, r: any) => s + (r.people_count ?? 0), 0);
-          const remaining = Math.max(0, slots - reserved);
-          const rate      = slots > 0 ? Math.round((reserved / slots) * 100) : 0;
-          const nb_resa   = excResas.filter((r: any) => r.date === d.date).length;
-          return { date: d.date, slots, reserved, remaining, rate, nb_resa };
-        })
-      : [];
-
-    return {
-      excursion_id:     exc.id,
-      excursion_title:  exc.title ?? "—",
-      max_people:       maxPeople,
-      nb_reservations:  excResas.length,
-      nb_actives:       excResas.filter((r: any) => r.status === "confirmed").length,
-      places_reservees: placesRes,
-      places_restantes: placesRest,
-      taux_remplissage: taux,
-      photo:            photoUrl,
-      date_diagnostics: dateDiagnostics,
-      has_dates:        hasDates,
-    };
-  });
-
   return (
-    <PrestatairePaiementsReservationsClient
-      paiements={paiements}
-      reservationsPay={reservationsPay}
-      excursionsPay={excursionsPay}
-      touristes={touristes}
-      reservations={reservationsRows}
-      excursionStats={excursionStats}
+    <PrestaReservationsClient
+      reservations={reservations as any}
+      paiements={paiements as any}
+      excursions={excursions as any}
+      capacite={capacite as any}
+      prestataireInfo={{
+        full_name:   profile?.full_name ?? null,
+        agency_name: profile?.agency_name ?? null,
+      }}
     />
   );
 }
