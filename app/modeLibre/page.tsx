@@ -416,7 +416,7 @@ function ConfigInner() {
       {/* ── Topbar ── */}
       <div className="mlp-topbar">
         <div className="badge"><SlidersHorizontal size={13}/> Planificateur</div>
-        <h1>Créez votre itinéraire <span>sur mesure</span></h1>
+        <h1>Créez votre itinéraire sur mesure</h1>
       </div>
 
       {/* ── Step indicator ── */}
