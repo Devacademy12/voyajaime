@@ -12,6 +12,7 @@ import {
   Inbox,
   CheckCheck,
   Check,
+  ChevronLeft,
 } from "lucide-react";
 import "@/public/style/TouristeMessagesPage.css";
 
@@ -118,6 +119,11 @@ export default function TouristeMessagesPage() {
     setTimeout(() => inputRef.current?.focus(), 200);
   };
 
+  const handleBack = () => {
+    setActiveConv(null);
+    setMessages([]);
+  };
+
   const sendMessage = async () => {
     if (!newMsg.trim() || !activeConv || sending) return;
     setSending(true);
@@ -158,7 +164,7 @@ export default function TouristeMessagesPage() {
       <div className="messages-page">
 
         {/* ── Sidebar conversations ── */}
-        <div className="sidebar">
+        <div className={`sidebar${activeConv ? " hidden-mobile" : ""}`}>
 
           {/* Header sidebar */}
           <div className="sidebar-header">
@@ -241,10 +247,19 @@ export default function TouristeMessagesPage() {
 
         {/* ── Zone chat ── */}
         {activeConv ? (
-          <div className="chat-zone">
+          <div className="chat-zone visible-mobile">
 
             {/* Header chat */}
             <div className="chat-header">
+              {/* Bouton retour — visible uniquement sur mobile */}
+              <button
+                className="chat-back-btn"
+                onClick={handleBack}
+                aria-label="Retour aux conversations"
+              >
+                <ChevronLeft size={22} />
+              </button>
+
               <div className="chat-avatar">
                 {activeConv.prestataire?.avatar_url
                   ? <img src={activeConv.prestataire.avatar_url} alt="" />
@@ -328,7 +343,7 @@ export default function TouristeMessagesPage() {
           </div>
 
         ) : (
-          /* ── Empty state ── */
+          /* ── Empty state desktop uniquement ── */
           <div className="chat-empty-state">
             <div className="chat-empty-icon">
               <MessageCircle size={36} color="#2B96A8" />
