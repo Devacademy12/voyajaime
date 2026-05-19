@@ -22,7 +22,7 @@ import {
   Ticket,
   Landmark,
   Smartphone,
-  Lock
+  Lock 
 } from "lucide-react";
 import {
   Reservation, STEPS,

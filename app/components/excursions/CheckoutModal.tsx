@@ -9,6 +9,8 @@ import {
   Loader2, CheckCircle, AlertCircle, ChevronLeft, ChevronRight,
   MessageSquare, Route, CreditCard, Flame, ArrowRight, Timer,
 } from "lucide-react";
+import PaymentModal from "@/app/components/paiement/checkoutmodal";
+import type { Reservation } from "@/app/components/reservation/type";
 
 /* ─── Types ─────────────────────────────────────────────────────────── */
 
@@ -403,7 +405,7 @@ function MiniCalendar({
   const initDate = firstAvailable ? new Date(firstAvailable) : today;
   const [viewYear,  setViewYear]  = useState(initDate.getFullYear());
   const [viewMonth, setViewMonth] = useState(initDate.getMonth());
-
+ 
   const daysInMonth  = new Date(viewYear, viewMonth + 1, 0).getDate();
   const firstWeekday = (new Date(viewYear, viewMonth, 1).getDay() + 6) % 7;
   const cells: (number | null)[] = [
@@ -572,11 +574,13 @@ export default function CheckoutModal({
     }))
   );
 
-  const [activeIdx,    setActiveIdx]    = useState(0);
-  const [status,       setStatus]       = useState<"idle"|"loading"|"success"|"error">("idle");
-  const [errorMsg,     setErrorMsg]     = useState("");
-  const [bookingCodes, setBookingCodes] = useState<string[]>([]);
-  const [savedItinId,  setSavedItinId]  = useState<string | null>(null);
+  const [activeIdx,      setActiveIdx]      = useState(0);
+  const [status,         setStatus]         = useState<"idle"|"loading"|"success"|"error">("idle");
+  const [errorMsg,       setErrorMsg]       = useState("");
+  const [bookingCodes,   setBookingCodes]   = useState<string[]>([]);
+  const [savedItinId,    setSavedItinId]    = useState<string | null>(null);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [reservations, setReservations] = useState<Reservation[]>([]);
 
   /* ── Countdown (1h après succès) ── */
   const DEADLINE_SECS = 3600;
@@ -720,16 +724,42 @@ export default function CheckoutModal({
       setBookingCodes(codes);
       setStatus("success");
 
+      // Construire les objets Reservation pour le PaymentModal
+      const builtReservations: Reservation[] = perExc
+        .filter(p => p.selectedSlot)
+        .map((p, idx) => ({
+          id: "",
+          booking_code: codes[idx],
+          date: p.selectedDate,
+          time: p.selectedSlot!.time,
+          people_count: p.people,
+          total_price: (p.selectedSlot!.price * p.people) + Math.round(p.selectedSlot!.price * p.people * 0.1),
+          platform_fee: Math.round(p.selectedSlot!.price * p.people * 0.1),
+          status: "pending",
+          payment_status: "unpaid",
+          payment_deadline: new Date(Date.now() + 3600000).toISOString(),
+          excursion_id: p.exc.id,
+          excursion: {
+            id: p.exc.id,
+            title: p.exc.title,
+            city: p.exc.city,
+            photos: [],
+            duration_hours: p.exc.duration_hours,
+            price_per_person: p.selectedSlot!.price,
+          },
+        }));
+      setReservations(builtReservations);
+
     } catch (err) {
       setErrorMsg(err instanceof Error ? err.message : "Erreur inconnue.");
       setStatus("error");
     }
   };
 
-  /* ── Payer maintenant → page paiement ── */
+  /* ── Payer maintenant → afficher PaymentModal ── */
   const handlePayNow = () => {
     if (timerRef.current) clearInterval(timerRef.current);
-    window.location.href = `/paiement?codes=${bookingCodes.join(",")}&total=${grandTotal}`;
+    setShowPaymentModal(true);
   };
 
   /* ── Success screen ── */
@@ -874,6 +904,18 @@ export default function CheckoutModal({
             )}
           </div>
         </div>
+
+        {showPaymentModal && reservations.length > 0 && (
+          <PaymentModal
+            reservation={reservations[0]}
+            onClose={() => setShowPaymentModal(false)}
+            onPaid={(id: string) => {
+              setShowPaymentModal(false);
+              onClose?.();
+            }}
+            autoStart={true}
+          />
+        )}
       </>
     );
   }
