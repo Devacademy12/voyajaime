@@ -431,7 +431,7 @@ export default function HomeSlider() {
               background: "linear-gradient(100deg, rgba(0,0,0,.85) 0%, rgba(0,0,0,.45) 45%, rgba(0,0,0,.15) 100%)" 
             }}/>
             <div style={{ 
-              position:"absolute",inset:0, 
+              position:"absolute", inset:0,
               background: "linear-gradient(to top, rgba(0,0,0,.7) 0%, transparent 60%)" 
             }}/>
 
