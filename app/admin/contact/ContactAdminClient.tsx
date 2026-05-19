@@ -34,10 +34,16 @@ const CSS = `
   @keyframes spin   { to { transform:rotate(360deg); } }
   @keyframes fadeUp { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
 
+  /* ── Topbar ── */
   .topbar {
-    background:white; border-bottom:1px solid #E8ECF4; padding:0 32px;
-    height:64px; display:flex; justify-content:space-between; align-items:center;
-  position:sticky; top:0; z-index:10;
+    background:white; border-bottom:1px solid #E8ECF4;
+    padding:0 32px; height:64px;
+    display:flex; justify-content:space-between; align-items:center;
+    position:sticky; top:0; z-index:10;
+  }
+
+  .topbar-actions {
+    display:flex; align-items:center; gap:10px; flex-shrink:0;
   }
 
   .tab-btn {
@@ -56,10 +62,27 @@ const CSS = `
     font-size:13px; font-weight:700; cursor:pointer;
     font-family:inherit; transition:all .2s;
     box-shadow:0 4px 14px rgba(2,175,207,.28);
+    white-space:nowrap;
   }
   .save-btn:hover:not(:disabled) { transform:translateY(-1px); }
   .save-btn:disabled { background:#E5E7EB; color:#9CA3AF; cursor:not-allowed; box-shadow:none; }
   .save-btn.ok { background:linear-gradient(135deg,#059669,#047857); }
+
+  .preview-link {
+    display:inline-flex; align-items:center; gap:7px;
+    padding:10px 18px; background:#F4F6FB;
+    border:1.5px solid #E2E6F0; border-radius:12px;
+    font-size:13px; font-weight:600; color:#374151;
+    text-decoration:none; white-space:nowrap; transition:all .18s;
+  }
+  .preview-link:hover { background:#EBF0FA; border-color:#C7D2E8; }
+
+  .error-banner {
+    display:flex; align-items:center; gap:7px;
+    padding:8px 13px; background:#FEF2F2;
+    border:1.5px solid #FCA5A5; border-radius:10px;
+    font-size:12px; color:#DC2626; max-width:260px;
+  }
 
   .card {
     background:white; border-radius:14px; border:1.5px solid #E8ECF4;
@@ -82,55 +105,42 @@ const CSS = `
 
   /* ── Upload zone ── */
   .upload-zone {
-    border: 2px dashed #D1D5DB;
-    border-radius: 12px;
-    padding: 20px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 10px;
-    cursor: pointer;
-    transition: all .2s;
-    background: #F9FAFB;
-    text-align: center;
+    border:2px dashed #D1D5DB; border-radius:12px; padding:20px;
+    display:flex; flex-direction:column; align-items:center; gap:10px;
+    cursor:pointer; transition:all .2s; background:#F9FAFB; text-align:center;
   }
-  .upload-zone:hover { border-color: #02AFCF; background: #F0FAFF; }
-  .upload-zone.dragging { border-color: #02AFCF; background: #E8F9FC; }
+  .upload-zone:hover  { border-color:#02AFCF; background:#F0FAFF; }
+  .upload-zone.dragging { border-color:#02AFCF; background:#E8F9FC; }
 
   .upload-btn {
-    display: inline-flex; align-items: center; gap: 7px;
-    padding: 8px 16px;
-    background: #053366; color: white;
-    border: none; border-radius: 9px;
-    font-size: 12px; font-weight: 700; cursor: pointer;
-    font-family: inherit; transition: all .18s;
+    display:inline-flex; align-items:center; gap:7px;
+    padding:8px 16px; background:#053366; color:white;
+    border:none; border-radius:9px;
+    font-size:12px; font-weight:700; cursor:pointer;
+    font-family:inherit; transition:all .18s;
   }
-  .upload-btn:hover { background: #02265a; }
-  .upload-btn:disabled { background: #9CA3AF; cursor: not-allowed; }
+  .upload-btn:hover    { background:#02265a; }
+  .upload-btn:disabled { background:#9CA3AF; cursor:not-allowed; }
 
   .img-preview {
-    position: relative;
-    margin-top: 10px;
-    border-radius: 10px;
-    overflow: hidden;
-    border: 1.5px solid #E8ECF4;
+    position:relative; margin-top:10px;
+    border-radius:10px; overflow:hidden; border:1.5px solid #E8ECF4;
   }
   .img-preview-del {
-    position: absolute; top: 6px; right: 6px;
-    width: 26px; height: 26px; border-radius: 50%;
-    background: rgba(0,0,0,.55); border: none; cursor: pointer;
-    display: flex; align-items: center; justify-content: center;
-    color: white; transition: background .15s;
+    position:absolute; top:6px; right:6px;
+    width:26px; height:26px; border-radius:50%;
+    background:rgba(0,0,0,.55); border:none; cursor:pointer;
+    display:flex; align-items:center; justify-content:center;
+    color:white; transition:background .15s;
   }
-  .img-preview-del:hover { background: rgba(220,38,38,.8); }
+  .img-preview-del:hover { background:rgba(220,38,38,.8); }
 
   .upload-progress {
-    height: 4px; border-radius: 2px; background: #E5E7EB;
-    overflow: hidden; margin-top: 6px;
+    height:4px; border-radius:2px; background:#E5E7EB; overflow:hidden; margin-top:6px;
   }
   .upload-progress-bar {
-    height: 100%; background: linear-gradient(90deg,#02AFCF,#053366);
-    border-radius: 2px; transition: width .3s ease;
+    height:100%; background:linear-gradient(90deg,#02AFCF,#053366);
+    border-radius:2px; transition:width .3s ease;
   }
 
   /* Messages */
@@ -149,8 +159,7 @@ const CSS = `
 
   .badge {
     display:inline-flex; align-items:center; gap:4px;
-    padding:2px 8px; border-radius:20px;
-    font-size:10px; font-weight:800;
+    padding:2px 8px; border-radius:20px; font-size:10px; font-weight:800;
   }
 
   .icon-btn {
@@ -164,6 +173,123 @@ const CSS = `
 
   *::-webkit-scrollbar { width:4px; }
   *::-webkit-scrollbar-thumb { background:#E2E6F0; border-radius:2px; }
+
+  /* ══════════════════════════════════════
+     RESPONSIVE — TABLETTE (≤ 768px)
+  ══════════════════════════════════════ */
+  @media (max-width: 768px) {
+
+    .topbar {
+      padding: 0 16px;
+      height: auto;
+      min-height: 64px;
+      flex-wrap: wrap;
+      gap: 8px;
+      padding-top: 10px;
+      padding-bottom: 10px;
+    }
+
+    .topbar-actions { gap: 8px; }
+
+    /* Cacher label "Voir la page" — icône seule */
+    .preview-label { display: none; }
+    .preview-link  { padding: 10px 12px; }
+
+    /* Tabs : pleine largeur */
+    .tabs-row {
+      padding: 16px 16px 0 !important;
+    }
+
+    /* Content padding */
+    .page-content {
+      padding: 14px 16px 80px !important;
+    }
+
+    /* Card padding réduit */
+    .card-inner {
+      padding: 14px 16px !important;
+    }
+
+    /* Message row — gap réduit */
+    .msg-row { gap: 10px; padding: 14px 14px; }
+
+    /* Message detail */
+    .msg-detail { padding: 16px 14px; }
+  }
+
+  /* ══════════════════════════════════════
+     RESPONSIVE — MOBILE (≤ 480px)
+  ══════════════════════════════════════ */
+  @media (max-width: 480px) {
+
+    /* Topbar */
+    .topbar { padding: 8px 12px; }
+
+    /* Titre topbar */
+    .topbar-title h1  { font-size: 16px !important; }
+    .topbar-title p   { display: none; }
+
+    /* Bouton save : icône seule */
+    .save-btn-label { display: none; }
+    .save-btn { padding: 10px 14px; }
+
+    /* Tabs scroll horizontal */
+    .tabs-row {
+      padding: 12px 12px 0 !important;
+      overflow-x: auto;
+    }
+    .tabs-row > div {
+      flex-wrap: nowrap !important;
+      min-width: max-content;
+    }
+
+    .tab-btn { padding: 7px 14px; font-size: 12px; }
+
+    /* Content */
+    .page-content { padding: 12px 12px 80px !important; }
+
+    /* Card */
+    .card-inner { padding: 12px 14px !important; }
+
+    /* Erreur */
+    .error-banner { max-width: 180px; font-size: 11px; padding: 6px 10px; }
+
+    /* Champs */
+    .field { font-size: 13px; padding: 9px 12px; }
+
+    /* Upload zone compact */
+    .upload-zone { padding: 14px 12px; }
+
+    /* Message row mobile */
+    .msg-row { padding: 12px 12px; gap: 8px; }
+
+    /* Masquer subject sur mobile (évite overflow) */
+    .msg-subject { display: none; }
+
+    /* Actions messages */
+    .msg-actions { gap: 4px !important; }
+
+    /* Message detail */
+    .msg-detail { padding: 14px 12px; }
+
+    /* Répondre btn */
+    .reply-btn { padding: 8px 14px !important; font-size: 12px !important; }
+
+    /* Refresh btn */
+    .refresh-btn-label { display: none; }
+    .refresh-row { gap: 8px !important; }
+  }
+
+  /* ══════════════════════════════════════
+     RESPONSIVE — TRÈS PETIT (≤ 360px)
+  ══════════════════════════════════════ */
+  @media (max-width: 360px) {
+    .topbar-actions { gap: 5px; }
+    .save-btn  { padding: 8px 11px; }
+    .tab-btn   { padding: 6px 11px; font-size: 11px; }
+    .field     { font-size: 12px; }
+    .msg-row   { padding: 10px; gap: 7px; }
+  }
 `;
 
 /* ══ IMAGE UPLOADER ══ */
@@ -200,7 +326,6 @@ function ImageUploader({
 
       setProgress(40);
 
-      /* Upload vers Supabase Storage — bucket "images" (ajustez si besoin) */
       const { error: upErr } = await sb.storage
         .from("images")
         .upload(path, file, { cacheControl: "3600", upsert: true });
@@ -209,12 +334,9 @@ function ImageUploader({
 
       setProgress(80);
 
-      /* Récupérer l'URL publique */
       const { data: urlData } = sb.storage.from("images").getPublicUrl(path);
-      const publicUrl = urlData.publicUrl;
-
       setProgress(100);
-      onChange(publicUrl);
+      onChange(urlData.publicUrl);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Échec de l'upload.");
     } finally {
@@ -241,8 +363,8 @@ function ImageUploader({
 
   return (
     <div>
-      {/* Zone de drop */}
-      <div  className={`upload-zone ${dragging ? "dragging" : ""}`}
+      <div
+        className={`upload-zone ${dragging ? "dragging" : ""}`}
         onDragOver={e => { e.preventDefault(); setDragging(true); }}
         onDragLeave={() => setDragging(false)}
         onDrop={onDrop}
@@ -268,21 +390,18 @@ function ImageUploader({
         </button>
       </div>
 
-      {/* Barre de progression */}
       {progress > 0 && (
         <div className="upload-progress">
           <div className="upload-progress-bar" style={{ width:`${progress}%` }}/>
         </div>
       )}
 
-      {/* Erreur */}
       {error && (
         <p style={{ marginTop:8, fontSize:12, color:"#DC2626", display:"flex", alignItems:"center", gap:5 }}>
           <AlertCircle size={12}/> {error}
         </p>
       )}
 
-      {/* Ou URL manuelle */}
       <div style={{ display:"flex", alignItems:"center", gap:8, margin:"10px 0 6px" }}>
         <div style={{ flex:1, height:1, background:"#E8ECF4" }}/>
         <span style={{ fontSize:11, color:"#9CA3AF", fontWeight:600 }}>ou entrer une URL</span>
@@ -295,7 +414,6 @@ function ImageUploader({
         onChange={e => onChange(e.target.value)}
       />
 
-      {/* Prévisualisation */}
       {value && (
         <div className="img-preview" style={{ marginTop:10, height:140 }}>
           <img
@@ -309,7 +427,6 @@ function ImageUploader({
         </div>
       )}
 
-      {/* Input file caché */}
       <input
         ref={fileRef}
         type="file"
@@ -331,18 +448,17 @@ export default function ContactAdminClient({
 }) {
   const sb = createClient();
 
-  const [tab,       setTab]       = useState<"content"|"messages">("content");
-  const [content,   setContent]   = useState<Record<string, string>>(
+  const [tab,        setTab]        = useState<"content"|"messages">("content");
+  const [content,    setContent]    = useState<Record<string, string>>(
     Object.fromEntries(initialContent.map(r => [r.key, r.value ?? ""]))
   );
-  const [saving,    setSaving]    = useState(false);
-  const [saveOk,    setSaveOk]    = useState(false);
-  const [saveError, setSaveError] = useState<string|null>(null);
-  const [messages,  setMessages]  = useState<Message[]>(initialMessages);
-  const [openMsg,   setOpenMsg]   = useState<string|null>(null);
-  const [refreshing,setRefreshing]= useState(false);
+  const [saving,     setSaving]     = useState(false);
+  const [saveOk,     setSaveOk]     = useState(false);
+  const [saveError,  setSaveError]  = useState<string|null>(null);
+  const [messages,   setMessages]   = useState<Message[]>(initialMessages);
+  const [openMsg,    setOpenMsg]    = useState<string|null>(null);
+  const [refreshing, setRefreshing] = useState(false);
 
-  /* Save */
   const saveContent = async () => {
     setSaving(true); setSaveError(null);
     try {
@@ -388,7 +504,7 @@ export default function ContactAdminClient({
 
       {/* ── Topbar ── */}
       <div className="topbar">
-        <div>
+        <div className="topbar-title">
           <h1 style={{ fontFamily:"'Playfair Display',serif", fontSize:20, fontWeight:900, color:"#053366" }}>
             Page Contact
           </h1>
@@ -399,30 +515,31 @@ export default function ContactAdminClient({
           </p>
         </div>
 
-        <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+        <div className="topbar-actions">
           {saveError && (
-            <div style={{ display:"flex", alignItems:"center", gap:7, padding:"8px 13px", background:"#FEF2F2", border:"1.5px solid #FCA5A5", borderRadius:10, fontSize:12, color:"#DC2626" }}>
+            <div className="error-banner">
               <AlertCircle size={13}/> {saveError}
             </div>
           )}
-          <a href="/contact" target="_blank" rel="noopener"
-            style={{ display:"inline-flex", alignItems:"center", gap:7, padding:"10px 18px", background:"#F4F6FB", border:"1.5px solid #E2E6F0", borderRadius:12, fontSize:13, fontWeight:600, color:"#374151", textDecoration:"none" }}>
-            <Eye size={13}/> Voir la page
+
+          <a href="/contact" target="_blank" rel="noopener" className="preview-link">
+            <Eye size={13}/> <span className="preview-label">Voir la page</span>
           </a>
+
           {tab === "content" && (
             <button className={`save-btn ${saveOk?"ok":""}`} onClick={saveContent} disabled={saving||saveOk}>
               {saving
-                ? <><Loader2 size={13} style={{animation:"spin .7s linear infinite"}}/> Enregistrement…</>
+                ? <><Loader2 size={13} style={{animation:"spin .7s linear infinite"}}/> <span className="save-btn-label">Enregistrement…</span></>
                 : saveOk
-                  ? <><Check size={13}/> Enregistré !</>
-                  : <><Save size={13}/> Enregistrer</>}
+                  ? <><Check size={13}/> <span className="save-btn-label">Enregistré !</span></>
+                  : <><Save size={13}/> <span className="save-btn-label">Enregistrer</span></>}
             </button>
           )}
         </div>
       </div>
 
       {/* ── Tabs ── */}
-      <div style={{ maxWidth:860, margin:"0 auto", padding:"20px 24px 0" }}>
+      <div className="tabs-row" style={{ maxWidth:860, margin:"0 auto", padding:"20px 24px 0" }}>
         <div style={{ display:"flex", gap:8 }}>
           <button className={`tab-btn ${tab==="content"?"active":"idle"}`} onClick={() => setTab("content")}>
             <MessageSquare size={13} style={{display:"inline",marginRight:6}}/>
@@ -440,39 +557,40 @@ export default function ContactAdminClient({
         </div>
       </div>
 
-      <div style={{ maxWidth:860, margin:"0 auto", padding:"16px 24px 100px" }}>
+      <div className="page-content" style={{ maxWidth:860, margin:"0 auto", padding:"16px 24px 100px" }}>
 
         {/* ══ ONGLET CONTENU ══ */}
         {tab === "content" && (
           <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
             {FIELDS.map(f => (
-              <div key={f.key} className="card" style={{ padding:"18px 20px" }}>
-                <label className="label" style={{ display:"flex", alignItems:"center", gap:6, marginBottom: f.isImage ? 10 : 6 }}>
-                  {f.icon} {f.label}
-                </label>
+              <div key={f.key} className="card">
+                <div className="card-inner" style={{ padding:"18px 20px" }}>
+                  <label className="label" style={{ display:"flex", alignItems:"center", gap:6, marginBottom: f.isImage ? 10 : 6 }}>
+                    {f.icon} {f.label}
+                  </label>
 
-                {/* ── Champ image avec uploader ── */}
-                {f.isImage ? (
-                  <ImageUploader
-                    value={content[f.key] ?? ""}
-                    onChange={url => setContent(p => ({ ...p, [f.key]: url }))}
-                  />
-                ) : f.multiline ? (
-                  <textarea
-                    className="field"
-                    value={content[f.key] ?? ""}
-                    placeholder={f.placeholder}
-                    rows={3}
-                    onChange={e => setContent(p => ({ ...p, [f.key]: e.target.value }))}
-                  />
-                ) : (
-                  <input
-                    className="field"
-                    value={content[f.key] ?? ""}
-                    placeholder={f.placeholder}
-                    onChange={e => setContent(p => ({ ...p, [f.key]: e.target.value }))}
-                  />
-                )}
+                  {f.isImage ? (
+                    <ImageUploader
+                      value={content[f.key] ?? ""}
+                      onChange={url => setContent(p => ({ ...p, [f.key]: url }))}
+                    />
+                  ) : f.multiline ? (
+                    <textarea
+                      className="field"
+                      value={content[f.key] ?? ""}
+                      placeholder={f.placeholder}
+                      rows={3}
+                      onChange={e => setContent(p => ({ ...p, [f.key]: e.target.value }))}
+                    />
+                  ) : (
+                    <input
+                      className="field"
+                      value={content[f.key] ?? ""}
+                      placeholder={f.placeholder}
+                      onChange={e => setContent(p => ({ ...p, [f.key]: e.target.value }))}
+                    />
+                  )}
+                </div>
               </div>
             ))}
 
@@ -485,7 +603,7 @@ export default function ContactAdminClient({
         {/* ══ ONGLET MESSAGES ══ */}
         {tab === "messages" && (
           <div style={{ display:"flex", flexDirection:"column", gap:0 }}>
-            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:12 }}>
+            <div className="refresh-row" style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:12, gap:10 }}>
               <p style={{ fontSize:13, color:"#6B7280", fontWeight:600 }}>
                 {messages.length} message{messages.length!==1?"s":""} reçu{messages.length!==1?"s":""}
               </p>
@@ -495,7 +613,8 @@ export default function ContactAdminClient({
                 onClick={refreshMessages}
                 style={{ width:"auto", padding:"0 12px", gap:6, display:"flex", alignItems:"center", fontSize:12, fontWeight:700, color:"#374151" }}
               >
-                <RefreshCw size={13} style={{ animation: refreshing ? "spin .7s linear infinite" : "none" }}/> Actualiser
+                <RefreshCw size={13} style={{ animation: refreshing ? "spin .7s linear infinite" : "none" }}/>
+                <span className="refresh-btn-label">Actualiser</span>
               </button>
             </div>
 
@@ -528,16 +647,20 @@ export default function ContactAdminClient({
                         {!m.is_read && (
                           <span className="badge" style={{ background:"#E8F9FC", color:"#02AFCF" }}>Nouveau</span>
                         )}
-                        <span style={{ fontSize:12, color:"#9CA3AF", marginLeft:"auto" }}>
+                        <span style={{ fontSize:12, color:"#9CA3AF", marginLeft:"auto", flexShrink:0 }}>
                           {new Date(m.created_at).toLocaleDateString("fr-FR", { day:"numeric", month:"short", year:"numeric", hour:"2-digit", minute:"2-digit" })}
                         </span>
                       </div>
-                      <p style={{ fontSize:12, color:"#6B7280", marginTop:2 }}>{m.email}</p>
-                      {m.subject && <p style={{ fontSize:12, color:"#9CA3AF", marginTop:1, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{m.subject}</p>}
+                      <p style={{ fontSize:12, color:"#6B7280", marginTop:2, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{m.email}</p>
+                      {m.subject && (
+                        <p className="msg-subject" style={{ fontSize:12, color:"#9CA3AF", marginTop:1, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
+                          {m.subject}
+                        </p>
+                      )}
                     </div>
 
                     {/* Actions */}
-                    <div style={{ display:"flex", gap:6, alignItems:"center", flexShrink:0 }} onClick={e => e.stopPropagation()}>
+                    <div className="msg-actions" style={{ display:"flex", gap:6, alignItems:"center", flexShrink:0 }} onClick={e => e.stopPropagation()}>
                       {!m.is_read && (
                         <button className="icon-btn read-btn" title="Marquer comme lu" onClick={() => markRead(m.id)}>
                           <MailOpen size={13}/>
@@ -559,6 +682,7 @@ export default function ContactAdminClient({
                       <p style={{ fontSize:14, color:"#374151", lineHeight:1.75, whiteSpace:"pre-wrap" }}>{m.message}</p>
                       <a
                         href={`mailto:${m.email}?subject=Re: ${m.subject ?? ""}`}
+                        className="reply-btn"
                         style={{ display:"inline-flex", alignItems:"center", gap:7, marginTop:16, padding:"9px 18px", background:"#053366", color:"white", borderRadius:9, fontSize:13, fontWeight:700, textDecoration:"none" }}
                       >
                         <Mail size={13}/> Répondre par email
