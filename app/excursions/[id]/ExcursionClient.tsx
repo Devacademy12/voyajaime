@@ -130,13 +130,10 @@ const DIFFICULTY_CONFIG: Record<
   },
 };
 
-// Helper: safely format a date value of any type (handles jsonb from Supabase)
 function formatDate(date: unknown): string {
   try {
     if (date === null || date === undefined) return "";
-
     let str: string;
-
     if (date instanceof Date) {
       str = date.toISOString();
     } else if (typeof date === "object") {
@@ -146,11 +143,9 @@ function formatDate(date: unknown): string {
     } else {
       str = String(date);
     }
-
     const datePart = str.split("T")[0];
     const [y, m, d] = datePart.split("-").map(Number);
     if (!y || !m || !d) return str;
-
     return new Date(y, m - 1, d).toLocaleDateString("fr-FR", {
       day: "numeric",
       month: "long",
@@ -325,6 +320,7 @@ export default function ExcursionClient({
     }
   };
 
+  // ─── SUBMIT AVIS — publié immédiatement (is_moderated: true) ───────────────
   const submitAvis = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) {
@@ -342,15 +338,22 @@ export default function ExcursionClient({
     }
     setAvisLoading(true);
     setAvisError(null);
-    const { error } = await supabase.from("avis").insert({
-      excursion_id: exc.id,
-      touriste_id: user.id,
-      rating: myRating,
-      comment: cleanComment,
-      reservation_id: null,
-      is_moderated: false,
-    });
+
+    const { error, data: newAvis } = await supabase
+      .from("avis")
+      .insert({
+        excursion_id: exc.id,
+        touriste_id: user.id,
+        rating: myRating,
+        comment: cleanComment,
+        reservation_id: null,
+        is_moderated: true, // publié directement, l'admin peut masquer ensuite
+      })
+      .select("id, rating, comment, created_at, likes_count, prestataire_response")
+      .single();
+
     setAvisLoading(false);
+
     if (error) {
       setAvisError(
         error.code === "23505"
@@ -359,9 +362,28 @@ export default function ExcursionClient({
       );
       return;
     }
+
+    // Injecter le nouvel avis en tête de liste instantanément
+    if (newAvis) {
+      setAvis((prev) => [
+        {
+          id: newAvis.id,
+          rating: newAvis.rating,
+          comment: newAvis.comment,
+          created_at: newAvis.created_at,
+          likes_count: newAvis.likes_count ?? 0,
+          prestataire_response: newAvis.prestataire_response ?? null,
+          touriste_name: user.full_name,
+          touriste_avatar: null,
+        },
+        ...prev,
+      ]);
+    }
+
     setAvisSuccess(true);
     setAlreadyReviewed(true);
   };
+  // ───────────────────────────────────────────────────────────────────────────
 
   const sendMessage = async () => {
     if (!user) {
@@ -413,7 +435,6 @@ export default function ExcursionClient({
     setMsgSending(false);
   };
 
-  // Parse what_to_bring and not_included into arrays (support newline or comma)
   const parseBulletList = (text: string | null): string[] => {
     if (!text) return [];
     return text
@@ -897,7 +918,7 @@ export default function ExcursionClient({
                 <span className="exc-reviews-count">{avis.length} avis</span>
               </div>
 
-              {/* Form avis */}
+              {/* Formulaire avis */}
               {user && !alreadyReviewed && !avisSuccess && (
                 <div className="glass-card review-form">
                   <div className="review-form-header">
@@ -995,6 +1016,7 @@ export default function ExcursionClient({
                 </div>
               )}
 
+              {/* ✅ Message de succès — plus de mention "modération" */}
               {avisSuccess && (
                 <div className="review-success">
                   <div
@@ -1010,7 +1032,7 @@ export default function ExcursionClient({
                   >
                     <Check size={15} color="#059669" strokeWidth={3} />
                   </div>
-                  Votre avis a été soumis ! Il sera publié après modération.
+                  Votre avis a été publié !
                 </div>
               )}
 
@@ -1596,8 +1618,7 @@ export default function ExcursionClient({
 
       {/* MODAL RESERVATION */}
       {showCheckout && (
-        <CheckoutModal exc={exc} onClose={() => setShowCheckout(false)}
-        />
+        <CheckoutModal exc={exc} onClose={() => setShowCheckout(false)} />
       )}
 
       {/* MODAL PRESTATAIRE */}
