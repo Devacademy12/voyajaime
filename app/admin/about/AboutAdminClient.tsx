@@ -44,8 +44,6 @@ const SECTION_META: Record<string, {
 const ICON_OPTIONS = ["heart","shield","globe","star","map","users","award","zap","compass","camera"];
 
 /* ══ IMAGE UTILS ══ */
-
-/** Compresse et convertit un File en base64 (max ~800px, qualité 0.82) */
 function fileToBase64(file: File, maxPx = 1200, quality = 0.82): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -55,28 +53,17 @@ function fileToBase64(file: File, maxPx = 1200, quality = 0.82): Promise<string>
       const img = new Image();
       img.onerror = () => reject(new Error("Image invalide"));
       img.onload = () => {
-        // Calcul des dimensions réduites
         let { width, height } = img;
         if (width > maxPx || height > maxPx) {
-          if (width >= height) {
-            height = Math.round((height * maxPx) / width);
-            width  = maxPx;
-          } else {
-            width  = Math.round((width * maxPx) / height);
-            height = maxPx;
-          }
+          if (width >= height) { height = Math.round((height * maxPx) / width); width = maxPx; }
+          else { width = Math.round((width * maxPx) / height); height = maxPx; }
         }
         const canvas = document.createElement("canvas");
-        canvas.width  = width;
-        canvas.height = height;
+        canvas.width = width; canvas.height = height;
         const ctx = canvas.getContext("2d")!;
         ctx.drawImage(img, 0, 0, width, height);
-        // JPEG pour les photos, PNG si transparence
         const isTransparent = file.type === "image/png" || file.type === "image/gif";
-        const dataUrl = isTransparent
-          ? canvas.toDataURL("image/png")
-          : canvas.toDataURL("image/jpeg", quality);
-        resolve(dataUrl);
+        resolve(isTransparent ? canvas.toDataURL("image/png") : canvas.toDataURL("image/jpeg", quality));
       };
       img.src = src;
     };
@@ -84,7 +71,6 @@ function fileToBase64(file: File, maxPx = 1200, quality = 0.82): Promise<string>
   });
 }
 
-/** Retourne un résumé de la taille d'une chaîne base64 */
 function base64Size(b64: string): string {
   const bytes = Math.round((b64.length * 3) / 4);
   return bytes > 1024 * 1024
@@ -115,6 +101,7 @@ const CSS = `
   .sec-card.inactive { opacity: .55; }
   .sec-card.open { border-color: #C7D2E8; box-shadow: 0 6px 28px rgba(5,51,102,.10); }
 
+  /* ── Topbar ── */
   .topbar {
     background: white;
     border-bottom: 1px solid #E8ECF4;
@@ -125,8 +112,15 @@ const CSS = `
     align-items: center;
     position: sticky;
     top: 0;
-    z-index:10;
+    z-index: 10;
     box-shadow: 0 1px 0 #E8ECF4;
+  }
+
+  .topbar-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 0;
   }
 
   .save-btn {
@@ -137,6 +131,7 @@ const CSS = `
     font-size: 13px; font-weight: 700; cursor: pointer;
     font-family: inherit; transition: all .2s;
     box-shadow: 0 4px 14px rgba(2,175,207,.28);
+    white-space: nowrap;
   }
   .save-btn:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(2,175,207,.38); }
   .save-btn:disabled { background: #E5E7EB; color: #9CA3AF; cursor: not-allowed; box-shadow: none; }
@@ -149,6 +144,7 @@ const CSS = `
     border-radius: 12px; font-size: 13px; font-weight: 600;
     color: #374151; cursor: pointer; font-family: inherit;
     text-decoration: none; transition: all .18s;
+    white-space: nowrap;
   }
   .preview-btn:hover { background: #EBF0FA; border-color: #C7D2E8; }
 
@@ -231,9 +227,7 @@ const CSS = `
     font-size: 14px; color: #111827; line-height: 1.8;
     outline: none; font-family: 'DM Sans', sans-serif;
   }
-  .wy-editor:empty::before {
-    content: attr(data-ph); color: #C4CAD4; pointer-events: none;
-  }
+  .wy-editor:empty::before { content: attr(data-ph); color: #C4CAD4; pointer-events: none; }
   .wy-editor h1 { font-family: 'Playfair Display',serif; font-size:24px; font-weight:900; margin-bottom:10px; color:#053366; }
   .wy-editor h2 { font-family: 'Playfair Display',serif; font-size:18px; font-weight:700; margin-bottom:8px;  color:#053366; }
   .wy-editor p  { margin-bottom: 9px; }
@@ -262,6 +256,7 @@ const CSS = `
     padding: 8px 14px; background: #FEF2F2;
     border: 1.5px solid #FCA5A5; border-radius: 10px;
     font-size: 12px; color: #DC2626;
+    max-width: 280px;
   }
 
   .icon-picker {
@@ -271,7 +266,7 @@ const CSS = `
     padding: 4px 10px; border-radius: 8px;
     border: 1.5px solid #E8ECF4; background: white;
     font-size: 11px; font-weight: 700; cursor: pointer;
-    color: #374151; font-family: inherit; transition: all .13px;
+    color: #374151; font-family: inherit; transition: all .13s;
   }
   .icon-chip:hover    { border-color: #02AFCF; color: #02AFCF; }
   .icon-chip.selected { background: #053366; color: white; border-color: #053366; }
@@ -310,14 +305,151 @@ const CSS = `
     font-size: 10px; font-weight: 700; color: #166534;
   }
 
+  /* Grid CTA */
+  .cta-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+
+  /* Grid stats item */
+  .stat-row-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    flex: 1;
+  }
+
+  /* Grid team member */
+  .team-member-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
   *::-webkit-scrollbar { width: 4px; }
   *::-webkit-scrollbar-thumb { background: #E2E6F0; border-radius: 2px; }
+
+  /* ══════════════════════════════════════
+     RESPONSIVE — TABLETTE (≤ 768px)
+  ══════════════════════════════════════ */
+  @media (max-width: 768px) {
+
+    /* Topbar */
+    .topbar {
+      padding: 0 16px;
+      height: auto;
+      min-height: 64px;
+      flex-wrap: wrap;
+      gap: 8px;
+      padding-top: 10px;
+      padding-bottom: 10px;
+    }
+
+    .topbar-actions {
+      gap: 8px;
+    }
+
+    /* Cacher le label "Voir la page" sur tablette */
+    .preview-btn span { display: none; }
+    .preview-btn { padding: 10px 12px; }
+
+    /* Grille CTA — une colonne */
+    .cta-grid {
+      grid-template-columns: 1fr;
+    }
+
+    /* Grille stats — une colonne */
+    .stat-row-grid {
+      grid-template-columns: 1fr;
+    }
+
+    /* Grille team member — une colonne */
+    .team-member-grid {
+      grid-template-columns: 1fr;
+    }
+
+    /* Section card header — on réduit le padding */
+    .sec-card-header {
+      padding: 12px 14px !important;
+    }
+
+    /* Body section */
+    .sec-card-body {
+      padding: 0 14px 16px !important;
+    }
+  }
+
+  /* ══════════════════════════════════════
+     RESPONSIVE — MOBILE (≤ 480px)
+  ══════════════════════════════════════ */
+  @media (max-width: 480px) {
+
+    /* Topbar compact */
+    .topbar {
+      padding: 8px 12px;
+    }
+
+    /* Titre topbar */
+    .topbar-title h1 { font-size: 16px !important; }
+    .topbar-title p  { display: none; }
+
+    /* Bouton save : icône seule sur très petit écran */
+    .save-btn-label { display: none; }
+    .save-btn { padding: 10px 14px; }
+
+    /* Content padding */
+    .about-content {
+      padding: 16px 12px 80px !important;
+    }
+
+    /* Section card — padding réduit */
+    .sec-card-header {
+      padding: 10px 12px !important;
+      gap: 8px !important;
+    }
+
+    .sec-card-body {
+      padding: 0 12px 14px !important;
+    }
+
+    /* Masquer description section sur mobile */
+    .sec-desc { display: none; }
+
+    /* Wysiwyg editor moins haut */
+    .wy-editor { min-height: 120px; }
+
+    /* Toolbar wysiwyg — plus petite */
+    .wy-toolbar { padding: 6px 8px; gap: 2px; }
+    .wy-btn { width: 26px; height: 26px; }
+
+    /* Upload zone compact */
+    .upload-zone { padding: 14px 12px; }
+
+    /* Badge dans section card */
+    .badge { font-size: 10px; padding: 2px 7px; }
+
+    /* Error banner */
+    .error-banner {
+      font-size: 11px;
+      padding: 6px 10px;
+      max-width: 200px;
+    }
+  }
+
+  /* ══════════════════════════════════════
+     RESPONSIVE — TRÈS PETIT (≤ 360px)
+  ══════════════════════════════════════ */
+  @media (max-width: 360px) {
+    .topbar-actions { gap: 6px; }
+    .save-btn  { padding: 8px 12px; font-size: 12px; }
+    .preview-btn { padding: 8px 10px; }
+    .field { font-size: 13px; padding: 9px 12px; }
+    .meta-field { font-size: 12px; }
+  }
 `;
 
-/* ══ IMAGE UPLOAD FIELD ══
- * Stocke l'image en base64 directement dans image_url.
- * Aucun bucket Supabase requis.
- */
+/* ══ IMAGE UPLOAD FIELD ══ */
 function ImageUploadField({
   value,
   onChange,
@@ -335,14 +467,12 @@ function ImageUploadField({
   const inputRef = useRef<HTMLInputElement>(null);
 
   const isBase64 = (v: string) => v.startsWith("data:");
-  const isUrl    = (v: string) => v.startsWith("http") || v.startsWith("/");
 
   const processFile = async (file: File) => {
     if (!file.type.startsWith("image/")) {
       setError("Seules les images sont acceptées (jpg, png, gif, webp…)");
       return;
     }
-    // Limite soft : avertir si > 5 Mo avant compression
     if (file.size > 5 * 1024 * 1024) {
       setError("Fichier trop volumineux (max recommandé : 5 Mo). Compression en cours…");
     } else {
@@ -370,7 +500,6 @@ function ImageUploadField({
         <ImageIcon size={10} /> {label}
       </label>
 
-      {/* URL manuelle */}
       <input
         className="field"
         value={value && !isBase64(value) ? value : ""}
@@ -378,18 +507,13 @@ function ImageUploadField({
         onChange={e => onChange(e.target.value || null)}
       />
 
-      {/* Zone de dépôt */}
       {!value && (
         <div
           className={`upload-zone ${dragging ? "dragging" : ""}`}
           onClick={() => inputRef.current?.click()}
           onDragOver={e => { e.preventDefault(); setDragging(true); }}
           onDragLeave={() => setDragging(false)}
-          onDrop={e => {
-            e.preventDefault();
-            setDragging(false);
-            handleFiles(e.dataTransfer.files);
-          }}
+          onDrop={e => { e.preventDefault(); setDragging(false); handleFiles(e.dataTransfer.files); }}
         >
           {loading
             ? <>
@@ -409,7 +533,6 @@ function ImageUploadField({
         </div>
       )}
 
-      {/* Input caché */}
       <input
         ref={inputRef}
         type="file"
@@ -418,14 +541,12 @@ function ImageUploadField({
         onChange={e => handleFiles(e.target.files)}
       />
 
-      {/* Message d'erreur */}
       {error && (
         <div style={{ marginTop: 6, display: "flex", alignItems: "center", gap: 5, fontSize: 11, color: "#DC2626" }}>
           <AlertCircle size={12} /> {error}
         </div>
       )}
 
-      {/* Aperçu */}
       {value && !loading && (
         <div className="img-preview" style={{ maxHeight }}>
           <img
@@ -436,35 +557,27 @@ function ImageUploadField({
           />
           <div style={{ position: "absolute", bottom: 7, left: 7, display: "flex", gap: 6, alignItems: "center" }}>
             {isBase64(value) && (
-              <span className="img-size-badge">
-                ✓ locale · {base64Size(value)}
-              </span>
+              <span className="img-size-badge">✓ locale · {base64Size(value)}</span>
             )}
-            {isUrl(value) && (
+            {!isBase64(value) && (value.startsWith("http") || value.startsWith("/")) && (
               <span className="img-size-badge" style={{ background: "#EFF6FF", borderColor: "#BFDBFE", color: "#1D4ED8" }}>
                 🔗 URL externe
               </span>
             )}
           </div>
-          <button
-            className="img-preview-remove"
-            onClick={() => { onChange(null); setError(null); }}
-          >
+          <button className="img-preview-remove" onClick={() => { onChange(null); setError(null); }}>
             <X size={11} /> Supprimer
           </button>
         </div>
       )}
 
-      {/* Bouton "changer" quand image présente */}
       {value && !loading && (
         <button
           style={{
-            marginTop: 8,
-            display: "inline-flex", alignItems: "center", gap: 6,
+            marginTop: 8, display: "inline-flex", alignItems: "center", gap: 6,
             padding: "7px 14px", fontSize: 12, fontWeight: 600,
             background: "#F3F4F6", border: "1px solid #D1D5DB",
-            borderRadius: 8, cursor: "pointer", color: "#374151",
-            fontFamily: "inherit",
+            borderRadius: 8, cursor: "pointer", color: "#374151", fontFamily: "inherit",
           }}
           onClick={() => inputRef.current?.click()}
         >
@@ -494,10 +607,7 @@ function WysiwygEditor({ value, onChange, placeholder = "Commencez à écrire…
   const exec = (cmd: string, val?: string) => {
     document.execCommand(cmd, false, val);
     ref.current?.focus();
-    if (ref.current) {
-      skipNextSync.current = true;
-      onChange(ref.current.innerHTML);
-    }
+    if (ref.current) { skipNextSync.current = true; onChange(ref.current.innerHTML); }
   };
 
   const isActive = (cmd: string) => {
@@ -511,21 +621,21 @@ function WysiwygEditor({ value, onChange, placeholder = "Commencez à écrire…
 
   type Tool = { icon: React.ReactNode; cmd: string; val?: string; title: string };
   const TOOLS: Array<Tool | "sep"> = [
-    { icon: <Bold size={12}/>,     cmd: "bold",               title: "Gras" },
-    { icon: <Italic size={12}/>,   cmd: "italic",             title: "Italique" },
+    { icon: <Bold size={12}/>,      cmd: "bold",                         title: "Gras" },
+    { icon: <Italic size={12}/>,    cmd: "italic",                       title: "Italique" },
     "sep",
-    { icon: <Heading1 size={12}/>, cmd: "formatBlock", val: "h1", title: "Titre 1" },
-    { icon: <Heading2 size={12}/>, cmd: "formatBlock", val: "h2", title: "Titre 2" },
-    { icon: <AlignLeft size={12}/>,cmd: "formatBlock", val: "p",  title: "Paragraphe" },
+    { icon: <Heading1 size={12}/>,  cmd: "formatBlock",    val: "h1",    title: "Titre 1" },
+    { icon: <Heading2 size={12}/>,  cmd: "formatBlock",    val: "h2",    title: "Titre 2" },
+    { icon: <AlignLeft size={12}/>, cmd: "formatBlock",    val: "p",     title: "Paragraphe" },
     "sep",
-    { icon: <List size={12}/>,     cmd: "insertUnorderedList",    title: "Liste" },
-    { icon: <Quote size={12}/>,    cmd: "formatBlock", val: "blockquote", title: "Citation" },
-    { icon: <Minus size={12}/>,    cmd: "insertHorizontalRule",   title: "Séparateur" },
+    { icon: <List size={12}/>,      cmd: "insertUnorderedList",          title: "Liste" },
+    { icon: <Quote size={12}/>,     cmd: "formatBlock",    val: "blockquote", title: "Citation" },
+    { icon: <Minus size={12}/>,     cmd: "insertHorizontalRule",         title: "Séparateur" },
     "sep",
-    { icon: <AlignCenter size={12}/>, cmd: "justifyCenter",       title: "Centrer" },
-    { icon: <LinkIcon size={12}/>, cmd: "__link__",               title: "Lien" },
+    { icon: <AlignCenter size={12}/>, cmd: "justifyCenter",              title: "Centrer" },
+    { icon: <LinkIcon size={12}/>,  cmd: "__link__",                     title: "Lien" },
     "sep",
-    { icon: <RefreshCw size={10}/>,cmd: "removeFormat",           title: "Effacer le format" },
+    { icon: <RefreshCw size={10}/>, cmd: "removeFormat",                 title: "Effacer le format" },
   ];
 
   return (
@@ -552,10 +662,7 @@ function WysiwygEditor({ value, onChange, placeholder = "Commencez à écrire…
         suppressContentEditableWarning
         data-ph={placeholder}
         onInput={() => {
-          if (ref.current) {
-            skipNextSync.current = true;
-            onChange(ref.current.innerHTML);
-          }
+          if (ref.current) { skipNextSync.current = true; onChange(ref.current.innerHTML); }
         }}
       />
     </div>
@@ -563,13 +670,7 @@ function WysiwygEditor({ value, onChange, placeholder = "Commencez à écrire…
 }
 
 /* ══ SECTION CARD ══ */
-function SectionCard({
-  sec,
-  onUpdate,
-}: {
-  sec: Section;
-  onUpdate: (s: Section) => void;
-}) {
+function SectionCard({ sec, onUpdate }: { sec: Section; onUpdate: (s: Section) => void }) {
   const [open, setOpen] = useState(false);
   const info = SECTION_META[sec.section];
   const meta = sec.meta ?? {};
@@ -590,6 +691,7 @@ function SectionCard({
 
       {/* ── Header ── */}
       <div
+        className="sec-card-header"
         style={{ display:"flex", alignItems:"center", gap:12, padding:"14px 18px", cursor:"pointer", userSelect:"none" }}
         onClick={() => setOpen(o => !o)}
       >
@@ -612,7 +714,7 @@ function SectionCard({
               </span>
             )}
           </div>
-          <p style={{ fontSize:11.5, color:"#9CA3AF", marginTop:2 }}>{info?.desc}</p>
+          <p className="sec-desc" style={{ fontSize:11.5, color:"#9CA3AF", marginTop:2 }}>{info?.desc}</p>
         </div>
 
         <div style={{ display:"flex", alignItems:"center", gap:10, flexShrink:0 }}>
@@ -632,10 +734,12 @@ function SectionCard({
 
       {/* ── Body ── */}
       {open && (
-        <div style={{ padding:"0 20px 20px", borderTop:"1.5px solid #F4F6FB", display:"flex", flexDirection:"column", gap:18 }}>
+        <div
+          className="sec-card-body"
+          style={{ padding:"0 20px 20px", borderTop:"1.5px solid #F4F6FB", display:"flex", flexDirection:"column", gap:18 }}
+        >
           <div style={{ height:6 }}/>
 
-          {/* Titre */}
           <div>
             <label className="field-label">Titre</label>
             <input
@@ -646,7 +750,6 @@ function SectionCard({
             />
           </div>
 
-          {/* Sous-titre */}
           <div>
             <label className="field-label">Sous-titre</label>
             <input
@@ -657,7 +760,6 @@ function SectionCard({
             />
           </div>
 
-          {/* ── IMAGE (hero & team) — base64, pas de bucket ── */}
           {["hero", "team"].includes(sec.section) && (
             <ImageUploadField
               value={sec.image_url}
@@ -667,7 +769,6 @@ function SectionCard({
             />
           )}
 
-          {/* WYSIWYG */}
           {["hero","mission","team","cta"].includes(sec.section) && (
             <div>
               <label className="field-label" style={{ display:"flex", alignItems:"center", gap:5 }}>
@@ -687,7 +788,7 @@ function SectionCard({
               <label className="field-label">Statistiques</label>
               {statItems.map((item, i) => (
                 <div key={i} className="item-card" style={{ flexDirection:"row", gap:10, alignItems:"center" }}>
-                  <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8, flex:1 }}>
+                  <div className="stat-row-grid">
                     <input
                       className="meta-field"
                       value={item.value}
@@ -712,10 +813,7 @@ function SectionCard({
                   <button
                     className="icon-btn"
                     title="Supprimer"
-                    onClick={() => {
-                      const items = statItems.filter((_,j) => j !== i);
-                      updMeta({ items });
-                    }}
+                    onClick={() => updMeta({ items: statItems.filter((_,j) => j !== i) })}
                   ><Trash2 size={13}/></button>
                 </div>
               ))}
@@ -739,10 +837,7 @@ function SectionCard({
                     <button
                       className="icon-btn"
                       title="Supprimer"
-                      onClick={() => {
-                        const items = valueItems.filter((_,j) => j !== i);
-                        updMeta({ items });
-                      }}
+                      onClick={() => updMeta({ items: valueItems.filter((_,j) => j !== i) })}
                     ><Trash2 size={13}/></button>
                   </div>
                   <input
@@ -806,14 +901,11 @@ function SectionCard({
                     <button
                       className="icon-btn"
                       title="Supprimer"
-                      onClick={() => {
-                        const members = teamMembers.filter((_,j) => j !== i);
-                        updMeta({ members });
-                      }}
+                      onClick={() => updMeta({ members: teamMembers.filter((_,j) => j !== i) })}
                     ><Trash2 size={13}/></button>
                   </div>
 
-                  <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8 }}>
+                  <div className="team-member-grid">
                     <input
                       className="meta-field"
                       value={m.name}
@@ -836,7 +928,6 @@ function SectionCard({
                     />
                   </div>
 
-                  {/* Photo du membre — base64 aussi */}
                   <ImageUploadField
                     value={m.photo || null}
                     onChange={v => {
@@ -872,7 +963,7 @@ function SectionCard({
 
           {/* ── CTA ── */}
           {sec.section === "cta" && (
-            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
+            <div className="cta-grid">
               <div>
                 <label className="field-label">Texte du bouton</label>
                 <input
@@ -894,7 +985,6 @@ function SectionCard({
             </div>
           )}
 
-          {/* Last updated */}
           <p style={{ fontSize:11, color:"#C4CAD4", textAlign:"right" }}>
             Modifié le {new Date(sec.updated_at).toLocaleDateString("fr-FR", { day:"numeric", month:"long", year:"numeric", hour:"2-digit", minute:"2-digit" })}
           </p>
@@ -924,7 +1014,7 @@ export default function AboutAdminClient({ initialSections }: { initialSections:
           title:      sec.title,
           subtitle:   sec.subtitle,
           content:    sec.content,
-          image_url:  sec.image_url,   // base64 ou URL — stocké tel quel dans TEXT
+          image_url:  sec.image_url,
           is_active:  sec.is_active,
           meta:       sec.meta,
           updated_at: new Date().toISOString(),
@@ -949,7 +1039,7 @@ export default function AboutAdminClient({ initialSections }: { initialSections:
 
       {/* ── Topbar ── */}
       <div className="topbar">
-        <div>
+        <div className="topbar-title">
           <h1 style={{ fontFamily:"'Playfair Display',serif", fontSize:20, fontWeight:900, color:"#053366", lineHeight:1 }}>
             Page À propos
           </h1>
@@ -959,7 +1049,7 @@ export default function AboutAdminClient({ initialSections }: { initialSections:
           </p>
         </div>
 
-        <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+        <div className="topbar-actions">
           {saveError && (
             <div className="error-banner">
               <AlertCircle size={13}/> {saveError}
@@ -967,7 +1057,7 @@ export default function AboutAdminClient({ initialSections }: { initialSections:
           )}
 
           <a href="/about" target="_blank" rel="noopener" className="preview-btn">
-            <Eye size={13}/> Voir la page
+            <Eye size={13}/> <span>Voir la page</span>
           </a>
 
           <button
@@ -976,17 +1066,19 @@ export default function AboutAdminClient({ initialSections }: { initialSections:
             disabled={saving || saveOk}
           >
             {saving
-              ? <><Loader2 size={13} style={{ animation:"spin .7s linear infinite" }}/> Enregistrement…</>
+              ? <><Loader2 size={13} style={{ animation:"spin .7s linear infinite" }}/> <span className="save-btn-label">Enregistrement…</span></>
               : saveOk
-                ? <><Check size={13}/> Enregistré !</>
-                : <><Save size={13}/> Enregistrer tout</>}
+                ? <><Check size={13}/> <span className="save-btn-label">Enregistré !</span></>
+                : <><Save size={13}/> <span className="save-btn-label">Enregistrer tout</span></>}
           </button>
         </div>
       </div>
 
       {/* ── Content ── */}
-      <div style={{ maxWidth:820, margin:"0 auto", padding:"28px 24px 100px", display:"flex", flexDirection:"column", gap:10 }}>
-
+      <div
+        className="about-content"
+        style={{ maxWidth:820, margin:"0 auto", padding:"28px 24px 100px", display:"flex", flexDirection:"column", gap:10 }}
+      >
         {sections.length === 0 && (
           <div style={{ textAlign:"center", padding:"80px 20px", color:"#94A3B8" }}>
             <LayoutTemplate size={40} style={{ margin:"0 auto 16px", opacity:.4 }}/>
@@ -998,8 +1090,6 @@ export default function AboutAdminClient({ initialSections }: { initialSections:
         {sections.map(sec => (
           <SectionCard key={sec.id} sec={sec} onUpdate={updateSection} />
         ))}
-
-       
       </div>
     </div>
   );
