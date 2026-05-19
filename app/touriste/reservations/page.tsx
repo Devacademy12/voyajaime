@@ -1,7 +1,7 @@
 import { createServerSupabaseClient } from "@/lib/supabaseServer";
 import ReservationsClient from "./ReservationsClient";
 import { Suspense } from "react";
-import { StripeReturnHandler } from "./StripeReturnHandler";
+import { StripeReturnHandler } from "../../components/paiement/StripeReturnHandler";
 
 type Reservation = {
   id: string; booking_code: string; date: string; time: string;
