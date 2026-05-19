@@ -131,6 +131,44 @@ function getFirstAvailableDate(dateMap: Map<string, TimeSlot[]>): string {
   }) || "";
 }
 
+/* ─── Validation Functions ──────────────────────────────────────────── */
+
+/**
+ * Vérifie si une date/heure est dans le passé
+ */
+function isTimeInPast(date: string, time: string): boolean {
+  const now = new Date();
+  const reservationDateTime = new Date(`${date}T${time}:00`);
+  return reservationDateTime < now;
+}
+
+/**
+ * Convertit une heure (HH:MM) en minutes depuis minuit
+ */
+function timeToMinutes(time: string): number {
+  const [h, m] = time.split(":").map(Number);
+  return h * 60 + m;
+}
+
+/**
+ * Vérifie s'il y a un conflit d'heure
+ */
+function hasTimeOverlap(
+  date1: string,
+  time1: string,
+  duration1: number,
+  date2: string,
+  time2: string,
+  duration2: number
+): boolean {
+  if (date1 !== date2) return false;
+  const start1 = timeToMinutes(time1);
+  const end1 = start1 + duration1 * 60;
+  const start2 = timeToMinutes(time2);
+  const end2 = start2 + duration2 * 60;
+  return start1 < end2 && start2 < end1;
+}
+
 /* ─── CSS ─────────────────────────────────────────────────────────────── */
 
 const CSS = `
@@ -582,12 +620,41 @@ export default function CheckoutModalItineraire({ excursions, itineraireId: prop
       const codes:string[] = [];
       for(const p of perExc) {
         if(!p.selectedSlot) continue;
+
+        // ── VALIDATION 1 : Date/heure dans le passé ──
+        if(isTimeInPast(p.selectedDate,p.selectedSlot.time)) {
+          setErrorMsg(`❌ Impossible de réserver pour une date/heure déjà passée (${p.selectedDate} à ${p.selectedSlot.time}).`);
+          setStatus("error");
+          return;
+        }
+
+        // ── VALIDATION 2 : Réservation déjà existante pour cette excursion à cette date ──
         const {data:existing,error:checkErr} = await supabase
           .from("reservations").select("id")
           .eq("touriste_id",user.id).eq("excursion_id",p.exc.id).eq("date",p.selectedDate)
           .not("status","eq","cancelled").maybeSingle();
         if(checkErr){setErrorMsg(`Erreur : ${checkErr.message}`);setStatus("error");return;}
         if(existing){setErrorMsg(`Réservation existante pour "${p.exc.title}".`);setStatus("error");return;}
+
+        // ── VALIDATION 3 : Vérifier qu'il n'y a pas de chevauchement d'heure ──
+        const {data:conflicting,error:conflictErr} = await supabase
+          .from("reservations")
+          .select("id, excursion_id, date, time, excursions(duration_hours)")
+          .eq("touriste_id",user.id)
+          .eq("date",p.selectedDate)
+          .not("status","eq","cancelled");
+        if(conflictErr){setErrorMsg(`Erreur vérification horaire : ${conflictErr.message}`);setStatus("error");return;}
+
+        const duration = p.exc.duration_hours||1;
+        for(const conflict of conflicting||[]) {
+          const otherExc = Array.isArray(conflict.excursions)?conflict.excursions[0]:conflict.excursions;
+          const otherDuration = otherExc?.duration_hours||1;
+          if(hasTimeOverlap(p.selectedDate,p.selectedSlot.time,duration,conflict.date,conflict.time,otherDuration)) {
+            setErrorMsg(`⚠️ Vous avez déjà une réservation qui chevauche cet horaire. Consultez votre calendrier.`);
+            setStatus("error");
+            return;
+          }
+        }
 
         const code = genBookingCode();
         const tot  = p.selectedSlot.price*p.people;

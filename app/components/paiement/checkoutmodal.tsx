@@ -67,6 +67,16 @@ export default function CheckoutModal({ reservation, onClose, onPaid, autoStart 
     }, 1000);
     return () => { if (timerRef.current) clearInterval(timerRef.current); };
   }, [step, cancelled]);
+  
+  useEffect(() => {
+  if (step === 4) {
+    const timer = setTimeout(() => {
+      onClose();
+    }, 3000);
+
+    return () => clearTimeout(timer);
+  }
+}, [step, onClose]);
 
   async function triggerCancel() {
     setCancelled(true);

@@ -198,3 +198,154 @@ export async function sendAccountAccepted({
     html,
   });
 }
+
+// ─── Email 3 : Confirmation de réservation + paiement ────
+
+export async function sendReservationConfirmation({
+  email,
+  touristeName,
+  excursionTitle,
+  excursionCity,
+  date,
+  time,
+  peopleCount,
+  totalPrice,
+  bookingCode,
+  duration_hours,
+  meeting_point,
+}: {
+  email: string;
+  touristeName: string;
+  excursionTitle: string;
+  excursionCity: string;
+  date: string;
+  time: string;
+  peopleCount: number;
+  totalPrice: number;
+  bookingCode: string;
+  duration_hours?: number;
+  meeting_point?: string;
+}) {
+  // Formater la date
+  const dateObj = new Date(date);
+  const formattedDate = dateObj.toLocaleDateString("fr-FR", {
+    weekday: "long",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+
+  const dashboardLink = `${APP_URL}/touriste/reservations`;
+
+  const html = layout(`
+    <div style="text-align:center;margin-bottom:28px;">
+      <div style="display:inline-block;width:68px;height:68px;background:#ECFDF5;border-radius:50%;line-height:68px;font-size:32px;border:1px solid #BBF7D0;">
+        ✓
+      </div>
+    </div>
+
+    <h1 style="margin:0 0 8px;font-size:24px;font-weight:800;color:#0F172A;letter-spacing:-0.5px;text-align:center;">
+      Réservation confirmée !
+    </h1>
+    <p style="margin:0 0 28px;font-size:14px;color:#6B7280;line-height:1.7;text-align:center;">
+      Merci <strong>${touristeName}</strong> — votre paiement a été reçu et votre réservation est confirmée.
+    </p>
+
+    <div style="background:#F0FDF4;border:2px solid #86EFAC;border-radius:12px;padding:20px 24px;margin-bottom:28px;">
+      <p style="margin:0 0 16px;font-size:13px;font-weight:700;color:#065F46;text-transform:uppercase;letter-spacing:1px;">
+        📍 Votre excursion
+      </p>
+      <div style="margin-bottom:16px;">
+        <p style="margin:0 0 4px;font-size:18px;font-weight:800;color:#0F172A;">
+          ${excursionTitle}
+        </p>
+        <p style="margin:0;font-size:13px;color:#6B7280;">
+          ${excursionCity}
+        </p>
+      </div>
+      <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
+        <tr style="border-top:1px solid #DCFCE7;">
+          <td style="padding:10px 0;font-size:13px;color:#6B7280;"><strong>📅 Date</strong></td>
+          <td style="padding:10px 0;font-size:13px;color:#0F172A;text-align:right;">
+            <strong>${formattedDate}</strong>
+          </td>
+        </tr>
+        <tr style="border-top:1px solid #DCFCE7;">
+          <td style="padding:10px 0;font-size:13px;color:#6B7280;"><strong>🕐 Heure départ</strong></td>
+          <td style="padding:10px 0;font-size:13px;color:#0F172A;text-align:right;">
+            <strong>${time}</strong>
+          </td>
+        </tr>
+        <tr style="border-top:1px solid #DCFCE7;">
+          <td style="padding:10px 0;font-size:13px;color:#6B7280;"><strong>👥 Voyageurs</strong></td>
+          <td style="padding:10px 0;font-size:13px;color:#0F172A;text-align:right;">
+            <strong>${peopleCount} ${peopleCount > 1 ? "personnes" : "personne"}</strong>
+          </td>
+        </tr>
+        ${duration_hours ? `
+        <tr style="border-top:1px solid #DCFCE7;">
+          <td style="padding:10px 0;font-size:13px;color:#6B7280;"><strong>⏱️ Durée</strong></td>
+          <td style="padding:10px 0;font-size:13px;color:#0F172A;text-align:right;">
+            <strong>${duration_hours} ${duration_hours > 1 ? "heures" : "heure"}</strong>
+          </td>
+        </tr>
+        ` : ""}
+        ${meeting_point ? `
+        <tr style="border-top:1px solid #DCFCE7;">
+          <td style="padding:10px 0;font-size:13px;color:#6B7280;"><strong>📍 Point de rendez-vous</strong></td>
+          <td style="padding:10px 0;font-size:13px;color:#0F172A;text-align:right;">
+            <strong>${meeting_point}</strong>
+          </td>
+        </tr>
+        ` : ""}
+      </table>
+    </div>
+
+    <div style="background:#F8FAFC;border:1px solid #E5E7EB;border-radius:12px;padding:20px 24px;margin-bottom:28px;">
+      <p style="margin:0 0 12px;font-size:12px;font-weight:700;color:#374151;text-transform:uppercase;letter-spacing:1px;">
+        💰 Détail du paiement
+      </p>
+      <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
+        <tr>
+          <td style="padding:8px 0;font-size:13px;color:#6B7280;">Total payé :</td>
+          <td style="padding:8px 0;font-size:16px;font-weight:800;color:#0F172A;text-align:right;">
+            ${totalPrice.toLocaleString("fr-FR")} EUR
+          </td>
+        </tr>
+      </table>
+    </div>
+
+    <div style="background:#FFFBEB;border:1px solid #FDE68A;border-radius:10px;padding:14px 18px;margin-bottom:28px;">
+      <p style="margin:0 0 10px;font-size:12px;color:#92400E;">
+        <strong>Code réservation :</strong> <code style="background:white;padding:3px 6px;border-radius:4px;font-family:monospace;font-weight:700;color:#0F172A;">${bookingCode}</code>
+      </p>
+      <p style="margin:0;font-size:12px;color:#92400E;">
+        💡 Conservez ce code — vous en aurez besoin le jour de l'excursion.
+      </p>
+    </div>
+
+    <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:28px;">
+      <tr><td align="center">
+        <a href="${dashboardLink}" style="display:inline-block;padding:14px 36px;background:#2B96A8;color:white;text-decoration:none;border-radius:10px;font-size:15px;font-weight:700;">
+          Voir mes réservations →
+        </a>
+      </td></tr>
+    </table>
+
+    <div style="background:#F0F9FF;border:1px solid #BAE6FD;border-radius:10px;padding:14px 18px;">
+      <p style="margin:0 0 6px;font-size:12px;font-weight:700;color:#0369A1;">
+        ℹ️ Questions ?
+      </p>
+      <p style="margin:0;font-size:12px;color:#075985;">
+        Consultez notre <a href="${APP_URL}/contact" style="color:#0369A1;font-weight:600;">page d'aide</a>
+        ou contactez-nous via votre espace personnel.
+      </p>
+    </div>
+  `);
+
+  return sendEmail({
+    to: email,
+    subject: `✅ Réservation confirmée — ${excursionTitle}`,
+    html,
+  });
+}

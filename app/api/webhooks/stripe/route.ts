@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 import { createAdminClient } from "@/lib/supabaseAdmin";
+import { sendReservationConfirmation } from "@/lib/emails/resend";
 
 export async function POST(req: NextRequest) {
   const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
@@ -40,7 +41,10 @@ export async function POST(req: NextRequest) {
     // ── 1. Récupérer la réservation complète ──────────────────────
     const { data: reservation, error: fetchError } = await supabase
       .from("reservations")
-      .select("*, excursions(id, prestataire_id)")
+      .select(`
+        *,
+        excursions(id, title, city, duration_hours, meeting_point, prestataire_id)
+      `)
       .eq("id", reservation_id)
       .single();
 
@@ -105,6 +109,41 @@ export async function POST(req: NextRequest) {
 
     if (paiementError) {
       console.error("Erreur création paiement (non bloquant):", paiementError);
+    }
+
+    // ── 5. Envoyer un email de confirmation de réservation ────────
+    try {
+      // Récupérer le profil du touriste (jointure séparée)
+      const { data: touristeProfile } = await supabase
+        .from("profiles")
+        .select("full_name, email")
+        .eq("user_id", reservation.touriste_id)
+        .single();
+
+      const excursion = Array.isArray(reservation.excursions) 
+        ? reservation.excursions[0] 
+        : reservation.excursions;
+
+      if (touristeProfile?.email && excursion) {
+        await sendReservationConfirmation({
+          email: touristeProfile.email,
+          touristeName: touristeProfile.full_name || "Voyageur",
+          excursionTitle: excursion.title || "Excursion",
+          excursionCity: excursion.city || "Tunisie",
+          date: reservation.date,
+          time: reservation.time,
+          peopleCount: reservation.people_count,
+          totalPrice: reservation.total_price,
+          bookingCode: reservation.booking_code,
+          duration_hours: excursion.duration_hours,
+          meeting_point: excursion.meeting_point,
+        });
+        console.log(`✅ Email de confirmation envoyé à ${touristeProfile.email}`);
+      } else {
+        console.warn("⚠️ Profil touriste ou email manquant — email non envoyé");
+      }
+    } catch (emailError) {
+      console.error("⚠️ Erreur envoi email (non bloquant):", emailError);
     }
 
     console.log(`✅ Paiement confirmé — réservation ${reservation_id} — ${amount} EUR`);
