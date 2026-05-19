@@ -41,12 +41,17 @@ export default function AvisClient({ avis: initial }: { avis: Avis[] }) {
     initialFilter: "pending",
   });
 
-  const handleApprove = async (id: string, name: string) => {
-    await execute(id, { id, action: "approve" }, {
-      successMessage: `Avis de ${name} approuvé et publié`,
-      onSuccess: (prev) => prev.map(a => a.id === id ? { ...a, is_moderated: true } : a),
-    });
-  };
+ // APRÈS
+const handleToggleVisibility = async (id: string, currentlyVisible: boolean, name: string) => {
+  const action = currentlyVisible ? "hide" : "show";
+  await execute(id, { id, action }, {
+    successMessage: currentlyVisible
+      ? `Avis de ${name} masqué`
+      : `Avis de ${name} remis en ligne`,
+    onSuccess: (prev) =>
+      prev.map(a => a.id === id ? { ...a, is_moderated: !currentlyVisible } : a),
+  });
+};
 
   const handleDelete = async (id: string) => {
     await execute(id, { id, action: "delete" }, {
@@ -171,14 +176,20 @@ export default function AvisClient({ avis: initial }: { avis: Avis[] }) {
 
               {/* Actions */}
               <div style={{ display: "flex", flexDirection: "column", gap: 8, flexShrink: 0, justifyContent: "center" }}>
-                {!a.is_moderated && (
-                  <button className="abtn abtn-green" onClick={() => handleApprove(a.id, a.touriste_name)} disabled={loading === a.id}>
-                    <CheckCircle size={13} />{loading === a.id ? "..." : "Approuver"}
-                  </button>
-                )}
-                <button className="abtn abtn-red" onClick={() => handleDelete(a.id)} disabled={loading === a.id}>
-                  <Trash2 size={13} />{loading === a.id ? "..." : "Supprimer"}
-                </button>
+              // APRÈS — actions
+<button
+  className={a.is_moderated ? "abtn abtn-red" : "abtn abtn-green"}
+  onClick={() => handleToggleVisibility(a.id, a.is_moderated, a.touriste_name)}
+  disabled={loading === a.id}
+>
+  {a.is_moderated
+    ? <><XCircle size={13} />{loading === a.id ? "..." : "Masquer"}</>
+    : <><CheckCircle size={13} />{loading === a.id ? "..." : "Afficher"}</>
+  }
+</button>
+<button className="abtn abtn-red" onClick={() => handleDelete(a.id)} disabled={loading === a.id}>
+  <Trash2 size={13} />{loading === a.id ? "..." : "Supprimer"}
+</button>
               </div>
             </div>
           ))}
