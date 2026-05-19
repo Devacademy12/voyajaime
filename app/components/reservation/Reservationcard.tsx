@@ -7,7 +7,7 @@ import {
   CheckCircle, CreditCard, TrendingUp, Timer,
 } from "lucide-react";
 import { Reservation, STATUS_CFG, daysUntil, fmtDate } from "./type";
-import styles from "./Reservations.module.css";
+import styles from "@/public/style/Reservations.module.css";
 
 interface Props {
   r: Reservation;
