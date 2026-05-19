@@ -594,9 +594,7 @@ export default function ContactAdminClient({
               </div>
             ))}
 
-            <div style={{ padding:"12px 16px", background:"#FFFBEB", border:"1.5px solid #FDE68A", borderRadius:12, fontSize:12, color:"#92400E" }}>
-              <strong>💡 Astuce :</strong> Pour l'image de fond, glissez-déposez un fichier ou cliquez sur <em>Choisir depuis le PC</em>. L'image est uploadée automatiquement sur Supabase Storage. Pensez à <strong>Enregistrer</strong> après chaque modification.
-            </div>
+           
           </div>
         )}
 
