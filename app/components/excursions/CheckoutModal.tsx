@@ -7,7 +7,7 @@ import {
   X, Users, MapPin, Clock,
   Check, Minus, Plus, ShieldCheck, RefreshCcw, Lock,
   Loader2, CheckCircle, AlertCircle, ChevronLeft, ChevronRight,
-  MessageSquare, Route, CreditCard, Flame, ArrowRight,
+  MessageSquare, Route,
 } from "lucide-react";
 
 /* ─── Types ─────────────────────────────────────────────────────────── */
@@ -104,21 +104,11 @@ function buildDateMap(exc: Excursion): Map<string, TimeSlot[]> {
   return map;
 }
 
-function formatCountdown(seconds: number) {
-  const h = Math.floor(seconds / 3600);
-  const m = Math.floor((seconds % 3600) / 60);
-  const s = seconds % 60;
-  const pad = (n: number) => String(n).padStart(2, "0");
-  if (h > 0) return `${pad(h)}:${pad(m)}:${pad(s)}`;
-  return `${pad(m)}:${pad(s)}`;
-}
-
 /* ─── CSS ────────────────────────────────────────────────────────────── */
 
 const CSS = `
-  @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Syne:wght@700;800&family=DM+Sans:wght@400;500;600;700;800&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=DM+Sans:wght@400;500;600;700;800&display=swap');
 
-  /* ── Checkout Modal ── */
   .co2-overlay {
     position: fixed; inset: 0; z-index: 1000;
     display: flex; align-items: center; justify-content: center;
@@ -139,6 +129,7 @@ const CSS = `
     max-height: 96vh;
   }
 
+  /* Left */
   .co2-left {
     width: 340px; flex-shrink: 0;
     background: linear-gradient(160deg,#0B3D52 0%,#0E5068 55%,#0B7EA3 100%);
@@ -157,6 +148,7 @@ const CSS = `
     background: rgba(255,255,255,.04);
   }
 
+  /* Right */
   .co2-right { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
   .co2-right-scroll { flex: 1; overflow-y: auto; padding: 28px 28px 0; }
   .co2-right-scroll::-webkit-scrollbar { width: 3px }
@@ -167,6 +159,7 @@ const CSS = `
     background: #FAFBFC;
   }
 
+  /* Calendar grid */
   .cal-grid { display: grid; grid-template-columns: repeat(7,1fr); gap: 4px; margin-top: 8px; }
   .cal-day-btn {
     aspect-ratio: 1; border-radius: 10px; border: none;
@@ -202,6 +195,7 @@ const CSS = `
   }
   .cal-dot { width: 4px; height: 4px; border-radius: 50%; background: #10B981; flex-shrink: 0 }
 
+  /* Slots */
   .slot-pill {
     display: flex; align-items: center; justify-content: space-between;
     padding: 13px 16px; border-radius: 14px;
@@ -214,6 +208,7 @@ const CSS = `
   .slot-pill.full { opacity: .55; cursor: not-allowed; border-color: #FEE2E2 }
   .slot-pill:not(.full):not(.sel):hover { border-color: #2B96A8; background: #F8FDFE }
 
+  /* Counter */
   .co2-counter-btn {
     width: 36px; height: 36px; border: none; border-radius: 10px;
     background: #F3F4F6; cursor: pointer;
@@ -223,6 +218,7 @@ const CSS = `
   .co2-counter-btn:hover:not(:disabled) { background: #E5E7EB }
   .co2-counter-btn:disabled { opacity: .3; cursor: not-allowed }
 
+  /* CTA */
   .co2-cta {
     width: 100%; padding: 15px; border: none; border-radius: 14px;
     font-size: 15px; font-weight: 800; cursor: pointer;
@@ -253,138 +249,13 @@ const CSS = `
   .itin-progress { display: flex; align-items: center; gap: 4px; margin-bottom: 6px; }
   .itin-step { height: 3px; border-radius: 3px; flex: 1; transition: background .3s; }
 
-  /* ── Payment Countdown Modal ── */
-  .pcm-overlay {
-    position: fixed; inset: 0; z-index: 1100;
-    display: flex; align-items: center; justify-content: center;
-    padding: 16px;
-    background: rgba(5,8,18,0.82);
-    backdrop-filter: blur(12px);
-    animation: co2Fade .25s ease;
-  }
-  .pcm-shell {
-    width: 100%; max-width: 480px;
-    background: #0D1117;
-    border: 1px solid rgba(255,255,255,.08);
-    border-radius: 28px;
-    overflow: hidden;
-    box-shadow: 0 40px 100px rgba(0,0,0,.7), 0 0 0 1px rgba(255,255,255,.04);
-    animation: co2Up .35s cubic-bezier(.34,1.4,.64,1);
-    font-family: 'DM Sans', sans-serif;
-  }
-  .pcm-urgbar {
-    height: 3px; width: 100%;
-    background: linear-gradient(90deg,#FF4D4D,#FF9A3C,#FFD700);
-    background-size: 200% 100%;
-    animation: pcmShimmer 2s linear infinite;
-  }
-  .pcm-hdr {
-    padding: 28px 28px 20px;
-    border-bottom: 1px solid rgba(255,255,255,.06);
-    position: relative;
-  }
-  .pcm-close {
-    position: absolute; top: 20px; right: 20px;
-    width: 30px; height: 30px; border-radius: 50%; border: none;
-    background: rgba(255,255,255,.06); cursor: pointer; color: rgba(255,255,255,.4);
-    display: flex; align-items: center; justify-content: center;
-    transition: all .15s;
-  }
-  .pcm-close:hover { background: rgba(255,255,255,.1); color: white; }
-  .pcm-timerrow { display: flex; align-items: center; gap: 18px; margin-bottom: 20px; }
-  .pcm-digits {
-    font-family: 'Syne', sans-serif;
-    font-size: 36px; font-weight: 800; letter-spacing: -1px;
-    line-height: 1; color: white;
-  }
-  .pcm-digits.urgent { color: #FF4D4D; animation: pcmPulse 1s ease infinite; }
-  .pcm-timelabel {
-    font-size: 11px; font-weight: 700; text-transform: uppercase;
-    letter-spacing: 1.5px; color: rgba(255,255,255,.35); margin-top: 4px;
-  }
-  .pcm-warn {
-    display: flex; align-items: flex-start; gap: 10px;
-    background: rgba(255,77,77,.08);
-    border: 1px solid rgba(255,77,77,.2);
-    border-radius: 12px; padding: 12px 14px;
-    font-size: 13px; color: rgba(255,255,255,.7); line-height: 1.5;
-  }
-  .pcm-warn strong { color: #FF6B6B; }
-  .pcm-body { padding: 20px 28px; display: flex; flex-direction: column; gap: 10px; }
-  .pcm-row {
-    background: rgba(255,255,255,.04);
-    border: 1px solid rgba(255,255,255,.07);
-    border-radius: 14px; padding: 14px 16px;
-    display: flex; align-items: center; gap: 12px;
-  }
-  .pcm-rowicon {
-    width: 36px; height: 36px; border-radius: 10px; flex-shrink: 0;
-    background: linear-gradient(135deg,rgba(43,150,168,.3),rgba(43,150,168,.1));
-    border: 1px solid rgba(43,150,168,.2);
-    display: flex; align-items: center; justify-content: center;
-  }
-  .pcm-rowtitle { font-size: 13px; font-weight: 700; color: white; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 2px; }
-  .pcm-rowmeta { font-size: 11px; color: rgba(255,255,255,.4); }
-  .pcm-rowcode {
-    font-family: monospace; font-size: 10px; font-weight: 700;
-    color: #2B96A8; letter-spacing: .5px; text-transform: uppercase;
-    background: rgba(43,150,168,.1); border: 1px solid rgba(43,150,168,.2);
-    border-radius: 6px; padding: 2px 6px; flex-shrink: 0;
-  }
-  .pcm-totalrow {
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 14px 16px;
-    background: rgba(255,255,255,.03);
-    border: 1px solid rgba(255,255,255,.06); border-radius: 14px;
-  }
-  .pcm-totallbl { font-size: 13px; color: rgba(255,255,255,.5); font-weight: 600; }
-  .pcm-totalamt { font-family: 'Syne', sans-serif; font-size: 22px; font-weight: 800; color: white; letter-spacing: -.5px; }
-  .pcm-foot { padding: 16px 28px 28px; display: flex; flex-direction: column; gap: 10px; }
-  .pcm-paybtn {
-    width: 100%; padding: 17px; border: none; border-radius: 16px;
-    font-family: 'Syne', sans-serif; font-size: 16px; font-weight: 800;
-    cursor: pointer; display: flex; align-items: center; justify-content: center;
-    gap: 10px; transition: all .2s; position: relative; overflow: hidden;
-    letter-spacing: .3px;
-    background: linear-gradient(135deg,#2B96A8 0%,#1b7a90 50%,#155f72 100%);
-    color: white;
-    box-shadow: 0 4px 24px rgba(43,150,168,.35), 0 0 0 1px rgba(43,150,168,.4);
-  }
-  .pcm-paybtn::before {
-    content: ''; position: absolute; inset: 0;
-    background: linear-gradient(135deg,rgba(255,255,255,.12) 0%,transparent 60%);
-  }
-  .pcm-paybtn:hover { transform: translateY(-2px); box-shadow: 0 8px 32px rgba(43,150,168,.5); }
-  .pcm-cancelbtn {
-    width: 100%; padding: 12px; border: none; background: transparent;
-    cursor: pointer; font-family: 'DM Sans', sans-serif; font-size: 13px;
-    color: rgba(255,255,255,.3); transition: color .15s; font-weight: 600;
-  }
-  .pcm-cancelbtn:hover { color: rgba(255,255,255,.55); }
-  .pcm-trust { display: flex; justify-content: center; gap: 20px; flex-wrap: wrap; margin-top: 2px; }
-  .pcm-trustitem { font-size: 11px; color: rgba(255,255,255,.25); display: flex; align-items: center; gap: 5px; }
-  .pcm-expired {
-    padding: 40px 28px 28px; text-align: center;
-    display: flex; flex-direction: column; align-items: center; gap: 14px;
-  }
-  .pcm-expired-icon {
-    width: 64px; height: 64px; border-radius: 50%;
-    background: rgba(255,77,77,.1); border: 1px solid rgba(255,77,77,.2);
-    display: flex; align-items: center; justify-content: center;
-  }
-
-  /* ── Shared animations ── */
   @keyframes co2Fade { from { opacity: 0 } to { opacity: 1 } }
-  @keyframes co2Up   { from { opacity: 0; transform: translateY(22px) } to { opacity: 1; transform: translateY(0) } }
-  @keyframes coSpin  { to { transform: rotate(360deg) } }
-  @keyframes pcmShimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
-  @keyframes pcmPulse   { 0%,100%{opacity:1} 50%{opacity:.5} }
+  @keyframes co2Up { from { opacity: 0; transform: translateY(22px) } to { opacity: 1; transform: translateY(0) } }
+  @keyframes coSpin { to { transform: rotate(360deg) } }
 
   @media (max-width: 680px) {
     .co2-shell { flex-direction: column; }
     .co2-left { width: 100%; padding: 22px 20px; gap: 14px; }
-    .pcm-shell { border-radius: 20px; }
-    .pcm-hdr, .pcm-body, .pcm-foot { padding-left: 20px; padding-right: 20px; }
   }
 `;
 
@@ -414,16 +285,14 @@ function MiniCalendar({
   return (
     <div>
       <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:10 }}>
-        <button
-          onClick={() => { const d = new Date(viewYear, viewMonth - 1); setViewYear(d.getFullYear()); setViewMonth(d.getMonth()); }}
+        <button onClick={() => { const d = new Date(viewYear, viewMonth - 1); setViewYear(d.getFullYear()); setViewMonth(d.getMonth()); }}
           style={{ background:"rgba(255,255,255,.12)", border:"none", borderRadius:8, width:30, height:30, cursor:"pointer", color:"white", display:"flex", alignItems:"center", justifyContent:"center" }}>
           <ChevronLeft size={15}/>
         </button>
         <span style={{ fontSize:14, fontWeight:700, color:"white" }}>
           {MONTHS_FR[viewMonth]} {viewYear}
         </span>
-        <button
-          onClick={() => { const d = new Date(viewYear, viewMonth + 1); setViewYear(d.getFullYear()); setViewMonth(d.getMonth()); }}
+        <button onClick={() => { const d = new Date(viewYear, viewMonth + 1); setViewYear(d.getFullYear()); setViewMonth(d.getMonth()); }}
           style={{ background:"rgba(255,255,255,.12)", border:"none", borderRadius:8, width:30, height:30, cursor:"pointer", color:"white", display:"flex", alignItems:"center", justifyContent:"center" }}>
           <ChevronRight size={15}/>
         </button>
@@ -547,185 +416,6 @@ function SlotList({ slots, selected, onSelect }: {
   );
 }
 
-/* ─── PaymentCountdownModal ──────────────────────────────────────────── */
-
-interface PcmBooking {
-  title: string;
-  date: string;
-  time: string;
-  people: number;
-  bookingCode: string;
-}
-
-function PaymentCountdownModal({
-  bookings,
-  grandTotal,
-  expiresInSeconds = 3600,
-  onPay,
-  onClose,
-}: {
-  bookings: PcmBooking[];
-  grandTotal: number;
-  expiresInSeconds?: number;
-  onPay: () => void;
-  onClose: () => void;
-}) {
-  const [remaining, setRemaining] = useState(expiresInSeconds);
-  const [expired,   setExpired]   = useState(false);
-
-  useEffect(() => {
-    if (remaining <= 0) { setExpired(true); return; }
-    const id = setInterval(() => {
-      setRemaining(prev => {
-        if (prev <= 1) { clearInterval(id); setExpired(true); return 0; }
-        return prev - 1;
-      });
-    }, 1000);
-    return () => clearInterval(id);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  const progress   = remaining / expiresInSeconds;
-  const isUrgent   = remaining <= 300;
-  const radius     = 34;
-  const circumf    = 2 * Math.PI * radius;
-  const dashOffset = circumf * (1 - progress);
-  const ringColor  = isUrgent ? "#FF4D4D" : remaining < 1800 ? "#F59E0B" : "#2B96A8";
-
-  /* Expired */
-  if (expired) {
-    return (
-      <div className="pcm-overlay" onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
-        <div className="pcm-shell">
-          <div className="pcm-urgbar" style={{ background:"#FF4D4D", animation:"none" }}/>
-          <div className="pcm-expired">
-            <div className="pcm-expired-icon">
-              <AlertCircle size={28} color="#FF4D4D"/>
-            </div>
-            <h2 style={{ fontFamily:"'Syne',sans-serif", fontSize:22, fontWeight:800, color:"white", margin:0 }}>
-              Réservation expirée
-            </h2>
-            <p style={{ fontSize:13, color:"rgba(255,255,255,.45)", margin:0, lineHeight:1.6, maxWidth:300 }}>
-              Le délai de paiement de <strong style={{ color:"rgba(255,255,255,.7)" }}>1 heure</strong> est écoulé.
-              Votre réservation a été automatiquement annulée.
-            </p>
-            <button
-              className="pcm-paybtn"
-              style={{ background:"linear-gradient(135deg,#374151,#1F2937)", boxShadow:"none", marginTop:6, maxWidth:280 }}
-              onClick={onClose}>
-              Retour aux excursions
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  /* Active countdown */
-  return (
-    <div className="pcm-overlay" onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
-      <div className="pcm-shell">
-        <div className="pcm-urgbar"/>
-
-        {/* Header */}
-        <div className="pcm-hdr">
-          <button className="pcm-close" onClick={onClose} aria-label="Fermer">
-            <X size={14}/>
-          </button>
-
-          <div className="pcm-timerrow">
-            <svg width={80} height={80} viewBox="0 0 80 80" style={{ transform:"rotate(-90deg)", flexShrink:0 }}>
-              <circle cx={40} cy={40} r={radius} fill="none" stroke="rgba(255,255,255,.06)" strokeWidth={5}/>
-              <circle
-                cx={40} cy={40} r={radius}
-                fill="none"
-                stroke={ringColor}
-                strokeWidth={5}
-                strokeLinecap="round"
-                strokeDasharray={circumf}
-                strokeDashoffset={dashOffset}
-                style={{ transition:"stroke-dashoffset .5s linear, stroke .5s ease" }}
-              />
-              <text
-                x={40} y={40}
-                textAnchor="middle"
-                dominantBaseline="central"
-                fontSize={14}
-                fill="rgba(255,255,255,.5)"
-                transform="rotate(90,40,40)">
-                ⏱
-              </text>
-            </svg>
-
-            <div>
-              <div className={`pcm-digits${isUrgent ? " urgent" : ""}`}>
-                {formatCountdown(remaining)}
-              </div>
-              <div className="pcm-timelabel">
-                {isUrgent ? "⚠️ Dépêchez-vous !" : "Temps restant pour payer"}
-              </div>
-            </div>
-          </div>
-
-          <div className="pcm-warn">
-            <Flame size={15} color="#FF6B6B" style={{ marginTop:1, flexShrink:0 }}/>
-            <span>
-              Votre réservation sera <strong>automatiquement supprimée</strong> si le paiement
-              n'est pas effectué dans le temps imparti. Les places seront libérées.
-            </span>
-          </div>
-        </div>
-
-        {/* Booking list */}
-        <div className="pcm-body">
-          {bookings.map((b, i) => (
-            <div key={i} className="pcm-row">
-              <div className="pcm-rowicon">
-                <CheckCircle size={16} color="#2B96A8"/>
-              </div>
-              <div style={{ flex:1, overflow:"hidden" }}>
-                <div className="pcm-rowtitle">{sanitizeText(b.title)}</div>
-                <div className="pcm-rowmeta">
-                  {new Date(b.date).toLocaleDateString("fr-FR",{ day:"numeric", month:"short", year:"numeric" })}
-                  {" · "}{b.time}{" · "}{b.people} pers.
-                </div>
-              </div>
-              <div className="pcm-rowcode">{b.bookingCode.slice(0, 12)}</div>
-            </div>
-          ))}
-
-          <div className="pcm-totalrow">
-            <span className="pcm-totallbl">Total à régler</span>
-            <span className="pcm-totalamt">{grandTotal} EUR</span>
-          </div>
-        </div>
-
-        {/* Footer */}
-        <div className="pcm-foot">
-          <button className="pcm-paybtn" onClick={onPay}>
-            <CreditCard size={17}/>
-            Payer maintenant
-            <ArrowRight size={15} style={{ marginLeft:2 }}/>
-          </button>
-
-          <div className="pcm-trust">
-            {[
-              { icon:<Lock size={10}/>,       label:"Paiement sécurisé" },
-              { icon:<ShieldCheck size={10}/>, label:"Données chiffrées" },
-            ].map(t => (
-              <span key={t.label} className="pcm-trustitem">{t.icon}{t.label}</span>
-            ))}
-          </div>
-
-          <button className="pcm-cancelbtn" onClick={onClose}>
-            Annuler ma réservation
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 /* ─── Main Modal ─────────────────────────────────────────────────────── */
 
 export default function CheckoutModal({
@@ -748,12 +438,11 @@ export default function CheckoutModal({
     }))
   );
 
-  const [activeIdx,      setActiveIdx]      = useState(0);
-  const [status,         setStatus]         = useState<"idle"|"loading"|"success"|"error">("idle");
-  const [errorMsg,       setErrorMsg]       = useState("");
-  const [bookingCodes,   setBookingCodes]   = useState<string[]>([]);
-  const [savedItinId,    setSavedItinId]    = useState<string | null>(null);
-  const [showPaymentModal, setShowPaymentModal] = useState(false);  // ← NEW
+  const [activeIdx,    setActiveIdx]    = useState(0);
+  const [status,       setStatus]       = useState<"idle"|"loading"|"success"|"error">("idle");
+  const [errorMsg,     setErrorMsg]     = useState("");
+  const [bookingCodes, setBookingCodes] = useState<string[]>([]);
+  const [savedItinId,  setSavedItinId]  = useState<string | null>(null);
 
   const patch = (idx: number, p: Partial<typeof perExc[0]>) =>
     setPerExc(prev => prev.map((x, i) => i === idx ? { ...x, ...p } : x));
@@ -775,6 +464,7 @@ export default function CheckoutModal({
     perExc.every(p => !p.selectedSlot || p.selectedSlot.slots >= p.people) &&
     !isLoading;
 
+  // Clamp people when slot changes
   useEffect(() => {
     perExc.forEach((p, i) => {
       const max = p.selectedSlot?.slots || p.exc.max_people || 1;
@@ -863,48 +553,14 @@ export default function CheckoutModal({
     }
   };
 
-  /* ── Handle pay button → open payment modal ── */
-  const handleGoToPayment = () => {
-    setShowPaymentModal(true);
-  };
-
-  /* ── Payment confirmed → redirect to paiement page ── */
-  const handlePayNow = () => {
-    setShowPaymentModal(false);
-    // Naviguer vers le composant de paiement : app/components/paiement/CheckoutModal
-    // Adaptez selon votre routing (Next.js App Router ou Pages Router) :
-    // router.push(`/paiement?codes=${bookingCodes.join(",")}&total=${grandTotal}`);
-    window.location.href = `/paiement?codes=${bookingCodes.join(",")}&total=${grandTotal}`;
-  };
-
-  /* ── Success screen ── */
+  /* ── Success ── */
   if (status === "success") {
     const confirmedItems = perExc.filter(p => p.selectedSlot);
-
     return (
       <>
         <style>{CSS}</style>
-
-        {/* Payment countdown modal (layered on top of success screen) */}
-        {showPaymentModal && (
-          <PaymentCountdownModal
-            bookings={confirmedItems.map((p, i) => ({
-              title:       p.exc.title,
-              date:        p.selectedDate,
-              time:        p.selectedSlot!.time,
-              people:      p.people,
-              bookingCode: bookingCodes[i] ?? "",
-            }))}
-            grandTotal={grandTotal}
-            expiresInSeconds={3600}
-            onPay={handlePayNow}
-            onClose={() => setShowPaymentModal(false)}
-          />
-        )}
-
         <div className="co2-overlay" onClick={e => { if (e.target === e.currentTarget) onClose?.(); }}>
           <div className="co2-shell" style={{ maxWidth:500, display:"block", padding:"40px 36px", textAlign:"center" }}>
-
             <div style={{ width:72, height:72, borderRadius:"50%", background:"linear-gradient(135deg,#D1FAE5,#A7F3D0)", display:"flex", alignItems:"center", justifyContent:"center", margin:"0 auto 20px", boxShadow:"0 8px 24px rgba(5,150,105,.2)" }}>
               <CheckCircle size={36} color="#059669"/>
             </div>
@@ -936,26 +592,14 @@ export default function CheckoutModal({
               </div>
             ))}
 
-            {/* Warning banner */}
-            <div style={{ background:"#FFF7ED", border:"1px solid #FDE68A", borderRadius:12, padding:"12px 16px", marginBottom:20, marginTop:4 }}>
-              <p style={{ fontSize:12, color:"#92400E", fontWeight:600, margin:0 }}>
-                ⏱ Vous avez <strong>1 heure</strong> pour finaliser le paiement — au-delà, votre réservation sera annulée automatiquement.
+            <div style={{ background:"#FFFBEB", border:"1px solid #FDE68A", borderRadius:12, padding:"12px 16px", marginBottom:20, marginTop:4 }}>
+              <p style={{ fontSize:12, color:"#92400E", fontWeight:600 }}>
+                💳 Rendez-vous dans <strong>Mes réservations</strong> pour finaliser le paiement.
               </p>
             </div>
 
-            {/* CTA: Payer maintenant */}
-            <button
-              className="co2-cta on"
-              style={{ marginBottom:10 }}
-              onClick={handleGoToPayment}>
-              <CreditCard size={15}/> Payer maintenant ({grandTotal} EUR)
-            </button>
-
-            {/* Secondary: close */}
-            <button
-              onClick={() => onClose?.()}
-              style={{ width:"100%", padding:"11px", border:"none", background:"transparent", cursor:"pointer", fontSize:13, color:"#9CA3AF", fontFamily:"'DM Sans',sans-serif", fontWeight:600 }}>
-              Payer plus tard (dans Mes réservations)
+            <button className="co2-cta on" onClick={() => onClose?.()}>
+              <Check size={15}/> Fermer
             </button>
           </div>
         </div>
@@ -963,7 +607,7 @@ export default function CheckoutModal({
     );
   }
 
-  /* ── Main booking form ── */
+  /* ── Main form ── */
   const cur          = perExc[activeIdx];
   const slotsForDate = cur.selectedDate ? (cur.dateMap.get(cur.selectedDate) || []) : [];
   const maxPeople    = cur.selectedSlot?.slots || cur.exc.max_people || 1;
@@ -981,6 +625,7 @@ export default function CheckoutModal({
           {/* ── LEFT PANEL ── */}
           <div className="co2-left">
 
+            {/* Title */}
             <div style={{ position:"relative", zIndex:1 }}>
               {isItinerary && (
                 <div className="itin-badge" style={{ marginBottom:10 }}>
@@ -1003,6 +648,7 @@ export default function CheckoutModal({
               </div>
             </div>
 
+            {/* Itinerary progress */}
             {isItinerary && (
               <div style={{ position:"relative", zIndex:1 }}>
                 <div style={{ display:"flex", justifyContent:"space-between", fontSize:11, color:"rgba(255,255,255,.5)", marginBottom:6 }}>
@@ -1019,6 +665,7 @@ export default function CheckoutModal({
               </div>
             )}
 
+            {/* Itinerary tabs */}
             {isItinerary && (
               <div style={{ display:"flex", flexDirection:"column", gap:6, position:"relative", zIndex:1, overflowY:"auto", maxHeight:180 }}>
                 {allExc.map((e, i) => (
@@ -1044,6 +691,7 @@ export default function CheckoutModal({
               </div>
             )}
 
+            {/* Calendar */}
             <div style={{ position:"relative", zIndex:1 }}>
               <p style={{ fontSize:11, fontWeight:700, color:"rgba(255,255,255,.5)", textTransform:"uppercase", letterSpacing:"1.5px", margin:"0 0 4px" }}>
                 Choisissez une date
@@ -1055,6 +703,7 @@ export default function CheckoutModal({
               />
             </div>
 
+            {/* Price summary */}
             {subtotal > 0 && (
               <div style={{ marginTop:"auto", background:"rgba(255,255,255,.1)", borderRadius:14, padding:"14px 16px", position:"relative", zIndex:1 }}>
                 {isItinerary ? (
@@ -1086,6 +735,7 @@ export default function CheckoutModal({
           <div className="co2-right">
             <div className="co2-right-scroll">
 
+              {/* Header */}
               <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:22 }}>
                 <div>
                   <h3 style={{ fontFamily:"'Cormorant Garamond',serif", fontSize:20, fontWeight:700, color:"#111827", margin:"0 0 2px" }}>
@@ -1097,19 +747,20 @@ export default function CheckoutModal({
                     {cur.selectedDate ? `${slotsForDate.length} créneau${slotsForDate.length>1?"x":""}` : "← sur le calendrier"}
                   </p>
                 </div>
-                <button
-                  onClick={() => onClose?.()}
+                <button onClick={() => onClose?.()}
                   style={{ width:34, height:34, borderRadius:"50%", border:"none", background:"#F3F4F6", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", color:"#9CA3AF", flexShrink:0 }}>
                   <X size={16}/>
                 </button>
               </div>
 
+              {/* Error banner */}
               {status === "error" && (
                 <div style={{ display:"flex", alignItems:"center", gap:8, padding:"11px 14px", background:"#FEF2F2", border:"1px solid #FCA5A5", borderRadius:10, marginBottom:16, fontSize:13, color:"#DC2626", fontWeight:600 }}>
                   <AlertCircle size={15}/>{errorMsg}
                 </div>
               )}
 
+              {/* Slots */}
               {!cur.selectedDate ? (
                 <div style={{ textAlign:"center", padding:"40px 20px", background:"#F9FAFB", borderRadius:16, border:"1.5px dashed #E5E7EB", marginBottom:20 }}>
                   <p style={{ fontSize:13, color:"#9CA3AF", margin:0 }}>Choisissez une date sur le calendrier pour voir les créneaux disponibles</p>
@@ -1128,6 +779,7 @@ export default function CheckoutModal({
                 </div>
               )}
 
+              {/* People counter */}
               {cur.selectedSlot && (
                 <div style={{ marginBottom:20 }}>
                   <p style={{ fontSize:12, fontWeight:700, color:"#374151", marginBottom:10, display:"flex", alignItems:"center", gap:5 }}>
@@ -1150,6 +802,7 @@ export default function CheckoutModal({
                 </div>
               )}
 
+              {/* Navigation (itinerary) */}
               {isItinerary && (
                 <div style={{ display:"flex", gap:8, marginBottom:20 }}>
                   {activeIdx > 0 && (
@@ -1167,6 +820,7 @@ export default function CheckoutModal({
                 </div>
               )}
 
+              {/* Special needs */}
               <div style={{ marginBottom:8 }}>
                 <label style={{ fontSize:11, fontWeight:700, color:"#374151", display:"flex", alignItems:"center", gap:5, marginBottom:6, textTransform:"uppercase", letterSpacing:".5px" }}>
                   <MessageSquare size={11} color="#2B96A8"/>
@@ -1185,6 +839,7 @@ export default function CheckoutModal({
             {/* Footer */}
             <div className="co2-right-footer">
 
+              {/* Price recap (single) */}
               {!isItinerary && cur.selectedSlot && (
                 <div style={{ background:"#F9FAFB", borderRadius:12, padding:"12px 14px", marginBottom:14, border:"1px solid #F0F0F0" }}>
                   <div style={{ display:"flex", justifyContent:"space-between", fontSize:12, color:"#6B7280", marginBottom:5 }}>
@@ -1202,6 +857,7 @@ export default function CheckoutModal({
                 </div>
               )}
 
+              {/* Itinerary partial warning */}
               {isItinerary && configuredCount > 0 && configuredCount < allExc.length && (
                 <div style={{ background:"#FFFBEB", border:"1px solid #FDE68A", borderRadius:10, padding:"9px 12px", marginBottom:12, fontSize:12, color:"#92400E", display:"flex", alignItems:"center", gap:7 }}>
                   <AlertCircle size={13} color="#F59E0B"/>
@@ -1212,7 +868,8 @@ export default function CheckoutModal({
               <button
                 className={`co2-cta ${isLoading ? "spin" : !canSubmit ? "off" : "on"}`}
                 disabled={!canSubmit || isLoading}
-                onClick={handleReserve}>
+                onClick={handleReserve}
+              >
                 {isLoading
                   ? <><Loader2 size={15} style={{ animation:"coSpin .7s linear infinite" }}/> Réservation en cours…</>
                   : !canSubmit
