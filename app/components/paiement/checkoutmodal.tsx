@@ -27,7 +27,7 @@ import {
 import {
   Reservation, STEPS,
   fmtDate, fmtCountdown,
-} from "./type";
+} from "../reservation/type";
 import styles from "./Reservations.module.css";
 
 interface Props {

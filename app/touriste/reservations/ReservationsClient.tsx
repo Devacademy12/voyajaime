@@ -10,7 +10,7 @@ import {
 } from "lucide-react";
 import { Reservation, TODAY } from "@/app/components/reservation/type";
 import ReservationCard from "@/app/components/reservation/Reservationcard";
-import CheckoutModal from "@/app/components/reservation/checkoutmodal";
+import CheckoutModal from "@/app/components/paiement/checkoutmodal";
 
 /* ─────────────────────────────────────────
    Responsive CSS
