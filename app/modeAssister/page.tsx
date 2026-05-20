@@ -695,153 +695,178 @@ function CityDateRow({ cdr, onStart, onEnd, allCityDates }: {
 /* ════════════════════════════
    DebugPanel
 ════════════════════════════ */
-function DebugPanel({ webhookUrl }: { webhookUrl: string }) {
-  const [open,   setOpen]   = useState(false);
-  const [status, setStatus] = useState<"idle"|"loading"|"ok"|"error">("idle");
-  const [log,    setLog]    = useState<string[]>([]);
-  const addLog = (msg: string) => setLog(p => [...p, `[${new Date().toLocaleTimeString()}] ${msg}`]);
+function DebugPanel({
+  webhookUrl,
+  excursions,
+  citySchedule,
+  selectedCities,
+}: {
+  webhookUrl: string;
+  excursions: Excursion[];
+  citySchedule: any[];
+  selectedCities: string[];
+}) {
+  const [open, setOpen] = useState(false);
+  const [status, setStatus] = useState<"idle" | "loading" | "ok" | "error">("idle");
+  const [log, setLog] = useState<string[]>([]);
+
+  const addLog = (msg: string) =>
+    setLog((p) => [...p, `[${new Date().toLocaleTimeString()}] ${msg}`]);
 
   const runTest = async () => {
-    setStatus("loading"); setLog([]);
-    addLog("▶ Démarrage du test..."); addLog(`URL: ${webhookUrl}`);
-    /* ───────── VALIDATION DATES + HORAIRES ───────── */
+    setStatus("loading");
+    setLog([]);
 
-// toutes les excursions actives
-const validExcursions = excursions.filter(exc => exc.is_active);
+    addLog("▶ Démarrage du test...");
+    addLog(`URL: ${webhookUrl}`);
 
-// tableau pour stocker les activités déjà utilisées par jour
-const usedSlots: {
-  [day: string]: string[];
-} = {};
+    /* ───────── VALIDATION ───────── */
 
-citySchedule.forEach((cityData) => {
-  const currentDate = new Date(cityData.startDate!);
-  const endDate = new Date(cityData.endDate!);
+    const validExcursions = excursions.filter((exc) => exc.is_active);
 
-  while (currentDate <= endDate) {
-    const dayKey = currentDate.toISOString().split("T")[0];
+    const usedSlots: Record<string, string[]> = {};
 
-    usedSlots[dayKey] = [];
+    citySchedule.forEach((cityData) => {
+      const currentDate = new Date(cityData.startDate!);
+      const endDate = new Date(cityData.endDate!);
 
-    currentDate.setDate(currentDate.getDate() + 1);
-  }
-});
+      while (currentDate <= endDate) {
+        const dayKey = currentDate.toISOString().split("T")[0];
+        usedSlots[dayKey] = [];
+        currentDate.setDate(currentDate.getDate() + 1);
+      }
+    });
 
-// excursions compatibles
-const compatibleExcursions = validExcursions.filter((exc) => {
+    const compatibleExcursions = validExcursions.filter((exc) => {
+      if (!selectedCities.includes(exc.city)) return false;
+      if (!exc.start_date || !exc.end_date) return false;
 
-  // ville compatible
-  if (!selectedCities.includes(exc.city)) return false;
+      const excStart = new Date(exc.start_date);
+      const excEnd = new Date(exc.end_date);
 
-  // dates excursion
-  if (!exc.start_date || !exc.end_date) return false;
+      return citySchedule.some((cityData) => {
+        const userStart = new Date(cityData.startDate!);
+        const userEnd = new Date(cityData.endDate!);
 
-  const excStart = new Date(exc.start_date);
-  const excEnd = new Date(exc.end_date);
+        return (
+          cityData.city === exc.city &&
+          excStart <= userEnd &&
+          excEnd >= userStart
+        );
+      });
+    });
 
-  // vérifier si l'excursion est disponible dans au moins une période choisie
-  const hasValidDate = citySchedule.some((cityData) => {
-    const userStart = new Date(cityData.startDate!);
-    const userEnd = new Date(cityData.endDate!);
+    const finalExcursions: any[] = [];
 
-    return (
-      cityData.city === exc.city &&
-      excStart <= userEnd &&
-      excEnd >= userStart
-    );
-  });
+    compatibleExcursions.forEach((exc) => {
+      const departure = (exc as any).departure_time || "09:00";
 
-  return hasValidDate;
-});
+      const matchingCity = citySchedule.find((c) => c.city === exc.city);
+      if (!matchingCity) return;
 
-// empêcher mêmes horaires le même jour
-const finalExcursions: any[] = [];
+      const dayKey = matchingCity.startDate!;
+      if (!usedSlots[dayKey]) usedSlots[dayKey] = [];
 
-compatibleExcursions.forEach((exc) => {
+      if (usedSlots[dayKey].includes(departure)) return;
 
-  // heure départ
-  const departure =
-    (exc as any).departure_time ||
-    (exc as any).start_time ||
-    "09:00";
+      usedSlots[dayKey].push(departure);
 
-  // trouver date compatible
-  const matchingCity = citySchedule.find(
-    (c) => c.city === exc.city
-  );
+      finalExcursions.push({
+        ...exc,
+        departure_time: departure,
+      });
+    });
 
-  if (!matchingCity) return;
+    console.log("Excursions valides :", finalExcursions);
 
-  const dayKey = matchingCity.startDate!;
+    /* ───────── TEST WEBHOOK ───────── */
 
-  if (!usedSlots[dayKey]) {
-    usedSlots[dayKey] = [];
-  }
+    const payload = {
+      destination: "Tunis",
+      startDate: "2025-06-01",
+      endDate: "2025-06-03",
+      budget: 500,
+      travelers: 1,
+      interests: ["Culture"],
+      cities: ["Tunis"],
+      citySchedule,
+      message: "Test debug",
+    };
 
-  // si même heure déjà utilisée => skip
-  if (usedSlots[dayKey].includes(departure)) {
-    return;
-  }
+    addLog("📤 Payload envoyé");
 
-  usedSlots[dayKey].push(departure);
-
-  finalExcursions.push({
-    ...exc,
-    departure_time: departure,
-  });
-});
-
-console.log("Excursions valides :", finalExcursions);
-    const payload = { destination:"Tunis",startDate:"2025-06-01",endDate:"2025-06-03",budget:500,travelers:1,interests:["Culture"],cities:["Tunis"],citySchedule:[{city:"Tunis",startDate:"2025-06-01",endDate:"2025-06-03",daysCount:3}],message:"Test debug" };
-    addLog("📤 Payload: " + JSON.stringify(payload,null,2));
     try {
-      const res = await fetch(webhookUrl, { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(payload) });
-      addLog(`📥 Status: ${res.status} ${res.statusText}`);
+      const res = await fetch(webhookUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      addLog(`📥 Status: ${res.status}`);
+
       const text = await res.text();
-      addLog("📥 Réponse: " + text.substring(0,2000));
-      if (!res.ok) { setStatus("error"); return; }
-      try {
-        const json = JSON.parse(text);
-        if (json.days) { addLog(`✅ Itinéraire: ${json.days.length} jour(s)`); setStatus("ok"); }
-        else { addLog("⚠️ JSON sans 'days'. Clés: " + Object.keys(json).join(", ")); setStatus("error"); }
-      } catch { addLog("⚠️ Réponse non-JSON"); setStatus("error"); }
-    } catch (err: any) { addLog("❌ Erreur réseau: " + err.message); setStatus("error"); }
+
+      if (!res.ok) {
+        setStatus("error");
+        return;
+      }
+
+      const json = JSON.parse(text);
+
+      if (json.days) {
+        addLog(`✅ OK: ${json.days.length} jours`);
+        setStatus("ok");
+      } else {
+        addLog("⚠️ Réponse invalide");
+        setStatus("error");
+      }
+    } catch (err: any) {
+      addLog("❌ Erreur: " + err.message);
+      setStatus("error");
+    }
   };
 
-  if (!open) return (
-    <button onClick={() => setOpen(true)} style={{ position:"fixed",bottom:24,right:24,zIndex:9999,background:"#1e293b",color:"#fff",border:"none",borderRadius:12,padding:"10px 16px",cursor:"pointer",display:"flex",alignItems:"center",gap:8,fontSize:13,fontWeight:600,boxShadow:"0 4px 16px rgba(0,0,0,0.3)",opacity:0.85 }}>
-      <Bug size={15}/> Debug N8N
-    </button>
-  );
+  if (!open) {
+    return (
+      <button
+        onClick={() => setOpen(true)}
+        style={{
+          position: "fixed",
+          bottom: 24,
+          right: 24,
+          background: "#1e293b",
+          color: "#fff",
+          padding: "10px 14px",
+          borderRadius: 10,
+          border: "none",
+          cursor: "pointer",
+        }}
+      >
+        Debug N8N
+      </button>
+    );
+  }
 
   return (
-    <div style={{ position:"fixed",inset:0,zIndex:10000,background:"rgba(0,0,0,0.6)",display:"flex",alignItems:"center",justifyContent:"center",padding:16 }} onClick={() => setOpen(false)}>
-      <div onClick={e => e.stopPropagation()} style={{ background:"#0f172a",color:"#e2e8f0",borderRadius:16,width:"100%",maxWidth:700,maxHeight:"85vh",display:"flex",flexDirection:"column",overflow:"hidden",boxShadow:"0 25px 60px rgba(0,0,0,0.5)" }}>
-        <div style={{ padding:"16px 20px",borderBottom:"1px solid #1e293b",display:"flex",alignItems:"center",justifyContent:"space-between" }}>
-          <div style={{ display:"flex",alignItems:"center",gap:10 }}>
-            <Bug size={18} color="#38bdf8"/>
-            <span style={{ fontWeight:700,fontSize:15 }}>Debug Webhook N8N</span>
-            {status==="ok"      && <span style={{ background:"#166534",color:"#86efac",borderRadius:20,padding:"2px 10px",fontSize:11,fontWeight:700 }}>✅ OK</span>}
-            {status==="error"   && <span style={{ background:"#7f1d1d",color:"#fca5a5",borderRadius:20,padding:"2px 10px",fontSize:11,fontWeight:700 }}>❌ ERREUR</span>}
-            {status==="loading" && <span style={{ background:"#1e3a5f",color:"#93c5fd",borderRadius:20,padding:"2px 10px",fontSize:11,fontWeight:700 }}>⏳ EN COURS</span>}
-          </div>
-          <button onClick={() => setOpen(false)} style={{ background:"none",border:"none",color:"#94a3b8",cursor:"pointer",fontSize:20 }}>✕</button>
-        </div>
-        <div style={{ padding:"12px 20px",borderBottom:"1px solid #1e293b",background:"#0a0f1a" }}>
-          <p style={{ fontSize:11,color:"#64748b",marginBottom:4 }}>WEBHOOK URL</p>
-          <p style={{ fontSize:12,color:"#38bdf8",fontFamily:"monospace",wordBreak:"break-all" }}>{webhookUrl||"⚠️ NEXT_PUBLIC_N8N_WEBHOOK_URL non défini !"}</p>
-        </div>
-        <div style={{ flex:1,overflow:"auto",padding:"16px 20px",fontFamily:"monospace",fontSize:12,lineHeight:1.7 }}>
-          {log.length===0 ? <p style={{ color:"#475569" }}>Cliquez sur "Lancer le test" pour diagnostiquer...</p>
-            : log.map((line,i) => <div key={i} style={{ color:line.includes("❌")?"#f87171":line.includes("✅")?"#86efac":line.includes("⚠️")?"#fbbf24":line.includes("▶")?"#38bdf8":line.includes("📤")?"#a78bfa":line.includes("📥")?"#34d399":"#cbd5e1",marginBottom:2,whiteSpace:"pre-wrap",wordBreak:"break-all" }}>{line}</div>)}
-        </div>
-        <div style={{ padding:"14px 20px",borderTop:"1px solid #1e293b",display:"flex",gap:10 }}>
-          <button onClick={runTest} disabled={status==="loading"} style={{ flex:1,background:status==="loading"?"#1e3a5f":"#0ea5e9",color:"#fff",border:"none",borderRadius:10,padding:"10px 20px",cursor:status==="loading"?"not-allowed":"pointer",fontWeight:700,fontSize:13 }}>
-            {status==="loading"?"⏳ En cours...":"▶ Lancer le test"}
-          </button>
-          <button onClick={()=>setLog([])} style={{ background:"#1e293b",color:"#94a3b8",border:"none",borderRadius:10,padding:"10px 16px",cursor:"pointer",fontSize:13 }}>Effacer</button>
-          <button onClick={()=>setOpen(false)} style={{ background:"#1e293b",color:"#94a3b8",border:"none",borderRadius:10,padding:"10px 16px",cursor:"pointer",fontSize:13 }}>Fermer</button>
-        </div>
+    <div style={{ position: "fixed", inset: 0, background: "#0008" }}>
+      <div
+        style={{
+          background: "#111",
+          color: "#fff",
+          padding: 20,
+          margin: 50,
+          borderRadius: 12,
+        }}
+      >
+        <h3>Debug Panel</h3>
+
+        <button onClick={runTest}>Run Test</button>
+
+        <pre style={{ marginTop: 10 }}>
+          {log.join("\n")}
+        </pre>
+
+        <button onClick={() => setOpen(false)}>Close</button>
       </div>
     </div>
   );
@@ -1146,8 +1171,12 @@ setItinerary(validated);      setAppStep("itineraire");
       <style>{CSS}</style>
       <TouristeNav/>
       <div style={{ paddingTop: 64 }}/>
-      <DebugPanel webhookUrl={N8N_WEBHOOK_URL}/>
-
+<DebugPanel
+  webhookUrl={N8N_WEBHOOK_URL}
+  excursions={excursions}
+  citySchedule={cityDates}
+  selectedCities={selectedCities}
+/>
       {/* ── Questions / wizard flow ── */}
       {appStep === "questions" && (
         <div className="ma2-page">
