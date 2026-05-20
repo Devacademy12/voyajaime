@@ -2,6 +2,8 @@
 
 import React, { useState, useEffect, Suspense, useMemo, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import TouristeNav from "@/app/components/touriste/TouristeNav";
+
 import { createClient } from "@/lib/supabaseClient";
 import {
   ArrowLeft, ArrowRight, Calendar, MapPin, Clock, Star,
@@ -1120,6 +1122,8 @@ export default function BuilderPage() {
         <span style={{ color: "#9CA3AF", fontSize: ".85rem" }}>Chargement de l'itinéraire…</span>
       </div>
     }>
+      <TouristeNav/>
+            <div style={{ paddingTop: 70 }}/>
       <BuilderInner />
     </Suspense>
   );
