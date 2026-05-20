@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, useCallback } from "react";
 import Link from "next/link";
-import { MapPin, ChevronDown, Sparkles, Map, Play, Volume2, VolumeX } from "lucide-react";
+import { MapPin, ChevronDown, Sparkles, Map, Play, Volume2, VolumeX, Star, Calendar, Users, Compass } from "lucide-react";
 import { createClient } from "@/lib/supabaseClient";
 import { ROUTES } from "@/app/lib/routes";
 
@@ -95,7 +95,7 @@ function rawToDisplay(raw: RawSlide): SlideDisplay {
     id: raw.id, type: raw.type, excursionId,
     imageUrl, videoUrl: raw.video_url || null,
     title, subtitle,
-    color: raw.custom_color || "#2B96A8",
+    color: raw.custom_color || "#02AFCF",
     categories,
   };
 }
@@ -230,121 +230,212 @@ export default function HomeSlider() {
   return (
     <>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=DM+Sans:wght@400;500;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;0,800;0,900;1,700&family=Inter:wght@300;400;500;600;700;800&display=swap');
 
-        @keyframes spin   { to { transform: rotate(360deg) } }
-        @keyframes bounce { 0%,100%{transform:translateY(0) translateX(-50%)} 50%{transform:translateY(8px) translateX(-50%)} }
-        @keyframes heroIn { 
-          0% { opacity: 0; transform: translateY(30px); }
-          100% { opacity: 1; transform: translateY(0); }
+        @keyframes spin { 
+          to { transform: rotate(360deg) } 
+        }
+        
+        @keyframes float {
+          0%, 100% { transform: translateY(0) translateX(-50%); }
+          50% { transform: translateY(12px) translateX(-50%); }
+        }
+        
+        @keyframes slideUp {
+          0% { 
+            opacity: 0; 
+            transform: translateY(40px);
+            filter: blur(8px);
+          }
+          100% { 
+            opacity: 1; 
+            transform: translateY(0);
+            filter: blur(0);
+          }
+        }
+        
+        @keyframes fadeInScale {
+          0% { 
+            opacity: 0; 
+            transform: scale(0.95);
+          }
+          100% { 
+            opacity: 1; 
+            transform: scale(1);
+          }
+        }
+        
+        @keyframes shimmer {
+          0%   { background-position: 200% 0 }
+          100% { background-position: -200% 0 }
+        }
+
+        @keyframes gradientShift {
+          0% { background-position: 0% 50%; }
+          50% { background-position: 100% 50%; }
+          100% { background-position: 0% 50%; }
         }
 
         .slide-bg {
           position: absolute; inset: 0;
           background-size: cover; background-position: center;
-          transition: opacity ${FADE_DURATION}ms ease, transform ${FADE_DURATION}ms ease;
+          transition: opacity ${FADE_DURATION}ms cubic-bezier(0.4, 0, 0.2, 1), transform ${FADE_DURATION}ms cubic-bezier(0.4, 0, 0.2, 1);
           will-change: opacity, transform;
         }
 
-        /* Animations des éléments */
-        .hero-animate-1 { animation: heroIn 0.6s cubic-bezier(0.22, 0.68, 0, 1.2) 0.05s both; }
-        .hero-animate-2 { animation: heroIn 0.6s cubic-bezier(0.22, 0.68, 0, 1.2) 0.15s both; }
-        .hero-animate-3 { animation: heroIn 0.6s cubic-bezier(0.22, 0.68, 0, 1.2) 0.25s both; }
-        .hero-animate-4 { animation: heroIn 0.6s cubic-bezier(0.22, 0.68, 0, 1.2) 0.35s both; }
+        .hero-animate-1 { 
+          animation: slideUp 0.7s cubic-bezier(0.34, 1.2, 0.64, 1) 0.1s both; 
+        }
+        .hero-animate-2 { 
+          animation: slideUp 0.7s cubic-bezier(0.34, 1.2, 0.64, 1) 0.2s both; 
+        }
+        .hero-animate-3 { 
+          animation: slideUp 0.7s cubic-bezier(0.34, 1.2, 0.64, 1) 0.35s both; 
+        }
+        .hero-animate-4 { 
+          animation: slideUp 0.7s cubic-bezier(0.34, 1.2, 0.64, 1) 0.5s both; 
+        }
 
-        /* Boutons améliorés */
         .btn-primary {
-          display: inline-flex; align-items: center; gap: 10px;
-          padding: 14px 28px; border-radius: 14px;
-          background: linear-gradient(135deg, #02AFCF, #053366);
-          color: white; font-size: 15px; font-weight: 700;
-          text-decoration: none; font-family: 'DM Sans', sans-serif;
-          transition: all 0.3s cubic-bezier(0.22, 0.68, 0, 1.2);
-          box-shadow: 0 8px 24px rgba(2,175,207,.35);
+          display: inline-flex; align-items: center; gap: 12px;
+          padding: 16px 36px; border-radius: 100px;
+          background: linear-gradient(135deg, #02AFCF 0%, #0891b2 100%);
+          color: white; font-size: 16px; font-weight: 700;
+          text-decoration: none; font-family: 'Inter', sans-serif;
+          transition: all 0.4s cubic-bezier(0.34, 1.2, 0.64, 1);
+          box-shadow: 0 8px 28px rgba(2, 175, 207, 0.35);
           white-space: nowrap;
           letter-spacing: 0.3px;
           border: none;
           cursor: pointer;
+          position: relative;
+          overflow: hidden;
         }
+        
+        .btn-primary::before {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: -100%;
+          width: 100%;
+          height: 100%;
+          background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+          transition: left 0.5s ease;
+        }
+        
         .btn-primary:hover { 
-          transform: translateY(-3px); 
-          box-shadow: 0 12px 32px rgba(2,175,207,.55);
-          gap: 12px;
+          transform: translateY(-4px); 
+          box-shadow: 0 16px 40px rgba(2, 175, 207, 0.5);
+          gap: 14px;
         }
-        .btn-primary:active { transform: translateY(-1px); }
+        
+        .btn-primary:hover::before {
+          left: 100%;
+        }
+        
+        .btn-primary:active { transform: translateY(-2px); }
 
         .btn-ghost {
-          display: inline-flex; align-items: center; gap: 10px;
-          padding: 14px 28px; border-radius: 14px;
-          background: rgba(255,255,255,.15);
-          border: 1.5px solid rgba(255,255,255,.4);
+          display: inline-flex; align-items: center; gap: 12px;
+          padding: 16px 36px; border-radius: 100px;
+          background: rgba(255, 255, 255, 0.12);
           backdrop-filter: blur(12px);
-          color: white; font-size: 15px; font-weight: 600;
-          text-decoration: none; font-family: 'DM Sans', sans-serif;
-          transition: all 0.3s cubic-bezier(0.22, 0.68, 0, 1.2);
+          border: 1.5px solid rgba(255, 255, 255, 0.4);
+          color: white; font-size: 16px; font-weight: 600;
+          text-decoration: none; font-family: 'Inter', sans-serif;
+          transition: all 0.4s cubic-bezier(0.34, 1.2, 0.64, 1);
           white-space: nowrap;
           letter-spacing: 0.3px;
           cursor: pointer;
+          position: relative;
+          overflow: hidden;
         }
+        
+        .btn-ghost::before {
+          content: '';
+          position: absolute;
+          top: 50%;
+          left: 50%;
+          width: 0;
+          height: 0;
+          border-radius: 50%;
+          background: rgba(255, 255, 255, 0.2);
+          transform: translate(-50%, -50%);
+          transition: width 0.6s, height 0.6s;
+        }
+        
         .btn-ghost:hover { 
-          background: rgba(255,255,255,.25);
-          border-color: rgba(255,255,255,.6);
-          transform: translateY(-3px);
-          gap: 12px;
+          background: rgba(255, 255, 255, 0.2);
+          border-color: rgba(255, 255, 255, 0.7);
+          transform: translateY(-4px);
+          gap: 14px;
         }
-        .btn-ghost:active { transform: translateY(-1px); }
+        
+        .btn-ghost:hover::before {
+          width: 300px;
+          height: 300px;
+        }
+        
+        .btn-ghost:active { transform: translateY(-2px); }
 
         .dot-btn { 
           background: none; 
           border: none; 
           cursor: pointer; 
           padding: 8px;
-          transition: transform 0.2s;
+          transition: all 0.3s cubic-bezier(0.34, 1.2, 0.64, 1);
         }
-        .dot-btn:hover { transform: scale(1.1); }
+        
+        .dot-btn:hover { 
+          transform: scale(1.2); 
+        }
+        
+        .dot-btn:hover .dot-inactive {
+          background: rgba(255, 255, 255, 0.8);
+          transform: scale(1.1);
+        }
 
         .mute-btn {
-          position: absolute; top: 24px; right: 72px;
-          background: rgba(255,255,255,.15); 
-          border: 1.5px solid rgba(255,255,255,.3);
-          backdrop-filter: blur(12px); 
+          position: absolute; 
+          bottom: 32px; 
+          right: 32px;
+          background: rgba(0, 0, 0, 0.6); 
+          backdrop-filter: blur(12px);
+          border: 1px solid rgba(255, 255, 255, 0.2);
           color: white; 
-          border-radius: 40px; 
-          padding: 10px 18px;
+          border-radius: 100px; 
+          padding: 10px 20px;
           cursor: pointer; 
           display: flex; 
           align-items: center; 
-          gap: 8px;
+          gap: 10px;
           font-size: 13px; 
-          font-weight: 600; 
-          font-family: 'DM Sans', sans-serif;
-          transition: all 0.2s;
+          font-weight: 500; 
+          font-family: 'Inter', sans-serif;
+          transition: all 0.3s ease;
           z-index: 20;
         }
+        
         .mute-btn:hover { 
-          background: rgba(255,255,255,.25);
-          transform: scale(1.02);
+          background: rgba(0, 0, 0, 0.8);
+          border-color: rgba(255, 255, 255, 0.4);
+          transform: scale(1.05);
         }
 
         .skeleton-shimmer {
-          background: linear-gradient(90deg, #1a2332 0%, #243447 50%, #1a2332 100%);
+          background: linear-gradient(90deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
           background-size: 200% 100%;
           animation: shimmer 1.8s infinite;
         }
-        @keyframes shimmer {
-          0%   { background-position: 200% 0 }
-          100% { background-position: -200% 0 }
-        }
 
-        /* Media queries pour responsive */
         @media (max-width: 768px) {
           .btn-primary, .btn-ghost {
-            padding: 10px 20px;
-            font-size: 13px;
+            padding: 12px 24px;
+            font-size: 14px;
           }
           .btn-primary svg, .btn-ghost svg {
-            width: 14px;
-            height: 14px;
+            width: 16px;
+            height: 16px;
           }
         }
       `}</style>
@@ -354,7 +445,7 @@ export default function HomeSlider() {
           position: "relative", 
           height: "100vh", 
           overflow: "hidden", 
-          fontFamily: "'DM Sans', system-ui, sans-serif" 
+          fontFamily: "'Inter', system-ui, sans-serif" 
         }}
         aria-label="Slider principal"
       >
@@ -365,17 +456,22 @@ export default function HomeSlider() {
             <div style={{ 
               position:"absolute", inset:0, display:"flex", 
               alignItems:"center", justifyContent:"center", 
-              flexDirection:"column", gap:20 
+              flexDirection:"column", gap:24 
             }}>
               <div style={{ 
-                width: 52, height: 52, 
-                border: "3px solid rgba(43,150,168,0.3)", 
-                borderTop: "3px solid #2B96A8", 
+                width: 60, height: 60, 
+                border: "3px solid rgba(2,175,207,0.2)", 
+                borderTop: "3px solid #02AFCF", 
                 borderRadius: "50%", 
                 animation: "spin .9s linear infinite" 
               }}/>
-              <p style={{ color:"rgba(255,255,255,0.5)", fontSize:14, fontWeight:500 }}>
-                Chargement des excursions…
+              <p style={{ 
+                color:"rgba(255,255,255,0.6)", 
+                fontSize: 14, 
+                fontWeight: 500,
+                letterSpacing: 1
+              }}>
+                Chargement...
               </p>
             </div>
           </div>
@@ -388,21 +484,40 @@ export default function HomeSlider() {
             backgroundImage:`url(${FALLBACK_IMG})`, 
             backgroundSize:"cover", backgroundPosition:"center" 
           }}>
-            <div style={{ position:"absolute", inset:0, background:"rgba(0,0,0,.65)" }}/>
-            <div style={{ position:"absolute", top:"50%", left: "5%", right: "5%", transform:"translateY(-50%)", maxWidth: 650 }}>
+            <div style={{ 
+              position:"absolute", inset:0, 
+              background: "linear-gradient(135deg, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0.5) 100%)" 
+            }}/>
+            <div style={{ 
+              position:"absolute", 
+              top:"50%", left:"50%", 
+              transform:"translate(-50%, -50%)", 
+              textAlign:"center", 
+              width:"100%",
+              maxWidth: 700,
+              padding: "0 24px"
+            }}>
               <h1 style={{ 
-                fontFamily:"'Playfair Display',serif", 
-                fontSize:"clamp(40px,5vw,68px)", 
-                fontWeight:900, 
+                fontFamily:"'Playfair Display', serif", 
+                fontSize:"clamp(42px, 6vw, 72px)", 
+                fontWeight: 900, 
                 color:"white", 
-                marginBottom:24,
+                marginBottom: 24,
                 lineHeight: 1.1,
-                letterSpacing: "-1.5px"
+                letterSpacing: "-2px"
               }}>
                 Découvrez la Tunisie
               </h1>
+              <p style={{
+                fontSize: "clamp(16px, 2vw, 18px)",
+                color: "rgba(255,255,255,0.9)",
+                marginBottom: 32,
+                lineHeight: 1.6
+              }}>
+                Des expériences uniques au cœur de la Méditerranée
+              </p>
               <Link href={ROUTES.excursions} className="btn-primary" style={{ display: "inline-flex" }}>
-                <Map size={18}/> Voir les excursions
+                <Compass size={18}/> Explorer maintenant
               </Link>
             </div>
           </div>
@@ -411,7 +526,7 @@ export default function HomeSlider() {
         {/* ── Slides ── */}
         {!loading && slide && (
           <>
-            {/* Background avec overlay amélioré */}
+            {/* Background */}
             {slide.type === "video" && slide.videoUrl ? (
               <VideoBackground url={slide.videoUrl} muted={muted}/>
             ) : (
@@ -420,65 +535,73 @@ export default function HomeSlider() {
                 style={{
                   backgroundImage: `url(${slide.imageUrl})`,
                   opacity: fading ? 0 : 1,
-                  transform: fading ? "scale(1.04)" : "scale(1)",
+                  transform: fading ? "scale(1.05)" : "scale(1)",
                 }}
               />
             )}
 
-            {/* Overlays dégradés plus sophistiqués */}
+            {/* Overlays modernes */}
             <div style={{ 
               position:"absolute", inset:0, 
-              background: "linear-gradient(100deg, rgba(0,0,0,.85) 0%, rgba(0,0,0,.45) 45%, rgba(0,0,0,.15) 100%)" 
+              background: "linear-gradient(110deg, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.5) 40%, rgba(0,0,0,0.2) 70%, rgba(0,0,0,0.4) 100%)" 
             }}/>
             <div style={{ 
               position:"absolute", inset:0, 
-              background: "linear-gradient(to top, rgba(0,0,0,.7) 0%, transparent 60%)" 
+              background: "linear-gradient(to top, rgba(0,0,0,0.8) 0%, transparent 50%)" 
             }}/>
-
-            {/* PAS DE BOUTON PLAY POUR LES VIDÉOS - SUPPRIMÉ */}
             
-            {/* Mute button - uniquement pour les vidéos non-YouTube */}
+            {/* Subtle pattern overlay */}
+            <div style={{
+              position: "absolute",
+              inset: 0,
+              backgroundImage: `radial-gradient(circle at 20% 40%, rgba(255,255,255,0.05) 1px, transparent 1px)`,
+              backgroundSize: "40px 40px",
+              pointerEvents: "none"
+            }}/>
+            
+            {/* Mute button */}
             {slide.type === "video" && slide.videoUrl && !isYouTube(slide.videoUrl) && (
               <button className="mute-btn" onClick={() => setMuted(m => !m)}>
-                {muted ? <VolumeX size={16}/> : <Volume2 size={16}/>}
-                {muted ? "Son désactivé" : "Son activé"}
+                {muted ? <VolumeX size={14}/> : <Volume2 size={14}/>}
+                <span>{muted ? "Activer le son" : "Couper le son"}</span>
               </button>
             )}
 
-            {/* ─── Hero content amélioré avec meilleurs espacements ─── */}
+            {/* ─── Hero Content amélioré ─── */}
             <div
               key={current}
               style={{
                 position: "absolute",
                 top: "50%",
-                left: "max(5%, 48px)",
+                left: "max(6%, 80px)",
                 transform: "translateY(-50%)",
-                maxWidth: "min(620px, 85%)",
+                maxWidth: "min(680px, 85%)",
+                width: "100%",
                 display: "flex",
                 flexDirection: "column",
                 alignItems: "flex-start",
                 zIndex: 15,
               }}
             >
-              {/* Badge ville - au-dessus du titre */}
+              {/* Badge avec icône */}
               {slide.subtitle && (
                 <div className="hero-animate-1" style={{
                   display: "inline-flex", 
                   alignItems: "center", 
-                  gap: 8,
-                  padding: "6px 16px", 
-                  borderRadius: 40,
-                  background: `${slide.color}20`,
-                  border: `1px solid ${slide.color}60`,
-                  backdropFilter: "blur(12px)",
-                  marginBottom: 24,
+                  gap: 10,
+                  padding: "8px 20px", 
+                  borderRadius: 100,
+                  background: `${slide.color}15`,
+                  backdropFilter: "blur(16px)",
+                  border: `1px solid ${slide.color}40`,
+                  marginBottom: 28,
                 }}>
-                  <MapPin size={14} color="white"/>
+                  <MapPin size={14} style={{ color: slide.color }}/>
                   <span style={{ 
-                    fontSize: 12, 
+                    fontSize: 13, 
                     fontWeight: 700, 
                     color: "white", 
-                    letterSpacing: 1.5, 
+                    letterSpacing: 1.8, 
                     textTransform: "uppercase" 
                   }}>
                     {slide.subtitle}
@@ -486,23 +609,23 @@ export default function HomeSlider() {
                 </div>
               )}
 
-              {/* Titre principal - bien clair */}
+              {/* Titre principal */}
               <h1 className="hero-animate-2" style={{
                 fontFamily: "'Playfair Display', serif",
-                fontSize: "clamp(36px, 4.5vw, 62px)",
-                fontWeight: 900,
+                fontSize: "clamp(40px, 5vw, 68px)",
+                fontWeight: 800,
                 color: "white",
-                lineHeight: 1.08,
-                letterSpacing: "-2px",
-                marginBottom: 20,
-                textShadow: "0 2px 30px rgba(0,0,0,.3)",
+                lineHeight: 1.05,
+                letterSpacing: "-2.5px",
+                marginBottom: 24,
+                textShadow: "0 4px 40px rgba(0,0,0,0.3)",
                 maxWidth: "100%",
               }}>
                 {slide.title}
               </h1>
 
-              {/* Sous-titre / Catégories */}
-              <div className="hero-animate-3" style={{ marginBottom: 32 }}>
+              {/* Catégories avec design amélioré */}
+              <div className="hero-animate-3" style={{ marginBottom: 36 }}>
                 {slide.categories?.length > 0 ? (
                   <div style={{ 
                     display: "flex", 
@@ -511,59 +634,84 @@ export default function HomeSlider() {
                     alignItems: "center"
                   }}>
                     {slide.categories.slice(0, 3).map((cat, idx) => (
-                      <span key={idx} style={{ 
-                        fontSize: 14, 
-                        color: "rgba(255,255,255,.85)", 
-                        fontWeight: 500,
-                        letterSpacing: 0.3,
-                      }}>
-                        {cat}
-                      </span>
+                      <div
+                        key={idx}
+                        style={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: 6,
+                          padding: "6px 14px",
+                          borderRadius: 100,
+                          background: "rgba(255,255,255,0.1)",
+                          backdropFilter: "blur(10px)",
+                          border: "1px solid rgba(255,255,255,0.2)"
+                        }}
+                      >
+                        <Star size={12} style={{ color: slide.color }}/>
+                        <span style={{ 
+                          fontSize: 13, 
+                          color: "white", 
+                          fontWeight: 500,
+                          letterSpacing: 0.3,
+                        }}>
+                          {cat}
+                        </span>
+                      </div>
                     ))}
                   </div>
                 ) : (
                   <p style={{ 
-                    fontSize: 16, 
-                    color: "rgba(255,255,255,.85)", 
+                    fontSize: 17, 
+                    color: "rgba(255,255,255,0.9)", 
                     lineHeight: 1.5,
                     margin: 0,
                     fontWeight: 500,
+                    maxWidth: "90%"
                   }}>
-                    Découvrez cette excursion exceptionnelle en Tunisie
+                    Vivez une expérience inoubliable au cœur de la Tunisie
                   </p>
                 )}
               </div>
 
-              {/* Boutons avec meilleur espacement */}
+              {/* Boutons d'action */}
               <div className="hero-animate-4" style={{ 
                 display: "flex", 
-                gap: 16, 
+                gap: 18, 
                 flexWrap: "wrap",
                 alignItems: "center",
               }}>
                 <a href="#chemins" className="btn-primary">
-                  <Sparkles size={16}/> Planifier mon voyage
+                  <Sparkles size={18}/> 
+                  <span>Planifier mon voyage</span>
                 </a>
                 {slide.type === "excursion" && slide.excursionId
                   ? <Link href={ROUTES.excursion(slide.excursionId)} className="btn-ghost">
-                      <Map size={16}/> Voir cette excursion
+                      <Map size={18}/> 
+                      <span>Découvrir</span>
                     </Link>
                   : <Link href={ROUTES.excursions} className="btn-ghost">
-                      <Map size={16}/> Voir les excursions
+                      <Compass size={18}/> 
+                      <span>Explorer</span>
                     </Link>
                 }
               </div>
             </div>
 
-            {/* ─── Dots de navigation ─── */}
+            {/* ─── Navigation Dots avec animation de progression ─── */}
             <div style={{ 
               position:"absolute", 
               bottom: 48, 
-              left: "max(5%, 48px)", 
+              left: "50%",
+              transform: "translateX(-50%)",
               display:"flex", 
-              gap: 12, 
+              gap: 16, 
               alignItems:"center",
               zIndex: 15,
+              background: "rgba(0,0,0,0.3)",
+              backdropFilter: "blur(8px)",
+              padding: "8px 20px",
+              borderRadius: 100,
+              border: "1px solid rgba(255,255,255,0.15)"
             }}>
               {slides.map((_, i) => (
                 <button key={i} className="dot-btn"
@@ -575,58 +723,74 @@ export default function HomeSlider() {
                 >
                   {i === current ? (
                     <div style={{ 
-                      width: 42, 
-                      height: 6, 
+                      width: 48, 
+                      height: 4, 
                       borderRadius: 4, 
-                      background: slide.color, 
-                      overflow: "hidden" 
+                      background: `linear-gradient(90deg, ${slide.color}, ${slide.color}80)`,
+                      overflow: "hidden",
+                      position: "relative"
                     }}>
                       <div style={{ 
+                        position: "absolute",
+                        left: 0,
+                        top: 0,
                         height:"100%", 
                         width:`${progress}%`, 
-                        background:"rgba(255,255,255,.7)", 
-                        transition:"width .06s linear" 
+                        background:"white",
+                        transition:"width .06s linear",
+                        borderRadius: 4
                       }}/>
                     </div>
                   ) : (
-                    <div style={{ 
-                      width: 8, 
-                      height: 8, 
+                    <div className="dot-inactive" style={{ 
+                      width: 10, 
+                      height: 10, 
                       borderRadius: "50%", 
-                      background: "rgba(255,255,255,.4)",
-                      transition: "all 0.2s",
+                      background: "rgba(255,255,255,0.4)",
+                      transition: "all 0.3s ease",
                     }}/>
                   )}
                 </button>
               ))}
             </div>
 
-            {/* ─── Compteur de slides ─── */}
+            {/* ─── Compteur élégant ─── */}
             <div style={{ 
               position:"absolute", 
-              bottom: 52, 
+              bottom: 54, 
               right: "max(5%, 48px)", 
-              fontSize: 13, 
-              color: "rgba(255,255,255,.5)", 
+              fontSize: 14, 
+              color: "rgba(255,255,255,0.6)", 
               fontWeight: 600, 
-              letterSpacing: 2,
-              fontFamily: "'DM Sans', monospace",
+              letterSpacing: 3,
+              fontFamily: "'Inter', monospace",
               zIndex: 15,
+              background: "rgba(0,0,0,0.3)",
+              backdropFilter: "blur(8px)",
+              padding: "6px 14px",
+              borderRadius: 100,
+              border: "1px solid rgba(255,255,255,0.15)"
             }}>
               {String(current + 1).padStart(2,"0")} / {String(slides.length).padStart(2,"0")}
             </div>
 
-            {/* ─── Indicateur de scroll ─── */}
+            {/* ─── Scroll Indicator animé ─── */}
             <div style={{ 
               position:"absolute", 
-              bottom: 32, 
+              bottom: 28, 
               left:"50%", 
               transform: "translateX(-50%)",
-              animation:"bounce 2s infinite",
-              opacity: 0.6,
+              animation:"float 2.5s ease-in-out infinite",
+              opacity: 0.7,
               zIndex: 15,
-            }}>
-              <ChevronDown size={24} color="white"/>
+              cursor: "pointer",
+              transition: "opacity 0.3s"
+            }}
+            onClick={() => window.scrollTo({ top: window.innerHeight, behavior: "smooth" })}
+            onMouseEnter={(e) => e.currentTarget.style.opacity = "1"}
+            onMouseLeave={(e) => e.currentTarget.style.opacity = "0.7"}
+            >
+              <ChevronDown size={28} color="white" strokeWidth={1.5}/>
             </div>
           </>
         )}

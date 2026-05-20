@@ -17,12 +17,14 @@ const N8N_WEBHOOK_URL = process.env.NEXT_PUBLIC_N8N_WEBHOOK_URL || "";
 type Ville     = { id: string; nom?: string; name?: string; city?: string; description?: string; [key: string]: unknown };
 type Categorie = { id: string; nom?: string; name?: string; label?: string; [key: string]: unknown };
 type Excursion = {
+
   id: string; title: string; city: string;
   price_per_person?: number; duration_hours?: number;
   description?: string; categories?: string[];
   photos?: string[]; languages?: string[];
   inclusions?: string[]; rating?: number; reviews_count?: number; max_people?: number;
   start_date?: string; end_date?: string; is_active?: boolean;
+  depart_time?: string;
 };
 type Activity = {
   id: string; name: string; description?: string;
@@ -65,55 +67,169 @@ function getBlockedDates(cityDates: CityDateRange[], excludeCity: string) {
     .map(c => ({ start: c.start!, end: c.end! }));
 }
 
-function extractItinerary(raw: unknown): Itinerary {
+function extractItinerary(
+  raw: unknown,
+  excursions: Excursion[]
+): Itinerary {
+
   const findDaysObject = (obj: any): any => {
     if (!obj) return null;
-    if (obj.days && Array.isArray(obj.days) && obj.days.length > 0) return obj;
-    if (obj.itinerary?.days) return obj.itinerary;
-    if (obj.result?.days)    return obj.result;
-    if (obj.data?.days)      return obj.data;
+
+    if (
+      obj.days &&
+      Array.isArray(obj.days)
+    ) {
+      return obj;
+    }
+
+    if (obj.itinerary?.days) {
+      return obj.itinerary;
+    }
+
+    if (obj.result?.days) {
+      return obj.result;
+    }
+
+    if (obj.data?.days) {
+      return obj.data;
+    }
+
     for (const key in obj) {
-      if (typeof obj[key] === 'object' && obj[key] !== null) {
-        const found = findDaysObject(obj[key]);
+      if (
+        typeof obj[key] === "object" &&
+        obj[key] !== null
+      ) {
+        const found = findDaysObject(
+          obj[key]
+        );
+
         if (found) return found;
       }
     }
+
     return null;
   };
+
   try {
+
     let parsed = raw;
-    if (typeof raw === 'string') {
-      const cleaned = raw.replace(/```json\n?/g,'').replace(/```\n?/g,'').trim();
-      const match = cleaned.match(/\{[\s\S]*\}/);
-      parsed = match ? JSON.parse(match[0]) : JSON.parse(cleaned);
+
+    if (typeof raw === "string") {
+
+      const cleaned = raw
+        .replace(/```json\n?/g, "")
+        .replace(/```\n?/g, "")
+        .trim();
+
+      const match =
+        cleaned.match(/\{[\s\S]*\}/);
+
+      parsed = match
+        ? JSON.parse(match[0])
+        : JSON.parse(cleaned);
     }
+
     const obj = findDaysObject(parsed);
-    if (obj?.days) {
-      return {
-        title: obj.title || "Mon voyage en Tunisie",
-        days: obj.days.map((day: any, idx: number) => ({
-          day: day.day || idx + 1,
-          city: day.city || "Ville inconnue",
-          theme: day.theme || "Découverte",
-          activities: (day.activities || []).map((act: any) => ({
-            id: act.id || `act-${Date.now()}-${Math.random()}`,
-            name: act.name || act.title || "Activité",
-            description: act.description || "",
-            time: act.time || act.horaire || "09:00",
-            duration: act.duration || "2h",
-            price: typeof act.price === 'number' ? act.price : (parseFloat(act.price) || 0),
-            photos: act.photos || [],
-            languages: act.languages || ["Français","Anglais"],
-            inclusion: act.inclusion || act.inclusions || [],
-            city: act.city || day.city,
-            rating: act.rating || 4.5,
-          })),
-        })),
-      };
+
+    if (!obj?.days) {
+      throw new Error(
+        "Aucun itinéraire valide"
+      );
     }
-    throw new Error("Aucun itinéraire valide trouvé");
+
+    return {
+
+      title:
+        obj.title ||
+        "Mon voyage en Tunisie",
+
+      days: obj.days.map(
+        (day: any, idx: number) => ({
+
+          day:
+            day.day || idx + 1,
+
+          city:
+            day.city ||
+            "Ville inconnue",
+
+          theme:
+            day.theme ||
+            "Découverte",
+
+          activities:
+            (day.activities || []).map(
+              (act: any) => {
+
+                const excursion =
+                  excursions.find(
+                    e =>
+                      e.id === act.id ||
+                      e.title
+                        ?.toLowerCase()
+                        === act.name
+                          ?.toLowerCase()
+                  );
+
+                return {
+
+                  id:
+                    act.id ||
+                    `act-${Date.now()}-${Math.random()}`,
+
+                  name:
+                    act.name ||
+                    act.title ||
+                    "Activité",
+
+                  description:
+                    act.description || "",
+
+                  time:
+                    excursion?.departure_time ||
+                    act.time ||
+                    "",
+
+                  duration:
+                    act.duration || "2h",
+
+                  price:
+                    typeof act.price === "number"
+                      ? act.price
+                      : parseFloat(act.price) || 0,
+
+                  photos:
+                    act.photos || [],
+
+                  languages:
+                    act.languages || ["Français"],
+
+                  inclusion:
+                    act.inclusion ||
+                    act.inclusions ||
+                    [],
+
+                  city:
+                    act.city ||
+                    day.city,
+
+                  rating:
+                    act.rating || 4.5,
+                };
+              }
+            ),
+        })),
+    };
+
   } catch (err) {
-    throw new Error(`Impossible de parser l'itinéraire: ${err instanceof Error ? err.message : "Format invalide"}`);
+
+    throw new Error(
+      `Impossible de parser l'itinéraire: ${
+        err instanceof Error
+          ? err.message
+          : "Format invalide"
+      }`
+    );
   }
 }
 
@@ -588,6 +704,94 @@ function DebugPanel({ webhookUrl }: { webhookUrl: string }) {
   const runTest = async () => {
     setStatus("loading"); setLog([]);
     addLog("▶ Démarrage du test..."); addLog(`URL: ${webhookUrl}`);
+    /* ───────── VALIDATION DATES + HORAIRES ───────── */
+
+// toutes les excursions actives
+const validExcursions = excursions.filter(exc => exc.is_active);
+
+// tableau pour stocker les activités déjà utilisées par jour
+const usedSlots: {
+  [day: string]: string[];
+} = {};
+
+citySchedule.forEach((cityData) => {
+  const currentDate = new Date(cityData.startDate!);
+  const endDate = new Date(cityData.endDate!);
+
+  while (currentDate <= endDate) {
+    const dayKey = currentDate.toISOString().split("T")[0];
+
+    usedSlots[dayKey] = [];
+
+    currentDate.setDate(currentDate.getDate() + 1);
+  }
+});
+
+// excursions compatibles
+const compatibleExcursions = validExcursions.filter((exc) => {
+
+  // ville compatible
+  if (!selectedCities.includes(exc.city)) return false;
+
+  // dates excursion
+  if (!exc.start_date || !exc.end_date) return false;
+
+  const excStart = new Date(exc.start_date);
+  const excEnd = new Date(exc.end_date);
+
+  // vérifier si l'excursion est disponible dans au moins une période choisie
+  const hasValidDate = citySchedule.some((cityData) => {
+    const userStart = new Date(cityData.startDate!);
+    const userEnd = new Date(cityData.endDate!);
+
+    return (
+      cityData.city === exc.city &&
+      excStart <= userEnd &&
+      excEnd >= userStart
+    );
+  });
+
+  return hasValidDate;
+});
+
+// empêcher mêmes horaires le même jour
+const finalExcursions: any[] = [];
+
+compatibleExcursions.forEach((exc) => {
+
+  // heure départ
+  const departure =
+    (exc as any).departure_time ||
+    (exc as any).start_time ||
+    "09:00";
+
+  // trouver date compatible
+  const matchingCity = citySchedule.find(
+    (c) => c.city === exc.city
+  );
+
+  if (!matchingCity) return;
+
+  const dayKey = matchingCity.startDate!;
+
+  if (!usedSlots[dayKey]) {
+    usedSlots[dayKey] = [];
+  }
+
+  // si même heure déjà utilisée => skip
+  if (usedSlots[dayKey].includes(departure)) {
+    return;
+  }
+
+  usedSlots[dayKey].push(departure);
+
+  finalExcursions.push({
+    ...exc,
+    departure_time: departure,
+  });
+});
+
+console.log("Excursions valides :", finalExcursions);
     const payload = { destination:"Tunis",startDate:"2025-06-01",endDate:"2025-06-03",budget:500,travelers:1,interests:["Culture"],cities:["Tunis"],citySchedule:[{city:"Tunis",startDate:"2025-06-01",endDate:"2025-06-03",daysCount:3}],message:"Test debug" };
     addLog("📤 Payload: " + JSON.stringify(payload,null,2));
     try {
@@ -651,6 +855,68 @@ const STEPS = [
   { label: "Calendrier",   icon: <CalendarDays size={15} color="#2B96A8"/> },
   { label: "Intérêts",     icon: <Heart       size={15} color="#2B96A8"/> },
 ];
+function removeTimeConflicts(
+  itinerary: Itinerary
+): Itinerary {
+
+  return {
+    ...itinerary,
+
+    days: itinerary.days.map(day => {
+
+      const usedTimes = new Set<string>();
+
+      const filteredActivities =
+        day.activities.filter(act => {
+
+          const time =
+            act.time ||
+            "09:00";
+
+          if (usedTimes.has(time)) {
+            return false;
+          }
+
+          usedTimes.add(time);
+
+          return true;
+        });
+
+      return {
+        ...day,
+        activities: filteredActivities
+      };
+    })
+  };
+}
+//fitre unavailebale  by date and city
+function filterUnavailableActivities(
+  itinerary: Itinerary,
+  excursions: Excursion[]
+): Itinerary {
+
+  return {
+    ...itinerary,
+
+    days: itinerary.days.map(day => ({
+
+      ...day,
+
+      activities: day.activities.filter(act => {
+
+        const exc = excursions.find(
+          e => e.id === act.id
+        );
+
+        if (!exc) {
+          return false;
+        }
+
+        return exc.is_active === true;
+      })
+    }))
+  };
+}
 
 /* ════════════════════════════
    Main Component
@@ -770,15 +1036,29 @@ export default function ModeAssiste() {
         endDate: citySchedule[citySchedule.length-1]?.endDate||"",
         budget: budget ? Number(budget) : 0, travelers: 1, interests: catNames,
         cities: selectedCities, citySchedule,
-        message: `Séjour en Tunisie du ${citySchedule[0]?.startDate} au ${citySchedule[citySchedule.length-1]?.endDate}`,
-        timestamp: new Date().toISOString(),
+message: `Séjour en Tunisie du ${citySchedule[0]?.startDate} au ${citySchedule[citySchedule.length-1]?.endDate}`,
+
       };
       const res = await fetch(N8N_WEBHOOK_URL, { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(payload) });
       clearInterval(iv);
       if (!res.ok) throw new Error(`n8n error ${res.status}`);
       const data = await res.json();
-      setItinerary(extractItinerary(data));
-      setAppStep("itineraire");
+const parsed =
+  extractItinerary(
+    data,
+    excursions
+  );
+
+const noConflicts =
+  removeTimeConflicts(parsed);
+
+const validated =
+  filterUnavailableActivities(
+    noConflicts,
+    excursions
+  );
+
+setItinerary(validated);      setAppStep("itineraire");
     } catch (err) {
       clearInterval(iv);
       setGenError(err instanceof Error ? err.message : "Erreur inconnue");
@@ -786,12 +1066,45 @@ export default function ModeAssiste() {
     }
   };
 
-  const handleChangeActivity = (dayIdx: number, actIdx: number, alt: Activity) => {
-    if (!itinerary) return;
-    const upd: Itinerary = JSON.parse(JSON.stringify(itinerary));
-    upd.days[dayIdx].activities[actIdx] = alt;
-    setItinerary(upd);
-  };
+  const handleChangeActivity = (
+  dayIdx: number,
+  actIdx: number,
+  alt: Activity
+) => {
+
+  setItinerary(prev => {
+
+    if (!prev) return prev;
+
+    return {
+
+      ...prev,
+
+      days: prev.days.map(
+        (day, dIdx) => {
+
+          if (dIdx !== dayIdx) {
+            return day;
+          }
+
+          return {
+
+            ...day,
+
+            activities:
+              day.activities.map(
+                (act, aIdx) =>
+
+                  aIdx === actIdx
+                    ? alt
+                    : act
+              ),
+          };
+        }
+      ),
+    };
+  });
+};
 
   const saveItinerary = async () => {
     if (!itinerary) return;
