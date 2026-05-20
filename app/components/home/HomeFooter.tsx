@@ -24,34 +24,7 @@ export default function HomeFooter({ user, openAuth }: HomeFooterProps) {
   return (
     <footer style={{ background: "#0D1117", color: "white", fontFamily: "inherit" }}>
 
-      {/* ── CTA banner ── */}
-      <div style={{
-        background: "linear-gradient(135deg, #2B96A8 0%, #1a6d7a 100%)",
-        padding: "40px 72px",
-        display: "flex", alignItems: "center", justifyContent: "space-between",
-        flexWrap: "wrap", gap: 20,
-      }}>
-        <div>
-          <p style={{ fontSize: 22, fontWeight: 800, margin: 0, color: "white" }}>
-            Vous proposez des excursions ?
-          </p>
-          <p style={{ fontSize: 14, margin: "6px 0 0", color: "rgba(255,255,255,.75)" }}>
-            Rejoignez notre réseau de prestataires et développez votre activité.
-          </p>
-        </div>
-        <button
-          onClick={() => handleOpenAuth("prestataire")}
-          style={{
-            padding: "13px 28px", background: "white", color: "#2B96A8",
-            borderRadius: 30, border: "none", fontSize: 14, fontWeight: 800,
-            cursor: "pointer", fontFamily: "inherit", whiteSpace: "nowrap",
-            display: "inline-flex", alignItems: "center", gap: 8,
-            boxShadow: "0 4px 16px rgba(0,0,0,.15)",
-          }}
-        >
-          Devenir prestataire <ExternalLink size={14} />
-        </button>
-      </div>
+    
 
       {/* ── Main grid ── */}
       <div style={{

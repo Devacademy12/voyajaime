@@ -390,7 +390,7 @@ function ConfigInner() {
     params.set("days", String(days));
     params.set("cities", selCities.join(","));
     if (selCats.length > 0) params.set("cats", selCats.join(","));
-    router.push(`/touriste/modeLibre/builder?${params.toString()}`);
+    router.push(`/modeLibre/builder?${params.toString()}`);
   };
 
   /* ── Résumé sélection ── */

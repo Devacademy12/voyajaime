@@ -16,7 +16,11 @@ export async function generateMetadata(): Promise<Metadata> {
   return {
     title: data?.title ? `${data.title} — À propos | VoyajAime` : "À propos de VoyajAime — Tourisme authentique en Tunisie",
     description: data?.subtitle ?? "Découvrez VoyajAime, la plateforme qui connecte les voyageurs avec les meilleures excursions et prestataires locaux de Tunisie.",
-    openGraph: { title: data?.title ?? "À propos de VoyajAime", description: data?.subtitle ?? "Tourisme authentique en Tunisie", type: "website" },
+    openGraph: {
+      title: data?.title ?? "À propos de VoyajAime",
+      description: data?.subtitle ?? "Tourisme authentique en Tunisie",
+      type: "website",
+    },
     alternates: { canonical: "/about" },
   };
 }
@@ -29,484 +33,461 @@ interface Section {
 }
 
 const ICON_MAP: Record<string, React.ReactNode> = {
-  heart:  <Heart  size={20} color="#fff" strokeWidth={1.8} />,
-  shield: <ShieldCheck size={20} color="#fff" strokeWidth={1.8} />,
-  globe:  <Globe  size={20} color="#fff" strokeWidth={1.8} />,
-  star:   <Star   size={20} color="#fff" strokeWidth={1.8} />,
-  map:    <MapPin size={20} color="#fff" strokeWidth={1.8} />,
-  users:  <Users  size={20} color="#fff" strokeWidth={1.8} />,
+  heart:  <Heart  size={20} strokeWidth={1.6} />,
+  shield: <ShieldCheck size={20} strokeWidth={1.6} />,
+  globe:  <Globe  size={20} strokeWidth={1.6} />,
+  star:   <Star   size={20} strokeWidth={1.6} />,
+  map:    <MapPin size={20} strokeWidth={1.6} />,
+  users:  <Users  size={20} strokeWidth={1.6} />,
 };
 
 const CSS = `
-  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=DM+Sans:wght@400;500;600;700;800&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
+
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: 'DM Sans', system-ui, sans-serif; background: #ffffff; color: #111827; }
 
-  /* ══════════════════════════════
-     ANIMATIONS
-  ══════════════════════════════ */
-  @keyframes heroFadeUp {
-    from { opacity:0; transform:translateY(36px); }
-    to   { opacity:1; transform:translateY(0); }
-  }
-  @keyframes heroSlideRight {
-    from { opacity:0; transform:translateX(-28px); }
-    to   { opacity:1; transform:translateX(0); }
-  }
-  @keyframes heroImgReveal {
-    from { opacity:0; transform:translateY(24px) scale(.96); }
-    to   { opacity:1; transform:translateY(0) scale(1); }
-  }
-  @keyframes heroBadgeIn {
-    from { opacity:0; transform:translateX(-16px) scale(.9); }
-    to   { opacity:1; transform:translateX(0) scale(1); }
-  }
-  @keyframes dotPulse   { 0%,100%{opacity:1;transform:scale(1);}  50%{opacity:.4;transform:scale(.75);} }
-  @keyframes dotPulse2  { 0%,100%{opacity:.4;transform:scale(.75);} 50%{opacity:1;transform:scale(1);}  }
-  @keyframes ctaPulse {
-    0%,100% { box-shadow:0 4px 20px rgba(2,175,207,.35); }
-    50%     { box-shadow:0 8px 36px rgba(2,175,207,.6); }
-  }
-  @keyframes countUp {
-    from { opacity:0; transform:translateY(16px) scale(.85); }
-    to   { opacity:1; transform:translateY(0) scale(1); }
-  }
-  @keyframes revealUp {
-    from { opacity:0; transform:translateY(28px); }
-    to   { opacity:1; transform:translateY(0); }
-  }
-  @keyframes lineGrow {
-    from { transform:scaleX(0); }
-    to   { transform:scaleX(1); }
+  :root {
+    --dark:      #0d1117;
+    --dark-2:    #161b27;
+    --dark-3:    #1e2536;
+    --teal:      #02AFCF;
+    --teal-dim:  rgba(2,175,207,0.12);
+    --teal-dim2: rgba(2,175,207,0.07);
+    --white:     #ffffff;
+    --off-white: #f0f4f8;
+    --muted:     rgba(255,255,255,0.52);
+    --muted2:    rgba(255,255,255,0.28);
+    --border:    rgba(255,255,255,0.08);
+    --border-lt: #e4eaf0;
+    --navy:      #053366;
   }
 
-  /* ══════════════════════════════
-     SCROLL REVEAL
-  ══════════════════════════════ */
-  .reveal {
-    opacity:0;
-    transform:translateY(28px);
-    transition:opacity .65s ease, transform .65s ease;
-  }
-  .reveal.visible {
-    opacity:1;
-    transform:translateY(0);
-  }
-  .reveal-delay-1 { transition-delay:.08s; }
-  .reveal-delay-2 { transition-delay:.16s; }
-  .reveal-delay-3 { transition-delay:.24s; }
-  .reveal-delay-4 { transition-delay:.32s; }
-
-  /* ══════════════════════════════
-     HERO
-  ══════════════════════════════ */
-  .hero-badge {
-    display:inline-flex; align-items:center; gap:8px;
-    padding:7px 16px;
-    background:linear-gradient(135deg,#EFF9FC,#D6F3FA);
-    border:1px solid #A7E3F0; border-radius:24px;
-    font-size:11px; font-weight:700; color:#053366;
-    letter-spacing:.6px; text-transform:uppercase; margin-bottom:18px;
-    animation:heroBadgeIn .55s cubic-bezier(.34,1.56,.64,1) both;
-  }
-  .hero-badge-dot {
-    width:7px; height:7px; border-radius:50%; background:#02AFCF;
-    animation:dotPulse 1.8s infinite;
-    display:inline-block;
-  }
-  .hero-badge-dot2 {
-    width:5px; height:5px; border-radius:50%; background:#02AFCF; opacity:.5;
-    animation:dotPulse2 1.8s infinite;
-    display:inline-block; margin-left:-2px;
+  body {
+    font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+    background: var(--dark);
+    color: var(--white);
+    -webkit-font-smoothing: antialiased;
   }
 
+  /* ── RICH CONTENT dark ── */
+  .rich-dark p          { margin-bottom: 14px; line-height: 1.85; font-size: 15px; color: var(--muted); font-weight: 300; }
+  .rich-dark h2         { font-size: 20px; font-weight: 700; color: var(--white); margin-bottom: 10px; }
+  .rich-dark ul         { padding-left: 20px; margin-bottom: 14px; }
+  .rich-dark ul li      { margin-bottom: 6px; line-height: 1.75; color: var(--muted); font-size: 14px; }
+  .rich-dark blockquote { border-left: 2px solid var(--teal); padding: 12px 20px; background: var(--teal-dim); border-radius: 0 6px 6px 0; margin: 16px 0; color: var(--muted); font-style: italic; }
+  .rich-dark a          { color: var(--teal); text-decoration: underline; text-underline-offset: 3px; }
+  .rich-dark strong     { font-weight: 700; color: var(--white); }
+
+  /* ── RICH CONTENT light ── */
+  .rich-light p         { margin-bottom: 14px; line-height: 1.85; font-size: 15px; color: #4B5563; font-weight: 300; }
+  .rich-light ul        { padding-left: 20px; margin-bottom: 14px; }
+  .rich-light ul li     { margin-bottom: 6px; line-height: 1.75; color: #4B5563; font-size: 14px; }
+  .rich-light strong    { font-weight: 700; color: var(--navy); }
+  .rich-light a         { color: var(--teal); }
+
+  /* ── TAG / EYEBROW ── */
+  .tag {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 100px;
+    border: 1px solid var(--teal);
+    color: var(--teal);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    margin-bottom: 16px;
+  }
+  .tag-light {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 100px;
+    border: 1px solid rgba(2,175,207,0.4);
+    color: var(--teal);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    margin-bottom: 16px;
+  }
+
+  /* ══════════════════════════
+     HERO — dark bg, 2-col
+  ══════════════════════════ */
+  .hero-section {
+    background: var(--dark);
+    padding: 96px 48px 88px;
+    border-bottom: 1px solid var(--border);
+  }
+  .hero-inner {
+    max-width: 1120px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 72px;
+    align-items: center;
+  }
+  .hero-inner.full { grid-template-columns: 1fr; max-width: 720px; }
   .hero-title {
-    font-family:'Playfair Display',serif;
-    font-size:clamp(26px,5vw,64px);
-    font-weight:900; color:#053366;
-    letter-spacing:-1.5px; line-height:1.06;
-    margin-bottom:20px;
-    animation:heroFadeUp .7s .1s ease both;
+    font-size: clamp(34px, 4.5vw, 62px);
+    font-weight: 800;
+    color: var(--white);
+    line-height: 1.06;
+    letter-spacing: -1.5px;
+    margin-bottom: 20px;
   }
+  .hero-title span { color: var(--teal); }
   .hero-sub {
-    font-size:16px; color:#6B7280; line-height:1.72;
-    max-width:480px; margin-bottom:24px;
-    animation:heroFadeUp .7s .22s ease both;
+    font-size: 16px;
+    font-weight: 300;
+    color: var(--muted);
+    line-height: 1.8;
+    max-width: 440px;
+    margin-bottom: 32px;
   }
-  .hero-content-wrap {
-    animation:heroSlideRight .7s .05s ease both;
+  .hero-img-wrap {
+    border-radius: 16px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+    background: var(--dark-3);
   }
-  .hero-img-frame {
-    border-radius:18px; overflow:hidden;
-    border:1px solid #E5E7EB;
-    box-shadow:0 28px 72px rgba(5,51,102,.10),0 6px 20px rgba(5,51,102,.07);
-    animation:heroImgReveal .8s .15s cubic-bezier(.34,1.56,.64,1) both;
-    transition:transform .4s cubic-bezier(.34,1.56,.64,1), box-shadow .4s;
-  }
-  .hero-img-frame:hover {
-    transform:translateY(-7px) scale(1.012);
-    box-shadow:0 36px 80px rgba(5,51,102,.14),0 10px 28px rgba(5,51,102,.09);
-  }
-  .hero-img-frame img {
-    display:block; width:100%; object-fit:cover;
-    transition:transform .5s ease;
-  }
-  .hero-img-frame:hover img { transform:scale(1.04); }
-
-  /* ══════════════════════════════
-     RICH CONTENT
-  ══════════════════════════════ */
-  .rich-content p          { margin-bottom:14px; line-height:1.85; font-size:16px; color:#4B5563; }
-  .rich-content h1         { font-family:'Playfair Display',serif; font-size:28px; font-weight:900; color:#111827; margin-bottom:14px; }
-  .rich-content h2         { font-family:'Playfair Display',serif; font-size:21px; font-weight:700; color:#111827; margin-bottom:10px; }
-  .rich-content ul         { padding-left:20px; margin-bottom:14px; }
-  .rich-content ul li      { margin-bottom:6px; line-height:1.75; color:#4B5563; }
-  .rich-content blockquote { border-left:3px solid #02AFCF; padding:12px 18px; background:#EFF9FC; border-radius:0 8px 8px 0; margin:16px 0; font-style:italic; color:#6B7280; }
-  .rich-content a          { color:#02AFCF; text-decoration:underline; text-underline-offset:2px; }
-  .rich-content strong     { font-weight:700; color:#053366; }
-  .rich-content hr         { border:none; border-top:1px solid #E5E7EB; margin:20px 0; }
-
-  /* ══════════════════════════════
-     DIVIDER ACCENT
-  ══════════════════════════════ */
-  .divider {
-    width:32px; height:2px; background:#111827; border-radius:2px;
-    display:inline-block;
-  }
-  .divider-accent {
-    width:32px; height:2px; border-radius:2px;
-    background:linear-gradient(90deg,#02AFCF,#053366);
-    display:inline-block;
-    transform-origin:left;
-    animation:lineGrow .5s ease both;
+  .hero-img-wrap img {
+    display: block;
+    width: 100%;
+    height: 420px;
+    object-fit: cover;
+    opacity: 0.9;
   }
 
-  /* ══════════════════════════════
-     STAT CARDS
-  ══════════════════════════════ */
-  .stat-card {
-    text-align:center; padding:28px 16px;
-    border-radius:14px; background:#ffffff;
-    border:1px solid #E5E7EB;
-    position:relative; overflow:hidden;
-    cursor:default;
-    transition:transform .35s cubic-bezier(.34,1.56,.64,1), border-color .3s, box-shadow .3s;
+  /* ══════════════════════════
+     MISSION — light bg
+  ══════════════════════════ */
+  .mission-section {
+    background: var(--off-white);
+    padding: 88px 48px;
+    border-bottom: 1px solid var(--border-lt);
   }
-  .stat-card::before {
-    content:''; position:absolute; top:0; left:0; right:0; height:3px;
-    background:linear-gradient(90deg,#02AFCF,#053366);
-    transform:scaleX(0); transform-origin:left;
-    transition:transform .4s ease;
+  .mission-inner {
+    max-width: 1120px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 72px;
+    align-items: center;
   }
-  .stat-card::after {
-    content:''; position:absolute; bottom:-60px; right:-60px;
-    width:120px; height:120px; border-radius:50%;
-    background:rgba(2,175,207,.05);
-    transition:all .5s ease;
+  .mission-label {
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--teal);
+    margin-bottom: 14px;
   }
-  .stat-card:hover {
-    transform:translateY(-8px);
-    border-color:#02AFCF;
-    box-shadow:0 18px 44px rgba(2,175,207,.13),0 4px 14px rgba(2,175,207,.08);
+  .mission-title {
+    font-size: clamp(26px, 3vw, 44px);
+    font-weight: 800;
+    color: var(--navy);
+    line-height: 1.1;
+    letter-spacing: -1px;
+    margin-bottom: 16px;
   }
-  .stat-card:hover::before { transform:scaleX(1); }
-  .stat-card:hover::after  { width:280px; height:280px; bottom:-110px; right:-110px; }
-
-  .stat-card:nth-child(1) { animation:countUp .55s .10s ease both; }
-  .stat-card:nth-child(2) { animation:countUp .55s .20s ease both; }
-  .stat-card:nth-child(3) { animation:countUp .55s .30s ease both; }
-  .stat-card:nth-child(4) { animation:countUp .55s .40s ease both; }
-
-  /* ══════════════════════════════
-     VALUE CARDS
-  ══════════════════════════════ */
-  .value-card {
-    padding:24px; border-radius:14px;
-    background:white; border:1.5px solid #E5E7EB;
-    position:relative; overflow:hidden;
-    cursor:default;
-    transition:transform .35s cubic-bezier(.34,1.56,.64,1), border-color .3s, box-shadow .3s;
+  .mission-sub {
+    font-size: 16px;
+    font-weight: 300;
+    color: #4B5563;
+    line-height: 1.8;
+    margin-bottom: 20px;
   }
-  .value-card::after {
-    content:''; position:absolute; bottom:-50px; right:-50px;
-    width:100px; height:100px; border-radius:50%;
-    background:rgba(2,175,207,.06);
-    transition:all .5s ease;
+  /* Decorative right side */
+  .mission-visual {
+    background:  var(--dark);
+    border-radius: 16px;
+    padding: 40px 36px;
+    border: 1px solid rgba(2,175,207,0.2);
   }
-  .value-card:hover {
-    border-color:#02AFCF;
-    transform:translateY(-6px) scale(1.018);
-    box-shadow:0 14px 38px rgba(2,175,207,.12);
+  .mission-visual-quote {
+    font-size: 15px;
+    font-weight: 300;
+    color: rgba(255,255,255,0.7);
+    line-height: 1.85;
+    font-style: italic;
+    border-left: 3px solid var(--teal);
+    padding-left: 20px;
   }
-  .value-card:hover::after { width:260px; height:260px; bottom:-100px; right:-100px; }
-
-  .value-icon-wrap {
-    width:46px; height:46px; border-radius:11px;
-    background:#02AFCF;
-    display:flex; align-items:center; justify-content:center; margin-bottom:16px;
-    transition:transform .35s cubic-bezier(.34,1.56,.64,1), background .3s;
-    box-shadow:0 4px 12px rgba(2,175,207,.28);
-  }
-  .value-card:hover .value-icon-wrap {
-    background:#053366;
-    transform:scale(1.14) rotate(-7deg);
-    box-shadow:0 6px 18px rgba(5,51,102,.22);
+  .mission-visual-author {
+    margin-top: 20px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--teal);
+    letter-spacing: 0.5px;
   }
 
-  /* ══════════════════════════════
-     TEAM CARDS
-  ══════════════════════════════ */
-  .team-card {
-    background:white; border-radius:14px; overflow:hidden;
-    border:1px solid #E5E7EB;
-    transition:transform .35s cubic-bezier(.34,1.56,.64,1), box-shadow .35s, border-color .3s;
+  /* ══════════════════════════
+     STATS — dark bg, horizontal strip
+  ══════════════════════════ */
+  .stats-section {
+    background: var(--off-white);
+    padding: 72px 48px;
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
   }
-  .team-card:hover {
-    transform:translateY(-10px);
-    box-shadow:0 28px 64px rgba(5,51,102,.12),0 6px 18px rgba(5,51,102,.07);
-    border-color:#C8EDF5;
+  .stats-heading {
+    font-size: clamp(18px, 2vw, 26px);
+    font-weight: 700;
+    color: var(--navy);
+    text-align: center;
+    margin-bottom: 48px;
+    letter-spacing: -0.5px;
   }
-  .team-card .photo-wrap { overflow:hidden; }
-  .team-card .photo-wrap img { transition:transform .5s ease; display:block; }
-  .team-card:hover .photo-wrap img { transform:scale(1.06); }
-  .team-card-avatar {
-    width:100%; display:flex; align-items:center; justify-content:center;
-    background:linear-gradient(135deg,#E0F7FC,#EEF2FF);
-    transition:background .3s;
+  .stats-row {
+    max-width: 1120px;
+    margin: 0 auto;
+    display: grid;
+    gap: 0;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    overflow: hidden;
   }
-  .team-card:hover .team-card-avatar { background:linear-gradient(135deg,#D0F2F9,#E0E7FF); }
-
-  /* ══════════════════════════════
-     CTA BUTTON
-  ══════════════════════════════ */
-  .cta-btn {
-    display:inline-flex; align-items:center; gap:10px;
-    padding:14px 28px; background:#02AFCF; color:white;
-    border-radius:12px; font-size:15px; font-weight:700;
-    text-decoration:none;
-    transition:all .3s cubic-bezier(.34,1.56,.64,1);
-    letter-spacing:-.1px;
-    animation:ctaPulse 2.8s infinite;
+  .stat-cell {
+    padding: 40px 28px;
+    text-align: center;
+    border-right: 1px solid var(--border);
+    background: var(--dark-3);
+    transition: background 0.18s;
   }
-  .cta-btn:hover {
-    background:#053366;
-    transform:translateY(-3px) scale(1.04);
-    gap:16px;
-    box-shadow:0 10px 30px rgba(5,51,102,.28);
-    animation:none;
+  .stat-cell:last-child { border-right: none; }
+  .stat-cell:hover { background:  var(--teal); }
+  .stat-num {
+    font-size: 52px;
+    font-weight: 800;
+    color: var(--white);
+    letter-spacing: -2px;
+    line-height: 1;
+    margin-bottom: 8px;
   }
-
-  /* ══════════════════════════════
-     SECTION LABEL
-  ══════════════════════════════ */
-  .section-label {
-    font-size:11px; font-weight:800; color:#9CA3AF;
-    text-transform:uppercase; letter-spacing:2.5px;
-  }
-
-  /* ══════════════════════════════
-     HERO TEXT CARD
-  ══════════════════════════════ */
-  .hero-text-card {
-    background:#ffffff;
-    border:1.5px solid #E5E7EB;
-    border-radius:20px;
-    padding:36px 32px 32px;
-    position:relative;
-    overflow:hidden;
-    box-shadow:0 8px 32px rgba(5,51,102,.07),0 2px 8px rgba(5,51,102,.04);
-    animation:heroSlideRight .7s .05s ease both;
-  }
-  .hero-text-card::before {
-    content:'';
-    position:absolute; top:0; left:0;
-    width:80px; height:80px;
-    background:linear-gradient(135deg,rgba(2,175,207,.12),transparent);
-    border-radius:0 0 80px 0;
-    pointer-events:none;
-  }
-  .hero-text-card::after {
-    content:'';
-    position:absolute; top:0; left:0; right:0; height:3px;
-    background:linear-gradient(90deg,#02AFCF,#053366,transparent);
-    border-radius:20px 20px 0 0;
+  .stat-num span { color: var(--teal); }
+  .stat-desc {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--muted);
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
   }
 
-  /* ══════════════════════════════
-     MISSION CARD
-  ══════════════════════════════ */
-  .mission-card {
-    background:#ffffff;
-    border:1.5px solid #E5E7EB;
-    border-radius:20px;
-    padding:40px 36px 36px;
-    position:relative;
-    overflow:hidden;
-    box-shadow:0 10px 36px rgba(5,51,102,.07),0 2px 10px rgba(5,51,102,.04);
-    transition:box-shadow .3s, border-color .3s;
+  /* ══════════════════════════
+     VALUES — dark bg, 2-col list
+  ══════════════════════════ */
+  .values-section {
+    background: var(--off-white);
+    padding: 88px 48px;
+    border-bottom: 1px solid var(--border);
   }
-  .mission-card:hover {
-    border-color:#C8EDF5;
-    box-shadow:0 16px 48px rgba(2,175,207,.10),0 4px 16px rgba(2,175,207,.06);
+  .values-header {
+    max-width: 1120px;
+    margin: 0 auto 52px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 48px;
+    align-items: end;
   }
-  .mission-card::before {
-    content:'';
-    position:absolute; top:0; bottom:0; left:0; width:4px;
-    background:linear-gradient(180deg,#02AFCF,#053366);
-    border-radius:20px 0 0 20px;
+  .values-header-title {
+    font-size: clamp(28px, 3vw, 46px);
+    font-weight: 800;
+    color: var(--navy);
+    letter-spacing: -1.5px;
+    line-height: 1.08;
   }
-  .mission-card::after {
-    content:'';
-    position:absolute; bottom:-80px; right:-80px;
-    width:220px; height:220px; border-radius:50%;
-    background:radial-gradient(circle,rgba(2,175,207,.07) 0%,transparent 70%);
-    pointer-events:none;
-    transition:all .5s ease;
-  }
-  .mission-card:hover::after {
-    width:300px; height:300px; bottom:-120px; right:-120px;
-  }
-
-  .mission-line {
-    width:48px; height:3px; border-radius:2px;
-    background:linear-gradient(90deg,#02AFCF,#053366);
-    margin-bottom:20px;
-    transform-origin:left;
-  }
-  .mission-line.visible { animation:lineGrow .6s .1s ease both; }
-
-  /* ══════════════════════════════
-     LAYOUT GRIDS — Base
-  ══════════════════════════════ */
-  .hero-grid {
-    display:grid;
-    gap:48px;
-    align-items:center;
-  }
-  .stats-grid {
-    display:grid;
-    gap:16px;
+  .values-header-title span { color: var(--teal); }
+  .values-header-sub {
+    font-size: 15px;
+    font-weight: 300;
+    color: var(--muted);
+    line-height: 1.8;
   }
   .values-grid {
-    display:grid;
-    gap:16px;
+    max-width: 1120px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1px;
+    background: var(--border);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    overflow: hidden;
+  }
+  .value-item {
+    background: var(--dark-2);
+    padding: 28px 32px;
+    display: flex;
+    gap: 20px;
+    align-items: flex-start;
+    transition: background 0.18s;
+  }
+  .value-item:hover { background: var(--dark-3); }
+  .value-icon-box {
+    flex-shrink: 0;
+    width: 44px;
+    height: 44px;
+    border-radius: 10px;
+    background: var(--teal-dim);
+    border: 1px solid rgba(2,175,207,0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--teal);
+    transition: background 0.18s;
+  }
+  .value-item:hover .value-icon-box { background: var(--teal-dim2); }
+  .value-item-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--white);
+    margin-bottom: 6px;
+    letter-spacing: -0.2px;
+  }
+  .value-item-text {
+    font-size: 13.5px;
+    font-weight: 300;
+    color: var(--muted);
+    line-height: 1.72;
+  }
+
+  /* ══════════════════════════
+     TEAM — light bg
+  ══════════════════════════ */
+  .team-section {
+    background: var(--off-white);
+    padding: 88px 48px;
+    border-bottom: 1px solid var(--border-lt);
+  }
+  .team-header {
+    max-width: 1120px;
+    margin: 0 auto 48px;
+    text-align: center;
+  }
+  .team-section-title {
+    font-size: clamp(26px, 3vw, 44px);
+    font-weight: 800;
+    color: var(--navy);
+    letter-spacing: -1.2px;
+    line-height: 1.1;
+    margin-bottom: 12px;
+  }
+  .team-section-sub {
+    font-size: 15.5px;
+    font-weight: 300;
+    color: #4B5563;
+    line-height: 1.75;
+    max-width: 480px;
+    margin: 0 auto;
   }
   .team-grid {
-    display:grid;
-    gap:20px;
+    max-width: 1120px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
   }
-  .footer-inner {
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
-    flex-wrap:wrap;
-    gap:12px;
+  .team-card {
+    background: var(--white);
+    border: 1px solid var(--border-lt);
+    border-radius: 14px;
+    overflow: hidden;
+    transition: border-color 0.18s, box-shadow 0.18s;
   }
-
-  /* ══════════════════════════════
-     RESPONSIVE — Tablette ≤ 900px
-  ══════════════════════════════ */
-  @media (max-width: 900px) {
-    .hero-section  { padding: 64px 28px !important; }
-    .hero-grid     { grid-template-columns: 1fr !important; gap: 28px !important; }
-    .hero-img-frame { height: 280px !important; }
-    .hero-img-frame img { height: 280px !important; }
-    .hero-sub      { max-width: 100% !important; }
-
-    .mission-section { padding: 64px 28px !important; }
-    .mission-card    { padding: 32px 28px 28px !important; }
-
-    .stats-section { padding: 60px 28px !important; }
-    .stats-grid    { grid-template-columns: repeat(2, 1fr) !important; }
-
-    .values-section { padding: 64px 28px !important; }
-    .values-grid    { grid-template-columns: repeat(2, 1fr) !important; }
-
-    .team-section  { padding: 64px 28px !important; }
-    .team-grid     { grid-template-columns: repeat(2, 1fr) !important; }
-
-    .cta-section   { padding: 72px 28px !important; }
-
-    .footer-inner  { flex-direction: column; align-items: flex-start; }
+  .team-card:hover {
+    border-color: rgba(2,175,207,0.35);
+    box-shadow: 0 8px 32px rgba(2,175,207,0.09);
   }
+  .team-photo { width: 100%; height: 220px; object-fit: cover; display: block; }
+  .team-avatar {
+    width: 100%; height: 220px;
+    background: linear-gradient(160deg, #dff4f9, #eef2ff);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .team-avatar-letter {
+    font-size: 64px; font-weight: 800; color: var(--navy); opacity: 0.15; letter-spacing: -2px;
+  }
+  .team-info { padding: 20px 22px 22px; }
+  .team-name { font-size: 15px; font-weight: 700; color: var(--navy); margin-bottom: 4px; }
+  .team-role {
+    font-size: 11px; font-weight: 600; color: var(--teal);
+    text-transform: uppercase; letter-spacing: 1.2px; margin-bottom: 10px;
+  }
+  .team-bio { font-size: 13px; font-weight: 300; color: #4B5563; line-height: 1.68; }
 
-  /* ══════════════════════════════
-     RESPONSIVE — Mobile ≤ 640px
-  ══════════════════════════════ */
+  /* ══════════════════════════
+     CTA — dark navy
+  ══════════════════════════ */
+  .cta-section {
+    background:  var(--off-white);
+    padding: 96px 48px;
+    text-align: center;
+    border-top: 1px solid rgba(2,175,207,0.15);
+  }
+  .cta-title {
+    font-size: clamp(28px, 4vw, 56px);
+    font-weight: 800;
+    color: var(--navy);
+    letter-spacing: -2px;
+    line-height: 1.06;
+    margin-bottom: 16px;
+  }
+  .cta-title span { color: var(--teal); }
+  .cta-sub {
+    font-size: 16px;
+    font-weight: 300;
+    color: rgba(255,255,255,0.55);
+    line-height: 1.75;
+    max-width: 460px;
+    margin: 0 auto 40px;
+  }
+  .cta-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 15px 30px;
+    background:  var(--teal);
+    color: var(--off-white);
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 700;
+    text-decoration: none;
+    letter-spacing: 0.2px;
+    transition: background 0.2s, gap 0.18s;
+  }
+  .cta-btn:hover { background: #019ab8; gap: 16px; }
+
+  /* ══════════════════════════
+     RESPONSIVE
+  ══════════════════════════ */
+  @media (max-width: 960px) {
+    .hero-inner    { grid-template-columns: 1fr; gap: 32px; }
+    .hero-sub      { max-width: 100%; }
+    .hero-img-wrap img { height: 280px; }
+    .mission-inner { grid-template-columns: 1fr; gap: 32px; }
+    .values-header { grid-template-columns: 1fr; gap: 12px; }
+    .values-grid   { grid-template-columns: 1fr; }
+    .team-grid     { grid-template-columns: repeat(2, 1fr); }
+    .stats-row     { grid-template-columns: repeat(2, 1fr) !important; }
+    .stat-cell:nth-child(2) { border-right: none; }
+    .stat-cell:nth-child(odd) { border-right: 1px solid var(--border); }
+    .stat-cell { border-bottom: 1px solid var(--border); }
+    .stat-cell:last-child, .stat-cell:nth-last-child(2):nth-child(odd) { border-bottom: none; }
+  }
   @media (max-width: 640px) {
-    /* Hero */
-    .hero-section     { padding: 40px 16px !important; }
-    .hero-text-card   { padding: 22px 18px 20px !important; border-radius: 16px !important; }
-    .hero-title       { font-size: clamp(24px, 7vw, 34px) !important; letter-spacing: -1px !important; margin-bottom: 12px !important; }
-    .hero-sub         { font-size: 15px !important; margin-bottom: 16px !important; }
-    .hero-badge       { font-size: 10px !important; padding: 5px 11px !important; margin-bottom: 12px !important; }
-    .hero-img-frame   { height: 210px !important; border-radius: 14px !important; }
-    .hero-img-frame img { height: 210px !important; }
-
-    /* Mission */
-    .mission-section  { padding: 40px 16px !important; }
-    .mission-card     { padding: 22px 18px 20px !important; border-radius: 16px !important; }
-
-    /* Stats */
-    .stats-section    { padding: 40px 16px !important; }
-    .stats-grid       { grid-template-columns: repeat(2, 1fr) !important; gap: 10px !important; }
-    .stat-card        { padding: 20px 12px !important; }
-    .stat-value       { font-size: 32px !important; }
-
-    /* Values */
-    .values-section   { padding: 40px 16px !important; }
-    .values-grid      { grid-template-columns: 1fr !important; gap: 10px !important; }
-    .value-card       { padding: 18px !important; }
-
-    /* Team */
-    .team-section     { padding: 40px 16px !important; }
-    .team-grid        { grid-template-columns: 1fr !important; gap: 14px !important; }
-    .team-photo-wrap  { height: 190px !important; }
-    .team-photo-wrap img { height: 190px !important; }
-    .team-card-avatar { height: 190px !important; }
-
-    /* CTA */
-    .cta-section      { padding: 52px 16px !important; }
-    .cta-btn          { width: 100%; justify-content: center; padding: 13px 18px !important; font-size: 14px !important; }
-
-    /* Misc */
-    .section-label    { font-size: 10px !important; letter-spacing: 2px !important; }
-    .rich-content p   { font-size: 15px !important; }
-
-    /* Footer */
-    footer            { padding: 18px 16px !important; }
-    .footer-inner     { flex-direction: column; align-items: flex-start; gap: 10px; }
-    .footer-links     { flex-direction: column !important; gap: 8px !important; }
+    .hero-section, .mission-section, .stats-section,
+    .values-section, .team-section, .cta-section { padding: 56px 20px; }
+    .hero-img-wrap img { height: 220px; }
+    .stats-row { grid-template-columns: repeat(2, 1fr) !important; }
+    .stat-num  { font-size: 38px; }
+    .team-grid { grid-template-columns: 1fr; }
+    .cta-btn   { width: 100%; justify-content: center; }
   }
-
-  /* ══════════════════════════════
-     RESPONSIVE — Très petit ≤ 380px
-  ══════════════════════════════ */
   @media (max-width: 380px) {
-    .hero-title  { font-size: 22px !important; letter-spacing: -.5px !important; }
-    .stats-grid  { grid-template-columns: 1fr !important; }
-    .stat-value  { font-size: 28px !important; }
-    .team-grid   { grid-template-columns: 1fr !important; }
+    .stats-row { grid-template-columns: 1fr !important; }
+    .stat-cell { border-right: none !important; }
   }
-`;
-
-const SCROLL_REVEAL_SCRIPT = `
-(function(){
-  var els = document.querySelectorAll('.reveal');
-  if(!('IntersectionObserver' in window)){
-    els.forEach(function(e){ e.classList.add('visible'); });
-    return;
-  }
-  var io = new IntersectionObserver(function(entries){
-    entries.forEach(function(entry){
-      if(entry.isIntersecting){
-        entry.target.classList.add('visible');
-        io.unobserve(entry.target);
-      }
-    });
-  },{ threshold:0.13, rootMargin:'0px 0px -40px 0px' });
-  els.forEach(function(e){ io.observe(e); });
-})();
 `;
 
 export default async function AboutPage() {
@@ -526,11 +507,15 @@ export default async function AboutPage() {
   const team    = get("team");
   const cta     = get("cta");
 
+  const statsItems  = (stats?.meta?.items  as { value: string; label: string }[])                     ?? [];
+  const valuesItems = (values?.meta?.items as { icon: string; title: string; text: string }[])         ?? [];
+  const teamMembers = (team?.meta?.members as { name: string; role: string; photo: string; bio: string }[]) ?? [];
+
   const jsonLd = {
-    "@context":"https://schema.org","@type":"TravelAgency",
-    name:"VoyajAime", description: hero?.subtitle ?? "Tourisme authentique en Tunisie",
-    url:"https://voyajaime.tn/about", foundingDate:"2024",
-    areaServed:{ "@type":"Country", name:"Tunisie" },
+    "@context": "https://schema.org", "@type": "TravelAgency",
+    name: "VoyajAime", description: hero?.subtitle ?? "Tourisme authentique en Tunisie",
+    url: "https://voyajaime.tn/about", foundingDate: "2024",
+    areaServed: { "@type": "Country", name: "Tunisie" },
   };
 
   return (
@@ -540,371 +525,153 @@ export default async function AboutPage() {
       <TouristeNav />
       <div style={{ paddingTop: 64 }} />
 
-      {/* ══════════════════════════════
-          HERO
-      ══════════════════════════════ */}
+      {/* ── HERO ── */}
       {hero && (
-        <section
-          aria-label="Présentation"
-          className="hero-section"
-          style={{ background: "#F9FAFB", borderBottom: "1px solid #E5E7EB", padding: "88px 40px" }}
-        >
-          <div style={{ maxWidth: 1100, margin: "0 auto" }}>
-            <div
-              className="hero-grid"
-              style={{
-                gridTemplateColumns: hero.image_url ? "1fr 1fr" : "1fr",
-                maxWidth: hero.image_url ? "100%" : 720,
-              }}
-            >
-              {/* Texte */}
-              <div className="hero-text-card">
-                <div className="hero-badge">
-                  <span className="hero-badge-dot" />
-                  <span className="hero-badge-dot2" />
-                  À propos de VoyajAime
-                </div>
-
-                <h1 className="hero-title">{hero.title}</h1>
-
-                {hero.subtitle && (
-                  <p className="hero-sub">{hero.subtitle}</p>
-                )}
-
-                {hero.content && (
-                  <div
-                    className="rich-content"
-                    style={{ animation: "heroFadeUp .7s .34s ease both", opacity: 0, animationFillMode: "forwards" }}
-                    dangerouslySetInnerHTML={{ __html: hero.content }}
-                  />
-                )}
-              </div>
-
-              {/* Image */}
-              {hero.image_url && (
-                <div className="hero-img-frame" style={{ height: 400 }}>
-                  <img
-                    src={hero.image_url}
-                    alt={hero.title ?? "VoyajAime"}
-                    style={{ height: 400, width: "100%" }}
-                  />
-                </div>
+        <section aria-label="Présentation" className="hero-section">
+          <div className={`hero-inner${hero.image_url ? "" : " full"}`}>
+            <div>
+              <span className="tag">À propos</span>
+              <h1 className="hero-title">{hero.title}</h1>
+              {hero.subtitle && <p className="hero-sub">{hero.subtitle}</p>}
+              {hero.content && (
+                <div className="rich-dark" dangerouslySetInnerHTML={{ __html: hero.content }} />
               )}
             </div>
+            {hero.image_url && (
+              <div className="hero-img-wrap">
+                <img src={hero.image_url} alt={hero.title ?? "VoyajAime"} />
+              </div>
+            )}
           </div>
         </section>
       )}
 
-      {/* ══════════════════════════════
-          MISSION
-      ══════════════════════════════ */}
+      {/* ── MISSION ── */}
       {mission && (
-        <section
-          aria-labelledby="mission-heading"
-          className="reveal mission-section"
-          style={{ padding: "88px 40px", background: "#F9FAFB" }}
-        >
-          <div style={{ maxWidth: 860, margin: "0 auto" }}>
-            <div className="mission-card">
-              <div className="mission-line reveal" style={{ marginBottom: 14 }} />
-
-              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
-                <p className="section-label">Notre mission</p>
-              </div>
-
+        <section aria-labelledby="mission-heading" className="mission-section">
+          <div className="mission-inner">
+            <div>
+              <p className="mission-label">Notre mission</p>
               {mission.title && (
-                <h2
-                  id="mission-heading"
-                  style={{
-                    fontFamily: "'Playfair Display',serif",
-                    fontSize: "clamp(20px,3vw,40px)",
-                    fontWeight: 900, color: "#053366",
-                    letterSpacing: "-1px", marginBottom: 12, lineHeight: 1.12,
-                  }}
-                >
-                  {mission.title}
-                </h2>
+                <h2 id="mission-heading" className="mission-title">{mission.title}</h2>
               )}
-              {mission.subtitle && (
-                <p style={{ fontSize: 16, color: "#6B7280", marginBottom: 24, lineHeight: 1.65 }}>
-                  {mission.subtitle}
-                </p>
-              )}
+              {mission.subtitle && <p className="mission-sub">{mission.subtitle}</p>}
               {mission.content && (
-                <div className="rich-content" dangerouslySetInnerHTML={{ __html: mission.content }} />
+                <div className="rich-light" dangerouslySetInnerHTML={{ __html: mission.content }} />
               )}
             </div>
-          </div>
-        </section>
-      )}
-
-      {/* ══════════════════════════════
-          STATS
-      ══════════════════════════════ */}
-      {stats && (stats.meta?.items as { value: string; label: string }[])?.length > 0 && (
-        <section
-          aria-labelledby="stats-heading"
-          className="reveal stats-section"
-          style={{ padding: "80px 40px", background: "#F9FAFB", borderTop: "1px solid #E5E7EB", borderBottom: "1px solid #E5E7EB" }}
-        >
-          <div style={{ maxWidth: 1100, margin: "0 auto" }}>
-            {stats.title && (
-              <h2
-                id="stats-heading"
-                style={{
-                  fontFamily: "'Playfair Display',serif",
-                  fontSize: "clamp(20px,3vw,30px)", fontWeight: 900, color: "#053366",
-                  textAlign: "center", marginBottom: 36, letterSpacing: "-.5px",
-                }}
-              >
-                {stats.title}
-              </h2>
-            )}
-            <div
-              className="stats-grid"
-              style={{
-                gridTemplateColumns: `repeat(${Math.min((stats.meta.items as []).length, 4)},1fr)`,
-              }}
-            >
-              {(stats.meta.items as { value: string; label: string }[]).map((item, i) => (
-                <div key={i} className="stat-card">
-                  <p
-                    className="stat-value"
-                    style={{
-                      fontFamily: "'Playfair Display',serif",
-                      fontSize: 44, fontWeight: 900, color: "#053366",
-                      marginBottom: 8, lineHeight: 1,
-                    }}
-                  >
-                    {item.value}
-                  </p>
-                  <p style={{ fontSize: 13, fontWeight: 600, color: "#6B7280" }}>{item.label}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-      )}
-
-      {/* ══════════════════════════════
-          VALEURS
-      ══════════════════════════════ */}
-      {values && (values.meta?.items as { icon: string; title: string; text: string }[])?.length > 0 && (
-        <section
-          aria-labelledby="values-heading"
-          className="reveal values-section"
-          style={{ padding: "88px 40px", background: "#ffffff" }}
-        >
-          <div style={{ maxWidth: 1100, margin: "0 auto" }}>
-            <div style={{ textAlign: "center", marginBottom: 48 }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 10, justifyContent: "center", marginBottom: 14 }}>
-                <div className="divider" />
-                <p className="section-label">Ce qui nous guide</p>
-                <div className="divider" />
-              </div>
-              {values.title && (
-                <h2
-                  id="values-heading"
-                  style={{
-                    fontFamily: "'Playfair Display',serif",
-                    fontSize: "clamp(20px,3vw,40px)",
-                    fontWeight: 900, color: "#053366",
-                    letterSpacing: "-1px", lineHeight: 1.1, marginBottom: 10,
-                  }}
-                >
-                  {values.title}
-                </h2>
-              )}
-              {values.subtitle && (
-                <p style={{ fontSize: 16, color: "#6B7280", maxWidth: 480, margin: "0 auto", lineHeight: 1.65 }}>
-                  {values.subtitle}
-                </p>
-              )}
-            </div>
-
-            <div
-              className="values-grid"
-              style={{
-                gridTemplateColumns: `repeat(${Math.min((values.meta.items as []).length, 4)},1fr)`,
-              }}
-            >
-              {(values.meta.items as { icon: string; title: string; text: string }[]).map((item, i) => (
-                <div key={i} className={`value-card reveal reveal-delay-${(i % 4) + 1}`}>
-                  <div className="value-icon-wrap">
-                    {ICON_MAP[item.icon] ?? <Star size={20} color="#fff" strokeWidth={1.8} />}
-                  </div>
-                  <h3 style={{
-                    fontFamily: "'Playfair Display',serif",
-                    fontSize: 17, fontWeight: 800, color: "#053366", marginBottom: 8,
-                  }}>
-                    {item.title}
-                  </h3>
-                  <p style={{ fontSize: 14, color: "#6B7280", lineHeight: 1.75 }}>{item.text}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-      )}
-
-      {/* ══════════════════════════════
-          ÉQUIPE
-      ══════════════════════════════ */}
-      {team && (
-        <section
-          aria-labelledby="team-heading"
-          className="reveal team-section"
-          style={{ padding: "88px 40px", background: "#F9FAFB", borderTop: "1px solid #E5E7EB" }}
-        >
-          <div style={{ maxWidth: 1100, margin: "0 auto" }}>
-            <div style={{ textAlign: "center", marginBottom: 48 }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 10, justifyContent: "center", marginBottom: 14 }}>
-                <div className="divider" />
-                <p className="section-label">Notre équipe</p>
-                <div className="divider" />
-              </div>
-              {team.title && (
-                <h2
-                  id="team-heading"
-                  style={{
-                    fontFamily: "'Playfair Display',serif",
-                    fontSize: "clamp(20px,3vw,40px)",
-                    fontWeight: 900, color: "#053366",
-                    letterSpacing: "-1px", lineHeight: 1.1, marginBottom: 10,
-                  }}
-                >
-                  {team.title}
-                </h2>
-              )}
-              {team.subtitle && (
-                <p style={{ fontSize: 16, color: "#6B7280", lineHeight: 1.6 }}>{team.subtitle}</p>
-              )}
-              {team.content && (
-                <div
-                  className="rich-content"
-                  style={{ maxWidth: 580, margin: "14px auto 0" }}
-                  dangerouslySetInnerHTML={{ __html: team.content }}
-                />
-              )}
-            </div>
-
-            {((team.meta?.members ?? []) as { name: string; role: string; photo: string; bio: string }[]).length > 0 && (
-              <div
-                className="team-grid"
-                style={{ gridTemplateColumns: "repeat(3,1fr)" }}
-              >
-                {(team.meta.members as { name: string; role: string; photo: string; bio: string }[]).map((m, i) => (
-                  <article key={i} className={`team-card reveal reveal-delay-${(i % 3) + 1}`}>
-                    <div className="photo-wrap team-photo-wrap" style={{ height: 220 }}>
-                      {m.photo ? (
-                        <img
-                          src={m.photo}
-                          alt={`${m.name} — ${m.role} chez VoyajAime`}
-                          style={{ width: "100%", height: 220, objectFit: "cover" }}
-                        />
-                      ) : (
-                        <div className="team-card-avatar" style={{ height: 220 }}>
-                          <span style={{
-                            fontFamily: "'Playfair Display',serif",
-                            fontSize: 56, fontWeight: 900, color: "#053366", opacity: .25,
-                          }}>
-                            {m.name?.[0]?.toUpperCase()}
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                    <div style={{ padding: "20px" }}>
-                      <h3 style={{ fontSize: 15, fontWeight: 800, color: "#053366", marginBottom: 4 }}>
-                        {m.name}
-                      </h3>
-                      <p style={{
-                        fontSize: 11, fontWeight: 700, color: "#02AFCF",
-                        marginBottom: 10, textTransform: "uppercase", letterSpacing: ".6px",
-                      }}>
-                        {m.role}
-                      </p>
-                      {m.bio && (
-                        <p style={{ fontSize: 13, color: "#6B7280", lineHeight: 1.68 }}>{m.bio}</p>
-                      )}
-                    </div>
-                  </article>
-                ))}
-              </div>
-            )}
-          </div>
-        </section>
-      )}
-
-      {/* ══════════════════════════════
-          CTA
-      ══════════════════════════════ */}
-      {cta && (
-        <section
-          aria-labelledby="cta-heading"
-          className="reveal cta-section"
-          style={{
-            padding: "96px 40px",
-            background: "linear-gradient(135deg,#F0F9FB 0%,#F9FAFB 50%,#EEF2FF 100%)",
-            borderTop: "1px solid #E5E7EB",
-            textAlign: "center",
-            position: "relative",
-            overflow: "hidden",
-          }}
-        >
-          <div style={{
-            position: "absolute", top: "-100px", left: "50%", transform: "translateX(-50%)",
-            width: 500, height: 500, borderRadius: "50%",
-            background: "radial-gradient(circle,rgba(2,175,207,.07) 0%,transparent 70%)",
-            pointerEvents: "none",
-          }} />
-
-          <div style={{ maxWidth: 580, margin: "0 auto", position: "relative" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 10, justifyContent: "center", marginBottom: 14 }}>
-              <div className="divider" />
-              <p className="section-label">Prêt à partir ?</p>
-              <div className="divider" />
-            </div>
-
-            {cta.title && (
-              <h2
-                id="cta-heading"
-                style={{
-                  fontFamily: "'Playfair Display',serif",
-                  fontSize: "clamp(22px,3.5vw,48px)",
-                  fontWeight: 900, color: "#053366",
-                  letterSpacing: "-1.5px", lineHeight: 1.08, marginBottom: 14,
-                }}
-              >
-                {cta.title}
-              </h2>
-            )}
-            {cta.subtitle && (
-              <p style={{ fontSize: 16, color: "#6B7280", marginBottom: 14, lineHeight: 1.65 }}>
-                {cta.subtitle}
+            {/* Decorative block — always shown for layout balance */}
+            <div className="mission-visual">
+              <p className="mission-visual-quote">
+                {mission.subtitle ?? "Notre engagement est de proposer des expériences de voyage authentiques, responsables et mémorables à travers toute la Tunisie."}
               </p>
-            )}
-            {cta.content && (
-              <div
-                className="rich-content"
-                style={{ marginBottom: 32 }}
-                dangerouslySetInnerHTML={{ __html: cta.content }}
-              />
-            )}
+              <p className="mission-visual-author">— VoyajAime, {new Date().getFullYear()}</p>
+            </div>
+          </div>
+        </section>
+      )}
 
-            <Link
-              href={(cta.meta?.button_url as string) ?? "/excursions"}
-              className="cta-btn"
-            >
+      {/* ── STATS ── */}
+      {stats && statsItems.length > 0 && (
+        <section aria-labelledby="stats-heading" className="stats-section">
+          {stats.title && (
+            <h2 id="stats-heading" className="stats-heading">{stats.title}</h2>
+          )}
+          <div
+            className="stats-row"
+            style={{ gridTemplateColumns: `repeat(${Math.min(statsItems.length, 4)}, 1fr)` }}
+          >
+            {statsItems.map((item, i) => (
+              <div key={i} className="stat-cell">
+                <p className="stat-num">{item.value}</p>
+                <p className="stat-desc">{item.label}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* ── VALEURS ── */}
+      {values && valuesItems.length > 0 && (
+        <section aria-labelledby="values-heading" className="values-section">
+          <div className="values-header">
+            <div>
+              <span className="tag">Ce qui nous guide</span>
+              {values.title && (
+                <h2 id="values-heading" className="values-header-title">{values.title}</h2>
+              )}
+            </div>
+            {values.subtitle && (
+              <p className="values-header-sub">{values.subtitle}</p>
+            )}
+          </div>
+          <div className="values-grid">
+            {valuesItems.map((item, i) => (
+              <div key={i} className="value-item">
+                <div className="value-icon-box">
+                  {ICON_MAP[item.icon] ?? <Star size={20} strokeWidth={1.6} />}
+                </div>
+                <div>
+                  <p className="value-item-title">{item.title}</p>
+                  <p className="value-item-text">{item.text}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* ── ÉQUIPE ── */}
+      {team && (
+        <section aria-labelledby="team-heading" className="team-section">
+          <div className="team-header">
+            <span className="tag-light">Notre équipe</span>
+            {team.title && (
+              <h2 id="team-heading" className="team-section-title">{team.title}</h2>
+            )}
+            {team.subtitle && <p className="team-section-sub">{team.subtitle}</p>}
+          </div>
+
+          {teamMembers.length > 0 && (
+            <div className="team-grid">
+              {teamMembers.map((m, i) => (
+                <article key={i} className="team-card">
+                  {m.photo ? (
+                    <img className="team-photo" src={m.photo} alt={`${m.name} — ${m.role}`} />
+                  ) : (
+                    <div className="team-avatar">
+                      <span className="team-avatar-letter">{m.name?.[0]?.toUpperCase()}</span>
+                    </div>
+                  )}
+                  <div className="team-info">
+                    <p className="team-name">{m.name}</p>
+                    <p className="team-role">{m.role}</p>
+                    {m.bio && <p className="team-bio">{m.bio}</p>}
+                  </div>
+                </article>
+              ))}
+            </div>
+          )}
+        </section>
+      )}
+
+      {/* ── CTA ── */}
+      {cta && (
+        <section aria-labelledby="cta-heading" className="cta-section">
+          <div style={{ maxWidth: 600, margin: "0 auto" }}>
+            {cta.title && (
+              <h2 id="cta-heading" className="cta-title">{cta.title}</h2>
+            )}
+            {cta.subtitle && <p className="cta-sub">{cta.subtitle}</p>}
+            <Link href={(cta.meta?.button_url as string) ?? "/excursions"} className="cta-btn">
               {(cta.meta?.button_text as string) ?? "Commencer l'aventure"}
-              <ArrowRight size={17} />
+              <ArrowRight size={16} />
             </Link>
           </div>
         </section>
       )}
-      
 
       <HomeFooter user={null} />
-      <script dangerouslySetInnerHTML={{ __html: SCROLL_REVEAL_SCRIPT }} />
     </>
   );
 }
