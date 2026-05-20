@@ -255,8 +255,8 @@ export default function HistoriqueClient({ reservations }: { reservations: HistE
       <style>{CSS}</style>
 
       {/* ── Header ── */}
-      <div style={{ borderBottom:"1px solid #EBEBEB", padding:"28px 40px 24px" }}>
-        <div style={{ maxWidth:1100, margin:"0 auto" }}>
+      <div style={{ borderBottom:"1px solid #EBEBEB", padding:"28px 0 24px" }}>
+        <div style={{}}>
           <div
             className="hist-header-inner"
             style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-end", flexWrap:"wrap", gap:16 }}
@@ -275,7 +275,7 @@ export default function HistoriqueClient({ reservations }: { reservations: HistE
         </div>
       </div>
 
-      <div className="hist-content" style={{ maxWidth:1100, margin:"0 auto", padding:"32px 40px 80px" }}>
+      <div className="hist-content" style={{ padding:"32px 0 80px" }}>
 
         {/* ── Search + Filtres ── */}
         <div className="hist-controls" style={{ display:"flex", gap:14, marginBottom:28, flexWrap:"wrap", alignItems:"center" }}>

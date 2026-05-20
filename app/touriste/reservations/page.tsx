@@ -89,19 +89,17 @@ export default async function TouristeReservations({
       <style>{`
         .resa-page-wrap {
           width: 100%;
-          max-width: 1200px;
           background: #F8FAFC;
           min-height: 100vh;
           position: relative;
-          margin: 0 auto;
-          padding: 36px 48px 60px;
+          padding: 36px 0 60px;
           box-sizing: border-box;
         }
         @media (max-width: 900px) {
-          .resa-page-wrap { padding: 24px 24px 48px; }
+          .resa-page-wrap { padding: 24px 0 48px; }
         }
         @media (max-width: 640px) {
-          .resa-page-wrap { padding: 16px 12px 40px; }
+          .resa-page-wrap { padding: 16px 0 40px; }
         }
       `}</style>
 

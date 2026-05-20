@@ -138,9 +138,7 @@ const RESPONSIVE_CSS = `
 
   .it-wrap {
     font-family: 'DM Sans', system-ui, sans-serif;
-    padding: 36px 48px 80px;
-    max-width: 1100px;
-    margin: 0 auto;
+    padding: 36px 0 80px;
     width: 100%;
   }
 

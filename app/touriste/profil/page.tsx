@@ -117,7 +117,7 @@ export default function ProfilPage() {
     : null;
 
   return (
-    <div style={{ maxWidth:1160, margin:"0 auto", padding:"36px 48px 60px", width:"100%", minHeight:"60vh", display:"flex", flexDirection:"column" }}>
+    <div style={{ padding:"36px 0 60px", width:"100%", minHeight:"60vh", display:"flex", flexDirection:"column" }}>
       <style>{`
         @keyframes spin   { to { transform: rotate(360deg); } }
         @keyframes fadeIn { from { opacity:0; transform:translateY(-4px); } to { opacity:1; transform:translateY(0); } }

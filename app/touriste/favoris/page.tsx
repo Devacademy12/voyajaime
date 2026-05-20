@@ -20,7 +20,7 @@ export default async function TouristeFavoris() {
   }));
 
   return (
-    <div style={{ padding:"36px 48px 60px", maxWidth:1160, margin:"0 auto", width:"100%" }}>
+    <div style={{ padding:"36px 0 60px", width:"100%" }}>
       <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:36 }}>
         <div>
           <h1 style={{ fontSize: 28, fontWeight: 700, color: "#053366", margin: 0 }}>Mes favoris</h1>

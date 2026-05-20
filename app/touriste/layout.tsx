@@ -34,8 +34,77 @@ export default async function TouristeLayout({ children }: { children: React.Rea
       />
       <div style={{ paddingTop: 64 }} />
       <main style={{ flex: 1, display: "flex", flexDirection: "column" }}>
-        {children}
+        {/*
+          ── Container centré global ──────────────────────────────────────
+          Toutes les pages touriste (dashboard, favoris, historique,
+          réservations, profil, itinéraires) héritent de ce container.
+
+          EXCEPTIONS fullscreen (gèrent leur propre layout) :
+            • /touriste/messages   → chat 2 colonnes, pas de max-width
+            • /modeAssister        → wizard fullscreen
+            • /modeLibre           → builder fullscreen
+          Ces pages contournent ce container via leurs propres styles CSS.
+          ────────────────────────────────────────────────────────────────
+        */}
+        <div className="touriste-container">
+          {children}
+        </div>
       </main>
+
+      <style>{`
+        /* ── Container centré global touriste ── */
+        .touriste-container {
+          width: 100%;
+          max-width: 1280px;
+          margin-left: auto;
+          margin-right: auto;
+          padding-left: 24px;
+          padding-right: 24px;
+          flex: 1;
+          display: flex;
+          flex-direction: column;
+        }
+
+        /* Tablette */
+        @media (max-width: 1024px) {
+          .touriste-container {
+            padding-left: 20px;
+            padding-right: 20px;
+          }
+        }
+
+        /* Mobile */
+        @media (max-width: 640px) {
+          .touriste-container {
+            padding-left: 16px;
+            padding-right: 16px;
+          }
+        }
+
+        /*
+          Pages fullscreen — elles posent min-height:100vh sur leur propre
+          wrapper donc elles débordent naturellement du container.
+          On les laisse s'étirer en annulant le max-width sur leur wrapper direct.
+        */
+        .touriste-container > .messages-page-wrapper,
+        .touriste-container > .ma2-page,
+        .touriste-container > .mlp-page {
+          width: calc(100% + 48px);
+          margin-left: -24px;
+          margin-right: -24px;
+          max-width: none;
+        }
+
+        @media (max-width: 640px) {
+          .touriste-container > .messages-page-wrapper,
+          .touriste-container > .ma2-page,
+          .touriste-container > .mlp-page {
+            width: calc(100% + 32px);
+            margin-left: -16px;
+            margin-right: -16px;
+          }
+        }
+      `}</style>
     </div>
   );
 }

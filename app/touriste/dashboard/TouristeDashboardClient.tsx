@@ -31,7 +31,7 @@ export default function TouristeDashboardClient({ profile, reservations, favoris
   return (
     <div className="font-sans">
       {/* Police + animations déjà dans ton CSS global */}
-      <div className="page-wrapper" style={{ padding: "40px 48px 80px", maxWidth: 1160 }}>
+      <div className="page-wrapper" style={{ padding: "40px 0 80px" }}>
         {/* Header */}
         <div className="mb-9" style={{ animation: "fadeUp .3s ease" }}>
           <h1 className="font-serif text-4xl font-black tracking-tight text-gray-900 m-0" style={{ fontFamily: "'Playfair Display',serif", fontSize: "clamp(26px,4vw,36px)" }}>
