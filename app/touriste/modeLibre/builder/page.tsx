@@ -11,7 +11,7 @@ import {
   Plus, CalendarDays, Edit3, X, Camera, Mountain,
   MapPinned, LocateFixed, Landmark, Compass, Building2,
   Trees, Waves, UtensilsCrossed, Tent, Bike, Ship,
-  ShoppingBag, Sparkles, Music, AlertCircle, Heart, HelpCircle,
+  ShoppingBag, Sparkles, Music, AlertCircle, HelpCircle,
   CalendarCheck,
 } from "lucide-react";
 
@@ -193,7 +193,7 @@ function BuilderInner() {
 
   const [search,         setSearch]         = useState("");
   const [showDatePicker, setShowDatePicker] = useState(false);
-  const [showHelpPanel, setShowHelpPanel] = useState(false);
+  const [showHelpPanel,  setShowHelpPanel]  = useState(false);
   const [showSuccessMsg, setShowSuccessMsg] = useState<string | null>(null);
 
   const [itin,      setItin]      = useState<DayPlan[]>([]);
@@ -372,8 +372,8 @@ function BuilderInner() {
   const palette = useMemo(() => {
     const q = search.toLowerCase();
     return allExc.filter(e => {
-      const matchSearch   = !q || e.title.toLowerCase().includes(q) || e.city.toLowerCase().includes(q);
-      const matchCity     = !currentDayCity || e.city.toLowerCase() === currentDayCity.toLowerCase();
+      const matchSearch = !q || e.title.toLowerCase().includes(q) || e.city.toLowerCase().includes(q);
+      const matchCity   = !currentDayCity || e.city.toLowerCase() === currentDayCity.toLowerCase();
       return matchSearch && matchCity;
     });
   }, [allExc, currentDayCity, search]);
@@ -394,8 +394,6 @@ function BuilderInner() {
     setShowSuccessMsg(msg);
     setTimeout(() => setShowSuccessMsg(null), 3000);
   };
-
-  // favorite button removed — no-op
 
   const openSlotPicker = (exc: Excursion) => {
     if (currentDayDate) {
@@ -535,7 +533,7 @@ function BuilderInner() {
       <div className={s.overlay} onClick={() => setShowDatePicker(false)}>
         <div className={s.datePicker} onClick={e => e.stopPropagation()}>
           <div className={s.datePickerHeader}>
-            <h3 className={s.datePickerTitle}>Choisir la date de visite</h3>
+            <h3 className={s.datePickerTitle}>Date de visite — Jour {activeDay + 1}</h3>
             <button className={s.closeBtn} onClick={() => setShowDatePicker(false)}>
               <X size={16} />
             </button>
@@ -594,12 +592,13 @@ function BuilderInner() {
         </div>
       )}
 
-      {/* ══ TOPBAR ══ */}
+      {/* ══ TOPBAR — no box/card wrapper, just inline items ══ */}
       <div className={s.topbar}>
         <div className={s.topbarLeft}>
           <button className={s.backBtn} onClick={() => router.push("/touriste/modeLibre")}>
             <ArrowLeft size={14} /> <span>Retour</span>
           </button>
+          {/* Trip info — plain inline, no badge box */}
           <div className={s.tripBadge}>
             <Calendar size={12} color={BRAND} />
             <span className={s.tripBadgeDays}>{days} jours</span>
@@ -672,12 +671,14 @@ function BuilderInner() {
                   </span>
                 )}
               </div>
+
+              {/* ── Single date button (catalogue) ── */}
               <div className={s.catHeaderRight}>
                 {currentDayDate ? (
                   <button className={s.datePill} onClick={() => setShowDatePicker(true)}>
-                    <CalendarCheck size={11} color={BRAND} />
+                    <CalendarCheck size={11} />
                     <span>{formatDate(currentDayDate, { day: "numeric", month: "short" })}</span>
-                    <Edit3 size={10} color="#9CA3AF" />
+                    <Edit3 size={10} />
                   </button>
                 ) : (
                   <button className={s.datePickBtn} onClick={() => setShowDatePicker(true)}>
@@ -727,7 +728,7 @@ function BuilderInner() {
               </div>
             ) : palette.length === 0 ? (
               <div className={s.emptyState}>
-                <Calendar size={48} strokeWidth={1} style={{ opacity: 0.25, marginBottom: "1rem" }} />
+                <Calendar size={48} strokeWidth={1} style={{ opacity: 0.2, marginBottom: "1rem" }} />
                 <p className={s.emptyStateTitle}>Aucune excursion à {currentDayCity}</p>
                 <p className={s.emptyStateHint}>Essayez de modifier la ville ou les filtres</p>
               </div>
@@ -751,27 +752,23 @@ function BuilderInner() {
                       {exc.photos?.[0] ? (
                         <img src={exc.photos[0]} alt={exc.title} className={s.cardImgEl} />
                       ) : (
-                        <div className={s.cardImgPlaceholder} style={{ background: `${BRAND}15` }}>
+                        <div className={s.cardImgPlaceholder} style={{ background: "#e8f6f8" }}>
                           <Camera size={28} color={BRAND} strokeWidth={1.5} />
                         </div>
                       )}
                       <div className={s.cardImgGradient} />
 
-                      {/* Category badge */}
                       {exc.categories?.[0] && !isUnavailable && (
                         <span className={s.catBadge}>
                           {getCategoryIcon(exc.categories[0])} {exc.categories[0]}
                         </span>
                       )}
 
-                      {/* Unavailable badge */}
                       {isUnavailable && (
                         <span className={s.unavailBadge}>
                           <AlertCircle size={11} /> Indisponible
                         </span>
                       )}
-
-                      {/* favorite button removed */}
                     </div>
 
                     {/* Body */}
@@ -780,7 +777,7 @@ function BuilderInner() {
                         <h3 className={s.cardTitle}>{exc.title}</h3>
                         <div className={s.cardPriceBlock}>
                           <span className={s.cardPrice}>{exc.price_per_person}</span>
-                          <span className={s.cardPriceSuffix}>EUR<br />/personne</span>
+                          <span className={s.cardPriceSuffix}>EUR<br />/pers.</span>
                         </div>
                       </div>
 
@@ -797,7 +794,7 @@ function BuilderInner() {
                             <Star size={11} color="#F59E0B" fill="#F59E0B" />
                             {exc.rating}
                             {exc.reviews_count > 0 && (
-                              <span style={{ color: "#9CA3AF", fontSize: ".75rem" }}>({exc.reviews_count})</span>
+                              <span style={{ color: "#9CA3AF", fontSize: ".7rem" }}>({exc.reviews_count})</span>
                             )}
                           </span>
                         )}
@@ -808,7 +805,6 @@ function BuilderInner() {
                         )}
                       </div>
 
-                      {/* Availability */}
                       {!currentDayDate ? (
                         !hasAvailableDates(exc)
                           ? <div className={s.alwaysAvail}><CheckCircle2 size={10} /> Toujours disponible</div>
@@ -821,7 +817,6 @@ function BuilderInner() {
 
                       <div className={s.divider} />
 
-                      {/* CTA */}
                       <button
                         className={`${s.reserveBtn} ${added ? s.reserveBtnAdded : ""} ${isUnavailable ? s.reserveBtnUnavail : ""}`}
                         disabled={added || !!isUnavailable}
@@ -854,11 +849,12 @@ function BuilderInner() {
                 <div className={s.plannerDayIcon}>
                   <LocateFixed size={14} color={BRAND} />
                 </div>
-                <div>
+                <div style={{ flex: 1, minWidth: 0 }}>
                   <div className={s.plannerDayName}>
                     Jour {activeDay + 1} — {currentDay?.city}
                   </div>
                   <div className={s.plannerDateRow}>
+                    {/* Single date button in planner — no duplicate */}
                     {currentDay?.date ? (
                       <button className={s.plannerDateBtn} onClick={() => setShowDatePicker(true)}>
                         <CalendarCheck size={11} color={BRAND} />
@@ -1114,10 +1110,10 @@ function BuilderInner() {
 export default function BuilderPage() {
   return (
     <Suspense fallback={
-      <div className="fallback" style={{ display:"flex", alignItems:"center", justifyContent:"center", minHeight:"100vh", flexDirection:"column", gap:".75rem" }}>
+      <div style={{ display:"flex", alignItems:"center", justifyContent:"center", minHeight:"100vh", flexDirection:"column", gap:".75rem" }}>
         <Loader2 size={32} color="#2B96A8" style={{ animation: "spin 1s linear infinite" }} />
         <style>{`@keyframes spin { to { transform: rotate(360deg) } }`}</style>
-        <span style={{ color: "#9CA3AF", fontSize: ".85rem" }}>Chargement de l'itinéraire…</span>
+        <span style={{ color: "#9CA3AF", fontSize: ".85rem", fontFamily: "sans-serif" }}>Chargement de l'itinéraire…</span>
       </div>
     }>
       <BuilderInner />
