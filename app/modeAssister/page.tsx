@@ -186,7 +186,7 @@ function extractItinerary(
                     act.description || "",
 
                   time:
-                    excursion?.departure_time ||
+                    excursion?.depart_time ||
                     act.time ||
                     "",
 
