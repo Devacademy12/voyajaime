@@ -17,11 +17,11 @@ import styles from "@/public/style/Reservations.module.css";
 type FilterTab = "all" | "pending" | "confirmed" | "completed" | "cancelled";
 
 const TABS: { key: FilterTab; label: string; icon: React.ReactNode }[] = [
-  { key: "all",       label: "Toutes",    icon: <Ticket     size={13} /> },
-  { key: "pending",   label: "En attente", icon: <Clock      size={13} /> },
+  { key: "all",       label: "Toutes",     icon: <Ticket      size={13} /> },
+  { key: "pending",   label: "En attente", icon: <Clock       size={13} /> },
   { key: "confirmed", label: "Confirmées", icon: <CheckCircle size={13} /> },
   { key: "completed", label: "Terminées",  icon: <CalendarDays size={13} /> },
-  { key: "cancelled", label: "Annulées",   icon: <XCircle    size={13} /> },
+  { key: "cancelled", label: "Annulées",   icon: <XCircle     size={13} /> },
 ];
 
 /* ─── Inner component (uses useSearchParams) ─────────────────────────── */
@@ -32,11 +32,16 @@ function ReservationsInner() {
   const searchParams = useSearchParams();
 
   /* ── State ── */
-  const [reservations,      setReservations]      = useState<Reservation[]>([]);
-  const [loading,           setLoading]           = useState(true);
-  const [refreshing,        setRefreshing]        = useState(false);
-  const [activeFilter,      setActiveFilter]      = useState<FilterTab>("all");
+  const [reservations,        setReservations]        = useState<Reservation[]>([]);
+  const [loading,             setLoading]             = useState(true);
+  const [refreshing,          setRefreshing]          = useState(false);
+  const [activeFilter,        setActiveFilter]        = useState<FilterTab>("all");
   const [checkoutReservation, setCheckoutReservation] = useState<Reservation | null>(null);
+  /**
+   * true quand on arrive via ?pay=ID depuis le CheckoutModalItineraire
+   * → on ouvre directement l'étape 3 (Paiement) sans passer par les étapes 1-2
+   */
+  const [autoStart, setAutoStart] = useState(false);
 
   /* ── Charger les réservations ── */
   const fetchReservations = useCallback(async (silent = false) => {
@@ -69,13 +74,15 @@ function ReservationsInner() {
 
   useEffect(() => { fetchReservations(); }, [fetchReservations]);
 
-  /* ── Auto-ouvrir si ?pay=<reservation_id> présent (Option A) ── */
+  /* ── Auto-ouvrir si ?pay=<reservation_id> présent ── */
   useEffect(() => {
     const payId = searchParams.get("pay");
     if (!payId || reservations.length === 0) return;
 
     const target = reservations.find(r => r.id === payId);
     if (target && target.payment_status !== "paid" && target.status !== "cancelled") {
+      // Vient d'un itinéraire → démarrer directement à l'étape paiement (step 3)
+      setAutoStart(true);
       setCheckoutReservation(target);
       // Nettoyer l'URL sans recharger la page
       router.replace("/touriste/reservations", { scroll: false });
@@ -97,11 +104,20 @@ function ReservationsInner() {
   };
 
   /* ── Callbacks ── */
-  const handlePay = (r: Reservation) => setCheckoutReservation(r);
+  const handlePay = (r: Reservation) => {
+    setAutoStart(false);  // ouverture manuelle → pas d'autoStart
+    setCheckoutReservation(r);
+  };
 
-  const handlePaid = (id: string) => {
+  const handlePaid = (_id: string) => {
     setCheckoutReservation(null);
+    setAutoStart(false);
     fetchReservations(true);
+  };
+
+  const handleClose = () => {
+    setCheckoutReservation(null);
+    setAutoStart(false);
   };
 
   const handleExpired = (id: string) => {
@@ -202,8 +218,12 @@ function ReservationsInner() {
       {checkoutReservation && (
         <CheckoutModal
           reservation={checkoutReservation}
-          autoStart={false}
-          onClose={() => setCheckoutReservation(null)}
+          /**
+           * autoStart=true si on arrive depuis ?pay=ID (itinéraire)
+           * → ouvre directement l'étape 3 sans récapitulatif ni besoins spéciaux
+           */
+          autoStart={autoStart}
+          onClose={handleClose}
           onPaid={handlePaid}
         />
       )}

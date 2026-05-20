@@ -9,7 +9,7 @@ import {
   ShieldCheck, RefreshCcw, Lock, Loader2, CheckCircle,
   AlertCircle, ChevronLeft, ChevronRight, MessageSquare,
   Route, Calendar, Coins, Flag, Sunrise, Sun, Moon,
-  CalendarDays, Sparkles, CreditCard,
+  CalendarDays, Sparkles, CreditCard, Trash2,
 } from "lucide-react";
 
 /* ─── Types ──────────────────────────────────────────────────────────── */
@@ -43,11 +43,6 @@ interface Props {
   itineraireId?: string;
   itineraireTitle?: string;
   onClose?: () => void;
-  /**
-   * Appelé après succès si le parent veut gérer l'ouverture du
-   * CheckoutModal Stripe en inline (Option B).
-   * Si non fourni, on redirige vers /touriste/reservations?pay=ID (Option A).
-   */
   onPayNow?: (reservationId: string) => void;
 }
 
@@ -99,6 +94,22 @@ function buildDateMap(exc: ExcursionForCheckout): Map<string, TimeSlot[]> {
   return map;
 }
 
+/**
+ * Vérifie si une excursion a au moins un créneau disponible dans le futur
+ */
+function excursionHasAvailableSlots(exc: ExcursionForCheckout): boolean {
+  if (!exc.available_dates || !Array.isArray(exc.available_dates)) return false;
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  return exc.available_dates.some(item => {
+    if (!item.date) return false;
+    const dt = new Date(item.date); dt.setHours(0, 0, 0, 0);
+    if (dt < today) return false;
+    const slots = item.slots ?? item.available_slots ?? null;
+    // null/undefined = pas de limite = disponible
+    return slots === null || slots === undefined || Number(slots) > 0;
+  });
+}
+
 function findBestSlot(slots: TimeSlot[], planTime?: string): TimeSlot | null {
   if (!slots.length) return null;
   const available = slots.filter(s => s.slots > 0);
@@ -132,8 +143,6 @@ function getFirstAvailableDate(dateMap: Map<string, TimeSlot[]>): string {
     return dt >= today && (dateMap.get(d) || []).some(s => s.slots > 0);
   }) || "";
 }
-
-/* ─── Validation ─────────────────────────────────────────────────────── */
 
 function isTimeInPast(date: string, time: string): boolean {
   return new Date(`${date}T${time}:00`) < new Date();
@@ -173,7 +182,6 @@ const CSS = `
     animation:cmiUp .32s cubic-bezier(.34,1.4,.64,1);
   }
 
-  /* LEFT */
   .cmi-left {
     width:360px;flex-shrink:0;
     background:linear-gradient(168deg,#071E3D 0%,#0B3D63 45%,#0A6080 100%);
@@ -198,7 +206,6 @@ const CSS = `
     pointer-events:none;
   }
 
-  /* RIGHT */
   .cmi-right{flex:1;display:flex;flex-direction:column;overflow:hidden;background:#FAFBFC;}
   .cmi-right-scroll{
     flex:1;overflow-y:auto;padding:26px 26px 0;
@@ -208,7 +215,6 @@ const CSS = `
   .cmi-right-scroll::-webkit-scrollbar-thumb{background:#E5E7EB;border-radius:4px}
   .cmi-right-footer{padding:18px 26px 22px;border-top:1px solid #EAECEF;background:#FAFBFC;}
 
-  /* Tabs */
   .exc-tab{
     border-radius:12px;padding:10px 13px;cursor:pointer;
     display:flex;align-items:center;gap:9px;border:1px solid transparent;transition:all .16s;
@@ -217,6 +223,7 @@ const CSS = `
   }
   .exc-tab.active{background:rgba(255,255,255,.14);border-color:rgba(255,255,255,.28);color:white;box-shadow:0 4px 16px rgba(0,0,0,.18);}
   .exc-tab:hover:not(.active){background:rgba(255,255,255,.09);color:rgba(255,255,255,.85);}
+  .exc-tab.unavailable{opacity:.45;cursor:not-allowed;}
   .exc-tab-num{
     width:22px;height:22px;border-radius:50%;flex-shrink:0;
     display:flex;align-items:center;justify-content:center;
@@ -225,8 +232,8 @@ const CSS = `
   }
   .exc-tab.active .exc-tab-num{background:#2B96A8;color:white;}
   .exc-tab.done .exc-tab-num{background:#059669;color:white;}
+  .exc-tab.unavailable .exc-tab-num{background:rgba(239,68,68,.4);color:white;}
 
-  /* Calendar */
   .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;}
   .cal-day{
     aspect-ratio:1;border-radius:9px;border:none;
@@ -248,7 +255,6 @@ const CSS = `
   .cal-day.today::after{content:'';position:absolute;bottom:2px;width:4px;height:4px;border-radius:50%;background:rgba(255,255,255,.6);}
   .cal-dot{width:4px;height:4px;border-radius:50%;background:#34D399;flex-shrink:0;}
 
-  /* Slots */
   .slot-pill{
     display:flex;align-items:center;justify-content:space-between;
     padding:12px 15px;border-radius:14px;border:1.5px solid #E5E7EB;background:white;
@@ -258,7 +264,6 @@ const CSS = `
   .slot-pill.full{opacity:.5;cursor:not-allowed;border-color:#FEE2E2;}
   .slot-pill:not(.full):not(.sel):hover{border-color:#2B96A8;background:#F8FDFE;}
 
-  /* Counter */
   .cmi-counter-btn{
     width:36px;height:36px;border:none;border-radius:10px;background:#F3F4F6;cursor:pointer;
     display:flex;align-items:center;justify-content:center;transition:all .14s;
@@ -266,7 +271,6 @@ const CSS = `
   .cmi-counter-btn:hover:not(:disabled){background:#E5E7EB;}
   .cmi-counter-btn:disabled{opacity:.3;cursor:not-allowed;}
 
-  /* CTA */
   .cmi-cta{
     width:100%;padding:15px;border:none;border-radius:14px;
     font-size:15px;font-weight:800;cursor:pointer;
@@ -280,10 +284,8 @@ const CSS = `
   .cmi-cta.green{background:linear-gradient(135deg,#059669,#047857);color:white;box-shadow:0 4px 18px rgba(5,150,105,.3);}
   .cmi-cta.green:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(5,150,105,.4);}
 
-  /* Progress */
   .prog-step{height:3px;border-radius:3px;flex:1;transition:background .3s;}
 
-  /* Badges */
   .sugg-badge{
     display:inline-flex;align-items:center;gap:5px;
     background:rgba(52,211,153,.15);border:1px solid rgba(52,211,153,.3);
@@ -296,6 +298,15 @@ const CSS = `
     cursor:pointer;transition:all .15s;
   }
   .date-chip:hover{background:rgba(43,150,168,.2);border-color:#2B96A8;}
+
+  /* Badge "Pas de créneau" */
+  .no-slot-banner {
+    display:flex;align-items:center;gap:10px;
+    padding:12px 14px;
+    background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);
+    border-radius:12px;margin-bottom:12px;
+    font-size:12px;font-weight:600;color:#DC2626;
+  }
 
   .cmi-textarea{
     width:100%;padding:10px 13px;min-height:60px;
@@ -474,10 +485,25 @@ function SlotList({ slots, selected, onSelect }: {
 /* ─── Main Component ─────────────────────────────────────────────────── */
 
 export default function CheckoutModalItineraire({
-  excursions, itineraireId: propItinId, itineraireTitle, onClose, onPayNow,
+  excursions: rawExcursions, itineraireId: propItinId, itineraireTitle, onClose, onPayNow,
 }: Props) {
   const supabase = createClient();
   const router   = useRouter();
+
+  // ── Séparer les excursions disponibles / sans créneau ──────────────
+  const { available: excursions, unavailable: unavailableExcursions } = (() => {
+    const available:   ExcursionForCheckout[] = [];
+    const unavailable: ExcursionForCheckout[] = [];
+    rawExcursions.forEach(e => {
+      if (excursionHasAvailableSlots(e)) available.push(e);
+      else unavailable.push(e);
+    });
+    return { available, unavailable };
+  })();
+
+  // ── Cas : aucune excursion disponible ──────────────────────────────
+  const [showNoSlotWarning, setShowNoSlotWarning] = useState(unavailableExcursions.length > 0);
+  const [confirmedContinue, setConfirmedContinue] = useState(unavailableExcursions.length === 0);
 
   /* ── Per-excursion state ── */
   const [perExc, setPerExc] = useState(() =>
@@ -510,38 +536,35 @@ export default function CheckoutModalItineraire({
     })
   );
 
-  const [activeIdx,          setActiveIdx]          = useState(0);
-  const [status,             setStatus]             = useState<"idle" | "loading" | "success" | "error">("idle");
-  const [errorMsg,           setErrorMsg]           = useState("");
-  const [bookingCodes,       setBookingCodes]       = useState<string[]>([]);
-  const [savedItinId,        setSavedItinId]        = useState<string | null>(null);
+  const [activeIdx,           setActiveIdx]           = useState(0);
+  const [status,              setStatus]              = useState<"idle" | "loading" | "success" | "error">("idle");
+  const [errorMsg,            setErrorMsg]            = useState("");
+  const [bookingCodes,        setBookingCodes]        = useState<string[]>([]);
+  const [savedItinId,         setSavedItinId]         = useState<string | null>(null);
   const [savedReservationIds, setSavedReservationIds] = useState<string[]>([]);
 
   const patch = useCallback((idx: number, p: Partial<typeof perExc[0]>) =>
     setPerExc(prev => prev.map((x, i) => i === idx ? { ...x, ...p } : x)), []);
 
-  const cur          = perExc[activeIdx];
-  const slotsForDate = cur.selectedDate ? (cur.dateMap.get(cur.selectedDate) || []) : [];
-  const maxPeople    = cur.selectedSlot?.slots || cur.exc.max_people || 20;
-  const curPrice     = cur.selectedSlot?.price || cur.exc.price_per_person || 0;
-  const curTotal     = curPrice * cur.people;
+  const cur          = perExc[activeIdx] ?? perExc[0];
+  const slotsForDate = cur?.selectedDate ? (cur.dateMap.get(cur.selectedDate) || []) : [];
+  const maxPeople    = cur?.selectedSlot?.slots || cur?.exc?.max_people || 20;
+  const curPrice     = cur?.selectedSlot?.price || cur?.exc?.price_per_person || 0;
+  const curTotal     = curPrice * (cur?.people || 1);
 
   const configuredCount = perExc.filter(p => !!p.selectedSlot).length;
   const subtotal        = perExc.reduce((s, p) => s + (p.selectedSlot?.price || 0) * p.people, 0);
   const platFee         = Math.round(subtotal * .1);
   const grandTotal      = subtotal + platFee;
   const isLoading       = status === "loading";
-  const canSubmit       = perExc.some(p => !!p.selectedSlot) && !isLoading;
+  const canSubmit       = perExc.some(p => !!p.selectedSlot) && !isLoading && confirmedContinue;
 
-  /* ── Redirection vers paiement (Option A) ── */
   const handleGoToPay = (reservationIds: string[]) => {
     if (!reservationIds.length) return;
     if (onPayNow) {
-      // Option B : parent gère l'ouverture inline
       onClose?.();
       onPayNow(reservationIds[0]);
     } else {
-      // Option A : redirection page réservations
       onClose?.();
       router.push(`/touriste/reservations?pay=${reservationIds[0]}`);
     }
@@ -583,13 +606,11 @@ export default function CheckoutModalItineraire({
       for (const p of perExc) {
         if (!p.selectedSlot) continue;
 
-        /* Validation 1 — passé */
         if (isTimeInPast(p.selectedDate, p.selectedSlot.time)) {
           setErrorMsg(`❌ Date/heure déjà passée (${p.selectedDate} à ${p.selectedSlot.time}).`);
           setStatus("error"); return;
         }
 
-        /* Validation 2 — déjà réservé */
         const { data: existing, error: checkErr } = await supabase
           .from("reservations").select("id")
           .eq("touriste_id", user.id).eq("excursion_id", p.exc.id).eq("date", p.selectedDate)
@@ -597,7 +618,6 @@ export default function CheckoutModalItineraire({
         if (checkErr) { setErrorMsg(`Erreur : ${checkErr.message}`); setStatus("error"); return; }
         if (existing) { setErrorMsg(`Réservation existante pour "${p.exc.title}".`); setStatus("error"); return; }
 
-        /* Validation 3 — chevauchement */
         const { data: conflicting, error: conflictErr } = await supabase
           .from("reservations")
           .select("id,excursion_id,date,time,excursions(duration_hours)")
@@ -614,24 +634,23 @@ export default function CheckoutModalItineraire({
           }
         }
 
-        /* Insert réservation — on récupère l'ID */
         const code  = genBookingCode();
         const tot   = p.selectedSlot.price * p.people;
         const fee   = Math.round(tot * .1);
         const { data: inserted, error: insErr } = await supabase
           .from("reservations")
           .insert([{
-            touriste_id:  user.id,
-            excursion_id: p.exc.id,
-            itineraire_id: itineraireId,
-            date:          p.selectedDate,
-            time:          p.selectedSlot.time,
-            people_count:  p.people,
-            total_price:   tot + fee,
-            platform_fee:  fee,
-            status:        "pending",
-            special_needs: p.specialNeeds.trim() || null,
-            booking_code:  code,
+            touriste_id:    user.id,
+            excursion_id:   p.exc.id,
+            itineraire_id:  itineraireId,
+            date:           p.selectedDate,
+            time:           p.selectedSlot.time,
+            people_count:   p.people,
+            total_price:    tot + fee,
+            platform_fee:   fee,
+            status:         "pending",
+            special_needs:  p.specialNeeds.trim() || null,
+            booking_code:   code,
             payment_status: "unpaid",
             payment_method: null,
             special_notes:  null,
@@ -643,6 +662,17 @@ export default function CheckoutModalItineraire({
           setErrorMsg(`Erreur insertion : ${insErr?.message ?? "inconnue"}`);
           setStatus("error"); return;
         }
+
+        // Enregistrer dans itineraire_reservations
+        await supabase.from("itineraire_reservations").insert([{
+          itineraire_id:  itineraireId,
+          reservation_id: inserted.id,
+          excursion_id:   p.exc.id,
+          day_number:     p.exc.plan_day || 1,
+          plan_time:      p.exc.plan_time || null,
+          plan_date:      p.exc.plan_date || null,
+          payment_status: "unpaid",
+        }]);
 
         await supabase.rpc("decrement_slot", { exc_id: p.exc.id, date_str: p.selectedDate, qty: p.people });
         codes.push(code);
@@ -659,6 +689,110 @@ export default function CheckoutModalItineraire({
     }
   };
 
+  /* ══ ÉCRAN D'AVERTISSEMENT : excursions sans créneau ════════════════ */
+
+  if (showNoSlotWarning && !confirmedContinue) {
+    const allUnavailable = excursions.length === 0;
+    return (
+      <>
+        <style>{CSS}</style>
+        <div className="cmi-overlay" onClick={e => { if (e.target === e.currentTarget) onClose?.(); }}>
+          <div className="cmi-shell" style={{ maxWidth: 560, display: "block", padding: "40px 36px", background: "white" }}>
+
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 24 }}>
+              <h2 style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 22, fontWeight: 700, color: "#111827", margin: 0 }}>
+                Vérification des disponibilités
+              </h2>
+              <button onClick={() => onClose?.()} style={{ width: 32, height: 32, borderRadius: "50%", border: "none", background: "#F3F4F6", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <X size={15} color="#9CA3AF" />
+              </button>
+            </div>
+
+            {/* Excursions sans créneau */}
+            <div style={{ marginBottom: 20 }}>
+              <p style={{ fontSize: 13, fontWeight: 700, color: "#DC2626", marginBottom: 10, display: "flex", alignItems: "center", gap: 6 }}>
+                <AlertCircle size={14} /> {unavailableExcursions.length} excursion{unavailableExcursions.length > 1 ? "s" : ""} sans créneau disponible
+              </p>
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                {unavailableExcursions.map(e => (
+                  <div key={e.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", background: "#FEF2F2", border: "1px solid #FCA5A5", borderRadius: 12 }}>
+                    <Trash2 size={14} color="#EF4444" style={{ flexShrink: 0 }} />
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <p style={{ fontSize: 13, fontWeight: 700, color: "#111827", margin: "0 0 2px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        {sanitizeText(e.title)}
+                      </p>
+                      <p style={{ fontSize: 11, color: "#9CA3AF", margin: 0, display: "flex", alignItems: "center", gap: 4 }}>
+                        <MapPin size={9} />{e.city}
+                        {e.plan_day && <><span>·</span>Jour {e.plan_day}</>}
+                      </p>
+                    </div>
+                    <span style={{ fontSize: 10, fontWeight: 800, background: "#FEE2E2", color: "#DC2626", padding: "3px 8px", borderRadius: 10, flexShrink: 0 }}>
+                      Aucun créneau
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Excursions disponibles */}
+            {excursions.length > 0 && (
+              <div style={{ marginBottom: 22 }}>
+                <p style={{ fontSize: 13, fontWeight: 700, color: "#059669", marginBottom: 10, display: "flex", alignItems: "center", gap: 6 }}>
+                  <CheckCircle size={14} /> {excursions.length} excursion{excursions.length > 1 ? "s" : ""} disponible{excursions.length > 1 ? "s" : ""}
+                </p>
+                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                  {excursions.map(e => (
+                    <div key={e.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", background: "#F0FDF4", border: "1px solid #BBF7D0", borderRadius: 12 }}>
+                      <Check size={14} color="#059669" style={{ flexShrink: 0 }} />
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <p style={{ fontSize: 12, fontWeight: 600, color: "#111827", margin: "0 0 2px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                          {sanitizeText(e.title)}
+                        </p>
+                        <p style={{ fontSize: 11, color: "#9CA3AF", margin: 0, display: "flex", alignItems: "center", gap: 4 }}>
+                          <MapPin size={9} />{e.city}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Info */}
+            <div style={{ background: "#FFFBEB", border: "1px solid #FDE68A", borderRadius: 12, padding: "12px 14px", marginBottom: 22 }}>
+              <p style={{ fontSize: 12, color: "#92400E", margin: 0 }}>
+                {allUnavailable
+                  ? "⚠️ Aucune excursion de votre itinéraire n'est disponible actuellement. Contactez les prestataires ou modifiez votre itinéraire."
+                  : `⚠️ Les ${unavailableExcursions.length} excursion${unavailableExcursions.length > 1 ? "s" : ""} sans créneau seront retirée${unavailableExcursions.length > 1 ? "s" : ""} du paiement. Vous pourrez les réserver ultérieurement.`
+                }
+              </p>
+            </div>
+
+            {/* Boutons */}
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              {!allUnavailable && (
+                <button
+                  className="cmi-cta on"
+                  onClick={() => { setShowNoSlotWarning(false); setConfirmedContinue(true); }}
+                >
+                  <Route size={15} />
+                  Continuer avec {excursions.length} excursion{excursions.length > 1 ? "s" : ""}
+                </button>
+              )}
+              <button
+                className="cmi-cta"
+                style={{ background: "#F3F4F6", color: "#374151", fontSize: 13 }}
+                onClick={() => onClose?.()}
+              >
+                Annuler
+              </button>
+            </div>
+          </div>
+        </div>
+      </>
+    );
+  }
+
   /* ══ SUCCESS SCREEN ══════════════════════════════════════════════════ */
 
   if (status === "success") {
@@ -669,7 +803,6 @@ export default function CheckoutModalItineraire({
         <div className="cmi-overlay" onClick={e => { if (e.target === e.currentTarget) onClose?.(); }}>
           <div className="cmi-shell" style={{ maxWidth: 520, display: "block", padding: "44px 40px", textAlign: "center", background: "white" }}>
 
-            {/* Icône succès */}
             <div style={{
               width: 80, height: 80, borderRadius: "50%",
               background: "linear-gradient(135deg,#D1FAE5,#A7F3D0)",
@@ -688,7 +821,6 @@ export default function CheckoutModalItineraire({
               {confirmed.length} excursion{confirmed.length > 1 ? "s" : ""} confirmée{confirmed.length > 1 ? "s" : ""}
             </p>
 
-            {/* Badge itinéraire */}
             {savedItinId && (
               <div style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "linear-gradient(135deg,#EFF9FB,#D0F0F5)", border: "1px solid rgba(43,150,168,.3)", borderRadius: 10, padding: "8px 14px", marginBottom: 22, fontSize: 12 }}>
                 <Route size={13} color="#2B96A8" />
@@ -697,7 +829,6 @@ export default function CheckoutModalItineraire({
               </div>
             )}
 
-            {/* Cartes réservations */}
             <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 20 }}>
               {confirmed.map((p, i) => (
                 <div key={i} style={{ background: "linear-gradient(135deg,#EFF9FB,#E0F5FA)", border: "1px solid rgba(43,150,168,.2)", borderRadius: 14, padding: "13px 16px", textAlign: "left" }}>
@@ -731,16 +862,13 @@ export default function CheckoutModalItineraire({
               ))}
             </div>
 
-            {/* Bandeau info paiement */}
             <div style={{ background: "#FFFBEB", border: "1px solid #FDE68A", borderRadius: 12, padding: "12px 16px", marginBottom: 20 }}>
               <p style={{ fontSize: 12, color: "#92400E", fontWeight: 600, margin: 0 }}>
                 💳 Finalisez le paiement pour confirmer vos places.
               </p>
             </div>
 
-            {/* Boutons */}
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-              {/* Payer maintenant */}
               {savedReservationIds.length > 0 && (
                 <button
                   className="cmi-cta green"
@@ -749,8 +877,6 @@ export default function CheckoutModalItineraire({
                   <CreditCard size={15} /> Payer maintenant
                 </button>
               )}
-
-              {/* Fermer / plus tard */}
               <button
                 className="cmi-cta"
                 style={{ background: "#F3F4F6", color: "#374151", fontSize: 13 }}
@@ -765,7 +891,32 @@ export default function CheckoutModalItineraire({
     );
   }
 
+  // Si aucune excursion disponible et on a passé l'écran d'avertissement
+  if (excursions.length === 0) {
+    return (
+      <>
+        <style>{CSS}</style>
+        <div className="cmi-overlay" onClick={e => { if (e.target === e.currentTarget) onClose?.(); }}>
+          <div className="cmi-shell" style={{ maxWidth: 480, display: "block", padding: "44px 36px", textAlign: "center", background: "white" }}>
+            <AlertCircle size={52} color="#EF4444" style={{ margin: "0 auto 16px" }} />
+            <h2 style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 22, fontWeight: 700, color: "#111827", marginBottom: 8 }}>
+              Aucune excursion disponible
+            </h2>
+            <p style={{ fontSize: 13, color: "#6B7280", marginBottom: 24 }}>
+              Toutes les excursions de cet itinéraire n'ont pas de créneaux disponibles pour le moment.
+            </p>
+            <button className="cmi-cta on" onClick={() => onClose?.()}>
+              Fermer
+            </button>
+          </div>
+        </div>
+      </>
+    );
+  }
+
   /* ══ MAIN MODAL ══════════════════════════════════════════════════════ */
+
+  if (!cur) return null;
 
   return (
     <>
@@ -791,6 +942,15 @@ export default function CheckoutModalItineraire({
                 <p style={{ fontSize: 11, color: "rgba(255,255,255,.5)", margin: 0 }}>
                   {configuredCount}/{excursions.length} créneau{configuredCount > 1 ? "x" : ""} configuré{configuredCount > 1 ? "s" : ""}
                 </p>
+                {/* Avertissement excursions retirées */}
+                {unavailableExcursions.length > 0 && (
+                  <div style={{ marginTop: 10, padding: "8px 10px", background: "rgba(239,68,68,.12)", border: "1px solid rgba(239,68,68,.25)", borderRadius: 10 }}>
+                    <p style={{ fontSize: 10, color: "#FCA5A5", margin: 0, display: "flex", alignItems: "center", gap: 5 }}>
+                      <AlertCircle size={10} />
+                      {unavailableExcursions.length} excursion{unavailableExcursions.length > 1 ? "s" : ""} retirée{unavailableExcursions.length > 1 ? "s" : ""} (pas de créneau)
+                    </p>
+                  </div>
+                )}
               </div>
 
               {/* Progress */}
@@ -894,7 +1054,6 @@ export default function CheckoutModalItineraire({
           <div className="cmi-right">
             <div className="cmi-right-scroll">
 
-              {/* Header */}
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 20 }}>
                 <div>
                   <h3 style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 20, fontWeight: 700, color: "#111827", margin: "0 0 3px" }}>
@@ -921,14 +1080,12 @@ export default function CheckoutModalItineraire({
                 </button>
               </div>
 
-              {/* Error */}
               {status === "error" && (
                 <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "11px 14px", background: "#FEF2F2", border: "1px solid #FCA5A5", borderRadius: 10, marginBottom: 16, fontSize: 13, color: "#DC2626", fontWeight: 600 }}>
                   <AlertCircle size={14} />{errorMsg}
                 </div>
               )}
 
-              {/* Slots */}
               {!cur.selectedDate ? (
                 <div style={{ textAlign: "center", padding: "36px 20px", background: "#F9FAFB", borderRadius: 16, border: "1.5px dashed #E5E7EB", marginBottom: 18 }}>
                   <CalendarDays size={28} color="#D1D5DB" style={{ margin: "0 auto 10px" }} />
@@ -953,7 +1110,6 @@ export default function CheckoutModalItineraire({
                 </div>
               )}
 
-              {/* People counter */}
               {cur.selectedSlot && (
                 <div style={{ marginBottom: 18 }}>
                   <p style={{ fontSize: 11, fontWeight: 700, color: "#374151", marginBottom: 10, display: "flex", alignItems: "center", gap: 5, textTransform: "uppercase", letterSpacing: ".5px" }}>
@@ -975,7 +1131,6 @@ export default function CheckoutModalItineraire({
                 </div>
               )}
 
-              {/* Navigation */}
               <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
                 {activeIdx > 0 && (
                   <button onClick={() => setActiveIdx(activeIdx - 1)}
@@ -991,7 +1146,6 @@ export default function CheckoutModalItineraire({
                 )}
               </div>
 
-              {/* Special needs */}
               <div style={{ marginBottom: 8 }}>
                 <label style={{ fontSize: 11, fontWeight: 700, color: "#374151", display: "flex", alignItems: "center", gap: 5, marginBottom: 6, textTransform: "uppercase", letterSpacing: ".5px" }}>
                   <MessageSquare size={11} color="#2B96A8" />
@@ -1030,8 +1184,8 @@ export default function CheckoutModalItineraire({
 
               <div style={{ display: "flex", justifyContent: "center", gap: 20, marginTop: 12, flexWrap: "wrap" }}>
                 {[
-                  { icon: <Lock size={10} color="#059669" />,      text: "Paiement sécurisé" },
-                  { icon: <RefreshCcw size={10} color="#2563EB" />, text: "Annulation 24h" },
+                  { icon: <Lock size={10} color="#059669" />,       text: "Paiement sécurisé" },
+                  { icon: <RefreshCcw size={10} color="#2563EB" />,  text: "Annulation 24h" },
                   { icon: <ShieldCheck size={10} color="#8B5CF6" />, text: "Confirmé instantanément" },
                 ].map(g => (
                   <span key={g.text} style={{ fontSize: 11, color: "#9CA3AF", display: "flex", alignItems: "center", gap: 4 }}>
