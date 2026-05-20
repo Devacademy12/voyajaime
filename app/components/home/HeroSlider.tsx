@@ -542,12 +542,21 @@ export default function HomeSlider() {
 
             {/* Overlays modernes */}
             <div style={{ 
+<<<<<<< HEAD
               position:"absolute", inset:0, 
               background: "linear-gradient(110deg, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.5) 40%, rgba(0,0,0,0.2) 70%, rgba(0,0,0,0.4) 100%)" 
             }}/>
             <div style={{ 
               position:"absolute", inset:0, 
               background: "linear-gradient(to top, rgba(0,0,0,0.8) 0%, transparent 50%)" 
+=======
+              position:"absolute", 
+              background: "linear-gradient(100deg, rgba(0,0,0,.85) 0%, rgba(0,0,0,.45) 45%, rgba(0,0,0,.15) 100%)" 
+            }}/>
+            <div style={{ 
+              position:"absolute", inset:0,
+              background: "linear-gradient(to top, rgba(0,0,0,.7) 0%, transparent 60%)" 
+>>>>>>> f336edeeae167299aa0254821cdd2d1c999ebb87
             }}/>
             
             {/* Subtle pattern overlay */}

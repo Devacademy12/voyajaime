@@ -230,7 +230,7 @@ function ImageUploader({
   return (
     <div>
       <label className="field-label">
-        <Image size={15} style={{ display: "inline", marginRight: 4 }} />
+        <Image size={11} style={{ display: "inline", marginRight: 4 }} />
         Image de couverture
       </label>
       <div style={{ display: "flex", gap: 6, marginBottom: 10 }}>
