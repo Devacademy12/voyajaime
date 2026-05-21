@@ -9,6 +9,7 @@ import {
   Moon, Loader2, AlertCircle, FileText, ShoppingCart,
   Bot, PenLine, Image as ImageIcon, ExternalLink,
   Calendar, Flag, Users, Star, ArrowRight, CreditCard,
+  CheckCircle2, BanknoteIcon,
 } from "lucide-react";
 import CheckoutModalItineraire from "@/app/components/itineraire/Checkoutmodalitineraire";
 
@@ -58,7 +59,6 @@ type ExcursionForCheckout = {
   plan_day?: number;
 };
 
-// réservation en attente liée à cet itinéraire
 type PendingReservation = {
   id: string;
   excursion_id: string;
@@ -150,7 +150,6 @@ const RESPONSIVE_CSS = `
     width: 100%;
   }
 
-  /* ── Itinerary card ── */
   .it-card {
     animation: fadeUp .28s cubic-bezier(.16,1,.3,1) both;
     background: #ffffff;
@@ -175,7 +174,7 @@ const RESPONSIVE_CSS = `
 
   .it-btn { transition: all .15s; cursor: pointer; font-family: inherit; border: none; outline: none; }
 
-  /* Bouton Réserver (état initial) */
+  /* Bouton Réserver */
   .it-reserve-all-btn {
     display: inline-flex; align-items: center; gap: 6px;
     padding: 9px 18px;
@@ -189,7 +188,7 @@ const RESPONSIVE_CSS = `
   .it-reserve-all-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 18px rgba(43,150,168,.45); }
   .it-reserve-all-btn:disabled { background: #E5E7EB; color: #9CA3AF; cursor: not-allowed; transform: none; box-shadow: none; }
 
-  /* Bouton Payer (état après réservation) */
+  /* Bouton Payer */
   .it-pay-btn {
     display: inline-flex; align-items: center; gap: 6px;
     padding: 9px 18px;
@@ -204,7 +203,17 @@ const RESPONSIVE_CSS = `
   .it-pay-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 18px rgba(5,150,105,.5); }
   .it-pay-btn:disabled { background: #E5E7EB; color: #9CA3AF; cursor: not-allowed; transform: none; box-shadow: none; }
 
-  /* ── Day section ── */
+  /* Badge "Tout payé" — non cliquable */
+  .it-paid-badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 9px 18px;
+    background: #F0FDF4;
+    color: #059669; border: 1.5px solid #86EFAC; border-radius: 22px;
+    font-size: 12px; font-weight: 800;
+    flex-shrink: 0; white-space: nowrap;
+    cursor: default;
+  }
+
   .it-day-section {
     animation: slideDown .22s ease both;
     margin-bottom: 28px;
@@ -218,7 +227,6 @@ const RESPONSIVE_CSS = `
     border-left: 4px solid #2B96A8;
   }
 
-  /* ── Excursion card ── */
   .exc-card {
     display: flex;
     gap: 0;
@@ -357,7 +365,6 @@ const RESPONSIVE_CSS = `
     margin-bottom: 32px;
   }
 
-  /* ── Mobile ── */
   @media (max-width: 768px) {
     .it-wrap { padding: 16px 14px 60px; }
     .it-card-header { padding: 14px 16px; flex-wrap: wrap; }
@@ -382,7 +389,7 @@ const RESPONSIVE_CSS = `
       font-size: 11px !important;
       padding: 7px 12px !important;
     }
-    .it-reserve-all-btn, .it-pay-btn { width: 100%; justify-content: center; }
+    .it-reserve-all-btn, .it-pay-btn, .it-paid-badge { width: 100%; justify-content: center; }
   }
 `;
 
@@ -402,8 +409,10 @@ export default function ItinerairesClient() {
   const [excDetails, setExcDetails] = useState<Record<string, any>>({});
   const [titleToId,  setTitleToId]  = useState<Record<string, string>>({});
 
-  // Map itineraireId → réservations en attente de paiement
-  const [pendingByItineraireId, setPendingByItineraireId] = useState<Record<string, PendingReservation[]>>({});
+  // Map itineraireId → réservations groupées par statut
+  const [resByItinId, setResByItinId] = useState<
+    Record<string, { pending: PendingReservation[]; paid: PendingReservation[] }>
+  >({});
 
   const [checkoutItineraire, setCheckoutItineraire] = useState<{
     excursions: ExcursionForCheckout[];
@@ -435,32 +444,37 @@ export default function ItinerairesClient() {
       const itineraires: Itineraire[] = data || [];
       setItems(itineraires);
 
-      // ── Charger les réservations pending liées à ces itinéraires ──
+      // ── Charger toutes les réservations liées (pending ET paid)
       if (itineraires.length > 0) {
         const itinIds = itineraires.map(i => i.id);
-        const { data: pendingRows } = await sb
+        const { data: resRows } = await sb
           .from("reservations")
           .select("id, excursion_id, payment_status, status, itineraire_id")
           .eq("touriste_id", user.id)
           .in("itineraire_id", itinIds)
-          .eq("status", "pending")
-          .neq("payment_status", "paid");
+          .neq("status", "cancelled");
 
-        if (pendingRows && pendingRows.length > 0) {
-          const map: Record<string, PendingReservation[]> = {};
-          pendingRows.forEach((r: any) => {
-            if (!map[r.itineraire_id]) map[r.itineraire_id] = [];
-            map[r.itineraire_id].push({
+        if (resRows && resRows.length > 0) {
+          const map: Record<string, { pending: PendingReservation[]; paid: PendingReservation[] }> = {};
+          resRows.forEach((r: any) => {
+            if (!map[r.itineraire_id]) map[r.itineraire_id] = { pending: [], paid: [] };
+            const obj: PendingReservation = {
               id: r.id,
               excursion_id: r.excursion_id,
               payment_status: r.payment_status,
               status: r.status,
-            });
+            };
+            if (r.payment_status === "paid") {
+              map[r.itineraire_id].paid.push(obj);
+            } else if (r.status === "pending") {
+              map[r.itineraire_id].pending.push(obj);
+            }
           });
-          setPendingByItineraireId(map);
+          setResByItinId(map);
         }
       }
 
+      // ── Charger les photos / détails des excursions ──
       const candidateIds = new Set<string>();
       const planCities   = new Set<string>();
 
@@ -589,8 +603,31 @@ export default function ItinerairesClient() {
   const fmt = (iso: string) => new Date(iso).toLocaleDateString("fr-FR", { day: "2-digit", month: "short", year: "numeric" });
   const isAssisted = (raw: RawPlan) => !!raw && !Array.isArray(raw) && typeof raw === "object" && "days" in raw;
 
+  // ── Détermine l'état de paiement d'un itinéraire ──────────────────────────
+  // "paid"    → toutes les réservations actives sont payées
+  // "partial" → certaines payées, d'autres en attente
+  // "pending" → réservations en attente de paiement, aucune payée
+  // "none"    → aucune réservation
+  const getItinPayState = (itinId: string): "paid" | "partial" | "pending" | "none" => {
+    const res = resByItinId[itinId];
+    if (!res) return "none";
+    const hasPaid    = res.paid.length > 0;
+    const hasPending = res.pending.length > 0;
+    if (hasPaid && !hasPending) return "paid";
+    if (hasPaid && hasPending)  return "partial";
+    if (!hasPaid && hasPending) return "pending";
+    return "none";
+  };
+
   // ── Checkout ──────────────────────────────────────────────────────────────
   const openItineraryCheckout = async (it: Itineraire) => {
+    // ── GARDE : vérifier si l'itinéraire est déjà entièrement payé ──
+    const payState = getItinPayState(it.id);
+    if (payState === "paid") {
+      alert("Cet itinéraire est déjà entièrement payé. Vous pouvez consulter vos réservations.");
+      return;
+    }
+
     setLoadingItinId(it.id);
     try {
       const plan = normalizePlan(it.plan);
@@ -660,8 +697,21 @@ export default function ItinerairesClient() {
           .in("id", uuidIds);
         if (data) uuidDbRows = data;
       }
+
+      // ── Récupérer les IDs déjà payés pour CET itinéraire ──
+      const alreadyPaidExcIds = new Set(
+        (resByItinId[it.id]?.paid || []).map(r => r.excursion_id)
+      );
+      // ── Récupérer les IDs en attente (déjà réservés mais pas payés) ──
+      const alreadyPendingExcIds = new Set(
+        (resByItinId[it.id]?.pending || []).map(r => r.excursion_id)
+      );
+
       const excursionsMap: Record<string, ExcursionForCheckout> = {};
+
       uuidDbRows.forEach((row: any) => {
+        // ── GARDE : ignorer les excursions déjà payées ──
+        if (alreadyPaidExcIds.has(row.id)) return;
         const meta = resolvedByUUID[row.id];
         if (!meta) return;
         excursionsMap[row.id] = {
@@ -673,7 +723,10 @@ export default function ItinerairesClient() {
           plan_time: meta.planAct.time || undefined, plan_day: meta.dayIndex + 1,
         };
       });
+
       Object.entries(resolvedByTitle).forEach(([dbId, { meta, dbRow }]) => {
+        // ── GARDE : ignorer les excursions déjà payées ──
+        if (alreadyPaidExcIds.has(dbId)) return;
         if (excursionsMap[dbId]) return;
         const row = dbRow || extraDbExcs.find((e: any) => e.id === dbId);
         if (!row) return;
@@ -686,11 +739,22 @@ export default function ItinerairesClient() {
           plan_time: meta.planAct.time || undefined, plan_day: meta.dayIndex + 1,
         };
       });
+
       const excursions = Object.values(excursionsMap);
+
+      // Cas particulier : tout est déjà payé (race condition)
+      if (excursions.length === 0 && alreadyPaidExcIds.size > 0) {
+        alert("Toutes les excursions de cet itinéraire sont déjà payées !");
+        return;
+      }
+
       if (excursions.length === 0) {
         const seen = new Set<string>();
         const fallback: ExcursionForCheckout[] = [];
         allActs.forEach(({ planAct, dayIndex }) => {
+          const excId = resolveExcursionId(planAct) || planAct.excursion_id || planAct.id;
+          // ── GARDE fallback ──
+          if (excId && alreadyPaidExcIds.has(excId)) return;
           const key = normalizeStr(planAct.excursion?.title || planAct.id || String(dayIndex));
           if (seen.has(key)) return;
           seen.add(key);
@@ -707,6 +771,7 @@ export default function ItinerairesClient() {
         setCheckoutItineraire({ excursions: fallback, itineraireId: it.id });
         return;
       }
+
       setCheckoutItineraire({ excursions, itineraireId: it.id });
     } catch (e) {
       console.error("openItineraryCheckout error:", e);
@@ -778,9 +843,10 @@ export default function ItinerairesClient() {
               const assisted      = isAssisted(it.plan);
               const isThisLoading = loadingItinId === it.id;
 
-              // ── Déterminer si cet itinéraire a des réservations en attente de paiement
-              const pendingReservations = pendingByItineraireId[it.id] || [];
-              const hasPending          = pendingReservations.length > 0;
+              const itinRes       = resByItinId[it.id] || { pending: [], paid: [] };
+              const payState      = getItinPayState(it.id);
+              const pendingCount  = itinRes.pending.length;
+              const paidCount     = itinRes.paid.length;
 
               return (
                 <div key={it.id} className="it-card" style={{ animationDelay: `${idx * .07}s` }}>
@@ -804,12 +870,24 @@ export default function ItinerairesClient() {
                         <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 20, background: assisted ? "rgba(2,175,207,.1)" : "rgba(43,150,168,.08)", color: assisted ? "#02AFCF" : "#2B96A8" }}>
                           {assisted ? <><Bot size={10} /> Mode IA</> : <><PenLine size={10} /> Mode Libre</>}
                         </span>
-                        {/* Badge "En attente de paiement" */}
-                        {hasPending && (
-                          <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 20, background: "rgba(5,150,105,.1)", color: "#059669", border: "1px solid rgba(5,150,105,.2)" }}>
-                            <CreditCard size={9} /> {pendingReservations.length} à payer
+
+                        {/* ── Badge statut paiement ── */}
+                        {payState === "paid" && (
+                          <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 20, background: "#F0FDF4", color: "#059669", border: "1px solid #86EFAC" }}>
+                            <CheckCircle2 size={9} /> Payé
                           </span>
                         )}
+                        {payState === "partial" && (
+                          <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 20, background: "#FFFBEB", color: "#D97706", border: "1px solid #FDE68A" }}>
+                            <BanknoteIcon size={9} /> {paidCount} payée{paidCount > 1 ? "s" : ""} · {pendingCount} en attente
+                          </span>
+                        )}
+                        {payState === "pending" && (
+                          <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 20, background: "rgba(5,150,105,.1)", color: "#059669", border: "1px solid rgba(5,150,105,.2)" }}>
+                            <CreditCard size={9} /> {pendingCount} à payer
+                          </span>
+                        )}
+
                         {it.villes_selectionnees?.slice(0, 3).map(v => (
                           <span key={v} style={{ display: "inline-flex", alignItems: "center", gap: 3, fontSize: 11, color: "#6B7280", background: "#F3F4F6", padding: "2px 8px", borderRadius: 20, fontWeight: 500 }}>
                             <MapPin size={9} color="#9CA3AF" /> {v}
@@ -850,20 +928,27 @@ export default function ItinerairesClient() {
                           : <Trash2 size={13} />}
                       </button>
 
-                      {/* ── Bouton Réserver / Payer ── */}
-                      {hasPending ? (
+                      {/* ── Bouton CTA selon état paiement ── */}
+                      {payState === "paid" ? (
+                        /* Tout payé → badge non cliquable */
+                        <span className="it-paid-badge">
+                          <CheckCircle2 size={13} /> Tout payé
+                        </span>
+                      ) : payState === "pending" || payState === "partial" ? (
+                        /* Réservations en attente → Payer */
                         <button
                           className="it-pay-btn"
                           disabled={isThisLoading}
                           onClick={e => { e.stopPropagation(); openItineraryCheckout(it); }}
-                          title={`${pendingReservations.length} réservation(s) en attente de paiement`}
+                          title={`${pendingCount} réservation(s) en attente de paiement`}
                         >
                           {isThisLoading
                             ? <><Loader2 size={13} style={{ animation: "spin .8s linear infinite" }} /> Chargement…</>
-                            : <><CreditCard size={13} /> Payer ({pendingReservations.length})</>
+                            : <><CreditCard size={13} /> Payer ({pendingCount})</>
                           }
                         </button>
                       ) : (
+                        /* Aucune réservation → Réserver */
                         <button
                           className="it-reserve-all-btn"
                           disabled={isThisLoading}
@@ -891,7 +976,6 @@ export default function ItinerairesClient() {
                         ) : plan.map((day, di) => (
                           <div key={di} className="it-day-section">
 
-                            {/* Day header */}
                             <div className="it-day-header">
                               <div style={{ width: 30, height: 30, borderRadius: 10, background: "linear-gradient(135deg,#2B96A8,#02AFCF)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                                 <span style={{ fontSize: 11, fontWeight: 800, color: "white" }}>{di + 1}</span>
@@ -906,7 +990,6 @@ export default function ItinerairesClient() {
                               </div>
                             </div>
 
-                            {/* Activities */}
                             {(day.activities || []).length === 0 ? (
                               <p style={{ fontSize: 12, color: "#D1D5DB", fontStyle: "italic", paddingLeft: 8 }}>Journée libre</p>
                             ) : (day.activities || []).map((act, ai) => {
@@ -919,9 +1002,12 @@ export default function ItinerairesClient() {
                               const canNavigate  = !!resolvedId || isValidUUID(act.excursion_id || "") || isValidUUID(act.id);
                               const timeCfg      = act.time ? TIME_CONFIG[act.time] : null;
 
-                              // Est-ce que cette activité a une réservation pending ?
-                              const actReserved = resolvedId
-                                ? pendingReservations.some(pr => pr.excursion_id === resolvedId)
+                              // Statut de paiement de cette activité
+                              const actPaid    = resolvedId
+                                ? itinRes.paid.some(pr => pr.excursion_id === resolvedId)
+                                : false;
+                              const actPending = resolvedId
+                                ? itinRes.pending.some(pr => pr.excursion_id === resolvedId)
                                 : false;
 
                               return (
@@ -930,9 +1016,8 @@ export default function ItinerairesClient() {
                                   className="exc-card"
                                   style={{
                                     animationDelay: `${ai * .05}s`,
-                                    // Légère teinte verte si déjà réservé
-                                    borderColor: actReserved ? "#86EFAC" : undefined,
-                                    background: actReserved ? "#F0FFF4" : undefined,
+                                    borderColor: actPaid ? "#86EFAC" : actPending ? "#BAE6FD" : undefined,
+                                    background:   actPaid ? "#F0FFF4" : actPending ? "#EFF9FB" : undefined,
                                   }}
                                 >
                                   {/* ── Image panel ── */}
@@ -977,15 +1062,27 @@ export default function ItinerairesClient() {
                                       </span>
                                     )}
 
-                                    {/* Badge "Réservé" sur l'image */}
-                                    {actReserved && (
+                                    {/* Badge statut sur l'image */}
+                                    {actPaid && (
                                       <span style={{
                                         position: "absolute", top: 10, right: 10,
                                         background: "#059669", color: "white",
                                         fontSize: 9, fontWeight: 800, padding: "3px 8px",
                                         borderRadius: 12, letterSpacing: .3,
+                                        display: "flex", alignItems: "center", gap: 3,
                                       }}>
-                                        ✓ Réservé
+                                        <CheckCircle2 size={9} /> Payé
+                                      </span>
+                                    )}
+                                    {actPending && !actPaid && (
+                                      <span style={{
+                                        position: "absolute", top: 10, right: 10,
+                                        background: "#2B96A8", color: "white",
+                                        fontSize: 9, fontWeight: 800, padding: "3px 8px",
+                                        borderRadius: 12, letterSpacing: .3,
+                                        display: "flex", alignItems: "center", gap: 3,
+                                      }}>
+                                        <CreditCard size={9} /> À payer
                                       </span>
                                     )}
                                   </div>

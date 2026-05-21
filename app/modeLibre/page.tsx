@@ -360,6 +360,9 @@ function ConfigInner() {
   const [ldCats,     setLdCats]     = useState(true);
   const [errCats,    setErrCats]    = useState<string | null>(null);
 
+  const [user, setUser] = useState<{ id: string } | null>(null);
+  const [favorites, setFavorites] = useState<Set<string>>(new Set());
+
   const loadVilles = async () => {
     setLdVilles(true); setErrVilles(null);
     const { data, error } = await sb.from("villes").select("*").eq("active", true).order("nom");
@@ -378,6 +381,20 @@ function ConfigInner() {
 
   useEffect(() => { loadVilles(); },     []);
   useEffect(() => { loadCategories(); }, []);
+
+  useEffect(() => {
+    sb.auth.getUser().then(({ data: { user } }) => {
+      if (user) {
+        setUser({ id: user.id });
+        sb.from("favoris")
+          .select("excursion_id")
+          .eq("touriste_id", user.id)
+          .then(({ data: favs }) => {
+            if (favs) setFavorites(new Set(favs.map(f => f.excursion_id)));
+          });
+      }
+    });
+  }, [sb]);
 
   const goStep = (next: number) => {
     setSlideDir(next > step ? "left" : "right");
@@ -408,7 +425,7 @@ function ConfigInner() {
 
   return (
     <div className="mlp-page">
-      <TouristeNav/>
+      <TouristeNav favCount={favorites.size} isLoggedIn={!!user}/>
        <div style={{ paddingTop: 64 }}/>
 
       <style>{CSS_CONFIG}</style>

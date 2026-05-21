@@ -162,6 +162,7 @@ function toSummaryDays(itin: DayPlan[], selCities: string[]): SummaryDayPlan[] {
         rating:           act.excursion.rating,
         photos:           act.excursion.photos,
         categories:       act.excursion.categories,
+        available_dates:  act.excursion.available_dates,
       },
     })),
   }));
@@ -182,6 +183,8 @@ function BuilderInner() {
   );
 
   const [userId,    setUserId]    = useState<string | null>(null);
+  const [user,      setUser]      = useState<{ id: string } | null>(null);
+  const [favorites, setFavorites] = useState<Set<string>>(new Set());
   const [savedItId, setSavedItId] = useState<string | null>(null);
   const [saving,    setSaving]    = useState(false);
   const [saveOk,    setSaveOk]    = useState(false);
@@ -194,6 +197,7 @@ function BuilderInner() {
   const [errExc,     setErrExc]     = useState<string | null>(null);
 
   const [search,         setSearch]         = useState("");
+  const [showOnlyAvailable, setShowOnlyAvailable] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showHelpPanel, setShowHelpPanel] = useState(false);
   const [showSuccessMsg, setShowSuccessMsg] = useState<string | null>(null);
@@ -209,6 +213,17 @@ function BuilderInner() {
 
   const [selectedExcursion, setSelectedExcursion] = useState<ExcursionDetail | null>(null);
   const [loadingDetails,    setLoadingDetails]    = useState(false);
+
+  const steps = [
+    { label: "ITINÉRAIRE VOYAGE" },
+    { label: "CONSTRUIRE L'ITINÉRAIRE" },
+    { label: "ÉVALUER LES PROJETS" },
+    { label: "CRÉER LES VOYAGES" }
+  ];
+
+  const [priceRange, setPriceRange] = useState(100);
+  const [selectedDuration, setSelectedDuration] = useState("all");
+  const [selectedCategory, setSelectedCategory] = useState("all");
 
   const toMinutes = (t: string) => {
     const [h, m] = t.split(":").map(Number);
@@ -359,6 +374,14 @@ function BuilderInner() {
     sb.auth.getUser().then(async ({ data: { user } }) => {
       if (!user) return;
       setUserId(user.id);
+      setUser({ id: user.id });
+
+      const { data: favs } = await sb
+        .from("favoris")
+        .select("excursion_id")
+        .eq("touriste_id", user.id);
+      if (favs) setFavorites(new Set(favs.map(f => f.excursion_id)));
+
       const { data } = await sb
         .from("itineraires").select("*")
         .eq("user_id", user.id)
@@ -373,12 +396,25 @@ function BuilderInner() {
 
   const palette = useMemo(() => {
     const q = search.toLowerCase();
-    return allExc.filter(e => {
+    let list = allExc.filter(e => {
       const matchSearch   = !q || e.title.toLowerCase().includes(q) || e.city.toLowerCase().includes(q);
       const matchCity     = !currentDayCity || e.city.toLowerCase() === currentDayCity.toLowerCase();
-      return matchSearch && matchCity;
+      const matchPrice    = e.price_per_person <= priceRange;
+      const matchCategory = selectedCategory === "all" || e.categories?.includes(selectedCategory);
+      
+      let matchDuration = true;
+      if (selectedDuration === "short") matchDuration = e.duration_hours <= 3;
+      else if (selectedDuration === "medium") matchDuration = e.duration_hours > 3 && e.duration_hours <= 6;
+      else if (selectedDuration === "long") matchDuration = e.duration_hours > 6;
+
+      return matchSearch && matchCity && matchPrice && matchCategory && matchDuration;
     });
-  }, [allExc, currentDayCity, search]);
+
+    if (currentDayDate && showOnlyAvailable) {
+      list = list.filter(e => isExcursionAvailableOnDate(e, currentDayDate));
+    }
+    return list;
+  }, [allExc, currentDayCity, search, priceRange, selectedCategory, selectedDuration, currentDayDate, showOnlyAvailable, isExcursionAvailableOnDate]);
 
   const availableCount = useMemo(
     () => currentDayDate
@@ -476,23 +512,22 @@ function BuilderInner() {
     if (!userId) { alert("Vous devez être connecté"); return; }
     setSaving(true);
     const payload = {
-      user_id: userId, nb_jours: days,
+      user_id: userId,
+      nb_jours: days,
       villes_selectionnees: selCities,
       categories_selectionnees: [],
       plan: itin,
+      created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     };
     try {
-      if (savedItId) {
-        await sb.from("itineraires").update(payload).eq("id", savedItId);
-      } else {
-        const { data } = await sb.from("itineraires")
-          .insert({ ...payload, created_at: new Date().toISOString() })
-          .select().single();
-        if (data) setSavedItId(data.id);
-      }
+      const { data, error } = await sb.from("itineraires")
+        .insert(payload)
+        .select().single();
+      
+      if (error) throw error;
+      if (data) setSavedItId(data.id);
       setSaveOk(true);
-      setTimeout(() => setSaveOk(false), 2500);
     } catch (err) {
       console.error(err);
       alert("Erreur lors de la sauvegarde");
@@ -561,32 +596,21 @@ function BuilderInner() {
     );
   };
 
-  /* ════════ VUE RÉSUMÉ ════════ */
-  if (view === "result") return (
-    <ItinerarySummary
-      days={toSummaryDays(itin, selCities)}
-      nbJours={days}
-      selCities={selCities}
-      saving={saving}
-      saveOk={saveOk}
-      savedItId={savedItId}
-      onBack={() => setView("builder")}
-      onEdit={() => setView("builder")}
-      onSave={saveItinerary}
-    />
-  );
+  const currentStep = useMemo(() => {
+    if (saveOk) return 3;
+    if (view === "result") return 2;
+    return 1;
+  }, [view, saveOk]);
 
   /* ════════ VUE BUILDER ════════ */
   const currentDay = itin[activeDay];
-  const dayActs    = currentDay?.activities || [];
-  const dayBudget  = dayActs.reduce((acc, a) => acc + a.excursion.price_per_person, 0);
-  const slotActs   = (slot: TimeKey) =>
-    [...dayActs].filter(a => a.time === slot)
-      .sort((a, b) => (a.customTime || "").localeCompare(b.customTime || ""));
 
   return (
-    <div className={s.root}>
-      {showDatePicker && <DatePickerModal />}
+    <>
+      <TouristeNav favCount={favorites.size} isLoggedIn={!!user} />
+      <div style={{ paddingTop: 64 }} />
+      <div className={s.root}>
+        {showDatePicker && <DatePickerModal />}
 
       {/* Toast */}
       {showSuccessMsg && (
@@ -596,409 +620,279 @@ function BuilderInner() {
         </div>
       )}
 
-      {/* ══ TOPBAR ══ */}
-      <div className={s.topbar}>
-        <div className={s.topbarLeft}>
-          <button className={s.backBtn} onClick={() => router.push("/touriste/modeLibre")}>
-            <ArrowLeft size={14} /> <span>Retour</span>
-          </button>
-          <div className={s.tripBadge}>
-            <Calendar size={12} color={BRAND} />
-            <span className={s.tripBadgeDays}>{days} jours</span>
-            <span className={s.tripBadgeSep}>·</span>
-            <span className={s.tripBadgeCities}>{selCities.join(" → ")}</span>
-          </div>
-        </div>
-        <div className={s.topbarRight}>
-          {totAct > 0 && (
-            <>
-              <div className={s.statChip}>
-                <Layers size={12} color="#6B7280" />
-                <span>{totAct} activité{totAct > 1 ? "s" : ""}</span>
+      {/* ══ HEADER ══ */}
+      <h1 className={s.headerTitle}>Créer votre itinéraire de voyage</h1>
+
+      {/* ══ STEPPER ══ */}
+      <div className={s.stepperContainer}>
+        <div className={s.stepper}>
+          {steps.map((step, idx) => (
+            <div key={idx} className={`${s.step} ${idx === currentStep ? s.stepActive : ""} ${idx < currentStep ? s.stepCompleted : ""}`}>
+              <div className={s.stepCircle}>
+                {idx < currentStep ? <CheckCircle2 size={12} /> : null}
               </div>
-              <div className={`${s.statChip} ${s.statChipBudget}`}>
-                <PiggyBank size={12} color={BRAND} />
-                <span>{totBudget} EUR</span>
-              </div>
-            </>
-          )}
-          <button
-            className={`${s.helpBtn} ${showHelpPanel ? s.helpBtnActive : ""}`}
-            onClick={() => setShowHelpPanel(v => !v)}
-          >
-            <HelpCircle size={13} />
-            <span>Aide</span>
-          </button>
-          <button className={s.summaryBtn} onClick={() => setView("result")}>
-            Voir le résumé <ArrowRight size={13} />
-          </button>
+              <span className={s.stepLabel}>{step.label}</span>
+            </div>
+          ))}
         </div>
       </div>
 
-      {showHelpPanel && (
-        <HelpPanel onClose={() => setShowHelpPanel(false)} />
-      )}
-
-      {/* ══ DAY TABS ══ */}
-      <div className={s.dayTabs}>
-        {itin.map((day, i) => (
-          <button
-            key={i}
-            className={`${s.dayTab} ${activeDay === i ? s.dayTabActive : ""}`}
-            onClick={() => setActiveDay(i)}
-          >
-            <LocateFixed size={12} />
-            <span>Jour {i + 1}</span>
-            <span className={s.dayTabCity}>— {day.city}</span>
-            {!day.date && <CalendarDays size={11} className={s.dayTabNoDate} />}
-            {day.activities.length > 0 && (
-              <span className={s.tabCount}>{day.activities.length}</span>
-            )}
-          </button>
-        ))}
-      </div>
-
-      {/* ══ BODY ══ */}
-      <div className={s.body}>
-
-        {/* ════ CATALOGUE ════ */}
-        <div className={s.catalogue}>
-          <div className={s.catHeader}>
-            <div className={s.catHeaderRow}>
-              <div className={s.catTitle}>
-                <BookMarked size={14} color={BRAND} />
-                <span>Excursions disponibles</span>
-                {currentDayCity && (
-                  <span className={s.cityPill}>
-                    <MapPin size={9} /> {currentDayCity}
-                  </span>
-                )}
-              </div>
-              <div className={s.catHeaderRight}>
-                {currentDayDate ? (
-                  <button className={s.datePill} onClick={() => setShowDatePicker(true)}>
-                    <CalendarCheck size={11} color={BRAND} />
-                    <span>{formatDate(currentDayDate, { day: "numeric", month: "short" })}</span>
-                    <Edit3 size={10} color="#9CA3AF" />
-                  </button>
-                ) : (
-                  <button className={s.datePickBtn} onClick={() => setShowDatePicker(true)}>
-                    <CalendarDays size={11} /> Choisir une date
-                  </button>
-                )}
-                {!ldExc && !errExc && (
-                  <span className={s.resultCount}>
-                    {currentDayDate ? (
-                      <><CheckCircle2 size={9} color={BRAND} /> {availableCount}/{palette.length}</>
-                    ) : (
-                      <>{palette.length} excursion{palette.length !== 1 ? "s" : ""}</>
-                    )}
-                  </span>
-                )}
-              </div>
+      {saveOk ? (
+        <div className={s.successView}>
+          <div className={s.successBox}>
+            <div className={s.successIcon}>
+              <CheckCircle2 size={48} color={BRAND} />
             </div>
-
-            <div className={s.searchRow}>
-              <div className={s.searchBox}>
-                <Search size={13} color="#9CA3AF" />
-                <input
-                  type="text" className={s.searchInput}
-                  placeholder="Rechercher une excursion..."
-                  value={search} onChange={e => setSearch(e.target.value)}
-                />
-              </div>
+            <h2 className={s.successTitle}>Itinéraire sauvegardé avec succès !</h2>
+            <p className={s.successDesc}>
+              Votre projet de voyage a été enregistré dans votre espace personnel.
+              Vous pouvez maintenant le consulter, le modifier ou procéder à la réservation finale.
+            </p>
+            <div className={s.successActions}>
+              <button className={s.primaryBtn} onClick={() => router.push("/touriste/itineraires")}>
+                VOIR MES ITINÉRAIRES
+              </button>
+              <button className={s.secondaryBtn} onClick={() => setSaveOk(false)}>
+                RETOURNER AU PATRIMOINE
+              </button>
             </div>
-
-            {currentDayDate && !ldExc && palette.length > 0 && (
-              <div className={s.legend}>
-                <span className={s.legendOk}><CheckCircle2 size={9} /> Disponible</span>
-                <span className={s.legendKo}><AlertCircle size={9} /> Indisponible ce jour</span>
-              </div>
-            )}
-          </div>
-
-          {/* Grid */}
-          <div className={s.grid}>
-            {ldExc ? (
-              Array.from({ length: 6 }).map((_, i) => (
-                <div key={i} className={s.skeleton} />
-              ))
-            ) : errExc ? (
-              <div style={{ gridColumn: "1/-1" }}>
-                <ErrorDisplay message={errExc} onRetry={loadAll} />
-              </div>
-            ) : palette.length === 0 ? (
-              <div className={s.emptyState}>
-                <Calendar size={48} strokeWidth={1} style={{ opacity: 0.25, marginBottom: "1rem" }} />
-                <p className={s.emptyStateTitle}>Aucune excursion à {currentDayCity}</p>
-                <p className={s.emptyStateHint}>Essayez de modifier la ville ou les filtres</p>
-              </div>
-            ) : (
-              palette.map(exc => {
-                const added         = isAdded(exc.id);
-                const isAvail       = currentDayDate ? isExcursionAvailableOnDate(exc, currentDayDate) : true;
-                const isUnavailable = currentDayDate && !isAvail;
-                const depTime       = currentDayDate
-                  ? getDepartureTimeForDate(exc, currentDayDate)
-                  : exc.departure_time;
-
-                return (
-                  <div
-                    key={exc.id}
-                    className={`${s.card} ${isUnavailable ? s.cardUnavailable : ""}`}
-                    onClick={() => loadExcursionDetails(exc.id)}
-                  >
-                    {/* Image */}
-                    <div className={s.cardImg}>
-                      {exc.photos?.[0] ? (
-                        <img src={exc.photos[0]} alt={exc.title} className={s.cardImgEl} />
-                      ) : (
-                        <div className={s.cardImgPlaceholder} style={{ background: `${BRAND}15` }}>
-                          <Camera size={28} color={BRAND} strokeWidth={1.5} />
-                        </div>
-                      )}
-                      <div className={s.cardImgGradient} />
-
-                      {/* Category badge */}
-                      {exc.categories?.[0] && !isUnavailable && (
-                        <span className={s.catBadge}>
-                          {getCategoryIcon(exc.categories[0])} {exc.categories[0]}
-                        </span>
-                      )}
-
-                      {/* Unavailable badge */}
-                      {isUnavailable && (
-                        <span className={s.unavailBadge}>
-                          <AlertCircle size={11} /> Indisponible
-                        </span>
-                      )}
-
-                      {/* favorite button removed */}
-                    </div>
-
-                    {/* Body */}
-                    <div className={s.cardBody}>
-                      <div className={s.cardTitleRow}>
-                        <h3 className={s.cardTitle}>{exc.title}</h3>
-                        <div className={s.cardPriceBlock}>
-                          <span className={s.cardPrice}>{exc.price_per_person}</span>
-                          <span className={s.cardPriceSuffix}>EUR<br />/personne</span>
-                        </div>
-                      </div>
-
-                      <div className={s.cardCity}>
-                        <MapPin size={11} color="#9CA3AF" /> <span>{exc.city}</span>
-                      </div>
-
-                      <div className={s.cardMeta}>
-                        <span className={s.metaItem}>
-                          <Clock size={11} color="#6B7280" /> {exc.duration_hours}h
-                        </span>
-                        {exc.rating > 0 && (
-                          <span className={s.metaItem}>
-                            <Star size={11} color="#F59E0B" fill="#F59E0B" />
-                            {exc.rating}
-                            {exc.reviews_count > 0 && (
-                              <span style={{ color: "#9CA3AF", fontSize: ".75rem" }}>({exc.reviews_count})</span>
-                            )}
-                          </span>
-                        )}
-                        {depTime && (
-                          <span className={`${s.metaItem} ${s.metaDepart}`}>
-                            <Sunrise size={11} color={BRAND} /> {depTime.substring(0, 5)}
-                          </span>
-                        )}
-                      </div>
-
-                      {/* Availability */}
-                      {!currentDayDate ? (
-                        !hasAvailableDates(exc)
-                          ? <div className={s.alwaysAvail}><CheckCircle2 size={10} /> Toujours disponible</div>
-                          : <div className={s.hasDates}><CalendarDays size={10} /> Dates spécifiques</div>
-                      ) : isAvail ? (
-                        <div className={s.availOnDate}><CheckCircle2 size={10} /> Disponible ce jour</div>
-                      ) : (
-                        <div className={s.notAvailOnDate}><AlertCircle size={10} /> Indisponible ce jour</div>
-                      )}
-
-                      <div className={s.divider} />
-
-                      {/* CTA */}
-                      <button
-                        className={`${s.reserveBtn} ${added ? s.reserveBtnAdded : ""} ${isUnavailable ? s.reserveBtnUnavail : ""}`}
-                        disabled={added || !!isUnavailable}
-                        onClick={e => {
-                          e.stopPropagation();
-                          if (!isUnavailable && !added) openSlotPicker(exc);
-                        }}
-                      >
-                        {added ? (
-                          <><CheckCircle2 size={13} /> Ajouté</>
-                        ) : isUnavailable ? (
-                          <><AlertCircle size={13} /> Complet</>
-                        ) : (
-                          <><CalendarCheck size={13} /> Réserver</>
-                        )}
-                      </button>
-                    </div>
-                  </div>
-                );
-              })
-            )}
           </div>
         </div>
-
-        {/* ════ PLANNER ════ */}
-        <div className={s.planner}>
-          <div className={s.plannerHeader}>
-            <div className={s.plannerHeaderTop}>
-              <div className={s.plannerDayInfo}>
-                <div className={s.plannerDayIcon}>
-                  <LocateFixed size={14} color={BRAND} />
-                </div>
-                <div>
-                  <div className={s.plannerDayName}>
-                    Jour {activeDay + 1} — {currentDay?.city}
+      ) : view === "result" ? (
+        <div className={s.summaryWrapper}>
+          <ItinerarySummary
+            days={toSummaryDays(itin, selCities)}
+            nbJours={days}
+            selCities={selCities}
+            saving={saving}
+            saveOk={saveOk}
+            savedItId={savedItId}
+            onBack={() => setView("builder")}
+            onEdit={() => {
+              setSaveOk(false);
+              setView("builder");
+            }}
+            onSave={saveItinerary}
+          />
+        </div>
+      ) : (
+        /* ══ MAIN BUILDER LAYOUT ══ */
+        <div className={s.layoutMain}>
+        
+        {/* ══ LEFT: ITINERARY ══ */}
+        <div className={s.itineraryPanel}>
+          <h2 className={s.panelTitle}>VOTRE ITINÉRAIRE JOUR PAR JOUR</h2>
+          
+          <div className={s.itineraryTimeline}>
+            {itin.map((day, dIdx) => (
+              <div key={dIdx} className={`${s.timelineItem} ${activeDay === dIdx ? s.timelineItemActive : ""}`}>
+                <div className={s.timelineDot} />
+                <div className={s.dayHeader}>
+                  <div className={s.dayTitle}>
+                    JOUR {dIdx + 1}
+                    <span className={s.dayCityName}>{day.city}</span>
+                    {day.date && (
+                      <span className={s.dayDatePill} onClick={(e) => { e.stopPropagation(); setActiveDay(dIdx); setShowDatePicker(true); }}>
+                         {formatDate(day.date, { day: 'numeric', month: 'short' })}
+                      </span>
+                    )}
                   </div>
-                  <div className={s.plannerDateRow}>
-                    {currentDay?.date ? (
-                      <button className={s.plannerDateBtn} onClick={() => setShowDatePicker(true)}>
-                        <CalendarCheck size={11} color={BRAND} />
-                        {formatDate(currentDay.date, { weekday: "short", day: "numeric", month: "short" })}
-                        <Edit3 size={10} color="#9CA3AF" />
-                      </button>
-                    ) : (
-                      <button className={s.plannerDateBtn} onClick={() => setShowDatePicker(true)}>
-                        <CalendarDays size={11} color="#9CA3AF" />
-                        <span style={{ color: "#9CA3AF" }}>Choisir une date</span>
+                  <div className={s.dayHeaderActions}>
+                    {!day.date && (
+                      <button className={s.dayDateBtnSmall} onClick={(e) => { e.stopPropagation(); setActiveDay(dIdx); setShowDatePicker(true); }}>
+                        <Calendar size={10} /> FIXER DATE
                       </button>
                     )}
-                    <select
-                      className={s.citySelect}
-                      value={currentDay?.city}
-                      onChange={e => {
-                        const newCity = e.target.value;
-                        setItin(prev => {
-                          const n = [...prev];
-                          n[activeDay] = { city: newCity, date: undefined, activities: [] };
-                          return n;
-                        });
-                      }}
-                    >
-                      {villes.map(c => <option key={c.id} value={c.nom}>{c.nom}</option>)}
-                    </select>
-                  </div>
-                </div>
-              </div>
-
-              <div className={s.plannerRight}>
-                <div className={s.dayTotals}>
-                  <div className={s.dayBudget}>
-                    {dayBudget} <span className={s.dayBudgetUnit}>EUR</span>
-                  </div>
-                  <div className={s.dayCount}>{dayActs.length} activité{dayActs.length !== 1 ? "s" : ""}</div>
-                </div>
-                <div className={s.dayNav}>
-                  <button className={s.navBtn} disabled={activeDay === 0}
-                    onClick={() => setActiveDay(p => p - 1)}>
-                    <ChevronLeft size={14} />
-                  </button>
-                  <button className={s.navBtn} disabled={activeDay === days - 1}
-                    onClick={() => setActiveDay(p => p + 1)}>
-                    <ChevronRight size={14} />
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className={s.plannerScroll}>
-            {dayActs.length === 0 ? (
-              <div className={s.plannerEmpty}>
-                <div className={s.plannerEmptyIcon}>
-                  <Plus size={28} color="#D1D5DB" />
-                </div>
-                {currentDay?.date ? (
-                  <>
-                    <p className={s.plannerEmptyTitle}>
-                      {formatDate(currentDay.date, { weekday: "long", day: "numeric", month: "long" })}
-                    </p>
-                    <p className={s.plannerEmptyHint}>Ajoutez des excursions depuis le catalogue</p>
-                  </>
-                ) : (
-                  <>
-                    <p className={s.plannerEmptyTitle}>Votre journée est vide</p>
-                    <p className={s.plannerEmptyHint}>Choisissez une date puis ajoutez vos excursions</p>
-                    <button className={s.emptyDateBtn} onClick={() => setShowDatePicker(true)}>
-                      <CalendarDays size={13} /> Choisir une date
+                    <button className={s.dayAddBtn} onClick={(e) => {
+                      e.stopPropagation();
+                      setItin(prev => [...prev, { city: prev[prev.length-1]?.city || "", activities: [] }]);
+                    }}>
+                      <Plus size={10} /> AJOUTER UN JOUR
                     </button>
-                  </>
-                )}
-              </div>
-            ) : (
-              SLOTS.map(slot => {
-                const acts       = slotActs(slot.key);
-                const slotBudget = acts.reduce((acc, a) => acc + a.excursion.price_per_person, 0);
-                return (
-                  <div key={slot.key} className={s.slotSection}>
-                    <div className={s.slotHeader}>
-                      <div className={s.slotIconWrap} style={{ background: `${slot.color}18` }}>
-                        {React.cloneElement(slot.icon as React.ReactElement, { size: 12, color: slot.color })}
-                      </div>
-                      <span className={s.slotLabel} style={{ color: slot.color }}>{slot.label}</span>
-                      <span className={s.slotHint}>{slot.hint}</span>
-                      {acts.length > 0 && (
-                        <span className={s.slotTotal}>
-                          <PiggyBank size={10} color="#6B7280" />
-                          {slotBudget} EUR · {acts.reduce((acc, a) => acc + a.excursion.duration_hours, 0)}h
-                        </span>
-                      )}
-                    </div>
+                  </div>
+                </div>
 
-                    {acts.length === 0 ? (
-                      <div className={s.slotEmpty}>Aucune activité prévue</div>
-                    ) : (
-                      acts.map(act => (
-                        <div key={act.id} className={s.actCard}>
-                          <div className={s.actTime}>{act.customTime || slot.defaultTime}</div>
+                <div className={s.activitySlots}>
+                  {day.activities.length === 0 ? (
+                    <>
+                      <div className={s.activitySlot} onClick={() => setActiveDay(dIdx)}>
+                        Ajouter une excursion
+                      </div>
+                      <div className={s.activitySlot} onClick={() => setActiveDay(dIdx)}>
+                        Ajouter une excursion
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      {day.activities.map((act) => (
+                        <div key={act.id} className={s.actCard} onClick={() => setActiveDay(dIdx)}>
+                          <div className={s.actTime}>{act.customTime || "09:00"}</div>
                           {act.excursion.photos?.[0] && (
                             <img src={act.excursion.photos[0]} alt="" className={s.actImg} />
                           )}
-                          <div className={s.actInfo}>
-                            <div className={s.actTitle}>{act.excursion.title}</div>
-                            <div className={s.actMeta}>
-                              <span><Clock size={9} /> {act.excursion.duration_hours}h</span>
-                              {act.excursion.rating > 0 && (
-                                <span><Star size={9} color="#F59E0B" fill="#F59E0B" /> {act.excursion.rating}</span>
-                              )}
-                            </div>
-                            {act.note && (
-                              <div className={s.actNote}><FileText size={9} />{act.note}</div>
-                            )}
+                          <div className={s.actInfo} style={{ flex: 1 }}>
+                            <div className={s.actTitle} style={{ fontSize: '0.75rem', fontWeight: 600 }}>{act.excursion.title}</div>
                           </div>
-                          <span className={s.actPrice}>
-                            {act.excursion.price_per_person}<small> EUR</small>
-                          </span>
                           <div className={s.actActions}>
-                            <button className={s.actActionNote}
-                              onClick={() => { setEditNote(act.id); setNoteText(act.note || ""); }}>
-                              <FileText size={12} />
-                            </button>
-                            <button className={s.actActionDelete}
-                              onClick={() => rmAct(activeDay, act.id)}>
+                            <button className={s.actActionDelete} onClick={(e) => { e.stopPropagation(); rmAct(dIdx, act.id); }}>
                               <Trash2 size={12} />
                             </button>
                           </div>
                         </div>
-                      ))
+                      ))}
+                      <div className={s.activitySlot} onClick={() => setActiveDay(dIdx)}>
+                        Ajouter une excursion
+                      </div>
+                    </>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* ══ RIGHT: EXCURSIONS ══ */}
+        <div className={s.excursionsPanel}>
+          <div className={s.panelTop}>
+            <h2 className={s.panelTitle}>EXPLORER LES EXCURSIONS</h2>
+            <button className={s.saveBtnFixed} onClick={() => setView("result")}>
+              <ArrowRight size={14} />
+              VOIR LE RÉSUMÉ
+            </button>
+          </div>
+
+          <div className={s.filterHeaderRow}>
+            <div className={s.dayContext}>
+              <MapPin size={12} /> {currentDay?.city}
+              {currentDay?.date && (
+                <>
+                  <Calendar size={12} style={{ marginLeft: '4px' }} />
+                  {formatDate(currentDay.date, { day: 'numeric', month: 'long' })}
+                </>
+              )}
+            </div>
+            {currentDay?.date && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.7rem', cursor: 'pointer', color: BRAND, fontWeight: 600 }}>
+                  <input 
+                    type="checkbox" 
+                    checked={showOnlyAvailable} 
+                    onChange={e => setShowOnlyAvailable(e.target.checked)}
+                  />
+                  DISPONIBLES UNIQUEMENT
+                </label>
+                <div style={{ fontSize: '0.75rem', color: '#6B7280', fontWeight: 500 }}>
+                  {availableCount} / {palette.length} disponibles
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className={s.filtersRow} style={{ marginBottom: '1.5rem' }}>
+            <select 
+              className={s.filterSelect}
+              value={selectedCategory}
+              onChange={(e) => setSelectedCategory(e.target.value)}
+            >
+              <option value="all">Categorie</option>
+              {categories.map(c => <option key={c.id} value={c.nom}>{c.nom}</option>)}
+            </select>
+
+            <select 
+              className={s.filterSelect}
+              value={selectedDuration}
+              onChange={(e) => setSelectedDuration(e.target.value)}
+            >
+              <option value="all">Durée</option>
+              <option value="short">Courte (≤ 3h)</option>
+              <option value="medium">Moyenne (3-6h)</option>
+              <option value="long">Longue ({">"} 6h)</option>
+            </select>
+
+            <div className={s.priceFilter}>
+              <div className={s.priceRangeLabel}>Prix: {priceRange} EUR</div>
+              <input 
+                type="range" 
+                min="0" max="500" step="10"
+                className={s.rangeInput}
+                value={priceRange}
+                onChange={(e) => setPriceRange(Number(e.target.value))}
+              />
+            </div>
+
+            <div className={s.searchExcursion}>
+              <input 
+                type="text" 
+                className={s.searchInputMatch}
+                placeholder="Rechercher"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+              <Search size={14} className={s.searchIconMatch} />
+            </div>
+          </div>
+
+          <div className={s.gridMatch}>
+            {ldExc ? (
+              Array.from({ length: 6 }).map((_, i) => (
+                <div key={i} className={s.skeletonMatch} />
+              ))
+            ) : palette.length === 0 ? (
+              <div className={s.emptyState} style={{ gridColumn: '1/-1', textAlign: 'center', padding: '3rem' }}>
+                <p style={{ color: '#9CA3AF' }}>Aucune excursion trouvée pour ces critères.</p>
+              </div>
+            ) : (
+              palette.map(exc => (
+                <div key={exc.id} className={s.cardMatch} onClick={() => loadExcursionDetails(exc.id)}>
+                  <div className={s.cardImageMatch}>
+                    {exc.photos?.[0] ? (
+                      <img src={exc.photos[0]} alt={exc.title} />
+                    ) : (
+                      <div className="w-full h-full bg-slate-100 flex items-center justify-center">
+                        <Camera size={32} className="text-slate-300" />
+                      </div>
+                    )}
+
+                    {currentDay?.date && (
+                      <div className={`${s.availabilityBadge} ${isExcursionAvailableOnDate(exc, currentDay.date) ? s.availOk : s.availKo}`}>
+                        {isExcursionAvailableOnDate(exc, currentDay.date) ? (
+                          <><CheckCircle2 size={10} /> Disponible</>
+                        ) : (
+                          <><AlertCircle size={10} /> Indisponible</>
+                        )}
+                      </div>
                     )}
                   </div>
-                );
-              })
+
+                  <div className={s.cardInfoMatch}>
+                    <h3 className={s.cardTitleMatch}>{exc.title}</h3>
+                    <p className={s.cardDescMatch}>Découvrez cette magnifique excursion à {exc.city}. Profitez d'une expérience unique en Tunisie.</p>
+                    
+                    <div className={s.cardMetaMatch}>
+                      <span className="flex items-center gap-1"><Clock size={12}/> {exc.duration_hours > 0 ? `${exc.duration_hours} h` : "Durée variable"}</span>
+                      <span className="flex items-center gap-1"><MapPin size={12}/> {exc.city}</span>
+                    </div>
+
+                    <div className={s.cardFooterMatch}>
+                      <span className={s.priceMatch}>{exc.price_per_person},00 €</span>
+                      <button 
+                        className={s.addBtnMatch}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          openSlotPicker(exc);
+                        }}
+                      >
+                        + AJOUTER
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))
             )}
           </div>
         </div>
       </div>
+    )}
 
       {/* ══ Modal Slot Picker ══ */}
       {pendingExc && (
@@ -1107,6 +1001,7 @@ function BuilderInner() {
 
       {loadingDetails && <LoadingSpinner />}
     </div>
+    </>
   );
 }
 
@@ -1122,8 +1017,6 @@ export default function BuilderPage() {
         <span style={{ color: "#9CA3AF", fontSize: ".85rem" }}>Chargement de l'itinéraire…</span>
       </div>
     }>
-      <TouristeNav/>
-            <div style={{ paddingTop: 70 }}/>
       <BuilderInner />
     </Suspense>
   );
