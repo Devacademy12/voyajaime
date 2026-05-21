@@ -36,7 +36,7 @@ const CSS_CONFIG = `
 .mlp-page {
   min-height: calc(100vh - 64px);
   background: var(--bg);
-  font-family: 'DM Sans', system-ui, sans-serif;
+  font-family: inherit'DM Sans', system-ui, sans-serif;
   display: flex; flex-direction: column;
 }
 
@@ -58,7 +58,7 @@ const CSS_CONFIG = `
   letter-spacing: .04em;
 }
 .mlp-topbar h1 {
-  font-family: 'Playfair Display', serif;
+  font-family: inherit'Playfair Display', serif;
   font-size: 20px; font-weight: 900; color: var(--title); margin: 0;
 }
 .mlp-topbar h1 span { color: var(--primary); }
@@ -75,7 +75,7 @@ const CSS_CONFIG = `
 .step-pip-circle {
   width: 34px; height: 34px; border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
-  font-size: 13px; font-weight: 800; font-family: 'DM Sans', sans-serif;
+  font-size: 13px; font-weight: 800; font-family: inherit'DM Sans', sans-serif;
   border: 2px solid var(--border); background: var(--white);
   color: var(--muted); transition: all .3s ease; flex-shrink: 0;
   position: relative; z-index: 1;
@@ -156,7 +156,7 @@ const CSS_CONFIG = `
   border-radius: 20px; padding: 18px 28px; max-width: 180px;
 }
 .duree-display-big .num {
-  font-family: 'Playfair Display', serif;
+  font-family: inherit'Playfair Display', serif;
   font-size: 52px; font-weight: 900; color: var(--title);
   line-height: 1; display: block;
 }
@@ -172,7 +172,7 @@ const CSS_CONFIG = `
   padding: 7px 16px; border-radius: 22px;
   border: 2px solid var(--border); background: transparent;
   color: var(--muted); font-size: 13px; font-weight: 600;
-  cursor: pointer; font-family: inherit; transition: all .18s;
+  cursor: pointer; font-family: inheritinherit; transition: all .18s;
   min-width: 52px; text-align: center;
 }
 .duree-quick-btn:hover, .duree-quick-btn.active {
@@ -185,7 +185,7 @@ const CSS_CONFIG = `
   padding: 8px 15px; border-radius: 24px;
   border: 2px solid var(--border); background: var(--white);
   color: var(--text); font-size: 13px; font-weight: 500;
-  cursor: pointer; font-family: inherit;
+  cursor: pointer; font-family: inheritinherit;
   display: flex; align-items: center; gap: 6px; transition: all .18s;
 }
 .cat-chip:hover { transform: translateY(-1px); box-shadow: 0 4px 10px -4px rgba(0,0,0,.12); }
@@ -204,7 +204,7 @@ const CSS_CONFIG = `
 .ville-btn {
   padding: 12px 8px; border-radius: 16px;
   border: 2px solid var(--border); background: var(--white);
-  text-align: center; cursor: pointer; font-family: inherit;
+  text-align: center; cursor: pointer; font-family: inheritinherit;
   box-shadow: 0 1px 4px rgba(0,0,0,.04);
   position: relative; transition: all .18s;
 }
@@ -237,14 +237,14 @@ const CSS_CONFIG = `
   padding: 11px 22px; border-radius: 50px;
   border: 2px solid var(--border); background: var(--white);
   color: var(--text); font-size: 14px; font-weight: 700;
-  font-family: inherit; cursor: pointer; transition: all .18s;
+  font-family: inheritinherit; cursor: pointer; transition: all .18s;
 }
 .nav-back-btn:hover { border-color: var(--title); color: var(--title); }
 .nav-next-btn {
   flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px;
   padding: 13px 28px; border-radius: 50px;
   border: none; background: var(--title); color: white;
-  font-size: 15px; font-weight: 700; font-family: inherit;
+  font-size: 15px; font-weight: 700; font-family: inheritinherit;
   cursor: pointer; transition: all .22s;
   box-shadow: 0 10px 28px -8px rgba(5,51,102,.40);
 }
@@ -272,7 +272,7 @@ const CSS_CONFIG = `
 .retry-btn {
   padding: 7px 18px; background: var(--primary); color: white;
   border: none; border-radius: 20px; font-size: 12px; font-weight: 700;
-  cursor: pointer; display: inline-flex; align-items: center; gap: 6px; font-family: inherit;
+  cursor: pointer; display: inline-flex; align-items: center; gap: 6px; font-family: inheritinherit;
 }
 .empty-state { text-align: center; padding: 28px 16px; }
 .empty-state .title { font-size: 13px; font-weight: 700; color: var(--text); margin-bottom: 4px; }

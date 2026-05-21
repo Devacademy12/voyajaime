@@ -1,7 +1,11 @@
 import { createServerSupabaseClient } from "@/lib/supabaseServer";
 import { redirect } from "next/navigation";
 import TouristeNav from "../components/touriste/TouristeNav";
-
+import { Poppins } from "next/font/google";
+const poppins = Poppins({
+  subsets: ["latin"],
+  weight: ["300", "400", "500", "600", "700", "800"],
+});
 export default async function TouristeLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createServerSupabaseClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -27,8 +31,15 @@ export default async function TouristeLayout({ children }: { children: React.Rea
   }
 
   return (
-    <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column", background: "#FAFAF9" }}>
-      <TouristeNav
+<div
+  className={poppins.className}
+  style={{
+    minHeight: "100vh",
+    display: "flex",
+    flexDirection: "column",
+    background: "#FAFAF9",
+  }}
+>      <TouristeNav
         userName={userName}
         favCount={favCount}
       />

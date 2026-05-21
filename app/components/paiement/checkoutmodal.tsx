@@ -105,7 +105,7 @@ export default function CheckoutModal({ reservation, onClose, onPaid, autoStart 
           width: 100%;
           max-width: 460px;
           overflow: hidden;
-          font-family: 'DM Sans', 'Helvetica Neue', sans-serif;
+          font-family: inherit'DM Sans', 'Helvetica Neue', sans-serif;
           animation: co-slide-up 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
           box-shadow: 0 32px 80px rgba(0,0,0,0.22);
         }
@@ -198,7 +198,7 @@ export default function CheckoutModal({ reservation, onClose, onPaid, autoStart 
         .co-timer.urgent { background: #fff5f5; border-color: #fecaca; }
         .co-timer-label { font-size: 12px; color: #64748b; display: flex; align-items: center; gap: 6px; }
         .co-timer-label.urgent { color: #ef4444; }
-        .co-timer-val { font-family: 'SF Mono', 'Fira Code', monospace; font-size: 14px; font-weight: 700; color: #334155; }
+        .co-timer-val { font-family: inherit'SF Mono', 'Fira Code', monospace; font-size: 14px; font-weight: 700; color: #334155; }
         .co-timer-val.urgent { color: #ef4444; }
 
         .co-btn-primary {
@@ -206,7 +206,7 @@ export default function CheckoutModal({ reservation, onClose, onPaid, autoStart 
           background: #0f172a; color: #fff; border: none;
           border-radius: 12px; font-size: 14px; font-weight: 700;
           cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;
-          transition: all 0.2s ease; font-family: inherit; letter-spacing: 0.1px;
+          transition: all 0.2s ease; font-family: inheritinherit; letter-spacing: 0.1px;
         }
         .co-btn-primary:hover:not(:disabled) { background: #1e293b; transform: translateY(-1px); }
         .co-btn-primary:active:not(:disabled) { transform: translateY(0); }
@@ -217,7 +217,7 @@ export default function CheckoutModal({ reservation, onClose, onPaid, autoStart 
           background: #fff; color: #334155;
           border: 1.5px solid #e2e8f0; border-radius: 10px;
           font-size: 13px; font-weight: 600; cursor: pointer;
-          transition: all 0.15s ease; font-family: inherit;
+          transition: all 0.15s ease; font-family: inheritinherit;
         }
         .co-btn-secondary:hover { background: #f8fafc; border-color: #cbd5e1; }
 

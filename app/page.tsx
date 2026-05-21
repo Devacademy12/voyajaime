@@ -79,8 +79,8 @@ const CSS_PAGE = `
     flex-shrink: 0;
     font-size: 18px;
   }
-  .trust-label { font-size: 13px; font-weight: 700; color: #1E293B; font-family: 'DM Sans', sans-serif; }
-  .trust-sub   { font-size: 11px; color: #94A3B8; font-weight: 500; font-family: 'DM Sans', sans-serif; }
+  .trust-label { font-size: 13px; font-weight: 700; color: #1E293B; font-family: inherit'DM Sans', sans-serif; }
+  .trust-sub   { font-size: 11px; color: #94A3B8; font-weight: 500; font-family: inherit'DM Sans', sans-serif; }
 
   /* ── Section divider ── */
   .home-divider {
@@ -140,7 +140,7 @@ const CSS_PAGE = `
   }
   .city-card-name {
     position: absolute; bottom: 14px; left: 14px;
-    font-family: 'Playfair Display', serif;
+    font-family: inherit'Playfair Display', serif;
     font-size: 16px; font-weight: 700;
     color: white; letter-spacing: -0.3px;
   }
@@ -180,10 +180,10 @@ const CSS_PAGE = `
     color: rgba(255,255,255,0.8);
     text-transform: uppercase; letter-spacing: 2px;
     margin-bottom: 20px;
-    font-family: 'DM Sans', sans-serif;
+    font-family: inherit'DM Sans', sans-serif;
   }
   .newsletter-title {
-    font-family: 'Playfair Display', serif;
+    font-family: inherit'Playfair Display', serif;
     font-size: clamp(26px, 4vw, 38px);
     font-weight: 900; color: white;
     letter-spacing: -1px; line-height: 1.1;
@@ -192,7 +192,7 @@ const CSS_PAGE = `
   .newsletter-sub {
     font-size: 15px; color: rgba(255,255,255,0.65);
     line-height: 1.6; margin-bottom: 32px;
-    font-family: 'DM Sans', sans-serif;
+    font-family: inherit'DM Sans', sans-serif;
   }
   .newsletter-form {
     display: flex; gap: 10px;
@@ -206,7 +206,7 @@ const CSS_PAGE = `
     background: rgba(255,255,255,0.1);
     backdrop-filter: blur(12px);
     color: white; font-size: 14px;
-    font-family: 'DM Sans', sans-serif;
+    font-family: inherit'DM Sans', sans-serif;
     outline: none;
     transition: border-color 0.2s, background 0.2s;
   }
@@ -221,7 +221,7 @@ const CSS_PAGE = `
     background: white; color: #053366;
     font-size: 14px; font-weight: 800;
     border: none; cursor: pointer;
-    font-family: 'DM Sans', sans-serif;
+    font-family: inherit'DM Sans', sans-serif;
     white-space: nowrap;
     transition: all 0.2s;
     box-shadow: 0 4px 16px rgba(0,0,0,0.15);

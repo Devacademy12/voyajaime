@@ -41,7 +41,7 @@
   }
 
   body {
-    font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    font-family: inherit'DM Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     background: #F8FAFF;
     color: #111827;
   }
@@ -131,7 +131,7 @@
     border: 1.5px solid #E5E7EB;
     border-radius: 12px;
     font-size: 14px;
-    font-family: inherit;
+    font-family: inheritinherit;
     color: #111827;
     background: #F9FAFB;
     outline: none;
@@ -170,7 +170,7 @@
     border: 2px solid #EEF2FF;
     border-radius: 18px;
     font-size: 15px;
-    font-family: inherit;
+    font-family: inheritinherit;
     color: #053366;
     background: white;
     outline: none;
@@ -215,7 +215,7 @@
     color: #6B7280;
     font-size: 13px;
     font-weight: 600;
-    font-family: inherit;
+    font-family: inheritinherit;
     cursor: pointer;
     transition: all .2s;
   }
@@ -261,7 +261,7 @@
   }
 
   .admin-page {
-    font-family: 'DM Sans', system-ui, sans-serif;
+    font-family: inherit'DM Sans', system-ui, sans-serif;
   }
 
   .admin-panel {
@@ -481,7 +481,7 @@
     font-weight: 600;
     color: white;
     cursor: pointer;
-    font-family: inherit;
+    font-family: inheritinherit;
   }
 
   .admin-cta-button:hover {
@@ -521,7 +521,7 @@
     border: 2px solid #EEF2FF;
     border-radius: 18px;
     font-size: 15px;
-    font-family: inherit;
+    font-family: inheritinherit;
     color: #053366;
     background: white;
     outline: none;
@@ -566,7 +566,7 @@
     color: #6B7280;
     font-size: 13px;
     font-weight: 600;
-    font-family: inherit;
+    font-family: inheritinherit;
     cursor: pointer;
     transition: all .2s;
   }
@@ -603,7 +603,7 @@
     padding: 12px 16px;
     border-radius: 12px;
     font-size: 14px;
-    font-family: inherit;
+    font-family: inheritinherit;
     color: #111827;
     outline: none;
     transition: all 0.2s;
@@ -627,7 +627,7 @@
     border-radius: 12px;
     font-size: 13px;
     font-weight: 700;
-    font-family: inherit;
+    font-family: inheritinherit;
     cursor: pointer;
     border: none;
     transition: all 0.18s;
@@ -730,7 +730,7 @@
     border-radius: 14px;
     font-size: 15px;
     font-weight: 800;
-    font-family: inherit;
+    font-family: inheritinherit;
     cursor: pointer;
     display: flex;
     align-items: center;
@@ -765,7 +765,7 @@
     border-radius: 12px;
     font-size: 13px;
     font-weight: 600;
-    font-family: inherit;
+    font-family: inheritinherit;
     cursor: pointer;
     transition: all 0.2s;
   }
@@ -886,7 +886,7 @@
     border-radius: 12px;
     font-size: 13px;
     font-weight: 600;
-    font-family: inherit;
+    font-family: inheritinherit;
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
     animation: fadeUp 0.3s ease;
   }
@@ -1074,7 +1074,7 @@
     max-width: 1200px;
     margin: 0 auto;
     padding: 32px 28px 60px;
-    font-family: 'DM Sans', system-ui, sans-serif;
+    font-family: inherit'DM Sans', system-ui, sans-serif;
   }
 
   .main-with-sidebar {
@@ -1183,7 +1183,7 @@
     font-size: 12px;
     font-weight: 600;
     cursor: pointer;
-    font-family: inherit;
+    font-family: inheritinherit;
     transition: all .18s;
     white-space: nowrap;
     border: 1.5px solid var(--brand-lavender);
@@ -1223,7 +1223,7 @@
     border: 1.5px solid var(--brand-lavender);
     border-radius: 14px;
     font-size: 14px;
-    font-family: inherit;
+    font-family: inheritinherit;
     color: var(--brand-dark);
     background: white;
     outline: none;
@@ -1815,7 +1815,7 @@
   font-size: 12px;
   font-weight: 700;
   cursor: pointer;
-  font-family: inherit;
+  font-family: inheritinherit;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1882,7 +1882,7 @@
   border: 1.5px solid #DCE5FF;
   border-radius: 12px;
   font-size: 13px;
-  font-family: inherit;
+  font-family: inheritinherit;
   color: #053366;
   background: white;
   cursor: pointer;
@@ -2129,7 +2129,7 @@
   border: 1.5px solid #DCE5FF;
   border-radius: 12px;
   font-size: 13px;
-  font-family: inherit;
+  font-family: inheritinherit;
   outline: none;
   color: #053366;
   background: white;
@@ -2207,7 +2207,7 @@
   cursor: pointer;
   font-size: 13px;
   font-weight: 600;
-  font-family: inherit;
+  font-family: inheritinherit;
   transition: all 0.2s;
   display: inline-flex;
   align-items: center;
@@ -2286,7 +2286,7 @@
   border-radius: 11px;
   font-size: 14px;
   font-weight: 600;
-  font-family: inherit;
+  font-family: inheritinherit;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
   animation: toast-slide-in 0.3s ease forwards;
   display: flex;
@@ -2352,7 +2352,7 @@
   border-radius: 12px;
   font-size: 13px;
   font-weight: 700;
-  font-family: inherit;
+  font-family: inheritinherit;
   cursor: pointer;
   border: none;
   transition: all 0.2s;
@@ -2441,7 +2441,7 @@
   border: 1.5px solid #DCE5FF;
   border-radius: 12px;
   font-size: 14px;
-  font-family: inherit;
+  font-family: inheritinherit;
   color: #053366;
   background: #F8FAFF;
   outline: none;
@@ -2579,7 +2579,7 @@
   font-size: 15px;
   font-weight: 800;
   cursor: pointer;
-  font-family: inherit;
+  font-family: inheritinherit;
   transition: all 0.2s;
   display: flex;
   align-items: center;
@@ -2655,7 +2655,7 @@
   font-size: 14px;
   font-weight: 700;
   cursor: pointer;
-  font-family: inherit;
+  font-family: inheritinherit;
 }
 
 .success-link {
@@ -2713,7 +2713,7 @@
   border: 1.5px solid #E5E7EB;
   border-radius: 10px;
   font-size: 13px;
-  font-family: inherit;
+  font-family: inheritinherit;
   outline: none;
   transition: border-color .2s;
   background: #FAFAFA;
@@ -2736,7 +2736,7 @@
   cursor: pointer;
   font-size: 13px;
   font-weight: 600;
-  font-family: inherit;
+  font-family: inheritinherit;
   transition: all .2s;
   border: 1px solid #E5E7EB;
   display: inline-flex;
@@ -2956,4 +2956,20 @@
   padding: 16px;
   box-shadow: 0 8px 40px rgba(0, 0, 0, 0.22);
   min-width: 280px;
+}
+/* Font globale */
+body {
+  font-family: 'DM Sans', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  background: #FAFAF9;
+  color: #111827;
+}
+
+/* Tous les headings */
+h1,
+h2,
+h3,
+.hero-title {
+  font-family: 'Playfair Display', serif;
 }

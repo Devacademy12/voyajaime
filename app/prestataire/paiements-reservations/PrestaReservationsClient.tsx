@@ -62,7 +62,7 @@ const CSS = `
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
   .pw {
-    font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+    font-family: inherit'Plus Jakarta Sans', system-ui, sans-serif;
     background: #F5F7FA;
     min-height: 100vh;
     padding: 28px 36px 64px;
@@ -125,7 +125,7 @@ const CSS = `
   }
   .pw-tab {
     padding: 9px 18px; border: none; background: none;
-    font-family: 'Plus Jakarta Sans', sans-serif; font-size: 13px; font-weight: 600;
+    font-family: inherit'Plus Jakarta Sans', sans-serif; font-size: 13px; font-weight: 600;
     color: #94A3B8; cursor: pointer; border-radius: 10px;
     display: flex; align-items: center; gap: 7px; transition: all .18s;
     white-space: nowrap;
@@ -199,13 +199,13 @@ const CSS = `
   .pw-search:focus-within { border-color: #2B96A8; }
   .pw-search input {
     border: none; outline: none; background: transparent;
-    font-size: 13px; font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 13px; font-family: inherit'Plus Jakarta Sans', sans-serif;
     color: #053366; width: 100%;
   }
   .pw-search input::placeholder { color: #CBD5E1; }
   .pw-select {
     padding: 9px 12px; border-radius: 10px; border: 1.5px solid #E2E8F0;
-    background: #fff; font-size: 13px; font-family: 'Plus Jakarta Sans', sans-serif;
+    background: #fff; font-size: 13px; font-family: inherit'Plus Jakarta Sans', sans-serif;
     color: #053366; cursor: pointer; outline: none;
     transition: border-color .15s;
   }
@@ -215,7 +215,7 @@ const CSS = `
     padding: 9px 16px; border-radius: 10px;
     border: 1.5px solid #E2E8F0; background: #fff;
     color: #053366; font-size: 13px; font-weight: 600;
-    font-family: 'Plus Jakarta Sans', sans-serif; cursor: pointer;
+    font-family: inherit'Plus Jakarta Sans', sans-serif; cursor: pointer;
     margin-left: auto; transition: all .15s;
   }
   .pw-export:hover { border-color: #2B96A8; color: #2B96A8; background: #EFF9FB; }
@@ -261,7 +261,7 @@ const CSS = `
     padding: 8px 16px; border-radius: 8px;
     border: 1.5px solid rgba(43,150,168,.3); background: #EFF9FB;
     color: #2B96A8; font-size: 12.5px; font-weight: 700;
-    font-family: 'Plus Jakarta Sans', sans-serif; cursor: pointer;
+    font-family: inherit'Plus Jakarta Sans', sans-serif; cursor: pointer;
     transition: all .15s;
   }
   .pw-voir-tout:hover { background: rgba(43,150,168,.15); border-color: #2B96A8; }

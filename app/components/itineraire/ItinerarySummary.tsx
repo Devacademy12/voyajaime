@@ -297,7 +297,7 @@ const CSS = `
 .its-root {
   min-height: 100vh;
   background: #F8FAFB;
-  font-family: 'DM Sans', sans-serif;
+  font-family: inherit'DM Sans', sans-serif;
   padding: 1.25rem 10rem;
   box-sizing: border-box;
 }

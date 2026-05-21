@@ -145,7 +145,7 @@ const RESPONSIVE_CSS = `
   *, *::before, *::after { box-sizing: border-box; }
 
   .it-wrap {
-    font-family: 'DM Sans', system-ui, sans-serif;
+    font-family: inherit'DM Sans', system-ui, sans-serif;
     padding: 36px 0 80px;
     width: 100%;
   }
@@ -173,7 +173,7 @@ const RESPONSIVE_CSS = `
   .it-card-meta  { flex: 1; min-width: 0; }
   .it-card-actions { display: flex; gap: 8px; flex-shrink: 0; align-items: center; flex-wrap: wrap; }
 
-  .it-btn { transition: all .15s; cursor: pointer; font-family: inherit; border: none; outline: none; }
+  .it-btn { transition: all .15s; cursor: pointer; font-family: inheritinherit; border: none; outline: none; }
 
   /* Bouton Réserver (état initial) */
   .it-reserve-all-btn {
@@ -182,7 +182,7 @@ const RESPONSIVE_CSS = `
     background: linear-gradient(135deg,#2B96A8,#1e7a8a);
     color: white; border: none; border-radius: 22px;
     font-size: 12px; font-weight: 700; cursor: pointer;
-    font-family: 'DM Sans',sans-serif; transition: all .18s;
+    font-family: inherit'DM Sans',sans-serif; transition: all .18s;
     flex-shrink: 0; white-space: nowrap;
     box-shadow: 0 2px 10px rgba(43,150,168,.3);
   }
@@ -196,7 +196,7 @@ const RESPONSIVE_CSS = `
     background: linear-gradient(135deg,#059669,#047857);
     color: white; border: none; border-radius: 22px;
     font-size: 12px; font-weight: 700; cursor: pointer;
-    font-family: 'DM Sans',sans-serif; transition: all .18s;
+    font-family: inherit'DM Sans',sans-serif; transition: all .18s;
     flex-shrink: 0; white-space: nowrap;
     box-shadow: 0 2px 10px rgba(5,150,105,.35);
     animation: fadeIn .25s ease;
@@ -345,7 +345,7 @@ const RESPONSIVE_CSS = `
     background: white; border: 1.5px solid #2B96A8;
     border-radius: 22px; font-size: 11px; font-weight: 700;
     color: #2B96A8; cursor: pointer; text-decoration: none;
-    transition: all .18s; font-family: 'DM Sans', sans-serif;
+    transition: all .18s; font-family: inherit'DM Sans', sans-serif;
   }
   .btn-voir-detail:hover { background: #2B96A8; color: white; box-shadow: 0 3px 12px rgba(43,150,168,.35); transform: translateY(-1px); }
   .btn-voir-detail:disabled,

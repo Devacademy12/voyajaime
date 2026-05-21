@@ -49,7 +49,7 @@ const CSS = `
   @keyframes fadeUp { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
 
   .admin-wrap {
-    font-family: 'DM Sans', system-ui, sans-serif;
+    font-family: inherit'DM Sans', system-ui, sans-serif;
     width: 100%; box-sizing: border-box;
     background: #F8FAFC; min-height: 100vh;
     padding: 32px 48px 64px;
@@ -61,7 +61,7 @@ const CSS = `
   }
   .admin-tab {
     padding: 10px 20px; border: none; background: none;
-    font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 600;
+    font-family: inherit'DM Sans', sans-serif; font-size: 13px; font-weight: 600;
     color: #9CA3AF; cursor: pointer;
     border-bottom: 2px solid transparent; margin-bottom: -1.5px;
     display: flex; align-items: center; gap: 6px; transition: all .15s;
@@ -97,11 +97,11 @@ const CSS = `
   }
   .search-box input {
     border: none; outline: none; background: transparent;
-    font-size: 13px; font-family: 'DM Sans', sans-serif; color: #053366; width: 100%;
+    font-size: 13px; font-family: inherit'DM Sans', sans-serif; color: #053366; width: 100%;
   }
   .filter-select {
     padding: 9px 14px; border-radius: 10px; border: 1.5px solid #E2E8F0;
-    background: #FFFFFF; font-size: 13px; font-family: 'DM Sans', sans-serif;
+    background: #FFFFFF; font-size: 13px; font-family: inherit'DM Sans', sans-serif;
     color: #053366; cursor: pointer; outline: none;
   }
   .export-btn {
@@ -109,7 +109,7 @@ const CSS = `
     padding: 9px 18px; border-radius: 10px;
     border: 1.5px solid rgba(43,150,168,.25);
     background: #EFF9FB; color: #2B96A8;
-    font-size: 13px; font-weight: 600; font-family: 'DM Sans', sans-serif;
+    font-size: 13px; font-weight: 600; font-family: inherit'DM Sans', sans-serif;
     cursor: pointer; margin-left: auto; transition: all .15s;
   }
   .export-btn:hover { background: rgba(43,150,168,.12); }
@@ -144,7 +144,7 @@ const CSS = `
     padding: 7px 22px; border-radius: 10px;
     border: 1.5px solid #E2E8F0;
     background: #FFFFFF; color: #053366;
-    font-size: 12px; font-weight: 700; font-family: 'DM Sans', sans-serif;
+    font-size: 12px; font-weight: 700; font-family: inherit'DM Sans', sans-serif;
     cursor: pointer; transition: all .15s;
   }
   .show-all-btn:hover { border-color: #2B96A8; color: #2B96A8; background: #EFF9FB; }

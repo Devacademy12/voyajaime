@@ -21,7 +21,7 @@
 .root {
   background: #f7f8fc;
   min-height: 100vh;
-  font-family: 'DM Sans', system-ui, sans-serif;
+  font-family: inherit'DM Sans', system-ui, sans-serif;
 }
 
 .navSpacer {
@@ -77,7 +77,7 @@
   background: white;
   outline: none;
   color: #053366;
-  font-family: inherit;
+  font-family: inheritinherit;
   transition: border 0.2s;
   box-shadow: 0 2px 8px rgba(5, 51, 102, 0.04);
   box-sizing: border-box;
@@ -111,7 +111,7 @@
   cursor: pointer;
   transition: all 0.18s;
   color: #053366;
-  font-family: inherit;
+  font-family: inheritinherit;
   white-space: nowrap;
   display: inline-flex;
   align-items: center;
@@ -173,7 +173,7 @@
   font-size: 13px;
   font-weight: 500;
   cursor: pointer;
-  font-family: inherit;
+  font-family: inheritinherit;
   transition: background 0.12s;
   background: transparent;
   color: #053366;
@@ -216,7 +216,7 @@
   font-size: 13px;
   font-weight: 700;
   cursor: pointer;
-  font-family: inherit;
+  font-family: inheritinherit;
 }
 
 /* ── Content area ── */
@@ -252,7 +252,7 @@
   border: 1.5px solid #e2e5f0;
   border-radius: 12px;
   font-size: 13px;
-  font-family: inherit;
+  font-family: inheritinherit;
   color: #053366;
   background: white;
   cursor: pointer;
@@ -339,7 +339,7 @@
   font-weight: 700;
   color: white;
   cursor: pointer;
-  font-family: inherit;
+  font-family: inheritinherit;
 }
 
 /* ── Card ── */
@@ -497,7 +497,7 @@
   font-size: 13px;
   font-weight: 700;
   cursor: pointer;
-  font-family: inherit;
+  font-family: inheritinherit;
   transition: all 0.15s;
 }
 

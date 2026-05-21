@@ -155,7 +155,7 @@ export default function TouristeNav({
 
         /* ── Reset ── */
         .gnav * { box-sizing: border-box; margin: 0; padding: 0; }
-        .gnav    { font-family: 'DM Sans', sans-serif; }
+        .gnav    { font-family: inherit'DM Sans', sans-serif; }
 
         /* ── Logo ── */
         .gnav-logo-img { height: 40px; transition: opacity 0.2s; }
@@ -170,7 +170,7 @@ export default function TouristeNav({
           text-decoration: none; white-space: nowrap;
           border: 1px solid transparent;
           transition: color 0.15s, background 0.15s, border-color 0.15s;
-          font-family: 'DM Sans', sans-serif;
+          font-family: inherit'DM Sans', sans-serif;
         }
         .glink i { font-size: 14px; opacity: 0.65; transition: opacity 0.15s; }
         .glink:hover {
@@ -199,7 +199,7 @@ export default function TouristeNav({
           color: var(--gnav-text); white-space: nowrap;
           cursor: pointer; background: none;
           border: 1px solid transparent;
-          font-family: 'DM Sans', sans-serif;
+          font-family: inherit'DM Sans', sans-serif;
           transition: color 0.15s, background 0.15s, border-color 0.15s;
         }
         .glink-plan i.mi { font-size: 14px; opacity: 0.65; }
@@ -249,13 +249,13 @@ export default function TouristeNav({
         .plan-icon.assiste { background: rgba(2,175,207,0.10); border: 1px solid rgba(2,175,207,0.22); }
         .plan-icon.libre   { background: rgba(43,150,168,0.10); border: 1px solid rgba(43,150,168,0.22); }
 
-        .plan-title { font-size: 14px; font-weight: 700; color: #053366; margin-bottom: 2px; font-family: 'DM Sans', sans-serif; }
-        .plan-desc  { font-size: 13px; color: #64748B; font-weight: 500; line-height: 1.5; font-family: 'DM Sans', sans-serif; }
+        .plan-title { font-size: 14px; font-weight: 700; color: #053366; margin-bottom: 2px; font-family: inherit'DM Sans', sans-serif; }
+        .plan-desc  { font-size: 13px; color: #64748B; font-weight: 500; line-height: 1.5; font-family: inherit'DM Sans', sans-serif; }
         .plan-badge {
           display: inline-flex; align-items: center; gap: 3px; margin-top: 5px;
           padding: 2px 8px; border-radius: 20px;
           font-size: 10px; font-weight: 700; letter-spacing: 0.2px;
-          font-family: 'DM Sans', sans-serif;
+          font-family: inherit'DM Sans', sans-serif;
         }
         .plan-badge i { font-size: 9px; }
         .plan-badge.ai   { background: rgba(2,175,207,0.09);  color: #0891A8; border: 1px solid rgba(2,175,207,0.22); }
@@ -269,7 +269,7 @@ export default function TouristeNav({
           background: linear-gradient(135deg, #02AFCF, #0891A8);
           border: none;
           font-size: 14px; font-weight: 700; color: #fff;
-          cursor: pointer; font-family: 'DM Sans', sans-serif;
+          cursor: pointer; font-family: inherit'DM Sans', sans-serif;
           white-space: nowrap; text-decoration: none;
           box-shadow: 0 2px 10px rgba(2,175,207,0.30);
           transition: opacity 0.15s, box-shadow 0.15s, transform 0.1s;
@@ -310,7 +310,7 @@ export default function TouristeNav({
           background: #E11D48; color: white; border-radius: 50%;
           width: 16px; height: 16px; font-size: 9px; font-weight: 800;
           display: flex; align-items: center; justify-content: center;
-          border: 2px solid white; font-family: 'DM Sans', sans-serif;
+          border: 2px solid white; font-family: inherit'DM Sans', sans-serif;
         }
 
         .g-sep { width: 1px; height: 22px; background: rgba(5,51,102,0.10); flex-shrink: 0; }
@@ -324,7 +324,7 @@ export default function TouristeNav({
           border: 2px solid rgba(255,255,255,0.7);
           box-shadow: 0 0 0 1.5px rgba(5,51,102,0.15);
           cursor: pointer; font-size: 14px; font-weight: 800;
-          font-family: 'DM Sans', sans-serif;
+          font-family: inherit'DM Sans', sans-serif;
           display: flex; align-items: center; justify-content: center;
           transition: box-shadow 0.15s, transform 0.1s;
           flex-shrink: 0; overflow: hidden; padding: 0;
@@ -359,8 +359,8 @@ export default function TouristeNav({
           overflow: hidden;
         }
         .drop-av img { width: 100%; height: 100%; object-fit: cover; }
-        .drop-name   { font-size: 13px; font-weight: 700; color: #0F172A; margin-bottom: 2px; font-family: 'DM Sans', sans-serif; }
-        .drop-role   { font-size: 11px; color: #2B96A8; font-weight: 600; display: flex; align-items: center; gap: 4px; font-family: 'DM Sans', sans-serif; }
+        .drop-name   { font-size: 13px; font-weight: 700; color: #0F172A; margin-bottom: 2px; font-family: inherit'DM Sans', sans-serif; }
+        .drop-role   { font-size: 11px; color: #2B96A8; font-weight: 600; display: flex; align-items: center; gap: 4px; font-family: inherit'DM Sans', sans-serif; }
 
         .ddi {
           display: flex; align-items: center; gap: 9px;
@@ -368,7 +368,7 @@ export default function TouristeNav({
           text-decoration: none; font-size: 13px; font-weight: 600;
           color: #1E293B; cursor: pointer;
           border: none; background: none;
-          font-family: 'DM Sans', sans-serif; width: 100%; text-align: left;
+          font-family: inherit'DM Sans', sans-serif; width: 100%; text-align: left;
           transition: background 0.13s, color 0.13s;
         }
         .ddi i { font-size: 15px; opacity: 0.7; }
@@ -412,7 +412,7 @@ export default function TouristeNav({
           color: #1E293B; text-decoration: none;
           border: 1px solid transparent;
           transition: background 0.13s, color 0.13s, border-color 0.13s;
-          font-family: 'DM Sans', sans-serif;
+          font-family: inherit'DM Sans', sans-serif;
         }
         .g-mlink i { font-size: 16px; opacity: 0.6; }
         .g-mlink:hover, .g-mlink.on {
@@ -430,7 +430,7 @@ export default function TouristeNav({
           font-size: 10px; font-weight: 800; color: #94A3B8;
           text-transform: uppercase; letter-spacing: 1.2px;
           padding: 4px 14px 8px;
-          font-family: 'DM Sans', sans-serif;
+          font-family: inherit'DM Sans', sans-serif;
         }
 
         /* ── Responsive ── */

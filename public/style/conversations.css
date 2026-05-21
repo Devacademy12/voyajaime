@@ -23,7 +23,7 @@
   border: 1.5px solid #DCE5FF;
   border-radius: 12px;
   font-size: 13px;
-  font-family: inherit;
+  font-family: inheritinherit;
   outline: none;
   color: #053366;
   background: white;
@@ -31,7 +31,7 @@
 }
 .cv-search-input:focus { border-color: #02AFCF; box-shadow: 0 0 0 3px rgba(2,175,207,0.1); }
 
-.cv-ftab { padding: 6px 14px; border-radius: 20px; border: 1.5px solid #DCE5FF; font-size: 12px; font-weight: 600; cursor: pointer; font-family: inherit; transition: all 0.2s; }
+.cv-ftab { padding: 6px 14px; border-radius: 20px; border: 1.5px solid #DCE5FF; font-size: 12px; font-weight: 600; cursor: pointer; font-family: inheritinherit; transition: all 0.2s; }
 .cv-ftab.on  { background: linear-gradient(135deg, #02AFCF, #259FFC); color: white; border-color: transparent; }
 .cv-ftab:not(.on) { background: white; color: #053366; }
 

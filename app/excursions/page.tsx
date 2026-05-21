@@ -323,7 +323,7 @@ export default function ExcursionsPage() {
           font-size: 12px;
           font-weight: 700;
           cursor: not-allowed;
-          font-family: inherit;
+          font-family: inheritinherit;
         }
       `}</style>
 

@@ -252,7 +252,7 @@ const CSS = `
 .ma2-page {
   min-height: calc(100vh - 64px);
   background: var(--bg);
-  font-family: 'DM Sans', system-ui, sans-serif;
+  font-family: inherit'DM Sans', system-ui, sans-serif;
   display: flex; flex-direction: column;
 }
 
@@ -274,7 +274,7 @@ const CSS = `
   letter-spacing: .04em;
 }
 .ma2-topbar h1 {
-  font-family: 'Playfair Display', serif;
+  font-family: inherit'Playfair Display', serif;
   font-size: 20px; font-weight: 900; color: var(--title); margin: 0;
 }
 .ma2-topbar h1 span { color: var(--primary); }
@@ -354,7 +354,7 @@ const CSS = `
   padding: 9px 18px; border-radius: 22px;
   border: 2px solid var(--border); background: var(--white);
   color: var(--text); font-size: 13px; font-weight: 600;
-  cursor: pointer; font-family: inherit; transition: all .18s;
+  cursor: pointer; font-family: inheritinherit; transition: all .18s;
 }
 .ma2-city-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 10px -4px rgba(0,0,0,.12); }
 .ma2-city-btn.on {
@@ -383,7 +383,7 @@ const CSS = `
   padding: 7px 12px; border-radius: 10px;
   border: 1.5px solid var(--border); background: var(--white);
   font-size: 12px; font-weight: 600; color: var(--muted);
-  cursor: pointer; font-family: inherit; transition: all .15s; white-space: nowrap;
+  cursor: pointer; font-family: inheritinherit; transition: all .15s; white-space: nowrap;
 }
 .ma2-date-btn:hover { border-color: var(--primary); color: var(--primary); }
 .ma2-date-btn.active { border-color: var(--primary); background: rgba(43,150,168,.07); color: var(--primary); }
@@ -421,7 +421,7 @@ const CSS = `
   padding: 8px 15px; border-radius: 24px;
   border: 2px solid var(--border); background: var(--white);
   color: var(--text); font-size: 13px; font-weight: 500;
-  cursor: pointer; font-family: inherit; transition: all .18s;
+  cursor: pointer; font-family: inheritinherit; transition: all .18s;
 }
 .ma2-cat-chip:hover { transform: translateY(-1px); box-shadow: 0 4px 10px -4px rgba(0,0,0,.12); }
 .ma2-cat-chip.on {
@@ -434,7 +434,7 @@ const CSS = `
   width: 100%; padding: 10px 38px 10px 14px;
   border-radius: 12px; border: 1.5px solid var(--border);
   font-size: 14px; color: var(--title); outline: none;
-  background: #FAFBFC; transition: border-color .2s; font-family: inherit;
+  background: #FAFBFC; transition: border-color .2s; font-family: inheritinherit;
 }
 .ma2-budget-input:focus { border-color: var(--primary); }
 .ma2-budget-hint { font-size: 11px; color: var(--primary); margin-top: 6px; }
@@ -456,14 +456,14 @@ const CSS = `
   padding: 12px 22px; border-radius: 50px;
   border: 2px solid var(--border); background: var(--white);
   color: var(--text); font-size: 14px; font-weight: 700;
-  font-family: inherit; cursor: pointer; transition: all .18s;
+  font-family: inheritinherit; cursor: pointer; transition: all .18s;
 }
 .ma2-back-btn:hover { border-color: var(--title); color: var(--title); }
 .ma2-next-btn {
   flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px;
   padding: 13px 28px; border-radius: 50px;
   border: none; background: var(--title); color: white;
-  font-size: 15px; font-weight: 700; font-family: inherit;
+  font-size: 15px; font-weight: 700; font-family: inheritinherit;
   cursor: pointer; transition: all .22s;
   box-shadow: 0 10px 28px -8px rgba(5,51,102,.40);
 }
@@ -499,7 +499,7 @@ const CSS = `
   animation: ma2pulse 2s ease-in-out infinite;
 }
 @keyframes ma2pulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.08)} }
-.ma2-gen-title { font-family: 'Playfair Display', serif; font-size: 22px; font-weight: 900; color: var(--title); margin: 0; }
+.ma2-gen-title { font-family: inherit'Playfair Display', serif; font-size: 22px; font-weight: 900; color: var(--title); margin: 0; }
 .ma2-gen-msg { font-size: 14px; color: var(--muted); max-width: 340px; line-height: 1.5; }
 .ma2-gen-dots { display: flex; gap: 8px; justify-content: center; }
 .ma2-gen-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--primary); animation: ma2bounce 1.4s infinite; }
@@ -534,7 +534,7 @@ const CSS = `
   border-radius: 8px; font-size: 12px; font-weight: 500;
   color: var(--text); cursor: pointer; transition: all .12s;
   display: flex; align-items: center; justify-content: center;
-  font-family: inherit;
+  font-family: inheritinherit;
 }
 .ma2-cal-day-btn:hover:not(:disabled) { background: rgba(43,150,168,.10); color: var(--primary); }
 .ma2-cal-day-btn:disabled { color: #D1D5DB; cursor: not-allowed; }

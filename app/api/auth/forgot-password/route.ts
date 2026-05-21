@@ -51,7 +51,7 @@ export async function POST(req: Request) {
         <!DOCTYPE html>
         <html>
         <head><meta charset="utf-8"/></head>
-        <body style="font-family: Arial, sans-serif;">
+        <body style="font-family: inheritArial, sans-serif;">
           <h2>Réinitialisation de votre mot de passe 🔐</h2>
           <p>Vous avez demandé à réinitialiser votre mot de passe.</p>
           <p>Cliquez sur le lien ci-dessous :</p>
