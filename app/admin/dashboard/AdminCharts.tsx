@@ -172,7 +172,7 @@ export default function AdminCharts({ reservationsParJour, topVilles, revenusPar
         .period-btn {
           padding: 4px 12px; border-radius: 7px; border: none; cursor: pointer;
           font-size: 11px; font-weight: 700; transition: all .15s;
-          font-family: inherit;
+          font-family: inheritinherit;
         }
       `}</style>
 

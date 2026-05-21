@@ -20,7 +20,7 @@ interface ContactContent { key: string; value: string | null; }
 const CSS = `
   @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@400;500;600;700;800&display=swap');
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: 'DM Sans', system-ui, sans-serif; background: #0D1117; color: #fff; }
+  body { font-family: inherit'DM Sans', system-ui, sans-serif; background: #0D1117; color: #fff; }
 
   /* ── Page wrapper ── */
   .contact-page {
@@ -50,7 +50,7 @@ const CSS = `
     display: block; margin-bottom: 16px;
   }
   .info-title {
-    font-family: 'Playfair Display', serif;
+    font-family: inherit'Playfair Display', serif;
     font-size: clamp(32px, 4vw, 52px);
     font-weight: 900; color: #fff;
     letter-spacing: -1.5px; line-height: 1.06;
@@ -100,7 +100,7 @@ const CSS = `
     display: block; margin-bottom: 12px;
   }
   .form-title {
-    font-family: 'Playfair Display', serif;
+    font-family: inherit'Playfair Display', serif;
     font-size: 28px; font-weight: 900; color: #fff;
     letter-spacing: -.5px; margin-bottom: 32px;
   }

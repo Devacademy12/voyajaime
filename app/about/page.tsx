@@ -63,7 +63,7 @@ const CSS = `
   }
 
   body {
-    font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+    font-family: inherit'Plus Jakarta Sans', system-ui, sans-serif;
     background: var(--dark);
     color: var(--white);
     -webkit-font-smoothing: antialiased;

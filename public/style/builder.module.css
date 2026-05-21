@@ -29,7 +29,7 @@
   --shadow-md: 0 4px 16px rgba(5, 51, 102, 0.10);
   --shadow-lg: 0 12px 40px rgba(5, 51, 102, 0.14);
 
-  font-family: 'DM Sans', system-ui, sans-serif;
+  font-family: inherit'DM Sans', system-ui, sans-serif;
   background: var(--surface);
   min-height: 100vh;
   color: var(--text-1);
@@ -67,7 +67,7 @@
   align-items: center;
   gap: .35rem;
   padding: .35rem .75rem;
-  font-family: 'DM Sans', sans-serif;
+  font-family: inherit'DM Sans', sans-serif;
   font-size: .8rem;
   font-weight: 500;
   color: var(--text-2);
@@ -95,7 +95,7 @@
 .tripBadgeDays {
   font-weight: 600;
   color: var(--navy);
-  font-family: 'Sora', sans-serif;
+  font-family: inherit'Sora', sans-serif;
 }
 .tripBadgeSep { color: var(--text-3); }
 .tripBadgeCities {
@@ -128,7 +128,7 @@
   align-items: center;
   gap: .3rem;
   padding: .3rem .65rem;
-  font-family: 'DM Sans', sans-serif;
+  font-family: inherit'DM Sans', sans-serif;
   font-size: .78rem;
   font-weight: 500;
   color: var(--text-2);
@@ -149,7 +149,7 @@
   align-items: center;
   gap: .4rem;
   padding: .4rem 1rem;
-  font-family: 'DM Sans', sans-serif;
+  font-family: inherit'DM Sans', sans-serif;
   font-size: .82rem;
   font-weight: 600;
   color: var(--white);
@@ -182,7 +182,7 @@
   align-items: center;
   gap: .3rem;
   padding: .7rem 1.1rem;
-  font-family: 'DM Sans', sans-serif;
+  font-family: inherit'DM Sans', sans-serif;
   font-size: .8rem;
   font-weight: 500;
   color: var(--text-2);
@@ -264,7 +264,7 @@
   display: flex;
   align-items: center;
   gap: .4rem;
-  font-family: 'Sora', sans-serif;
+  font-family: inherit'Sora', sans-serif;
   font-size: .9rem;
   font-weight: 600;
   color: var(--navy);
@@ -295,7 +295,7 @@
   align-items: center;
   gap: .3rem;
   padding: .28rem .65rem;
-  font-family: 'DM Sans', sans-serif;
+  font-family: inherit'DM Sans', sans-serif;
   font-size: .75rem;
   font-weight: 500;
   color: var(--teal);
@@ -340,7 +340,7 @@
   flex: 1;
   border: none;
   background: transparent;
-  font-family: 'DM Sans', sans-serif;
+  font-family: inherit'DM Sans', sans-serif;
   font-size: .82rem;
   color: var(--text-1);
   outline: none;
@@ -394,7 +394,7 @@
   text-align: center;
 }
 .emptyStateTitle {
-  font-family: 'Sora', sans-serif;
+  font-family: inherit'Sora', sans-serif;
   font-size: .95rem;
   font-weight: 600;
   color: var(--navy);
@@ -508,7 +508,7 @@
 }
 
 .cardTitle {
-  font-family: 'Sora', sans-serif;
+  font-family: inherit'Sora', sans-serif;
   font-size: .85rem;
   font-weight: 600;
   color: var(--navy);
@@ -524,7 +524,7 @@
   flex-shrink: 0;
 }
 .cardPrice {
-  font-family: 'Sora', sans-serif;
+  font-family: inherit'Sora', sans-serif;
   font-size: 1rem;
   font-weight: 700;
   color: var(--navy);
@@ -586,7 +586,7 @@
   justify-content: center;
   gap: .35rem;
   padding: .4rem .75rem;
-  font-family: 'DM Sans', sans-serif;
+  font-family: inherit'DM Sans', sans-serif;
   font-size: .78rem;
   font-weight: 600;
   color: var(--white);
@@ -650,7 +650,7 @@
 }
 
 .plannerDayName {
-  font-family: 'Sora', sans-serif;
+  font-family: inherit'Sora', sans-serif;
   font-size: .88rem;
   font-weight: 600;
   color: var(--navy);
@@ -670,7 +670,7 @@
   align-items: center;
   gap: .3rem;
   padding: .25rem .6rem;
-  font-family: 'DM Sans', sans-serif;
+  font-family: inherit'DM Sans', sans-serif;
   font-size: .73rem;
   font-weight: 500;
   color: var(--teal);
@@ -683,7 +683,7 @@
 .plannerDateBtn:hover { background: var(--teal-mid); }
 
 .citySelect {
-  font-family: 'DM Sans', sans-serif;
+  font-family: inherit'DM Sans', sans-serif;
   font-size: .73rem;
   font-weight: 500;
   color: var(--navy);
@@ -705,7 +705,7 @@
 
 .dayTotals { text-align: right; }
 .dayBudget {
-  font-family: 'Sora', sans-serif;
+  font-family: inherit'Sora', sans-serif;
   font-size: 1.05rem;
   font-weight: 700;
   color: var(--navy);
@@ -769,7 +769,7 @@
   margin-bottom: .75rem;
 }
 .plannerEmptyTitle {
-  font-family: 'Sora', sans-serif;
+  font-family: inherit'Sora', sans-serif;
   font-size: .88rem;
   font-weight: 600;
   color: var(--navy);
@@ -782,7 +782,7 @@
   align-items: center;
   gap: .35rem;
   padding: .4rem .9rem;
-  font-family: 'DM Sans', sans-serif;
+  font-family: inherit'DM Sans', sans-serif;
   font-size: .78rem;
   font-weight: 600;
   color: var(--teal);
@@ -815,7 +815,7 @@
 }
 
 .slotLabel {
-  font-family: 'Sora', sans-serif;
+  font-family: inherit'Sora', sans-serif;
   font-size: .78rem;
   font-weight: 600;
 }
@@ -854,7 +854,7 @@
 .actCard:hover { box-shadow: var(--shadow-sm); }
 
 .actTime {
-  font-family: 'Sora', sans-serif;
+  font-family: inherit'Sora', sans-serif;
   font-size: .7rem;
   font-weight: 600;
   color: var(--teal);
@@ -900,7 +900,7 @@
 }
 
 .actPrice {
-  font-family: 'Sora', sans-serif;
+  font-family: inherit'Sora', sans-serif;
   font-size: .78rem;
   font-weight: 600;
   color: var(--navy);
@@ -961,7 +961,7 @@
   margin-bottom: .35rem;
 }
 .datePickerTitle {
-  font-family: 'Sora', sans-serif;
+  font-family: inherit'Sora', sans-serif;
   font-size: 1rem;
   font-weight: 700;
   color: var(--navy);
@@ -994,7 +994,7 @@
   display: block;
   width: 100%;
   padding: .55rem .75rem;
-  font-family: 'DM Sans', sans-serif;
+  font-family: inherit'DM Sans', sans-serif;
   font-size: .85rem;
   color: var(--text-1);
   background: var(--surface);
@@ -1008,7 +1008,7 @@
 
 /* Slot picker */
 .slotBoxTitle {
-  font-family: 'Sora', sans-serif;
+  font-family: inherit'Sora', sans-serif;
   font-size: 1rem;
   font-weight: 700;
   color: var(--navy);
@@ -1076,7 +1076,7 @@
 
 .timeInput {
   padding: .28rem .5rem;
-  font-family: 'DM Sans', sans-serif;
+  font-family: inherit'DM Sans', sans-serif;
   font-size: .78rem;
   color: var(--navy);
   background: var(--teal-soft);
@@ -1095,7 +1095,7 @@
 
 .cancelBtn {
   padding: .42rem .85rem;
-  font-family: 'DM Sans', sans-serif;
+  font-family: inherit'DM Sans', sans-serif;
   font-size: .8rem;
   font-weight: 500;
   color: var(--text-2);
@@ -1112,7 +1112,7 @@
   align-items: center;
   gap: .35rem;
   padding: .42rem .85rem;
-  font-family: 'DM Sans', sans-serif;
+  font-family: inherit'DM Sans', sans-serif;
   font-size: .8rem;
   font-weight: 600;
   color: var(--white);
@@ -1296,7 +1296,7 @@
   display: flex;
   align-items: center;
   gap: .4rem;
-  font-family: 'Sora', sans-serif;
+  font-family: inherit'Sora', sans-serif;
   font-size: .95rem;
   font-weight: 700;
   color: var(--navy);
@@ -1307,7 +1307,7 @@
   display: block;
   width: 100%;
   padding: .6rem .75rem;
-  font-family: 'DM Sans', sans-serif;
+  font-family: inherit'DM Sans', sans-serif;
   font-size: .83rem;
   color: var(--text-1);
   background: var(--surface);
@@ -1331,7 +1331,7 @@
   align-items: center;
   gap: .5rem;
   padding: .55rem 1.1rem;
-  font-family: 'DM Sans', sans-serif;
+  font-family: inherit'DM Sans', sans-serif;
   font-size: .82rem;
   font-weight: 500;
   color: var(--navy);

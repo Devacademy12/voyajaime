@@ -110,7 +110,7 @@ const CSS = `
     background: linear-gradient(135deg, #02AFCF, #0891b2);
     color: white; border: none; border-radius: 12px;
     font-size: 13px; font-weight: 700; cursor: pointer;
-    font-family: inherit; white-space: nowrap;
+    font-family: inheritinherit; white-space: nowrap;
     transition: all 0.18s;
     box-shadow: 0 4px 14px rgba(2,175,207,0.32);
     flex-shrink: 0;
@@ -138,7 +138,7 @@ const CSS = `
   .sort-select {
     padding: 9px 14px 9px 34px;
     border: 1.5px solid #E5E7EB; border-radius: 12px;
-    font-size: 13px; font-family: inherit; color: #374151;
+    font-size: 13px; font-family: inheritinherit; color: #374151;
     background: white; cursor: pointer; outline: none;
     appearance: none; transition: border 0.18s;
   }

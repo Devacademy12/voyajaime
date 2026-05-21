@@ -14,7 +14,7 @@
   display: flex;
   flex-direction: column;
   background: #f8fafa;
-  font-family: 'DM Sans', system-ui, sans-serif;
+  font-family: inherit'DM Sans', system-ui, sans-serif;
   overflow: hidden;
 }
 
@@ -61,7 +61,7 @@
   margin-right: 12px;
 }
 .itineraire-topbar h1 {
-  font-family: 'Playfair Display', serif;
+  font-family: inherit'Playfair Display', serif;
   font-size: 20px;
   font-weight: 900;
   color: #111827;
@@ -168,7 +168,7 @@
   border-radius: 14px; padding: 8px 18px; flex-shrink: 0;
 }
 .duree-display .num {
-  font-family: 'Playfair Display', serif;
+  font-family: inherit'Playfair Display', serif;
   font-size: 34px; font-weight: 900; color: #2B96A8;
   line-height: 1; display: block;
 }
@@ -182,7 +182,7 @@
   flex: 1; padding: 5px 0; border-radius: 20px;
   border: 1.5px solid #E5E7EB; background: transparent;
   color: #9CA3AF; font-size: 11px; font-weight: 500;
-  cursor: pointer; font-family: inherit; transition: all .15s;
+  cursor: pointer; font-family: inheritinherit; transition: all .15s;
 }
 .duree-quick-btn:hover,
 .duree-quick-btn.active {
@@ -196,7 +196,7 @@
   padding: 7px 13px; border-radius: 22px;
   border: 1.5px solid #E5E7EB; background: white;
   color: #6B7280; font-size: 12px; font-weight: 500;
-  cursor: pointer; font-family: inherit;
+  cursor: pointer; font-family: inheritinherit;
   display: flex; align-items: center; gap: 5px;
   transition: all .15s;
 }
@@ -214,7 +214,7 @@
   border-radius: 14px;
   border: 2px solid #F3F4F6;
   background: white; text-align: center;
-  cursor: pointer; font-family: inherit;
+  cursor: pointer; font-family: inheritinherit;
   box-shadow: 0 1px 4px rgba(0,0,0,.04);
   position: relative; transition: all .18s;
 }
@@ -256,7 +256,7 @@
 .cta-compose-btn {
   padding: 13px 44px; background: #2B96A8;
   color: white; border: none; border-radius: 50px;
-  font-size: 15px; font-weight: 700; font-family: inherit;
+  font-size: 15px; font-weight: 700; font-family: inheritinherit;
   cursor: pointer; display: inline-flex; align-items: center; gap: 10px;
   box-shadow: 0 10px 28px -8px rgba(43,150,168,.55);
   transition: all .22s;
@@ -289,7 +289,7 @@
 .retry-btn {
   padding: 7px 18px; background: #2B96A8; color: white;
   border: none; border-radius: 20px; font-size: 12px; font-weight: 700;
-  cursor: pointer; display: inline-flex; align-items: center; gap: 6px; font-family: inherit;
+  cursor: pointer; display: inline-flex; align-items: center; gap: 6px; font-family: inheritinherit;
 }
 .empty-state { text-align: center; padding: 28px 16px; }
 .empty-state .title { font-size: 13px; font-weight: 700; color: #374151; margin-bottom: 4px; }

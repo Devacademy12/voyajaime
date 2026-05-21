@@ -23,7 +23,7 @@ const RESPONSIVE_CSS = `
 
   /* ── Wrapper ── */
   .resa-wrap {
-    font-family: 'DM Sans', system-ui, sans-serif;
+    font-family: inherit'DM Sans', system-ui, sans-serif;
     width: 100%;
     box-sizing: border-box;
   }
@@ -91,7 +91,7 @@ const RESPONSIVE_CSS = `
     border: 1.5px solid rgba(43,150,168,.25);
     background: #FFFFFF;
     color: #2B96A8; font-size: 13px; font-weight: 600;
-    cursor: pointer; font-family: 'DM Sans', sans-serif;
+    cursor: pointer; font-family: inherit'DM Sans', sans-serif;
     transition: all .15s;
   }
   .resa-refresh-btn:hover  { background: rgba(43,150,168,.06); border-color: #2B96A8; }

@@ -83,7 +83,7 @@ const CSS = `
   @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@400;500;600;700;800&display=swap');
 
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: 'DM Sans', system-ui, sans-serif; background: #F0F2F8; }
+  body { font-family: inherit'DM Sans', system-ui, sans-serif; background: #F0F2F8; }
 
   @keyframes spin    { to { transform: rotate(360deg); } }
   @keyframes fadeUp  { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
@@ -129,7 +129,7 @@ const CSS = `
     background: linear-gradient(135deg, #02AFCF, #053366);
     color: white; border: none; border-radius: 12px;
     font-size: 13px; font-weight: 700; cursor: pointer;
-    font-family: inherit; transition: all .2s;
+    font-family: inheritinherit; transition: all .2s;
     box-shadow: 0 4px 14px rgba(2,175,207,.28);
     white-space: nowrap;
   }
@@ -142,7 +142,7 @@ const CSS = `
     padding: 10px 18px;
     background: #F4F6FB; border: 1.5px solid #E2E6F0;
     border-radius: 12px; font-size: 13px; font-weight: 600;
-    color: #374151; cursor: pointer; font-family: inherit;
+    color: #374151; cursor: pointer; font-family: inheritinherit;
     text-decoration: none; transition: all .18s;
     white-space: nowrap;
   }
@@ -153,7 +153,7 @@ const CSS = `
     width: 32px; height: 32px; border-radius: 9px;
     border: 1.5px solid #E8ECF4; background: white;
     cursor: pointer; transition: all .15s; color: #6B7280;
-    font-family: inherit;
+    font-family: inheritinherit;
   }
   .icon-btn:hover { background: #FEF2F2; border-color: #FCA5A5; color: #DC2626; }
 
@@ -162,14 +162,14 @@ const CSS = `
     width: 100%; padding: 9px;
     background: #F8FAFF; border: 1.5px dashed #C7D2E8;
     border-radius: 10px; font-size: 12px; font-weight: 700;
-    color: #6B7280; cursor: pointer; font-family: inherit; transition: all .18s;
+    color: #6B7280; cursor: pointer; font-family: inheritinherit; transition: all .18s;
   }
   .add-btn:hover { border-color: #02AFCF; color: #02AFCF; background: #F0FAFF; }
 
   .field {
     width: 100%; padding: 10px 14px;
     border: 1.5px solid #E8ECF4; border-radius: 11px;
-    font-size: 14px; font-family: inherit; color: #111827;
+    font-size: 14px; font-family: inheritinherit; color: #111827;
     background: white; outline: none; transition: border .18s, box-shadow .18s;
   }
   .field:focus { border-color: #02AFCF; box-shadow: 0 0 0 3px rgba(2,175,207,.10); }
@@ -177,7 +177,7 @@ const CSS = `
   .meta-field {
     width: 100%; padding: 8px 11px;
     border: 1.5px solid #E8ECF4; border-radius: 9px;
-    font-size: 13px; font-family: inherit; color: #111827;
+    font-size: 13px; font-family: inheritinherit; color: #111827;
     background: white; outline: none; transition: border .18s;
     resize: vertical;
   }
@@ -215,7 +215,7 @@ const CSS = `
     width: 28px; height: 28px;
     border: 1px solid transparent; border-radius: 7px;
     background: none; cursor: pointer; color: #4B5563;
-    font-size: 13px; font-weight: 700; font-family: inherit;
+    font-size: 13px; font-weight: 700; font-family: inheritinherit;
     transition: all .13s; flex-shrink: 0;
   }
   .wy-btn:hover  { background: #E8ECF4; border-color: #D1D5DB; }
@@ -225,11 +225,11 @@ const CSS = `
   .wy-editor {
     min-height: 160px; padding: 14px 16px;
     font-size: 14px; color: #111827; line-height: 1.8;
-    outline: none; font-family: 'DM Sans', sans-serif;
+    outline: none; font-family: inherit'DM Sans', sans-serif;
   }
   .wy-editor:empty::before { content: attr(data-ph); color: #C4CAD4; pointer-events: none; }
-  .wy-editor h1 { font-family: 'Playfair Display',serif; font-size:24px; font-weight:900; margin-bottom:10px; color:#053366; }
-  .wy-editor h2 { font-family: 'Playfair Display',serif; font-size:18px; font-weight:700; margin-bottom:8px;  color:#053366; }
+  .wy-editor h1 { font-family: inherit'Playfair Display',serif; font-size:24px; font-weight:900; margin-bottom:10px; color:#053366; }
+  .wy-editor h2 { font-family: inherit'Playfair Display',serif; font-size:18px; font-weight:700; margin-bottom:8px;  color:#053366; }
   .wy-editor p  { margin-bottom: 9px; }
   .wy-editor ul { padding-left:20px; margin-bottom:9px; }
   .wy-editor blockquote { border-left:3px solid #02AFCF; padding-left:13px; color:#6B7280; font-style:italic; margin:9px 0; }
@@ -266,7 +266,7 @@ const CSS = `
     padding: 4px 10px; border-radius: 8px;
     border: 1.5px solid #E8ECF4; background: white;
     font-size: 11px; font-weight: 700; cursor: pointer;
-    color: #374151; font-family: inherit; transition: all .13s;
+    color: #374151; font-family: inheritinherit; transition: all .13s;
   }
   .icon-chip:hover    { border-color: #02AFCF; color: #02AFCF; }
   .icon-chip.selected { background: #053366; color: white; border-color: #053366; }
@@ -293,7 +293,7 @@ const CSS = `
     background: rgba(0,0,0,.55); border: none; border-radius: 8px;
     color: white; cursor: pointer; padding: 5px 8px;
     display: flex; align-items: center; gap: 4px;
-    font-size: 11px; font-weight: 700; font-family: inherit;
+    font-size: 11px; font-weight: 700; font-family: inheritinherit;
     transition: background .15s;
   }
   .img-preview-remove:hover { background: rgba(220,38,38,.85); }

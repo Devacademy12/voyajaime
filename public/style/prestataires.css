@@ -12,7 +12,7 @@
   cursor: pointer;
   font-size: 13px;
   font-weight: 600;
-  font-family: inherit;
+  font-family: inheritinherit;
   transition: all 0.2s;
   display: flex;
   align-items: center;
@@ -58,7 +58,7 @@
   cursor: pointer;
   font-size: 12px;
   font-weight: 700;
-  font-family: inherit;
+  font-family: inheritinherit;
   transition: all 0.2s;
   white-space: nowrap;
   display: inline-flex;
@@ -115,7 +115,7 @@
   border: 1.5px solid #E5E7EB;
   border-radius: 11px;
   font-size: 13px;
-  font-family: inherit;
+  font-family: inheritinherit;
   outline: none;
   transition: border-color 0.2s;
   background: #FAFAFA;
@@ -185,7 +185,7 @@
   border-radius: 14px;
   font-size: 14px;
   font-weight: 600;
-  font-family: inherit;
+  font-family: inheritinherit;
   box-shadow: 0 8px 28px rgba(0, 0, 0, 0.12);
   animation: tin 0.3s ease;
   display: flex;

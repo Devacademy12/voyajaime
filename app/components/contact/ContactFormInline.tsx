@@ -21,7 +21,7 @@ const CSS = `
     background: rgba(255,255,255,.06);
     border: 1.5px solid rgba(255,255,255,.10);
     border-radius: 10px;
-    font-size: 14px; font-family: inherit; color: #fff;
+    font-size: 14px; font-family: inheritinherit; color: #fff;
     outline: none; transition: border .18s, background .18s;
     resize: vertical;
   }
@@ -35,7 +35,7 @@ const CSS = `
     width: 100%; padding: 16px;
     background: #02AFCF; color: #fff;
     border: none; border-radius: 11px;
-    font-size: 15px; font-weight: 800; font-family: inherit;
+    font-size: 15px; font-weight: 800; font-family: inheritinherit;
     cursor: pointer; letter-spacing: .1px;
     display: flex; align-items: center; justify-content: center; gap: 8px;
     transition: all .2s;

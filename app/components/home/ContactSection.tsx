@@ -56,7 +56,7 @@ const CSS = `
     display: block; margin-bottom: 14px;
   }
   .hcs-title {
-    font-family: 'Playfair Display', serif;
+    font-family: inherit'Playfair Display', serif;
     font-size: clamp(28px, 3.5vw, 46px);
     font-weight: 900; color: #fff;
     letter-spacing: -1.5px; line-height: 1.08;
@@ -112,7 +112,7 @@ const CSS = `
     display: block; margin-bottom: 10px;
   }
   .hcs-form-title {
-    font-family: 'Playfair Display', serif;
+    font-family: inherit'Playfair Display', serif;
     font-size: 24px; font-weight: 900; color: #fff;
     letter-spacing: -.4px; margin-bottom: 28px;
   }

@@ -173,7 +173,7 @@ const CSS = `
     overflow: hidden;
     display: flex;
     animation: co2Up .3s cubic-bezier(.34,1.4,.64,1);
-    font-family: 'DM Sans', sans-serif;
+    font-family: inherit'DM Sans', sans-serif;
     max-height: 96vh;
   }
 
@@ -212,7 +212,7 @@ const CSS = `
   .cal-day-btn {
     aspect-ratio: 1; border-radius: 10px; border: none;
     font-size: 13px; font-weight: 600; cursor: pointer;
-    font-family: 'DM Sans', sans-serif; transition: all .15s;
+    font-family: inherit'DM Sans', sans-serif; transition: all .15s;
     position: relative; display: flex; align-items: center;
     justify-content: center; flex-direction: column; gap: 1px;
   }
@@ -261,7 +261,7 @@ const CSS = `
     width: 36px; height: 36px; border: none; border-radius: 10px;
     background: #F3F4F6; cursor: pointer;
     display: flex; align-items: center; justify-content: center;
-    transition: all .15s; font-family: 'DM Sans', sans-serif;
+    transition: all .15s; font-family: inherit'DM Sans', sans-serif;
   }
   .co2-counter-btn:hover:not(:disabled) { background: #E5E7EB }
   .co2-counter-btn:disabled { opacity: .3; cursor: not-allowed }
@@ -270,7 +270,7 @@ const CSS = `
   .co2-cta {
     width: 100%; padding: 15px; border: none; border-radius: 14px;
     font-size: 15px; font-weight: 800; cursor: pointer;
-    font-family: 'DM Sans', sans-serif; transition: all .2s;
+    font-family: inherit'DM Sans', sans-serif; transition: all .2s;
     display: flex; align-items: center; justify-content: center; gap: 8px;
   }
   .co2-cta.on { background: linear-gradient(135deg,#2B96A8,#1b7a90); color: white }
@@ -281,7 +281,7 @@ const CSS = `
   .co2-textarea {
     width: 100%; padding: 10px 13px; min-height: 64px;
     border: 1.5px solid #E5E7EB; border-radius: 12px;
-    font-size: 13px; font-family: 'DM Sans', sans-serif;
+    font-size: 13px; font-family: inherit'DM Sans', sans-serif;
     color: #374151; resize: none; outline: none;
     background: #F9FAFB; box-sizing: border-box; transition: border .15s;
   }

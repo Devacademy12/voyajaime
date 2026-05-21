@@ -350,9 +350,15 @@ const CSS = `
 /* root */
 .its-root {
   min-height: 100vh;
+<<<<<<< HEAD
   background: #f7f9fc;
   font-family: 'DM Sans', sans-serif;
   padding: 2rem 8rem;
+=======
+  background: #F8FAFB;
+  font-family: inherit'DM Sans', sans-serif;
+  padding: 1.25rem 10rem;
+>>>>>>> 521c33b7c05a8b72545c8d5986e8f66c07c371e6
   box-sizing: border-box;
   color: #0f1f38;
 }

@@ -301,7 +301,7 @@ export default function HomeSlider() {
           padding: 16px 36px; border-radius: 100px;
           background: linear-gradient(135deg, #02AFCF 0%, #0891b2 100%);
           color: white; font-size: 16px; font-weight: 700;
-          text-decoration: none; font-family: 'Inter', sans-serif;
+          text-decoration: none; font-family: inherit'Inter', sans-serif;
           transition: all 0.4s cubic-bezier(0.34, 1.2, 0.64, 1);
           box-shadow: 0 8px 28px rgba(2, 175, 207, 0.35);
           white-space: nowrap;
@@ -342,7 +342,7 @@ export default function HomeSlider() {
           backdrop-filter: blur(12px);
           border: 1.5px solid rgba(255, 255, 255, 0.4);
           color: white; font-size: 16px; font-weight: 600;
-          text-decoration: none; font-family: 'Inter', sans-serif;
+          text-decoration: none; font-family: inherit'Inter', sans-serif;
           transition: all 0.4s cubic-bezier(0.34, 1.2, 0.64, 1);
           white-space: nowrap;
           letter-spacing: 0.3px;
@@ -411,7 +411,7 @@ export default function HomeSlider() {
           gap: 10px;
           font-size: 13px; 
           font-weight: 500; 
-          font-family: 'Inter', sans-serif;
+          font-family: inherit'Inter', sans-serif;
           transition: all 0.3s ease;
           z-index: 20;
         }

@@ -76,7 +76,7 @@
 
 /* ─── Root ───────────────────────────────────────────────────────────── */
 .rp-root {
-    font-family: 'Satoshi', 'DM Sans', system-ui, sans-serif;
+    font-family: inherit'Satoshi', 'DM Sans', system-ui, sans-serif;
     background: linear-gradient(135deg, #F8FAFC 0%, #F1F5F9 100%);
     min-height: 100vh;
     padding: 48px 40px 80px;
@@ -117,7 +117,7 @@
 }
 
 .rp-title {
-    font-family: 'Clash Display', 'Syne', sans-serif;
+    font-family: inherit'Clash Display', 'Syne', sans-serif;
     font-size: 48px;
     font-weight: 700;
     color: #0F172A;
@@ -145,7 +145,7 @@
     font-weight: 600;
     color: #475569;
     cursor: pointer;
-    font-family: inherit;
+    font-family: inheritinherit;
     transition: all .2s;
     margin-top: 6px;
 }
@@ -182,7 +182,7 @@
 }
 
 .rp-stat-num {
-    font-family: 'Clash Display', sans-serif;
+    font-family: inherit'Clash Display', sans-serif;
     font-size: 28px;
     font-weight: 700;
     line-height: 1;
@@ -254,7 +254,7 @@
 }
 
 .rp-img-title {
-    font-family: 'Clash Display', sans-serif;
+    font-family: inherit'Clash Display', sans-serif;
     font-size: 20px;
     font-weight: 700;
     color: #FFFFFF;
@@ -396,7 +396,7 @@
 }
 
 .rp-price-amount {
-    font-family: 'Clash Display', sans-serif;
+    font-family: inherit'Clash Display', sans-serif;
     font-size: 26px;
     font-weight: 700;
     color: #0F172A;
@@ -413,7 +413,7 @@
 }
 
 .rp-booking-code {
-    font-family: 'Courier New', monospace;
+    font-family: inherit'Courier New', monospace;
     font-size: 10px;
     color: #94A3B8;
     margin-top: 4px;
@@ -432,7 +432,7 @@
     font-size: 13px;
     font-weight: 700;
     cursor: pointer;
-    font-family: inherit;
+    font-family: inheritinherit;
     transition: all .2s;
 }
 
@@ -464,7 +464,7 @@
 }
 
 .rp-empty-title {
-    font-family: 'Clash Display', sans-serif;
+    font-family: inherit'Clash Display', sans-serif;
     font-size: 24px;
     font-weight: 700;
     color: #0F172A;
@@ -606,7 +606,7 @@
     border-radius: 14px;
     border: 1px solid;
     cursor: pointer;
-    font-family: inherit;
+    font-family: inheritinherit;
     text-align: left;
     transition: all .15s;
     width: 100%;
@@ -638,7 +638,7 @@
     font-size: 15px;
     font-weight: 700;
     cursor: pointer;
-    font-family: inherit;
+    font-family: inheritinherit;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -666,7 +666,7 @@
     font-size: 13px;
     font-weight: 700;
     cursor: pointer;
-    font-family: inherit;
+    font-family: inheritinherit;
     display: flex;
     align-items: center;
     justify-content: center;

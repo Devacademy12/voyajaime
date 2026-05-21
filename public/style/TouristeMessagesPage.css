@@ -79,7 +79,7 @@
   border: 1.5px solid #E5E7EB;
   border-radius: 10px;
   font-size: 13px;
-  font-family: inherit;
+  font-family: inheritinherit;
   outline: none;
   color: #111827;
   background: #F9FAFB;
@@ -400,7 +400,7 @@
   border: 1.5px solid #E5E7EB;
   border-radius: 30px;
   font-size: 14px;
-  font-family: inherit;
+  font-family: inheritinherit;
   outline: none;
   color: #111827;
   transition: all 0.2s;

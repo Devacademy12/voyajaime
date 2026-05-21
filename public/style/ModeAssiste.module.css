@@ -22,7 +22,7 @@
   height: 100vh;
   overflow: hidden;
   background: #f8fafc;
-  font-family: 'DM Sans', system-ui, sans-serif;
+  font-family: inherit'DM Sans', system-ui, sans-serif;
   color: #111827;
 }
 
@@ -93,7 +93,7 @@
   margin-right: 12px;
 }
 :global(.ma-topbar h1) {
-  font-family: 'Playfair Display', serif;
+  font-family: inherit'Playfair Display', serif;
   font-size: 20px;
   font-weight: 900;
   color: #111827;
@@ -246,7 +246,7 @@
   cursor: pointer;
   transition: all 0.2s;
   text-align: center;
-  font-family: 'DM Sans', system-ui, sans-serif;
+  font-family: inherit'DM Sans', system-ui, sans-serif;
 }
 :global(.ma-city-btn:hover) {
   border-color: #2B96A8;
@@ -349,7 +349,7 @@
   border: 1px solid #e2e8f0;
   background: #ffffff;
   color: #64748b;
-  font-family: 'DM Sans', system-ui, sans-serif;
+  font-family: inherit'DM Sans', system-ui, sans-serif;
 }
 :global(.ma-date-btn:hover) {
   border-color: #2B96A8;
@@ -421,7 +421,7 @@
   color: #334155;
   cursor: pointer;
   transition: all 0.2s;
-  font-family: 'DM Sans', system-ui, sans-serif;
+  font-family: inherit'DM Sans', system-ui, sans-serif;
 }
 :global(.ma-cat-chip:hover) {
   border-color: #2B96A8;
@@ -488,7 +488,7 @@
   gap: 10px;
   cursor: pointer;
   transition: all 0.22s;
-  font-family: 'DM Sans', system-ui, sans-serif;
+  font-family: inherit'DM Sans', system-ui, sans-serif;
   box-shadow: 0 10px 28px -8px rgba(43,150,168,.55);
 }
 :global(.ma-generate-btn:hover:not(:disabled)) {
@@ -524,7 +524,7 @@
   animation: ma-pulse 1.5s ease-in-out infinite;
 }
 :global(.ma-gen-title) {
-  font-family: 'Playfair Display', serif;
+  font-family: inherit'Playfair Display', serif;
   font-size: 22px;
   font-weight: 600;
   color: #1e293b;
@@ -612,7 +612,7 @@
   background: transparent;
   color: #334155;
   transition: all 0.15s;
-  font-family: 'DM Sans', system-ui, sans-serif;
+  font-family: inherit'DM Sans', system-ui, sans-serif;
 }
 :global(.ma-cal-day-btn:hover:not(:disabled)) {
   background: #e0f4f7;

@@ -65,7 +65,7 @@ const STYLE = `
 .itin-root {
   min-height: 100vh;
   background: #F5F8FA;
-  font-family: 'DM Sans', system-ui, sans-serif;
+  font-family: inherit'DM Sans', system-ui, sans-serif;
   color: #1a2e3b;
 }
 
@@ -90,7 +90,7 @@ const STYLE = `
   letter-spacing: .06em; margin-bottom: 8px;
 }
 .itin-title {
-  font-family: 'Playfair Display', serif;
+  font-family: inherit'Playfair Display', serif;
   font-size: 24px; font-weight: 900; color: #111827;
   margin-bottom: 10px; line-height: 1.3;
 }
@@ -109,7 +109,7 @@ const STYLE = `
   padding: 10px 18px; border-radius: 11px;
   border: 1.5px solid #E5E7EB; background: white;
   color: #374151; font-size: 13px; font-weight: 600;
-  cursor: pointer; font-family: inherit; transition: all .15s;
+  cursor: pointer; font-family: inheritinherit; transition: all .15s;
 }
 .itin-btn-ghost:hover { border-color: #2B96A8; color: #2B96A8; }
 .itin-btn-primary {
@@ -117,7 +117,7 @@ const STYLE = `
   padding: 10px 22px; border-radius: 11px;
   background: #2B96A8; border: none;
   color: white; font-size: 13px; font-weight: 700;
-  cursor: pointer; font-family: inherit;
+  cursor: pointer; font-family: inheritinherit;
   box-shadow: 0 4px 12px rgba(43,150,168,.3);
   transition: all .2s;
 }
@@ -137,7 +137,7 @@ const STYLE = `
   display: flex; flex-direction: column;
   align-items: center; padding: 14px 20px;
   border: none; background: none; cursor: pointer;
-  font-family: inherit; border-bottom: 3px solid transparent;
+  font-family: inheritinherit; border-bottom: 3px solid transparent;
   transition: all .2s; white-space: nowrap; min-width: 80px;
 }
 .itin-tab:hover { background: rgba(43,150,168,.04); }
@@ -176,7 +176,7 @@ const STYLE = `
   font-size: 26px; flex-shrink: 0;
 }
 .itin-day-title {
-  font-family: 'Playfair Display', serif;
+  font-family: inherit'Playfair Display', serif;
   font-size: 22px; font-weight: 900; color: white;
 }
 .itin-day-theme {
@@ -279,7 +279,7 @@ const STYLE = `
   justify-content: space-between; gap: 12px;
 }
 .itin-act-name {
-  font-family: 'Playfair Display', serif;
+  font-family: inherit'Playfair Display', serif;
   font-size: 18px; font-weight: 700; color: #111827;
   line-height: 1.3; flex: 1;
 }
@@ -342,7 +342,7 @@ const STYLE = `
   padding: 7px 14px; border-radius: 9px;
   border: 1.5px solid #E5E7EB; background: white;
   color: #6B7280; font-size: 12px; font-weight: 600;
-  cursor: pointer; font-family: inherit; transition: all .15s;
+  cursor: pointer; font-family: inheritinherit; transition: all .15s;
 }
 .itin-change-btn:hover { border-color: #2B96A8; color: #2B96A8; background: rgba(43,150,168,.04); }
 
@@ -357,7 +357,7 @@ const STYLE = `
 }
 .itin-total-label { font-size: 13px; color: #6B7280; font-weight: 500; }
 .itin-total-amount {
-  font-family: 'Playfair Display', serif;
+  font-family: inherit'Playfair Display', serif;
   font-size: 28px; font-weight: 900; color: #111827;
 }
 .itin-total-amount span { font-size: 14px; color: #9CA3AF; font-weight: 400; margin-left: 4px; }
