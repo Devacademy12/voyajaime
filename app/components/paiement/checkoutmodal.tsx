@@ -4,30 +4,10 @@ import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabaseClient";
 import {
-  MapPin,
-  ChevronLeft,
-  ChevronRight,
-  X,
-  Loader2,
-  ShieldCheck,
-  CheckCircle,
-  CreditCard,
-  AlertCircle,
-  Timer,
-  History,
-  MessageSquare,
-  Calendar,
-  Users,
-  Compass,
-  Ticket,
-  Landmark,
-  Smartphone,
-  Lock 
+  MapPin, ChevronLeft, X, Loader2, CheckCircle,
+  CreditCard, AlertCircle, Timer, Calendar, Users, Ticket, ArrowRight, Lock, ShieldCheck
 } from "lucide-react";
-import {
-  Reservation, STEPS,
-  fmtDate, fmtCountdown,
-} from "../reservation/type";
+import { Reservation, fmtDate, fmtCountdown } from "../reservation/type";
 import styles from "@/public/style/Reservations.module.css";
 
 interface Props {
@@ -41,8 +21,7 @@ export default function CheckoutModal({ reservation, onClose, onPaid, autoStart 
   const supabase = createClient();
   const exc = reservation.excursion;
 
-  const [step, setStep] = useState<1 | 2 | 3 | 4>(autoStart ? 3 : 1);
-  const [specialNote, setSpecialNote] = useState("");
+  const [step, setStep] = useState<1 | 2 | 3>(autoStart ? 2 : 1);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [cancelled, setCancelled] = useState(false);
@@ -56,7 +35,7 @@ export default function CheckoutModal({ reservation, onClose, onPaid, autoStart 
   const [timeLeft, setTimeLeft] = useState<number>(getSecondsLeft);
 
   useEffect(() => {
-    if (step === 4 || cancelled) return;
+    if (step === 3 || cancelled) return;
     const remaining = getSecondsLeft();
     if (remaining <= 0) { triggerCancel(); return; }
     setTimeLeft(remaining);
@@ -67,16 +46,13 @@ export default function CheckoutModal({ reservation, onClose, onPaid, autoStart 
     }, 1000);
     return () => { if (timerRef.current) clearInterval(timerRef.current); };
   }, [step, cancelled]);
-  
-  useEffect(() => {
-  if (step === 4) {
-    const timer = setTimeout(() => {
-      onClose();
-    }, 3000);
 
-    return () => clearTimeout(timer);
-  }
-}, [step, onClose]);
+  useEffect(() => {
+    if (step === 3) {
+      const timer = setTimeout(() => onClose(), 4000);
+      return () => clearTimeout(timer);
+    }
+  }, [step, onClose]);
 
   async function triggerCancel() {
     setCancelled(true);
@@ -89,328 +65,427 @@ export default function CheckoutModal({ reservation, onClose, onPaid, autoStart 
   }
 
   const isUrgent = timeLeft <= 300;
-  const base = reservation.total_price - reservation.platform_fee;
-  const fee = reservation.platform_fee;
-  const total = reservation.total_price;
-  const timerColor = isUrgent ? "#EF4444" : "#0D9488";
+  const total = parseFloat(String(reservation.total_price)) || 0;
 
-  // Paiement Stripe Checkout
   async function handleStripePayment() {
-     console.log("🆔 ID de réservation à envoyer:", reservation.id);
-  console.log("📝 Type de l'ID:", typeof reservation.id);
-  
-  if (!reservation.id) {
-    setError("ID de réservation invalide");
-    return;
-  }
-  
-  setLoading(true);
-  setError("");
-  
-  try {
-    const response = await fetch("/api/paiement/stripe/checkout", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        reservation_id: reservation.id,
-        special_notes: specialNote,
-        amount: total,
-      }),
-    });
-
+    if (!reservation.id) { setError("ID de réservation invalide"); return; }
+    setLoading(true);
+    setError("");
+    try {
+      const response = await fetch("/api/paiement/stripe/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reservation_id: reservation.id, amount: total }),
+      });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || "Erreur Stripe");
-
-      if (data.url) {
-        window.location.href = data.url;
-      }
+      if (data.url) window.location.href = data.url;
     } catch (e) {
       setError(e instanceof Error ? e.message : "Erreur de paiement");
       setLoading(false);
     }
   }
 
-  const BackBtn = () => (
-    <button
-      onClick={() => { setError(""); setStep(s => (s - 1) as 1 | 2 | 3 | 4); }}
-      style={{ width: 32, height: 32, borderRadius: 8, border: "1px solid #E2E8F0", background: "#F8FAFC", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
-    >
-      <ChevronLeft size={15} color="#64748B" />
-    </button>
-  );
-
-  const CloseBtn = () => (
-    <button
-      onClick={onClose}
-      style={{ width: 32, height: 32, borderRadius: 8, border: "1px solid #E2E8F0", background: "#F8FAFC", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
-    >
-      <X size={14} color="#64748B" />
-    </button>
-  );
-
   return (
-    <div className={styles["rp-overlay"]} onClick={e => { if (e.target === e.currentTarget && step !== 4) onClose(); }}>
-      <div className={styles["rp-modal"]}>
+    <>
+      <style>{`
+        .co-overlay {
+          position: fixed; inset: 0; z-index: 9999;
+          background: rgba(10, 12, 18, 0.75);
+          backdrop-filter: blur(6px);
+          display: flex; align-items: center; justify-content: center;
+          padding: 1rem;
+          animation: co-fade-in 0.2s ease;
+        }
+        @keyframes co-fade-in { from { opacity: 0; } to { opacity: 1; } }
 
-        <div className={styles["rp-modal-head"]}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: step !== 4 && !cancelled ? 20 : 0 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-              {step > 1 && step < 4 && !cancelled && <BackBtn />}
-              <div>
-                {step !== 4 && !cancelled && (
-                  <p style={{ fontSize: 10, fontWeight: 700, color: "#94A3B8", textTransform: "uppercase", letterSpacing: 1.5, marginBottom: 4 }}>
-                    Étape {step} / 3
-                  </p>
-                )}
-                <h2 style={{ fontFamily: "'Clash Display', sans-serif", fontSize: 20, fontWeight: 700, color: "#0F172A", margin: 0, letterSpacing: -.5 }}>
-                  {cancelled && "Réservation expirée"}
-                  {!cancelled && step === 1 && "Récapitulatif"}
-                  {!cancelled && step === 2 && "Vos informations"}
-                  {!cancelled && step === 3 && "Paiement sécurisé"}
-                  {!cancelled && step === 4 && "Paiement confirmé"}
-                </h2>
-              </div>
-            </div>
-            {step !== 4 && <CloseBtn />}
-          </div>
+        .co-modal {
+          background: #ffffff;
+          border-radius: 20px;
+          width: 100%;
+          max-width: 460px;
+          overflow: hidden;
+          font-family: 'DM Sans', 'Helvetica Neue', sans-serif;
+          animation: co-slide-up 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+          box-shadow: 0 32px 80px rgba(0,0,0,0.22);
+        }
+        @keyframes co-slide-up {
+          from { opacity: 0; transform: translateY(24px) scale(0.97); }
+          to { opacity: 1; transform: translateY(0) scale(1); }
+        }
 
-          {step !== 4 && !cancelled && (
-            <>
-              <div className={styles["rp-steps"]}>
-                {STEPS.map((s, i) => (
-                  <div key={s} className={styles["rp-step-seg"]}>
-                    <div className={`${styles["rp-step-bar"]} ${i < step ? styles["rp-step-done"] : i === step - 1 ? styles["rp-step-active"] : styles["rp-step-inactive"]}`} />
-                    <span className={styles["rp-step-label"]} style={{ color: i < step ? "#0D9488" : i === step - 1 ? "#475569" : "#CBD5E1" }}>{s}</span>
-                  </div>
-                ))}
-              </div>
+        .co-header {
+          padding: 1.5rem 1.5rem 0;
+          display: flex; align-items: center; justify-content: space-between;
+        }
+        .co-step-label {
+          font-size: 10px; font-weight: 600; letter-spacing: 1.5px;
+          text-transform: uppercase; color: #94a3b8; margin: 0 0 4px;
+        }
+        .co-title {
+          font-size: 20px; font-weight: 700; color: #0f172a;
+          margin: 0; letter-spacing: -0.3px;
+        }
 
-              <div className={`${styles["rp-modal-timer"]} ${isUrgent ? styles["rp-modal-timer-urgent"] : styles["rp-modal-timer-ok"]}`}>
-                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                  <Timer size={12} color={timerColor} />
-                  <span style={{ fontSize: 12, fontWeight: 600, color: timerColor }}>
-                    {isUrgent ? "⏰ Payez maintenant !" : "⏱️ Temps restant"}
-                  </span>
-                </div>
-                <span style={{ fontFamily: "monospace", fontSize: 15, fontWeight: 900, color: timerColor, background: isUrgent ? "rgba(239,68,68,.1)" : "rgba(13,148,136,.1)", padding: "3px 12px", borderRadius: 8 }}>
-                  {fmtCountdown(timeLeft)}
-                </span>
-              </div>
-            </>
-          )}
-        </div>
+        .co-icon-btn {
+          width: 34px; height: 34px; border-radius: 50%;
+          border: 1.5px solid #e2e8f0; background: #fff;
+          display: flex; align-items: center; justify-content: center;
+          cursor: pointer; color: #64748b; transition: all 0.15s ease;
+          flex-shrink: 0;
+        }
+        .co-icon-btn:hover { border-color: #cbd5e1; background: #f8fafc; }
 
-        <div className={styles["rp-modal-body"]}>
+        .co-progress {
+          padding: 1rem 1.5rem 0;
+          display: flex; gap: 6px; align-items: center;
+        }
+        .co-prog-bar { height: 2.5px; flex: 1; border-radius: 2px; transition: background 0.3s ease; }
 
+        .co-body { padding: 1.25rem 1.5rem 1.5rem; }
+
+        .co-excursion-card {
+          border-radius: 14px; overflow: hidden;
+          border: 1.5px solid #f1f5f9; margin-bottom: 1.25rem;
+        }
+        .co-exc-banner {
+          background: linear-gradient(160deg, #1e293b 0%, #0f172a 100%);
+          padding: 1rem 1.125rem 1rem;
+          display: flex; align-items: flex-end; justify-content: space-between;
+          min-height: 80px; position: relative;
+        }
+        .co-exc-title { font-size: 15px; font-weight: 700; color: #fff; margin: 0 0 3px; }
+        .co-exc-city { font-size: 12px; color: rgba(255,255,255,0.55); margin: 0; display: flex; align-items: center; gap: 4px; }
+        .co-exc-rating {
+          background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.15);
+          border-radius: 8px; padding: 4px 10px;
+          font-size: 11px; font-weight: 700; color: #fbbf24;
+        }
+        .co-exc-meta {
+          display: grid; grid-template-columns: 1fr 1fr 1fr;
+          padding: 0.875rem 1.125rem;
+          gap: 0; background: #fafafa;
+        }
+        .co-exc-meta-item { }
+        .co-exc-meta-label { font-size: 9px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: #94a3b8; margin: 0 0 3px; }
+        .co-exc-meta-val { font-size: 13px; font-weight: 600; color: #0f172a; margin: 0; }
+
+        .co-price-table {
+          border: 1.5px solid #f1f5f9; border-radius: 14px;
+          overflow: hidden; margin-bottom: 1.25rem;
+        }
+        .co-price-row {
+          padding: 11px 14px; display: flex; justify-content: space-between; align-items: center;
+          border-bottom: 1.5px solid #f8fafc;
+          font-size: 13px;
+        }
+        .co-price-row:last-child { border-bottom: none; }
+        .co-price-row-label { color: #64748b; }
+        .co-price-row-val { font-weight: 600; color: #334155; }
+        .co-price-total {
+          padding: 14px; display: flex; justify-content: space-between; align-items: center;
+          background: #f8fafc;
+        }
+        .co-price-total-label { font-size: 14px; font-weight: 700; color: #0f172a; }
+        .co-price-total-val { font-size: 24px; font-weight: 800; color: #0f172a; letter-spacing: -0.5px; }
+
+        .co-timer {
+          display: flex; align-items: center; justify-content: space-between;
+          padding: 10px 14px; border-radius: 10px; margin-bottom: 1.25rem;
+          background: #f8fafc; border: 1.5px solid #f1f5f9;
+          transition: all 0.3s ease;
+        }
+        .co-timer.urgent { background: #fff5f5; border-color: #fecaca; }
+        .co-timer-label { font-size: 12px; color: #64748b; display: flex; align-items: center; gap: 6px; }
+        .co-timer-label.urgent { color: #ef4444; }
+        .co-timer-val { font-family: 'SF Mono', 'Fira Code', monospace; font-size: 14px; font-weight: 700; color: #334155; }
+        .co-timer-val.urgent { color: #ef4444; }
+
+        .co-btn-primary {
+          width: 100%; padding: 14px 20px;
+          background: #0f172a; color: #fff; border: none;
+          border-radius: 12px; font-size: 14px; font-weight: 700;
+          cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;
+          transition: all 0.2s ease; font-family: inherit; letter-spacing: 0.1px;
+        }
+        .co-btn-primary:hover:not(:disabled) { background: #1e293b; transform: translateY(-1px); }
+        .co-btn-primary:active:not(:disabled) { transform: translateY(0); }
+        .co-btn-primary:disabled { background: #cbd5e1; cursor: not-allowed; }
+
+        .co-btn-secondary {
+          flex: 1; padding: 12px;
+          background: #fff; color: #334155;
+          border: 1.5px solid #e2e8f0; border-radius: 10px;
+          font-size: 13px; font-weight: 600; cursor: pointer;
+          transition: all 0.15s ease; font-family: inherit;
+        }
+        .co-btn-secondary:hover { background: #f8fafc; border-color: #cbd5e1; }
+
+        .co-summary-compact {
+          background: #f8fafc; border-radius: 12px;
+          padding: 12px 14px; margin-bottom: 1.25rem;
+          display: flex; justify-content: space-between; align-items: center;
+        }
+        .co-summary-compact-left p { margin: 0; }
+        .co-summary-sub { font-size: 11px; color: #94a3b8; margin-bottom: 2px !important; }
+        .co-summary-name { font-size: 14px; font-weight: 600; color: #0f172a; }
+        .co-summary-total { font-size: 22px; font-weight: 800; color: #0f172a; letter-spacing: -0.5px; }
+
+        .co-secure-note {
+          display: flex; align-items: center; justify-content: center; gap: 6px;
+          margin-top: 10px;
+        }
+        .co-secure-note span { font-size: 11px; color: #94a3b8; }
+
+        .co-error {
+          display: flex; align-items: center; gap: 10px;
+          padding: 12px 14px; background: #fff5f5;
+          border: 1.5px solid #fecaca; border-radius: 10px; margin-top: 12px;
+        }
+        .co-error span { font-size: 13px; color: #ef4444; font-weight: 600; }
+
+        .co-success-icon {
+          width: 60px; height: 60px; border-radius: 50%;
+          background: #f0fdf4; border: 2px solid #bbf7d0;
+          display: flex; align-items: center; justify-content: center;
+          margin: 0 auto 1rem;
+          animation: co-pop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) 0.1s both;
+        }
+        @keyframes co-pop { from { opacity:0; transform: scale(0.5); } to { opacity:1; transform: scale(1); } }
+
+        .co-receipt {
+          border: 1.5px solid #f1f5f9; border-radius: 14px;
+          overflow: hidden; margin-bottom: 1.25rem;
+        }
+        .co-receipt-row {
+          padding: 11px 14px; display: flex; justify-content: space-between;
+          align-items: center; border-bottom: 1.5px solid #f8fafc;
+          font-size: 13px;
+        }
+        .co-receipt-row:last-child { border-bottom: none; }
+        .co-receipt-label { color: #94a3b8; display: flex; align-items: center; gap: 8px; }
+        .co-receipt-val { font-weight: 600; color: #0f172a; font-size: 13px; }
+
+        .co-expired { text-align: center; padding: 2rem 0; }
+
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+      `}</style>
+
+      <div
+        className="co-overlay"
+        onClick={e => { if (e.target === e.currentTarget && step !== 3 && !cancelled) onClose(); }}
+      >
+        <div className="co-modal">
+
+          {/* ─── EXPIRED STATE ─── */}
           {cancelled && (
-            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 20, paddingTop: 10, textAlign: "center" }}>
-              <div style={{ width: 72, height: 72, borderRadius: 20, background: "rgba(239,68,68,.1)", border: "1px solid rgba(239,68,68,.2)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                <Timer size={32} color="#EF4444" strokeWidth={1.5} />
+            <div className="co-body co-expired">
+              <div style={{ width: 56, height: 56, borderRadius: "50%", background: "#fff5f5", border: "2px solid #fecaca", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 1rem" }}>
+                <Timer size={24} color="#ef4444" strokeWidth={2} />
               </div>
-              <div>
-                <h3 style={{ fontFamily: "'Clash Display',sans-serif", fontSize: 22, fontWeight: 700, color: "#0F172A", marginBottom: 10, letterSpacing: -.5 }}>Délai expiré</h3>
-                <p style={{ fontSize: 14, color: "#64748B", lineHeight: 1.8 }}>
-                  Réservation <span style={{ color: "#475569", fontFamily: "monospace" }}>#{reservation.booking_code}</span> annulée automatiquement.
-                </p>
-              </div>
-              <button onClick={onClose} style={{ padding: "13px 36px", background: "#0D9488", color: "white", border: "none", borderRadius: 12, fontSize: 14, fontWeight: 700, cursor: "pointer" }}>
-                Fermer
-              </button>
+              <h3 style={{ fontSize: 18, fontWeight: 700, color: "#0f172a", marginBottom: 8 }}>Délai expiré</h3>
+              <p style={{ fontSize: 13, color: "#64748b", marginBottom: 24, lineHeight: 1.7 }}>
+                La réservation <span style={{ fontFamily: "monospace", fontWeight: 700, color: "#334155" }}>#{reservation.booking_code}</span> a été annulée automatiquement.
+              </p>
+              <button className="co-btn-primary" onClick={onClose}>Fermer</button>
             </div>
           )}
 
           {!cancelled && (
             <>
+              {/* ─── STEP 1 — RÉCAPITULATIF ─── */}
               {step === 1 && (
                 <>
-                  <div style={{ borderRadius: 14, overflow: "hidden", height: 160, position: "relative", background: "linear-gradient(135deg,#F0FDF4,#CCFBF1)" }}>
-                    {exc?.photos?.[0] && <img src={exc.photos[0]} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />}
-                    <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top,rgba(0,0,0,.4),transparent 60%)" }} />
-                    <div style={{ position: "absolute", bottom: 14, left: 16, right: 16 }}>
-                      <p style={{ fontFamily: "'Clash Display',sans-serif", fontSize: 17, fontWeight: 700, color: "#FFFFFF", marginBottom: 4, textShadow: "0 1px 2px rgba(0,0,0,.2)" }}>{exc?.title}</p>
-                      <p style={{ fontSize: 11, color: "rgba(255,255,255,.9)", display: "flex", alignItems: "center", gap: 4 }}>
-                        <MapPin size={10} />{exc?.city}
-                      </p>
+                  <div className="co-header">
+                    <div>
+                      <p className="co-step-label">Étape 1 / 2</p>
+                      <h2 className="co-title">Votre réservation</h2>
                     </div>
+                    <button className="co-icon-btn" onClick={onClose} aria-label="Fermer">
+                      <X size={16} strokeWidth={2.5} />
+                    </button>
                   </div>
 
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-                    {[
-                      { lbl: "📅 Date", val: fmtDate(reservation.date, true) },
-                      { lbl: "⏰ Heure", val: reservation.time },
-                      { lbl: "👥 Voyageurs", val: `${reservation.people_count} pers.` },
-                      { lbl: "⏱️ Durée", val: `${exc?.duration_hours ?? "–"}h` },
-                    ].map(({ lbl, val }) => (
-                      <div key={lbl} style={{ background: "#F8FAFC", border: "1px solid #E2E8F0", borderRadius: 12, padding: "12px 14px" }}>
-                        <p style={{ fontSize: 9, fontWeight: 700, textTransform: "uppercase", letterSpacing: .8, color: "#94A3B8", marginBottom: 5 }}>{lbl}</p>
-                        <p style={{ fontSize: 14, fontWeight: 700, color: "#1E293B" }}>{val}</p>
-                      </div>
-                    ))}
+                  <div className="co-progress">
+                    <div className="co-prog-bar" style={{ background: "#0f172a" }} />
+                    <div className="co-prog-bar" style={{ background: "#e2e8f0" }} />
                   </div>
 
-                  <div style={{ border: "1px solid #E2E8F0", borderRadius: 14, overflow: "hidden" }}>
-                    <div style={{ background: "#F8FAFC", padding: "12px 16px", borderBottom: "1px solid #E2E8F0" }}>
-                      <p style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1.5, color: "#94A3B8", marginBottom: 12 }}>
-                        💰 Détail des frais
-                      </p>
+                  <div className="co-body">
+                    {/* Excursion card */}
+                    <div className="co-excursion-card">
+                      <div className="co-exc-banner" style={{ backgroundImage: exc?.photos?.[0] ? `linear-gradient(160deg, rgba(15,23,42,0.7) 0%, rgba(15,23,42,0.9) 100%), url(${exc.photos[0]})` : undefined, backgroundSize: "cover", backgroundPosition: "center" }}>
+                        <div>
+                          <p className="co-exc-title">{exc?.title}</p>
+                          <p className="co-exc-city"><MapPin size={11} strokeWidth={2.5} /> {exc?.city}</p>
+                        </div>
+                        <span className="co-exc-rating">★ 4.9</span>
+                      </div>
+                      <div className="co-exc-meta">
+                        <div className="co-exc-meta-item">
+                          <p className="co-exc-meta-label">Date</p>
+                          <p className="co-exc-meta-val">{fmtDate(reservation.date, true)}</p>
+                        </div>
+                        <div className="co-exc-meta-item" style={{ borderLeft: "1.5px solid #f1f5f9", paddingLeft: 12 }}>
+                          <p className="co-exc-meta-label">Heure</p>
+                          <p className="co-exc-meta-val">{reservation.time}</p>
+                        </div>
+                        <div className="co-exc-meta-item" style={{ borderLeft: "1.5px solid #f1f5f9", paddingLeft: 12 }}>
+                          <p className="co-exc-meta-label">Voyageurs</p>
+                          <p className="co-exc-meta-val">{reservation.people_count} pers.</p>
+                        </div>
+                      </div>
                     </div>
-                    <div style={{ padding: 16, display: "flex", flexDirection: "column", gap: 10 }}>
-                      <div style={{ display: "flex", justifyContent: "space-between" }}>
-                        <span style={{ fontSize: 14, color: "#64748B" }}>{exc?.price_per_person} EUR × {reservation.people_count} pers.</span>
-                        <span style={{ fontSize: 14, fontWeight: 700, color: "#334155" }}>{base} EUR</span>
-                      </div>
-                      <div style={{ display: "flex", justifyContent: "space-between" }}>
-                        <span style={{ fontSize: 14, color: "#64748B" }}>🎯 Frais de service</span>
-                        <span style={{ fontSize: 14, fontWeight: 700, color: "#334155" }}>{fee} EUR</span>
-                      </div>
-                      <div style={{ height: 1, background: "#E2E8F0" }} />
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                        <span style={{ fontFamily: "'Clash Display',sans-serif", fontSize: 14, fontWeight: 700, color: "#0F172A" }}>Total</span>
-                        <span style={{ fontFamily: "'Clash Display',sans-serif", fontSize: 24, fontWeight: 700, color: "#0D9488" }}>{total} EUR</span>
-                      </div>
-                    </div>
-                  </div>
 
-                  <button onClick={() => setStep(2)} className={styles["rp-btn-primary"]}>
-                    Continuer <ChevronRight size={16} />
-                  </button>
+                    {/* Price */}
+                    <div className="co-price-table">
+                      <div className="co-price-row">
+                        <span className="co-price-row-label">Prix par personne</span>
+                        <span className="co-price-row-val">{exc?.price_per_person} EUR</span>
+                      </div>
+                      <div className="co-price-row">
+                        <span className="co-price-row-label">Voyageurs</span>
+                        <span className="co-price-row-val">× {reservation.people_count}</span>
+                      </div>
+                      <div className="co-price-total">
+                        <span className="co-price-total-label">Total</span>
+                        <span className="co-price-total-val">{total} EUR</span>
+                      </div>
+                    </div>
+
+                    {/* Timer */}
+                    <div className={`co-timer${isUrgent ? " urgent" : ""}`}>
+                      <span className={`co-timer-label${isUrgent ? " urgent" : ""}`}>
+                        <Timer size={14} strokeWidth={2.5} />
+                        {isUrgent ? "Payez vite !" : "Temps restant"}
+                      </span>
+                      <span className={`co-timer-val${isUrgent ? " urgent" : ""}`}>{fmtCountdown(timeLeft)}</span>
+                    </div>
+
+                    <button className="co-btn-primary" onClick={() => setStep(2)}>
+                      Procéder au paiement <ArrowRight size={16} strokeWidth={2.5} />
+                    </button>
+                  </div>
                 </>
               )}
 
-              {step === 2 && (
+              {/* ─── STEP 2 — PAIEMENT ─── */}
+              {(step === 2 || (autoStart && step === 2)) && (
                 <>
-                  <div style={{ display: "flex", gap: 12, background: "#F8FAFC", border: "1px solid #E2E8F0", borderRadius: 14, padding: "14px 16px" }}>
-                    <div style={{ width: 44, height: 44, borderRadius: 10, overflow: "hidden", flexShrink: 0, background: "#E2E8F0" }}>
-                      {exc?.photos?.[0] && <img src={exc.photos[0]} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />}
+                  <div className="co-header">
+                    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                      <button className="co-icon-btn" onClick={() => { setError(""); setStep(1); }} aria-label="Retour">
+                        <ChevronLeft size={16} strokeWidth={2.5} />
+                      </button>
+                      <div>
+                        <p className="co-step-label">Étape 2 / 2</p>
+                        <h2 className="co-title">Paiement sécurisé</h2>
+                      </div>
                     </div>
-                    <div style={{ flex: 1 }}>
-                      <p style={{ fontSize: 13, fontWeight: 700, color: "#0F172A", margin: "0 0 3px" }}>{exc?.title}</p>
-                      <p style={{ fontSize: 12, color: "#64748B" }}>{fmtDate(reservation.date)} · {reservation.people_count} pers.</p>
+                    <button className="co-icon-btn" onClick={onClose} aria-label="Fermer">
+                      <X size={16} strokeWidth={2.5} />
+                    </button>
+                  </div>
+
+                  <div className="co-progress">
+                    <div className="co-prog-bar" style={{ background: "#0f172a" }} />
+                    <div className="co-prog-bar" style={{ background: "#0f172a" }} />
+                  </div>
+
+                  <div className="co-body">
+                    {/* Compact summary */}
+                    <div className="co-summary-compact">
+                      <div className="co-summary-compact-left">
+                        <p className="co-summary-sub">{exc?.title} · {reservation.people_count} pers.</p>
+                        <p className="co-summary-name">Total à payer</p>
+                      </div>
+                      <span className="co-summary-total">{total} EUR</span>
                     </div>
-                    <p style={{ fontFamily: "'Clash Display',sans-serif", fontSize: 18, fontWeight: 700, color: "#0D9488" }}>
-                      {total} <span style={{ fontSize: 11, fontWeight: 500, color: "#94A3B8" }}>EUR</span>
-                    </p>
-                  </div>
 
-                  <div>
-                    <label style={{ display: "flex", alignItems: "center", gap: 7, fontSize: 13, fontWeight: 700, color: "#475569", marginBottom: 10 }}>
-                      <MessageSquare size={13} color="#0D9488" /> 💬 Besoins spéciaux
-                      <span style={{ fontSize: 11, color: "#94A3B8", fontWeight: 400 }}>— optionnel</span>
-                    </label>
-                    <textarea
-                      value={specialNote}
-                      onChange={e => setSpecialNote(e.target.value)}
-                      placeholder="Handicap, allergies, régimes alimentaires..."
-                      rows={4}
-                      style={{ width: "100%", padding: "13px 14px", border: "1px solid #E2E8F0", borderRadius: 12, fontSize: 14, fontFamily: "inherit", outline: "none", resize: "vertical", color: "#1E293B", background: "#FFFFFF" }}
-                    />
-                  </div>
+                    {/* Timer */}
+                    <div className={`co-timer${isUrgent ? " urgent" : ""}`} style={{ marginBottom: "1.25rem" }}>
+                      <span className={`co-timer-label${isUrgent ? " urgent" : ""}`}>
+                        <Timer size={14} strokeWidth={2.5} />
+                        {isUrgent ? "Payez vite !" : "Temps restant"}
+                      </span>
+                      <span className={`co-timer-val${isUrgent ? " urgent" : ""}`}>{fmtCountdown(timeLeft)}</span>
+                    </div>
 
-                  <button onClick={() => setStep(3)} className={styles["rp-btn-primary"]}>
-                    Payer par carte <ChevronRight size={16} />
-                  </button>
-                </>
-              )}
-
-              {step === 3 && (
-                <>
-                  <div style={{ background: "linear-gradient(135deg, #0F172A 0%, #1E293B 100%)", borderRadius: 16, padding: 22, textAlign: "center" }}>
-                    <p style={{ fontSize: 10, fontWeight: 700, color: "#94A3B8", textTransform: "uppercase", letterSpacing: 2, marginBottom: 8 }}>Montant à payer</p>
-                    <p style={{ fontFamily: "'Clash Display',sans-serif", fontSize: 46, fontWeight: 700, color: "#FFFFFF", letterSpacing: "-2px", lineHeight: 1, marginBottom: 6 }}>
-                      {total}<span style={{ fontSize: 18, fontWeight: 500, color: "#94A3B8", marginLeft: 6 }}>EUR</span>
-                    </p>
-                    <p style={{ fontSize: 11, color: "#94A3B8" }}>dont {fee} EUR de frais de service</p>
-                  </div>
-
-                  <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                    {/* Pay button */}
                     <button
+                      className="co-btn-primary"
                       onClick={handleStripePayment}
                       disabled={loading}
-                      className={styles["rp-btn-primary"]}
                     >
                       {loading ? (
-                        <><Loader2 size={16} className={styles["spin"]} /> Redirection Stripe...</>
+                        <><Loader2 size={17} style={{ animation: "spin 1s linear infinite" }} /> Redirection en cours…</>
                       ) : (
-                        <><CreditCard size={16} /> Payer par carte bancaire</>
+                        <><Lock size={15} strokeWidth={2.5} /> Payer {total} EUR</>
                       )}
                     </button>
 
-                    <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 12, padding: "12px", background: "rgba(13,148,136,.05)", borderRadius: 10 }}>
-                      <Lock size={12} color="#0D9488" />
-                      <span style={{ fontSize: 11, color: "#64748B" }}>Paiement sécurisé par Stripe</span>
-                      <div style={{ display: "flex", gap: 6 }}>
-                        {["Visa", "Mastercard", "AMEX"].map((card) => (
-                          <span key={card} style={{ fontSize: 9, fontWeight: 700, padding: "2px 6px", background: "#FFFFFF", borderRadius: 6, border: "1px solid #E2E8F0" }}>
-                            {card}
-                          </span>
-                        ))}
-                      </div>
+                    <div className="co-secure-note">
+                      <ShieldCheck size={13} color="#94a3b8" strokeWidth={2} />
+                      <span>Sécurisé par Stripe · chiffrement SSL</span>
+                      {["Visa", "MC", "AMEX"].map(c => (
+                        <span key={c} style={{ fontSize: 10, fontWeight: 700, padding: "2px 7px", background: "#f1f5f9", borderRadius: 5, color: "#64748b", border: "1px solid #e2e8f0" }}>{c}</span>
+                      ))}
                     </div>
-                  </div>
 
-                  {error && (
-                    <div style={{ display: "flex", gap: 8, padding: "11px 14px", background: "rgba(239,68,68,.08)", border: "1px solid rgba(239,68,68,.2)", borderRadius: 10 }}>
-                      <AlertCircle size={14} color="#EF4444" />
-                      <span style={{ fontSize: 13, color: "#EF4444" }}>{error}</span>
-                    </div>
-                  )}
+                    {error && (
+                      <div className="co-error">
+                        <AlertCircle size={15} color="#ef4444" strokeWidth={2.5} style={{ flexShrink: 0 }} />
+                        <span>{error}</span>
+                      </div>
+                    )}
+                  </div>
                 </>
               )}
 
-              {step === 4 && (
-                <>
-                  <div style={{ textAlign: "center", paddingTop: 8 }}>
-                    <div style={{ width: 64, height: 64, borderRadius: 18, background: "rgba(13,148,136,.1)", border: "1px solid rgba(13,148,136,.2)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
-                      <CheckCircle size={32} color="#0D9488" strokeWidth={1.5} />
-                    </div>
-                    <h3 style={{ fontFamily: "'Clash Display',sans-serif", fontSize: 22, fontWeight: 700, color: "#0F172A", marginBottom: 8, letterSpacing: -.5 }}>
-                      Paiement confirmé !
-                    </h3>
-                    <p style={{ fontSize: 14, color: "#64748B" }}>Un email de confirmation vous a été envoyé.</p>
+              {/* ─── STEP 3 — SUCCÈS ─── */}
+              {step === 3 && (
+                <div className="co-body" style={{ paddingTop: "2rem", paddingBottom: "2rem" }}>
+                  <div className="co-success-icon">
+                    <CheckCircle size={28} color="#16a34a" strokeWidth={2} />
                   </div>
+                  <h3 style={{ textAlign: "center", fontSize: 20, fontWeight: 800, color: "#0f172a", marginBottom: 6, letterSpacing: -0.3 }}>Paiement confirmé !</h3>
+                  <p style={{ textAlign: "center", fontSize: 13, color: "#64748b", marginBottom: 24, lineHeight: 1.7 }}>Un email de confirmation avec tous les détails vous a été envoyé.</p>
 
-                  <div style={{ border: "1px solid #E2E8F0", borderRadius: 18, overflow: "hidden" }}>
-                    <div style={{ background: "linear-gradient(135deg,#F0FDF4,#CCFBF1)", padding: "20px 22px" }}>
-                      <div style={{ display: "flex", justifyContent: "space-between" }}>
-                        <div>
-                          <p style={{ fontSize: 9, color: "rgba(15,23,42,.5)", fontWeight: 700, textTransform: "uppercase" }}>Excursion</p>
-                          <p style={{ fontFamily: "'Clash Display',sans-serif", fontSize: 16, fontWeight: 700, color: "#0F172A" }}>{exc?.title}</p>
-                        </div>
-                        <div>
-                          <p style={{ fontSize: 9, color: "rgba(15,23,42,.5)", fontWeight: 700, textTransform: "uppercase" }}>Payé</p>
-                          <p style={{ fontFamily: "'Clash Display',sans-serif", fontSize: 24, fontWeight: 700, color: "#0D9488" }}>{total} EUR</p>
-                        </div>
-                      </div>
+                  <div className="co-receipt">
+                    <div className="co-receipt-row">
+                      <span className="co-receipt-label"><Ticket size={14} strokeWidth={2} /> Réservation</span>
+                      <span className="co-receipt-val" style={{ fontFamily: "monospace" }}>#{reservation.booking_code}</span>
                     </div>
-                    <div style={{ padding: "18px 22px" }}>
-                      {[
-                        { Icon: Ticket, lbl: "Code", val: reservation.booking_code },
-                        { Icon: Calendar, lbl: "Date", val: `${fmtDate(reservation.date, true)} · ${reservation.time}` },
-                        { Icon: Users, lbl: "Voyageurs", val: `${reservation.people_count} pers.` },
-                      ].map(({ Icon, lbl, val }) => (
-                        <div key={lbl} className={styles["rp-info-row"]}>
-                          <div className={styles["rp-info-icon"]}><Icon size={14} color="#0D9488" /></div>
-                          <div>
-                            <p className={styles["rp-info-lbl"]}>{lbl}</p>
-                            <p className={styles["rp-info-val"]}>{val}</p>
-                          </div>
-                        </div>
-                      ))}
+                    <div className="co-receipt-row">
+                      <span className="co-receipt-label"><Calendar size={14} strokeWidth={2} /> Date</span>
+                      <span className="co-receipt-val">{fmtDate(reservation.date, true)} à {reservation.time}</span>
+                    </div>
+                    <div className="co-receipt-row">
+                      <span className="co-receipt-label"><Users size={14} strokeWidth={2} /> Voyageurs</span>
+                      <span className="co-receipt-val">{reservation.people_count} personne{reservation.people_count > 1 ? "s" : ""}</span>
+                    </div>
+                    <div className="co-receipt-row" style={{ background: "#f8fafc" }}>
+                      <span className="co-receipt-label" style={{ color: "#0f172a", fontWeight: 700 }}>Montant payé</span>
+                      <span style={{ fontSize: 18, fontWeight: 800, color: "#0f172a" }}>{total} EUR</span>
                     </div>
                   </div>
 
-                  <div style={{ display: "flex", gap: 10 }}>
-                    <button onClick={onClose} className={styles["rp-btn-secondary"]}>Fermer</button>
-                    <Link href="/touriste/historique" className={styles["rp-btn-primary"]} style={{ textAlign: "center" }}>
-                      Voir historique
+                  <div style={{ display: "flex", gap: 8 }}>
+                    <button className="co-btn-secondary" onClick={onClose}>Fermer</button>
+                    <Link
+                      href="/touriste/historique"
+                      style={{ flex: 1, padding: "12px", background: "#0f172a", color: "#fff", border: "none", borderRadius: 10, fontSize: 13, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6, textDecoration: "none", transition: "all 0.15s ease" }}
+                    >
+                      Voir l'historique <ArrowRight size={14} strokeWidth={2.5} />
                     </Link>
                   </div>
-                </>
+                </div>
               )}
             </>
           )}
+
         </div>
       </div>
-    </div>
+    </>
   );
 }

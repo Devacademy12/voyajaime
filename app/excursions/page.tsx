@@ -266,6 +266,22 @@ export default function ExcursionsPage() {
       <div className={styles.navSpacer} />
 
       <style>{`
+        /* ── Container centré global (même logique que touriste/layout.tsx) ── */
+        .exc-page-container {
+          width: 100%;
+          max-width: 1280px;
+          margin-left: auto;
+          margin-right: auto;
+          padding-left: 24px;
+          padding-right: 24px;
+        }
+        @media (max-width: 1024px) {
+          .exc-page-container { padding-left: 20px; padding-right: 20px; }
+        }
+        @media (max-width: 640px) {
+          .exc-page-container { padding-left: 16px; padding-right: 16px; }
+        }
+
         /* ── Badge Indisponible ── */
         .badge-unavailable {
           position: absolute;
@@ -312,9 +328,14 @@ export default function ExcursionsPage() {
       `}</style>
 
       <div className={styles.root}>
-        {/* ── HERO ── */}
+
+        {/* ── HERO — fullwidth, pas de container ── */}
         <div className={styles.hero}>
-          <div className={styles.heroInner}>
+          {/*
+            Le hero garde toute la largeur de l'écran (background, image…).
+            On centre seulement son contenu intérieur avec exc-page-container.
+          */}
+          <div className={`${styles.heroInner} exc-page-container`}>
             <h1 className={styles.heroTitle}>
               Découvrez des destinations<br />que vous adorerez
             </h1>
@@ -373,8 +394,8 @@ export default function ExcursionsPage() {
           </div>
         </div>
 
-        {/* ── CONTENT ── */}
-        <div className={styles.content}>
+        {/* ── CONTENT — centré avec le container ── */}
+        <div className={`${styles.content} exc-page-container`}>
 
           {/* Count + Sort */}
           <div className={styles.sortBar}>
@@ -542,7 +563,8 @@ export default function ExcursionsPage() {
               </div>
             </div>
           )}
-        </div>
+
+        </div>{/* fin .content + exc-page-container */}
       </div>
 
       {activeTab && <div className={styles.overlay} onClick={() => setActiveTab(null)} />}

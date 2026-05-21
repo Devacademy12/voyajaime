@@ -4,9 +4,10 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import {
   MapPin, Clock, CalendarDays, Users, Star, Compass,
-  CheckCircle, CreditCard, TrendingUp, Timer,
+  CheckCircle, CreditCard, TrendingUp, Timer, Trash2,
 } from "lucide-react";
 import { Reservation, STATUS_CFG, daysUntil, fmtDate } from "./type";
+import CancellationModal from "./CancellationModal";
 import styles from "@/public/style/Reservations.module.css";
 
 interface Props {
@@ -24,6 +25,7 @@ export default function ReservationCard({ r, onPay, onRefresh, onExpired }: Prop
   const days  = daysUntil(r.date);
 
   const [timeLeftCard, setTimeLeftCard] = useState<number | null>(null);
+  const [showCancellationModal, setShowCancellationModal] = useState(false);
 
   useEffect(() => {
     if (r.status !== "pending" || paid || !r.payment_deadline) return;
@@ -151,15 +153,58 @@ export default function ReservationCard({ r, onPay, onRefresh, onExpired }: Prop
           </button>
         )}
 
-        {paid && (
-          <Link
-            href={`/excursions/${exc?.id}`}
-            style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "10px 16px", background: "rgba(13,148,136,.08)", color: "#0D9488", border: "1px solid rgba(13,148,136,.2)", borderRadius: 10, fontSize: 12, fontWeight: 700, textDecoration: "none" }}
-          >
-            <TrendingUp size={12} /> Détails
-          </Link>
+        {paid && r.status !== "cancelled" && (
+          <div style={{ display: "flex", gap: 8 }}>
+            <Link
+              href={`/excursions/${exc?.id}`}
+              style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "10px 16px", background: "rgba(13,148,136,.08)", color: "#0D9488", border: "1px solid rgba(13,148,136,.2)", borderRadius: 10, fontSize: 12, fontWeight: 700, textDecoration: "none" }}
+            >
+              <TrendingUp size={12} /> Détails
+            </Link>
+            
+            <button
+              onClick={() => setShowCancellationModal(true)}
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 6,
+                padding: "10px 16px",
+                background: "rgba(239,68,68,.08)",
+                color: "#EF4444",
+                border: "1px solid rgba(239,68,68,.2)",
+                borderRadius: 10,
+                fontSize: 12,
+                fontWeight: 700,
+                textDecoration: "none",
+                cursor: "pointer",
+                transition: "all 0.2s",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = "rgba(239,68,68,.12)";
+                e.currentTarget.style.borderColor = "rgba(239,68,68,.4)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = "rgba(239,68,68,.08)";
+                e.currentTarget.style.borderColor = "rgba(239,68,68,.2)";
+              }}
+            >
+              <Trash2 size={12} /> Annuler
+            </button>
+          </div>
         )}
       </div>
+
+      {/* ── Cancellation Modal ── */}
+      {showCancellationModal && (
+        <CancellationModal
+          reservation={r}
+          onClose={() => setShowCancellationModal(false)}
+          onCancelled={() => {
+            setShowCancellationModal(false);
+            if (onRefresh) onRefresh();
+          }}
+        />
+      )}
     </div>
   );
 }
