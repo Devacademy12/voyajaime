@@ -144,10 +144,32 @@ const CSS_PAGE = `
 
   /* ── Newsletter ── */
   .newsletter-section {
-    background: linear-gradient(135deg, #053366 0%, #0B4F6C 50%, #02AFCF 100%);
+    background: #053366; /* Bleu profond brand */
     padding: 80px 24px;
     text-align: center;
     position: relative;
+    overflow: hidden;
+  }
+  .newsletter-section::before {
+    content: '';
+    position: absolute;
+    top: -100px;
+    right: -100px;
+    width: 300px;
+    height: 300px;
+    background: rgba(43, 150, 168, 0.1);
+    border-radius: 50%;
+  }
+  .newsletter-section::after {
+    content: '';
+    position: absolute;
+    bottom: -150px;
+    left: -150px;
+    width: 400px;
+    height: 400px;
+    background: rgba(43, 150, 168, 0.05);
+    border-radius: 50%;
+  }
     overflow: hidden;
   }
   .newsletter-section::before {
