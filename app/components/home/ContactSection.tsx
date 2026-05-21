@@ -56,7 +56,7 @@ const CSS = `
     display: block; margin-bottom: 14px;
   }
   .hcs-title {
-    font-family: inherit'Playfair Display', serif;
+    font-family: 'Playfair Display', serif;
     font-size: clamp(28px, 3.5vw, 46px);
     font-weight: 900; color: #fff;
     letter-spacing: -1.5px; line-height: 1.08;
@@ -72,8 +72,8 @@ const CSS = `
 
   .hcs-icon {
     width: 42px; height: 42px; border-radius: 12px;
-    background: rgba(2,175,207,.12);
-    border: 1px solid rgba(2,175,207,.2);
+    background: rgba(43, 150, 168, 0.12);
+    border: 1px solid rgba(43, 150, 168, 0.2);
     display: flex; align-items: center; justify-content: center;
     flex-shrink: 0;
   }
@@ -88,7 +88,7 @@ const CSS = `
     font-size: 15px; font-weight: 700; color: #fff;
     text-decoration: none; transition: color .18s;
   }
-  .hcs-ivalue:hover { color: #02AFCF; }
+  .hcs-ivalue:hover { color: #2B96A8; }
 
   .hcs-more {
     display: inline-flex; align-items: center; gap: 7px;
@@ -96,7 +96,7 @@ const CSS = `
     font-size: 13px; font-weight: 700; color: rgba(255,255,255,.45);
     text-decoration: none; transition: color .18s;
   }
-  .hcs-more:hover { color: #02AFCF; }
+  .hcs-more:hover { color: #2B96A8; }
 
   .hcs-form-box {
     background: rgba(255,255,255,.04);
@@ -160,10 +160,10 @@ export default function ContactSection({
   const bgImage    = c.bg_image     ?? "";
 
   const INFO = [
-    { icon: <Mail  size={17} color="#02AFCF" strokeWidth={1.8}/>, label:"EMAIL",     value: email,   href: `mailto:${email}` },
-    { icon: <Phone size={17} color="#02AFCF" strokeWidth={1.8}/>, label:"TÉLÉPHONE", value: phone,   href: `tel:${phone.replace(/\s/g,"")}` },
-    { icon: <MapPin size={17} color="#02AFCF" strokeWidth={1.8}/>,label:"ADRESSE",   value: address, href: undefined },
-    { icon: <Clock size={17} color="#02AFCF" strokeWidth={1.8}/>, label:"HORAIRES",  value: hours,   href: undefined },
+    { icon: <Mail  size={17} color="#2B96A8" strokeWidth={1.8}/>, label:"EMAIL",     value: email,   href: `mailto:${email}` },
+    { icon: <Phone size={17} color="#2B96A8" strokeWidth={1.8}/>, label:"TÉLÉPHONE", value: phone,   href: `tel:${phone.replace(/\s/g,"")}` },
+    { icon: <MapPin size={17} color="#2B96A8" strokeWidth={1.8}/>,label:"ADRESSE",   value: address, href: undefined },
+    { icon: <Clock size={17} color="#2B96A8" strokeWidth={1.8}/>, label:"HORAIRES",  value: hours,   href: undefined },
   ];
 
   return (

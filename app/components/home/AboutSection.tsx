@@ -153,11 +153,13 @@ const CSS = `
     text-decoration: none;
     transition: all 0.3s;
     box-shadow: 0 8px 24px rgba(43,150,168,0.25);
+    border: 2px solid #2B96A8;
   }
   .about-btn-primary:hover {
-    background: #053366;
+    background: transparent;
+    color: #2B96A8;
     transform: translateY(-2px);
-    box-shadow: 0 12px 32px rgba(5,51,102,0.3);
+    box-shadow: 0 12px 32px rgba(43,150,168,0.2);
   }
 
   .rich-preview {

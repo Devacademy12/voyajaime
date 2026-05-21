@@ -47,19 +47,19 @@ export default function HomeStyles() {
         display:inline-flex; align-items:center; gap:8px;
         padding:14px 28px; background:#2B96A8; color:white;
         border-radius:14px; font-size:15px; font-weight:700;
-        font-family:'DM Sans',sans-serif; border:none; cursor:pointer;
+        font-family:'DM Sans',sans-serif; border:2px solid #2B96A8; cursor:pointer;
         text-decoration:none; transition:all 0.2s;
         box-shadow:0 6px 24px rgba(43,150,168,0.35);
       }
-      .btn-primary:hover { background:#258596; transform:translateY(-1px); box-shadow:0 10px 32px rgba(43,150,168,0.45) }
+      .btn-primary:hover { background:transparent; color:#2B96A8; transform:translateY(-1px); box-shadow:0 10px 32px rgba(43,150,168,0.2) }
       .btn-ghost {
         display:inline-flex; align-items:center; gap:8px;
         padding:14px 24px; background:rgba(255,255,255,0.13);
-        backdrop-filter:blur(12px); border:1.5px solid rgba(255,255,255,0.38);
+        backdrop-filter:blur(12px); border:2px solid rgba(255,255,255,0.8);
         color:white; border-radius:14px; font-size:15px; font-weight:600;
         font-family:'DM Sans',sans-serif; cursor:pointer; text-decoration:none; transition:all 0.2s;
       }
-      .btn-ghost:hover { background:rgba(255,255,255,0.22) }
+      .btn-ghost:hover { background:white; color:#053366; border-color:white }
       .btn-outline {
         display:inline-flex; align-items:center; gap:8px;
         padding:13px 22px; background:white; border:1.5px solid #E5E7EB;

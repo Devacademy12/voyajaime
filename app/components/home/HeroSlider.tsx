@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, useCallback } from "react";
 import Link from "next/link";
-import { MapPin, ChevronDown, Sparkles, Map, Play, Volume2, VolumeX, Star, Calendar, Users, Compass } from "lucide-react";
+import { MapPin, ChevronDown, Sparkles, Map, Play, Volume2, VolumeX, Star, Calendar, Users, Compass, ArrowRight } from "lucide-react";
 import { createClient } from "@/lib/supabaseClient";
 import { ROUTES } from "@/app/lib/routes";
 
@@ -301,12 +301,12 @@ export default function HomeSlider() {
           padding: 16px 36px; border-radius: 12px;
           background: #2B96A8;
           color: white; font-size: 16px; font-weight: 700;
-          text-decoration: none; font-family: inherit'DM Sans', sans-serif;
+          text-decoration: none; font-family: 'DM Sans', sans-serif;
           transition: all 0.4s cubic-bezier(0.34, 1.2, 0.64, 1);
           box-shadow: 0 8px 24px rgba(43, 150, 168, 0.3);
           white-space: nowrap;
           letter-spacing: 0.3px;
-          border: none;
+          border: 2px solid #2B96A8;
           cursor: pointer;
           position: relative;
           overflow: hidden;
@@ -314,8 +314,9 @@ export default function HomeSlider() {
         
         .btn-primary:hover { 
           transform: translateY(-4px); 
-          background: #258596;
-          box-shadow: 0 16px 40px rgba(43, 150, 168, 0.4);
+          background: transparent;
+          color: #2B96A8;
+          box-shadow: 0 16px 40px rgba(43, 150, 168, 0.2);
           gap: 14px;
         }
         
@@ -326,9 +327,9 @@ export default function HomeSlider() {
           padding: 16px 36px; border-radius: 12px;
           background: rgba(255, 255, 255, 0.1);
           backdrop-filter: blur(12px);
-          border: 1.5px solid rgba(255, 255, 255, 0.3);
-          color: white; font-size: 16px; font-weight: 600;
-          text-decoration: none; font-family: inherit'DM Sans', sans-serif;
+          border: 2px solid rgba(255, 255, 255, 0.8);
+          color: white; font-size: 16px; font-weight: 700;
+          text-decoration: none; font-family: 'DM Sans', sans-serif;
           transition: all 0.4s cubic-bezier(0.34, 1.2, 0.64, 1);
           white-space: nowrap;
           letter-spacing: 0.3px;
@@ -336,8 +337,9 @@ export default function HomeSlider() {
         }
         
         .btn-ghost:hover { 
-          background: rgba(255, 255, 255, 0.15);
-          border-color: rgba(255, 255, 255, 0.5);
+          background: white;
+          color: #053366;
+          border-color: white;
           transform: translateY(-4px);
           gap: 14px;
         }
@@ -358,7 +360,7 @@ export default function HomeSlider() {
           gap: 10px;
           font-size: 13px; 
           font-weight: 500; 
-          font-family: inherit'DM Sans', sans-serif;
+          font-family: 'DM Sans', sans-serif;
           transition: all 0.3s ease;
           z-index: 20;
         }
@@ -628,17 +630,17 @@ export default function HomeSlider() {
                 alignItems: "center",
               }}>
                 <a href="#chemins" className="btn-primary">
-                  <Sparkles size={18}/> 
+                  <Compass size={18}/> 
                   <span>Planifier mon voyage</span>
                 </a>
                 {slide.type === "excursion" && slide.excursionId
-                  ? <Link href={ROUTES.excursion(slide.excursionId)} className="btn-ghost">
+                  ? <Link href={ROUTES.excursion(slide.excursionId)} className="btn-ghost" style={{ gap: 10 }}>
                       <Map size={18}/> 
-                      <span>Découvrir</span>
+                      <span>Découvrir l&apos;excursion</span>
                     </Link>
-                  : <Link href={ROUTES.excursions} className="btn-ghost">
-                      <Compass size={18}/> 
-                      <span>Explorer</span>
+                  : <Link href={ROUTES.excursions} className="btn-ghost" style={{ gap: 10 }}>
+                      <ArrowRight size={18}/> 
+                      <span>Explorer le catalogue</span>
                     </Link>
                 }
               </div>

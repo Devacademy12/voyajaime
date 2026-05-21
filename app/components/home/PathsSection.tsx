@@ -68,7 +68,7 @@ export default function PathsSection({ slides, user, openAuth }: PathsSectionPro
             <Link
               href={ROUTES.ModeAssiste}
               className="path-card-btn"
-              style={{ background: "#2B96A8", color: "white", boxShadow: "0 6px 22px rgba(43,150,168,0.42)" }}
+              style={{ background: "#2B96A8", color: "white", boxShadow: "0 6px 22px rgba(43,150,168,0.42)", border: "2px solid #2B96A8" }}
             >
               Je veux qu&apos;on me propose <ArrowRight size={15} />
             </Link>
@@ -102,9 +102,9 @@ export default function PathsSection({ slides, user, openAuth }: PathsSectionPro
             <Link
               href="/modeLibre?mode=libre"
               className="path-card-btn"
-              style={{ background: "rgba(255,255,255,0.14)", border: "1.5px solid rgba(255,255,255,0.32)", color: "white" }}
+              style={{ background: "rgba(255,255,255,0.15)", border: "2px solid white", color: "white" }}
             >
-              Je veux décider moi-même <ArrowRight size={15} />
+              Je crée mon itinéraire <ArrowRight size={15} />
             </Link>
           </div>
 
@@ -136,9 +136,9 @@ export default function PathsSection({ slides, user, openAuth }: PathsSectionPro
             <Link
               href={ROUTES.excursions}
               className="path-card-btn"
-              style={{ background: "transparent", border: "1.5px solid rgba(255,255,255,0.28)", color: "rgba(255,255,255,0.82)" }}
+              style={{ background: "transparent", border: "2px solid rgba(255,255,255,0.6)", color: "white" }}
             >
-              Voir toutes les excursions <ArrowRight size={15} />
+              Découvrir le catalogue <ArrowRight size={15} />
             </Link>
           </div>
         </div>
