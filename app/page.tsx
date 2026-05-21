@@ -17,16 +17,7 @@ import ContactSection    from "@/app/components/home/ContactSection";
 import HomeFooter        from "@/app/components/home/HomeFooter";
 
 // ── Types ────────────────────────────────────────────────────────────────────
-interface SlideExcursion {
-  id: string; title: string; city: string;
-  url: string; categories: string[];
-}
-interface Excursion {
-  id: string; title: string; city: string;
-  price_per_person: number; duration_hours: number;
-  rating: number; reviews_count: number;
-  categories: string[]; photos: string[];
-}
+import { SlideExcursion, Excursion } from "@/lib/homeUtils";
 
 // ─────────────────────────────────────────────────────────────────────────────
 
