@@ -146,16 +146,14 @@ export async function POST(req: NextRequest) {
           (s) => s.metadata?.reservation_id === reservation_id
         );
 
-        if (session?.payment_intent) {
-          const paymentIntent = await stripe.paymentIntents.retrieve(
-            session.payment_intent as string
-          );
+        if (session && session.payment_intent) {
+          const paymentIntentId = typeof session.payment_intent === 'string' 
+            ? session.payment_intent 
+            : (session.payment_intent as any)?.id;
 
-          const charge = paymentIntent.charges.data[0];
-
-          if (charge) {
+          if (paymentIntentId) {
             const refund = await stripe.refunds.create({
-              charge: charge.id,
+              payment_intent: paymentIntentId,
               amount: Math.round(refundAmount * 100),
               metadata: {
                 reservation_id,
