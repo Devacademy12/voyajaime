@@ -8,7 +8,7 @@ import {
   MapPin, Clock, CalendarDays, Coins, Sunrise, Sun,
   Moon, Loader2, AlertCircle, FileText, ShoppingCart,
   Bot, PenLine, Image as ImageIcon, ExternalLink,
-  Calendar, Flag, Users, Star, ArrowRight,
+  Calendar, Flag, Users, Star, ArrowRight, CreditCard,
 } from "lucide-react";
 import CheckoutModalItineraire from "@/app/components/itineraire/Checkoutmodalitineraire";
 
@@ -56,6 +56,14 @@ type ExcursionForCheckout = {
   plan_date?: string;
   plan_time?: "matin" | "aprem" | "soir";
   plan_day?: number;
+};
+
+// réservation en attente liée à cet itinéraire
+type PendingReservation = {
+  id: string;
+  excursion_id: string;
+  payment_status: string;
+  status: string;
 };
 
 // ─── Constants ───────────────────────────────────────────────────────────────
@@ -167,6 +175,7 @@ const RESPONSIVE_CSS = `
 
   .it-btn { transition: all .15s; cursor: pointer; font-family: inherit; border: none; outline: none; }
 
+  /* Bouton Réserver (état initial) */
   .it-reserve-all-btn {
     display: inline-flex; align-items: center; gap: 6px;
     padding: 9px 18px;
@@ -179,6 +188,21 @@ const RESPONSIVE_CSS = `
   }
   .it-reserve-all-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 18px rgba(43,150,168,.45); }
   .it-reserve-all-btn:disabled { background: #E5E7EB; color: #9CA3AF; cursor: not-allowed; transform: none; box-shadow: none; }
+
+  /* Bouton Payer (état après réservation) */
+  .it-pay-btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 9px 18px;
+    background: linear-gradient(135deg,#059669,#047857);
+    color: white; border: none; border-radius: 22px;
+    font-size: 12px; font-weight: 700; cursor: pointer;
+    font-family: 'DM Sans',sans-serif; transition: all .18s;
+    flex-shrink: 0; white-space: nowrap;
+    box-shadow: 0 2px 10px rgba(5,150,105,.35);
+    animation: fadeIn .25s ease;
+  }
+  .it-pay-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 18px rgba(5,150,105,.5); }
+  .it-pay-btn:disabled { background: #E5E7EB; color: #9CA3AF; cursor: not-allowed; transform: none; box-shadow: none; }
 
   /* ── Day section ── */
   .it-day-section {
@@ -194,7 +218,7 @@ const RESPONSIVE_CSS = `
     border-left: 4px solid #2B96A8;
   }
 
-  /* ── Excursion card (new rich design) ── */
+  /* ── Excursion card ── */
   .exc-card {
     display: flex;
     gap: 0;
@@ -212,7 +236,6 @@ const RESPONSIVE_CSS = `
     transform: translateY(-2px);
   }
 
-  /* Image panel */
   .exc-img-panel {
     position: relative;
     width: 180px;
@@ -257,7 +280,6 @@ const RESPONSIVE_CSS = `
     letter-spacing: .3px;
   }
 
-  /* Content panel */
   .exc-content {
     flex: 1; min-width: 0;
     padding: 16px 18px;
@@ -302,7 +324,7 @@ const RESPONSIVE_CSS = `
     font-size: 11px; font-weight: 600;
     margin-bottom: 6px;
   }
-  .exc-info-row.date { background: #F0FDF4; color: #065F46; border: 1px solid #D1FAE5; }
+  .exc-info-row.date  { background: #F0FDF4; color: #065F46; border: 1px solid #D1FAE5; }
   .exc-info-row.place { background: #FFF7ED; color: #9A3412; border: 1px solid #FED7AA; }
 
   .exc-note {
@@ -330,7 +352,6 @@ const RESPONSIVE_CSS = `
   .btn-voir-detail[data-unavailable="true"] { border-color: #E5E7EB; color: #D1D5DB; cursor: not-allowed; transform: none; }
   .btn-voir-detail[data-unavailable="true"]:hover { background: white; color: #D1D5DB; box-shadow: none; }
 
-  /* Page header */
   .it-page-header {
     display: flex; justify-content: space-between; align-items: flex-start;
     margin-bottom: 32px;
@@ -342,12 +363,8 @@ const RESPONSIVE_CSS = `
     .it-card-header { padding: 14px 16px; flex-wrap: wrap; }
     .it-card-actions { width: 100%; justify-content: flex-start; padding-top: 4px; }
 
-    /* Stack excursion card on mobile */
     .exc-card { flex-direction: column; }
-    .exc-img-panel {
-      width: 100%; min-width: 100%;
-      height: 180px;
-    }
+    .exc-img-panel { width: 100%; min-width: 100%; height: 180px; }
     .exc-img-placeholder { min-height: 140px; }
     .exc-content { padding: 14px 14px 14px; }
     .exc-title { font-size: 14px; }
@@ -355,7 +372,7 @@ const RESPONSIVE_CSS = `
 
     .it-detail { padding: 0 14px 16px !important; }
     .it-day-header { padding: 8px 12px; border-radius: 12px; }
-    .it-reserve-all-btn { font-size: 11px; padding: 8px 14px; }
+    .it-reserve-all-btn, .it-pay-btn { font-size: 11px; padding: 8px 14px; }
   }
 
   @media (max-width: 480px) {
@@ -365,7 +382,7 @@ const RESPONSIVE_CSS = `
       font-size: 11px !important;
       padding: 7px 12px !important;
     }
-    .it-reserve-all-btn { width: 100%; justify-content: center; }
+    .it-reserve-all-btn, .it-pay-btn { width: 100%; justify-content: center; }
   }
 `;
 
@@ -384,6 +401,9 @@ export default function ItinerairesClient() {
   const [excPhotos,  setExcPhotos]  = useState<Record<string, string[]>>({});
   const [excDetails, setExcDetails] = useState<Record<string, any>>({});
   const [titleToId,  setTitleToId]  = useState<Record<string, string>>({});
+
+  // Map itineraireId → réservations en attente de paiement
+  const [pendingByItineraireId, setPendingByItineraireId] = useState<Record<string, PendingReservation[]>>({});
 
   const [checkoutItineraire, setCheckoutItineraire] = useState<{
     excursions: ExcursionForCheckout[];
@@ -414,6 +434,32 @@ export default function ItinerairesClient() {
 
       const itineraires: Itineraire[] = data || [];
       setItems(itineraires);
+
+      // ── Charger les réservations pending liées à ces itinéraires ──
+      if (itineraires.length > 0) {
+        const itinIds = itineraires.map(i => i.id);
+        const { data: pendingRows } = await sb
+          .from("reservations")
+          .select("id, excursion_id, payment_status, status, itineraire_id")
+          .eq("touriste_id", user.id)
+          .in("itineraire_id", itinIds)
+          .eq("status", "pending")
+          .neq("payment_status", "paid");
+
+        if (pendingRows && pendingRows.length > 0) {
+          const map: Record<string, PendingReservation[]> = {};
+          pendingRows.forEach((r: any) => {
+            if (!map[r.itineraire_id]) map[r.itineraire_id] = [];
+            map[r.itineraire_id].push({
+              id: r.id,
+              excursion_id: r.excursion_id,
+              payment_status: r.payment_status,
+              status: r.status,
+            });
+          });
+          setPendingByItineraireId(map);
+        }
+      }
 
       const candidateIds = new Set<string>();
       const planCities   = new Set<string>();
@@ -509,7 +555,7 @@ export default function ItinerairesClient() {
     return null;
   };
 
-  const getActPhoto = (act: ActivityItem) => {
+  const getActPhoto   = (act: ActivityItem) => {
     const id = resolveExcursionId(act);
     return (id ? excPhotos[id]?.[0] : undefined) || act.excursion?.photos?.[0];
   };
@@ -732,6 +778,10 @@ export default function ItinerairesClient() {
               const assisted      = isAssisted(it.plan);
               const isThisLoading = loadingItinId === it.id;
 
+              // ── Déterminer si cet itinéraire a des réservations en attente de paiement
+              const pendingReservations = pendingByItineraireId[it.id] || [];
+              const hasPending          = pendingReservations.length > 0;
+
               return (
                 <div key={it.id} className="it-card" style={{ animationDelay: `${idx * .07}s` }}>
 
@@ -754,6 +804,12 @@ export default function ItinerairesClient() {
                         <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 20, background: assisted ? "rgba(2,175,207,.1)" : "rgba(43,150,168,.08)", color: assisted ? "#02AFCF" : "#2B96A8" }}>
                           {assisted ? <><Bot size={10} /> Mode IA</> : <><PenLine size={10} /> Mode Libre</>}
                         </span>
+                        {/* Badge "En attente de paiement" */}
+                        {hasPending && (
+                          <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 20, background: "rgba(5,150,105,.1)", color: "#059669", border: "1px solid rgba(5,150,105,.2)" }}>
+                            <CreditCard size={9} /> {pendingReservations.length} à payer
+                          </span>
+                        )}
                         {it.villes_selectionnees?.slice(0, 3).map(v => (
                           <span key={v} style={{ display: "inline-flex", alignItems: "center", gap: 3, fontSize: 11, color: "#6B7280", background: "#F3F4F6", padding: "2px 8px", borderRadius: 20, fontWeight: 500 }}>
                             <MapPin size={9} color="#9CA3AF" /> {v}
@@ -793,15 +849,32 @@ export default function ItinerairesClient() {
                           ? <Loader2 size={13} style={{ animation: "spin .8s linear infinite" }} />
                           : <Trash2 size={13} />}
                       </button>
-                      <button
-                        className="it-reserve-all-btn"
-                        disabled={isThisLoading}
-                        onClick={e => { e.stopPropagation(); openItineraryCheckout(it); }}
-                      >
-                        {isThisLoading
-                          ? <><Loader2 size={13} style={{ animation: "spin .8s linear infinite" }} /> Chargement…</>
-                          : <><ShoppingCart size={13} /> Réserver</>}
-                      </button>
+
+                      {/* ── Bouton Réserver / Payer ── */}
+                      {hasPending ? (
+                        <button
+                          className="it-pay-btn"
+                          disabled={isThisLoading}
+                          onClick={e => { e.stopPropagation(); openItineraryCheckout(it); }}
+                          title={`${pendingReservations.length} réservation(s) en attente de paiement`}
+                        >
+                          {isThisLoading
+                            ? <><Loader2 size={13} style={{ animation: "spin .8s linear infinite" }} /> Chargement…</>
+                            : <><CreditCard size={13} /> Payer ({pendingReservations.length})</>
+                          }
+                        </button>
+                      ) : (
+                        <button
+                          className="it-reserve-all-btn"
+                          disabled={isThisLoading}
+                          onClick={e => { e.stopPropagation(); openItineraryCheckout(it); }}
+                        >
+                          {isThisLoading
+                            ? <><Loader2 size={13} style={{ animation: "spin .8s linear infinite" }} /> Chargement…</>
+                            : <><ShoppingCart size={13} /> Réserver</>
+                          }
+                        </button>
+                      )}
                     </div>
 
                     <div style={{ color: "#D1D5DB", flexShrink: 0, marginLeft: 4 }}>
@@ -846,11 +919,21 @@ export default function ItinerairesClient() {
                               const canNavigate  = !!resolvedId || isValidUUID(act.excursion_id || "") || isValidUUID(act.id);
                               const timeCfg      = act.time ? TIME_CONFIG[act.time] : null;
 
+                              // Est-ce que cette activité a une réservation pending ?
+                              const actReserved = resolvedId
+                                ? pendingReservations.some(pr => pr.excursion_id === resolvedId)
+                                : false;
+
                               return (
                                 <div
                                   key={act.id || ai}
                                   className="exc-card"
-                                  style={{ animationDelay: `${ai * .05}s` }}
+                                  style={{
+                                    animationDelay: `${ai * .05}s`,
+                                    // Légère teinte verte si déjà réservé
+                                    borderColor: actReserved ? "#86EFAC" : undefined,
+                                    background: actReserved ? "#F0FFF4" : undefined,
+                                  }}
                                 >
                                   {/* ── Image panel ── */}
                                   <div
@@ -879,7 +962,6 @@ export default function ItinerairesClient() {
                                       </div>
                                     )}
 
-                                    {/* Time badge overlay */}
                                     {timeCfg && (
                                       <span
                                         className="exc-time-badge"
@@ -889,10 +971,21 @@ export default function ItinerairesClient() {
                                       </span>
                                     )}
 
-                                    {/* Price overlay */}
                                     {act.excursion?.price_per_person > 0 && (
                                       <span className="exc-price-badge">
                                         {act.excursion.price_per_person} EUR
+                                      </span>
+                                    )}
+
+                                    {/* Badge "Réservé" sur l'image */}
+                                    {actReserved && (
+                                      <span style={{
+                                        position: "absolute", top: 10, right: 10,
+                                        background: "#059669", color: "white",
+                                        fontSize: 9, fontWeight: 800, padding: "3px 8px",
+                                        borderRadius: 12, letterSpacing: .3,
+                                      }}>
+                                        ✓ Réservé
                                       </span>
                                     )}
                                   </div>
@@ -900,7 +993,6 @@ export default function ItinerairesClient() {
                                   {/* ── Content panel ── */}
                                   <div className="exc-content">
 
-                                    {/* Title */}
                                     <p
                                       className="exc-title"
                                       onClick={() => canNavigate && navigateToExcursion(act)}
@@ -910,7 +1002,6 @@ export default function ItinerairesClient() {
                                       {canNavigate && <ExternalLink size={13} color="#CBD5E1" style={{ flexShrink: 0, marginTop: 1 }} />}
                                     </p>
 
-                                    {/* City */}
                                     {act.excursion?.city && (
                                       <div className="exc-city-row">
                                         <MapPin size={11} color="#9CA3AF" />
@@ -918,7 +1009,6 @@ export default function ItinerairesClient() {
                                       </div>
                                     )}
 
-                                    {/* Chips row */}
                                     <div className="exc-chips">
                                       {act.excursion?.duration_hours && (
                                         <span className="exc-chip blue">
@@ -932,7 +1022,6 @@ export default function ItinerairesClient() {
                                       )}
                                     </div>
 
-                                    {/* Date/time info */}
                                     {(startDate || startTime) && (
                                       <div className="exc-info-row date">
                                         <Calendar size={12} color="#059669" />
@@ -943,7 +1032,6 @@ export default function ItinerairesClient() {
                                       </div>
                                     )}
 
-                                    {/* Meeting point */}
                                     {meetingPoint && (
                                       <div className="exc-info-row place">
                                         <Flag size={12} color="#EA580C" />
@@ -951,7 +1039,6 @@ export default function ItinerairesClient() {
                                       </div>
                                     )}
 
-                                    {/* Note */}
                                     {act.note && (
                                       <p className="exc-note">
                                         <FileText size={10} style={{ flexShrink: 0, marginTop: 2 }} />
@@ -959,7 +1046,6 @@ export default function ItinerairesClient() {
                                       </p>
                                     )}
 
-                                    {/* Footer */}
                                     <div className="exc-footer">
                                       <button
                                         className="btn-voir-detail"
@@ -974,7 +1060,6 @@ export default function ItinerairesClient() {
                                         }
                                       </button>
 
-                                      {/* Day indicator */}
                                       <span style={{ fontSize: 10, color: "#D1D5DB", fontWeight: 600 }}>
                                         J{di + 1} · #{ai + 1}
                                       </span>
