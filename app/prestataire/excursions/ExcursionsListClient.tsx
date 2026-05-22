@@ -33,167 +33,17 @@ interface Excursion {
 
 const FALLBACK = "https://images.unsplash.com/photo-1568515387631-8b650bbcdb90?w=600&q=80&fit=crop";
 
-/* ─── CSS ───────────────────────────────────────────────────── */
-const CSS = `
-  @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
-
-  @keyframes fadeUp {
-    from { opacity: 0; transform: translateY(12px); }
-    to   { opacity: 1; transform: translateY(0); }
-  }
-
-  .pw {
-    font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
-    background: #F5F7FA;
-    min-height: 100vh;
-    padding: 28px 36px 64px;
-    width: 100%;
-  }
-
-  /* ── Header ── */
-  .pw-header {
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: 16px;
-    margin-bottom: 28px;
-    animation: fadeUp .35s ease both;
-    flex-wrap: wrap;
-  }
-  .pw-header-eyebrow {
-    display: inline-flex; align-items: center; gap: 6px;
-    background: #EFF9FB; border: 1px solid rgba(43,150,168,.22);
-    border-radius: 20px; padding: 4px 12px;
-    font-size: 11px; font-weight: 700; color: #2B96A8;
-    text-transform: uppercase; letter-spacing: .08em;
-    margin-bottom: 10px;
-  }
-  .pw-header-title {
-    font-size: clamp(22px, 4vw, 30px); font-weight: 800;
-    color: #053366; line-height: 1.1; letter-spacing: -.02em;
-  }
-  .pw-header-sub {
-    font-size: 13px; color: #94A3B8; margin-top: 5px; font-weight: 500;
-  }
-  .pw-header-badge {
-    display: flex; align-items: center; gap: 8px;
-    background: #fff; border: 1.5px solid #E2E8F0; border-radius: 12px;
-    padding: 10px 16px; flex-shrink: 0; align-self: flex-start;
-  }
-  .pw-header-badge-avatar {
-    width: 32px; height: 32px; border-radius: 8px;
-    background: linear-gradient(135deg, #053366, #2B96A8);
-    display: flex; align-items: center; justify-content: center;
-    font-size: 12px; font-weight: 800; color: #fff;
-  }
-  .pw-header-badge-name { font-size: 13px; font-weight: 700; color: #053366; }
-  .pw-header-badge-role { font-size: 11px; color: #94A3B8; font-weight: 500; }
-
-  /* ── Tabs/Filtres ── */
-  .pw-tabs {
-    display: flex; gap: 2px;
-    background: #fff; border-radius: 14px;
-    padding: 5px; margin-bottom: 24px;
-    border: 1.5px solid #E2E8F0;
-    width: fit-content;
-    animation: fadeUp .4s ease both;
-  }
-  .pw-tab {
-    padding: 9px 18px; border: none; background: none;
-    font-family: inherit; font-size: 13px; font-weight: 600;
-    color: #94A3B8; cursor: pointer; border-radius: 10px;
-    display: flex; align-items: center; gap: 7px; transition: all .18s;
-  }
-  .pw-tab.active {
-    background: #053366; color: #fff; box-shadow: 0 4px 16px rgba(5,51,102,.22);
-  }
-  .pw-tab:hover:not(.active) { color: #053366; background: #F0F4F8; }
-
-  /* ── Button ── */
-  .pw-btn-primary {
-    display: inline-flex; align-items: center; gap: 8px;
-    padding: 10px 20px; border-radius: 12px; font-size: 13.5px; font-weight: 700;
-    cursor: pointer; transition: all .2s; border: none; font-family: inherit;
-    text-decoration: none; background: #053366; color: #fff;
-    box-shadow: 0 4px 12px rgba(5,51,102,0.15);
-  }
-  .pw-btn-primary:hover { background: #042952; transform: translateY(-1px); }
-
-  /* ── Cards ── */
-  .exc-grid {
-    display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-    gap: 24px; animation: fadeUp .5s ease both;
-  }
-  .exc-card {
-    background: #fff; border-radius: 20px; border: 1.5px solid #E2E8F0;
-    overflow: hidden; transition: all .25s; position: relative;
-    display: flex; flexDirection: column;
-  }
-  .exc-card:hover { transform: translateY(-4px); box-shadow: 0 12px 30px rgba(5,51,102,.08); border-color: #2B96A8; }
-  
-  .exc-card-img-wrap { position: relative; height: 200px; overflow: hidden; background: #F8FAFC; }
-  .exc-card-img { width: 100%; height: 100%; object-fit: cover; transition: transform .5s; }
-  .exc-card:hover .exc-card-img { transform: scale(1.08); }
-
-  .exc-badge {
-    position: absolute; top: 12px; left: 12px;
-    padding: 4px 12px; border-radius: 20px; font-size: 10px; font-weight: 800;
-    text-transform: uppercase; letter-spacing: .05em; backdrop-filter: blur(8px);
-  }
-  .exc-badge-active { background: rgba(34,197,94,.9); color: #fff; }
-  .exc-badge-draft  { background: rgba(100,116,139,.9); color: #fff; }
-
-  .exc-price {
-    position: absolute; bottom: 12px; right: 12px;
-    padding: 6px 14px; background: #053366; border-radius: 12px;
-    color: #fff; font-size: 15px; font-weight: 800;
-  }
-
-  .exc-content { padding: 20px; flex: 1; display: flex; flexDirection: column; }
-  .exc-title { font-size: 17px; font-weight: 800; color: #053366; margin-bottom: 8px; line-height: 1.3; }
-  
-  .exc-meta { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 16px; }
-  .exc-meta-item { display: flex; align-items: center; gap: 5px; font-size: 12px; color: #94A3B8; font-weight: 500; }
-  
-  .exc-actions { display: flex; gap: 8px; margin-top: auto; padding-top: 16px; border-top: 1.5px solid #F1F5F9; }
-  .exc-btn-icon {
-    width: 38px; height: 38px; border-radius: 10px;
-    display: flex; align-items: center; justify-content: center;
-    border: 1.5px solid #E2E8F0; background: #fff; color: #64748B;
-    cursor: pointer; transition: all .2s;
-  }
-  .exc-btn-icon:hover { border-color: #2B96A8; color: #2B96A8; background: #EFF9FB; }
-  .exc-btn-text {
-    flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px;
-    padding: 0 16px; height: 38px; border-radius: 10px; font-size: 12.5px; font-weight: 700;
-    cursor: pointer; transition: all .2s; border: 1.5px solid #E2E8F0; background: #fff;
-    font-family: inherit; color: #475569;
-  }
-  .exc-btn-text:hover:not(:disabled) { border-color: #2B96A8; color: #2B96A8; background: #EFF9FB; }
-
-  @media (max-width: 768px) {
-    .pw { padding: 20px 16px; }
-    .pw-header { flex-direction: column; }
-    .pw-header-badge { width: 100%; }
-    .exc-grid { grid-template-columns: 1fr; }
-  }
-`;
-
 export default function ExcursionsListClient({
-  excursions: initial, prestataireId, prestataireInfo
+  excursions: initial, prestataireId,
 }: {
   excursions: Excursion[];
   prestataireId: string;
-  prestataireInfo: { full_name: string | null; agency_name: string | null };
 }) {
   const supabase = createClient();
   const [excursions, setExcursions] = useState(initial);
   const [loading, setLoading] = useState<string | null>(null);
   const [toast, setToast] = useState<{ msg: string; ok: boolean } | null>(null);
   const [filter, setFilter] = useState<"all" | "active" | "draft">("all");
-
-  const name = prestataireInfo.agency_name || prestataireInfo.full_name || "Prestataire";
-  const initials = name.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2);
 
   const showToast = (msg: string, ok = true) => {
     setToast({ msg, ok }); setTimeout(() => setToast(null), 3000);
@@ -231,121 +81,151 @@ export default function ExcursionsListClient({
     filter === "active" ? e.is_active : filter === "draft" ? !e.is_active : true
   );
 
+  if (!excursions.length) return (
+    <div style={{ textAlign: "center", padding: "60px 20px", background: "white", borderRadius: 20, border: "1px solid #F3F4F6" }}>
+      <Mountain size={52} style={{ color: "#E5E7EB", margin: "0 auto 16px" }} />
+      <p style={{ fontSize: 16, fontWeight: 700, color: "#111827", marginBottom: 8 }}>Aucune excursion</p>
+      <p style={{ fontSize: 14, color: "#6B7280", marginBottom: 24 }}>Créez votre première excursion pour recevoir des réservations</p>
+      <a href="/prestataire/excursions/nouveau"
+        style={{ padding: "12px 24px", background: "#2B96A8", color: "white", borderRadius: 12, textDecoration: "none", fontSize: 14, fontWeight: 700, display: "inline-flex", alignItems: "center", gap: 7 }}>
+        <Plus size={16} /> Créer une excursion
+      </a>
+    </div>
+  );
+
   return (
-    <div className="pw">
-      <style>{CSS}</style>
+    <>
+      <style>{`
+        .exc-card{background:white;border-radius:18px;border:1px solid #F0F0F0;overflow:hidden;transition:all .25s;position:relative}
+        .exc-card:hover{transform:translateY(-3px);box-shadow:0 12px 36px rgba(0,0,0,.09)}
+        .exc-card-img{width:100%;height:200px;object-fit:cover;display:block;transition:transform .4s}
+        .exc-card:hover .exc-card-img{transform:scale(1.05)}
+        .exc-btn{padding:8px 12px;border-radius:10px;border:1px solid #E5E7EB;cursor:pointer;font-size:13px;font-weight:700;font-family:inherit;transition:all .2s;background:white;white-space:nowrap;display:flex;align-items:center;gap:5px}
+        .exc-btn:disabled{opacity:.5;cursor:not-allowed}
+        .ftab{padding:7px 16px;border-radius:20px;border:1px solid #E5E7EB;cursor:pointer;font-size:13px;font-weight:600;font-family:inherit;transition:all .2s;display:flex;align-items:center;gap:6px}
+        .ftab.on{background:#2B96A8;color:white;border-color:#2B96A8}
+        .ftab:not(.on){background:white;color:#6B7280}
+        .toast-p{position:fixed;top:24px;right:24px;z-index:9999;padding:13px 20px;border-radius:14px;font-size:14px;font-weight:600;font-family:inherit;box-shadow:0 8px 30px rgba(0,0,0,.12);animation:tin .3s ease;display:flex;align-items:center;gap:8px}
+        @keyframes tin{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}
+        @keyframes spin{to{transform:rotate(360deg)}}
+        @media(max-width:767px){
+          .exc-filters { flex-wrap:wrap !important; gap:6px !important; }
+          .ftab { font-size:12px !important; padding:6px 12px !important; }
+          .exc-grid { grid-template-columns:1fr !important; }
+        }
+        @media(max-width:400px){
+          .exc-card-img { height:160px !important; }
+        }
+      `}</style>
 
       {toast && (
-        <div style={{ position: "fixed", top: 24, right: 24, zIndex: 100, animation: "fadeUp .3s ease both" }}>
-          <div style={{ background: toast.ok ? "#ECFDF5" : "#FEF2F2", border: `1.5px solid ${toast.ok ? "#10B981" : "#EF4444"}`, padding: "12px 20px", borderRadius: "12px", display: "flex", alignItems: "center", gap: "10px", boxShadow: "0 8px 24px rgba(0,0,0,.08)" }}>
-            {toast.ok ? <CheckCircle2 size={16} color="#10B981" /> : <AlertTriangle size={16} color="#EF4444" />}
-            <span style={{ fontSize: "14px", fontWeight: 700, color: toast.ok ? "#065F46" : "#991B1B" }}>{toast.msg}</span>
-          </div>
+        <div className="toast-p" style={{ background: toast.ok ? "#F0FDF4" : "#FEF2F2", color: toast.ok ? "#15803D" : "#DC2626", border: `1px solid ${toast.ok ? "#BBF7D0" : "#FECACA"}` }}>
+          {toast.ok ? <CheckCircle2 size={15} /> : <AlertTriangle size={15} />}
+          {toast.msg}
         </div>
       )}
 
-      {/* Header */}
-      <header className="pw-header">
-        <div className="pw-header-left">
-          <div className="pw-header-eyebrow">
-            <Mountain size={12} /> Mon Catalogue
-          </div>
-          <h1 className="pw-header-title">Mes Excursions</h1>
-          <p className="pw-header-sub">Gérez vos offres et leur disponibilité en temps réel.</p>
-        </div>
-
-        <div className="pw-header-badge">
-          <div className="pw-header-badge-avatar">{initials}</div>
-          <div>
-            <div className="pw-header-badge-name">{name}</div>
-            <div className="pw-header-badge-role">Prestataire</div>
-          </div>
-        </div>
-      </header>
-
-      {/* Toolbar */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24, gap: 16, flexWrap: "wrap" }}>
-        <div className="pw-tabs">
-          <button className={`pw-tab ${filter === "all" ? "active" : ""}`} onClick={() => setFilter("all")}>
-            Toutes <span style={{ fontSize: 10, opacity: .7 }}>{excursions.length}</span>
+      {/* Filtres */}
+      <div className="exc-filters" style={{ display: "flex", gap: 8, marginBottom: 20 }}>
+        {([
+          { k: "all" as const, label: `Toutes (${excursions.length})`, icon: null },
+          { k: "active" as const, label: `Publiées (${excursions.filter(e => e.is_active).length})`, icon: <CheckCircle2 size={13} /> },
+          { k: "draft" as const, label: `Brouillons (${excursions.filter(e => !e.is_active).length})`, icon: <FileText size={13} /> },
+        ]).map(t => (
+          <button key={t.k} className={`ftab ${filter === t.k ? "on" : ""}`} onClick={() => setFilter(t.k)}>
+            {t.icon} {t.label}
           </button>
-          <button className={`pw-tab ${filter === "active" ? "active" : ""}`} onClick={() => setFilter("active")}>
-            Publiées <span style={{ fontSize: 10, opacity: .7 }}>{excursions.filter(e => e.is_active).length}</span>
-          </button>
-          <button className={`pw-tab ${filter === "draft" ? "active" : ""}`} onClick={() => setFilter("draft")}>
-            Brouillons <span style={{ fontSize: 10, opacity: .7 }}>{excursions.filter(e => !e.is_active).length}</span>
-          </button>
-        </div>
-
-        <a href="/prestataire/excursions/nouveau" className="pw-btn-primary">
-          <Plus size={16} /> Créer une excursion
-        </a>
+        ))}
       </div>
 
-      {!excursions.length ? (
-        <div style={{ textAlign: "center", padding: "80px 20px", background: "white", borderRadius: 24, border: "1.5px solid #E2E8F0" }}>
-          <Mountain size={48} color="#CBD5E1" style={{ marginBottom: 16 }} />
-          <h3 style={{ fontSize: 18, fontWeight: 800, color: "#053366", marginBottom: 8 }}>Aucune excursion trouvée</h3>
-          <p style={{ fontSize: 14, color: "#94A3B8", marginBottom: 24 }}>Créez votre première offre pour commencer à attirer des touristes.</p>
-          <a href="/prestataire/excursions/nouveau" className="pw-btn-primary">
-            + Ajouter une excursion
-          </a>
-        </div>
-      ) : (
-        <div className="exc-grid">
-          {filtered.map(exc => (
-            <div key={exc.id} className="exc-card">
-              <div className="exc-card-img-wrap" 
-                onClick={() => window.location.href = `/prestataire/excursions/${exc.id}`}>
-                <img src={exc.photos?.find(Boolean) || FALLBACK} alt={exc.title} className="exc-card-img" />
-                <div className={`exc-badge ${exc.is_active ? "exc-badge-active" : "exc-badge-draft"}`}>
-                  {exc.is_active ? "En ligne" : "Brouillon"}
-                </div>
-                <div className="exc-price">{exc.price_per_person} EUR</div>
+      {/* Grille */}
+      <div className="exc-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 18 }}>
+        {filtered.map(exc => (
+          <div key={exc.id} className="exc-card"
+            onClick={(e) => { if ((e.target as HTMLElement).closest("button,a")) return; window.location.href = `/prestataire/excursions/${exc.id}`; }}
+            style={{ cursor: "pointer" }}>
+
+            {/* Image */}
+            <div style={{ overflow: "hidden", position: "relative", height: 200, background: "#F3F4F6" }}>
+              <img
+                src={exc.photos?.find(Boolean) || FALLBACK}
+                alt={exc.title}
+                className="exc-card-img"
+                onError={e => { (e.target as HTMLImageElement).src = FALLBACK; }}
+              />
+
+              {/* Status */}
+              <div style={{ position: "absolute", top: 10, left: 10 }}>
+                <span style={{ padding: "3px 10px", borderRadius: 20, fontSize: 11, fontWeight: 800, backdropFilter: "blur(8px)", color: "white", background: exc.is_active ? "rgba(21,128,61,.88)" : "rgba(107,114,128,.82)", display: "inline-flex", alignItems: "center", gap: 4 }}>
+                  <span style={{ width: 5, height: 5, borderRadius: "50%", background: "currentColor", display: "inline-block" }} />
+                  {exc.is_active ? "Publié" : "Brouillon"}
+                </span>
               </div>
 
-              <div className="exc-content">
-                <h3 className="exc-title" onClick={() => window.location.href = `/prestataire/excursions/${exc.id}`} style={{ cursor: "pointer" }}>
-                  {exc.title}
-                </h3>
-                
-                <div className="exc-meta">
-                  <div className="exc-meta-item"><MapPin size={13} /> {exc.city}</div>
-                  <div className="exc-meta-item"><Clock size={13} /> {exc.duration_hours}h</div>
-                  <div className="exc-meta-item"><Users size={13} /> max {exc.max_people}</div>
-                  {exc.rating > 0 && (
-                    <div className="exc-meta-item" style={{ color: "#F59E0B" }}>
-                      <Star size={13} fill="currentColor" /> {exc.rating} ({exc.reviews_count})
-                    </div>
-                  )}
+              {/* Catégorie */}
+              {exc.categories?.[0] && (
+                <div style={{ position: "absolute", top: 10, right: 10, padding: "3px 10px", background: "rgba(0,0,0,.52)", backdropFilter: "blur(6px)", borderRadius: 20, fontSize: 11, color: "white", fontWeight: 600 }}>
+                  {exc.categories[0]}
                 </div>
+              )}
 
-                <div className="exc-actions">
-                  <button className="exc-btn-text" 
-                    disabled={loading === exc.id}
-                    onClick={() => toggleActive(exc.id, exc.is_active)}>
-                    {loading === exc.id ? (
-                      <Loader2 size={14} style={{ animation: "spin .7s linear infinite" }} />
-                    ) : exc.is_active ? (
-                      <><PauseCircle size={14} /> Dépublier</>
-                    ) : (
-                      <><PlayCircle size={14} /> Publier</>
-                    )}
-                  </button>
-                  <a href={`/prestataire/excursions/${exc.id}/edit`} className="exc-btn-icon">
-                    <Pencil size={14} />
-                  </a>
-                  <button className="exc-btn-icon" 
-                    onClick={() => handleDelete(exc.id, exc.title)}
-                    style={{ color: "#EF4444" }}>
-                    <Trash2 size={14} />
-                  </button>
+              {/* Prix */}
+              <div style={{ position: "absolute", bottom: 10, right: 12, padding: "5px 12px", background: "rgba(0,0,0,.62)", backdropFilter: "blur(8px)", borderRadius: 20, fontSize: 14, fontWeight: 800, color: "white" }}>
+                {exc.price_per_person} EUR
+              </div>
+
+              {/* Nb photos */}
+              {(exc.photos?.filter(Boolean).length || 0) > 1 && (
+                <div style={{ position: "absolute", bottom: 10, left: 12, padding: "3px 8px", background: "rgba(0,0,0,.45)", backdropFilter: "blur(6px)", borderRadius: 12, fontSize: 11, color: "white", display: "flex", alignItems: "center", gap: 4 }}>
+                  <Camera size={11} /> {exc.photos.filter(Boolean).length}
                 </div>
+              )}
+            </div>
+
+            {/* Contenu */}
+            <div style={{ padding: "16px 18px" }}>
+              <h3 style={{ fontSize: 15, fontWeight: 800, color: "#111827", marginBottom: 6, lineHeight: 1.3 }}>
+                {exc.title}
+              </h3>
+
+              <div style={{ display: "flex", gap: 12, fontSize: 12, color: "#6B7280", marginBottom: 14, paddingBottom: 14, borderBottom: "1px solid #F3F4F6", flexWrap: "wrap" }}>
+                <span style={{ display: "flex", alignItems: "center", gap: 3 }}><MapPin size={12} /> {exc.city}</span>
+                <span style={{ display: "flex", alignItems: "center", gap: 3 }}><Clock size={12} /> {exc.duration_hours}h</span>
+                <span style={{ display: "flex", alignItems: "center", gap: 3 }}><Users size={12} /> max {exc.max_people}</span>
+                {exc.rating > 0 && (
+                  <span style={{ display: "flex", alignItems: "center", gap: 3 }}>
+                    <Star size={12} fill="#F59E0B" stroke="#F59E0B" /> {exc.rating}
+                    <span style={{ color: "#9CA3AF" }}>({exc.reviews_count})</span>
+                  </span>
+                )}
+              </div>
+
+              {/* Actions */}
+              <div style={{ display: "flex", gap: 8 }}>
+                <button className="exc-btn" disabled={loading === exc.id}
+                  onClick={() => toggleActive(exc.id, exc.is_active)}
+                  style={{ flex: 1, justifyContent: "center", color: exc.is_active ? "#374151" : "#059669", background: exc.is_active ? "white" : "#F0FDF4", borderColor: exc.is_active ? "#E5E7EB" : "#BBF7D0" }}>
+                  {loading === exc.id
+                    ? <Loader2 size={14} style={{ animation: "spin .7s linear infinite" }} />
+                    : exc.is_active
+                    ? <><PauseCircle size={14} /> Dépublier</>
+                    : <><PlayCircle size={14} /> Publier</>
+                  }
+                </button>
+                <a href={`/prestataire/excursions/${exc.id}/edit`}
+                  style={{ padding: "8px 12px", background: "#F3F4F6", color: "#374151", borderRadius: 10, fontSize: 13, fontWeight: 700, textDecoration: "none", display: "flex", alignItems: "center" }}>
+                  <Pencil size={14} />
+                </a>
+                <button className="exc-btn" disabled={loading === exc.id}
+                  onClick={() => handleDelete(exc.id, exc.title)}
+                  style={{ padding: "8px 12px", color: "#DC2626", borderColor: "#FECACA", background: "#FEF2F2" }}>
+                  <Trash2 size={14} />
+                </button>
               </div>
             </div>
-          ))}
-        </div>
-      )}
-    </div>
+          </div>
+        ))}
+      </div>
+    </>
   );
 }

@@ -111,21 +111,45 @@ export default function Sidebar({ role, userName, userEmail }: SidebarProps) {
 
   function SidebarContent({ onLinkClick }: { onLinkClick?: () => void }) {
     return (
-      <div style={{ display: "flex", flexDirection: "column", height: "100%", color: "#fff" }}>
+      <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
 
         {/* ── Logo ── */}
-        <div style={{ padding: "24px 20px 20px" }}>
-          <Link href={ROUTES.home} style={{ display: "flex", alignItems: "center", textDecoration: "none" }}>
+        <div style={{ padding: "18px 16px 0" }}>
+          <Link href={ROUTES.home} style={{ display: "flex", alignItems: "center", textDecoration: "none", marginBottom: 16 }}>
             <img
               src="/logo.png"
               alt="VoyajAime"
-              style={{ height: 32, width: "auto", objectFit: "contain", filter: "brightness(0) invert(1)" }}
+              style={{ height: 36, width: "auto", objectFit: "contain", display: "block" }}
             />
           </Link>
+
+          {/* ── Profil utilisateur ── */}
+          <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 4px 16px", borderBottom: "1px solid #F3F4F6" }}>
+            <div style={{
+              width: 48, height: 48, borderRadius: "50%", overflow: "hidden",
+              background: "linear-gradient(135deg,#2B96A8,#1e7a8a)",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              flexShrink: 0, boxShadow: "0 2px 8px rgba(43,150,168,.3)",
+              border: "2px solid rgba(43,150,168,.2)",
+            }}>
+              {avatarUrl
+                ? <img src={avatarUrl} alt={userName || ""} style={{ width: "100%", height: "100%", objectFit: "cover" }} onError={e => { (e.target as HTMLImageElement).style.display = "none"; }} />
+                : <span style={{ fontSize: 20, fontWeight: 800, color: "white" }}>{initial}</span>
+              }
+            </div>
+            <div style={{ minWidth: 0 }}>
+              <p style={{ fontSize: 14, fontWeight: 700, color: "#111827", margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                {userName || "Utilisateur"}
+              </p>
+              <span style={{ display: "inline-flex", alignItems: "center", marginTop: 3, padding: "2px 8px", borderRadius: 20, fontSize: 11, fontWeight: 600, background: "rgba(43,150,168,.1)", color: "#2B96A8" }}>
+                {ROLE_LABEL[role]}
+              </span>
+            </div>
+          </div>
         </div>
 
         {/* ── Navigation ── */}
-        <nav style={{ flex: 1, padding: "0 12px", overflowY: "auto" }}>
+        <nav style={{ flex: 1, padding: "10px 8px", overflowY: "auto" }}>
           {items.map((item) => {
             if (isItem(item)) {
               const active = pathname === item.href || pathname.startsWith(item.href + "/");
@@ -136,19 +160,19 @@ export default function Sidebar({ role, userName, userEmail }: SidebarProps) {
                   prefetch={true}
                   onClick={onLinkClick}
                   style={{
-                    display: "flex", alignItems: "center", gap: 12,
-                    padding: "12px 16px", borderRadius: "14px",
-                    fontSize: "14px", fontWeight: 600,
-                    color: active ? "#fff" : "rgba(255,255,255,0.65)",
-                    background: active ? "rgba(43,150,168,0.25)" : "transparent",
+                    display: "flex", alignItems: "center", gap: 10,
+                    padding: "9px 12px", borderRadius: 10,
+                    fontSize: 14, fontWeight: 500,
+                    color: active ? "#2B96A8" : "#6B7280",
+                    background: active ? "rgba(43,150,168,.1)" : "transparent",
                     textDecoration: "none",
-                    marginBottom: "4px",
-                    transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
+                    marginBottom: 2,
+                    transition: "all 0.15s",
                   }}
-                  onMouseEnter={e => { if (!active) { (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.05)"; (e.currentTarget as HTMLElement).style.color = "#fff"; } }}
-                  onMouseLeave={e => { if (!active) { (e.currentTarget as HTMLElement).style.background = "transparent"; (e.currentTarget as HTMLElement).style.color = "rgba(255,255,255,0.65)"; } }}
+                  onMouseEnter={e => { if (!active) (e.currentTarget as HTMLElement).style.background = "rgba(43,150,168,.06)"; }}
+                  onMouseLeave={e => { if (!active) (e.currentTarget as HTMLElement).style.background = active ? "rgba(43,150,168,.1)" : "transparent"; }}
                 >
-                  <span style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 22, flexShrink: 0, color: active ? "#2B96A8" : "inherit" }}>
+                  <span style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 20, flexShrink: 0, color: active ? "#2B96A8" : "#9CA3AF" }}>
                     {item.icon}
                   </span>
                   <span>{item.label}</span>
@@ -163,7 +187,7 @@ export default function Sidebar({ role, userName, userEmail }: SidebarProps) {
               );
 
               return (
-                <div key={item.label} style={{ marginBottom: "4px" }}>
+                <div key={item.label}>
                   <button
                     onClick={() => {
                       setExpandedGroups(prev => ({
@@ -172,33 +196,34 @@ export default function Sidebar({ role, userName, userEmail }: SidebarProps) {
                       }));
                     }}
                     style={{
-                      width: "100%", display: "flex", alignItems: "center", gap: 12,
-                      padding: "12px 16px", borderRadius: "14px",
-                      fontSize: "14px", fontWeight: 600,
-                      color: groupActive ? "#fff" : "rgba(255,255,255,0.65)",
-                      background: groupActive && !expanded ? "rgba(43,150,168,0.1)" : "transparent",
+                      width: "100%", display: "flex", alignItems: "center", gap: 10,
+                      padding: "9px 12px", borderRadius: 10,
+                      fontSize: 14, fontWeight: 500,
+                      color: groupActive ? "#2B96A8" : "#6B7280",
+                      background: groupActive ? "rgba(43,150,168,.1)" : "transparent",
                       border: "none", cursor: "pointer",
-                      textAlign: "left", transition: "all 0.2s", fontFamily: "inherit",
+                      textAlign: "left", marginBottom: 2,
+                      transition: "all 0.15s", fontFamily: "inherit",
                     }}
-                    onMouseEnter={e => { if (!groupActive) { (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.05)"; (e.currentTarget as HTMLElement).style.color = "#fff"; } }}
-                    onMouseLeave={e => { if (!groupActive) { (e.currentTarget as HTMLElement).style.background = "transparent"; (e.currentTarget as HTMLElement).style.color = "rgba(255,255,255,0.65)"; } }}
+                    onMouseEnter={e => { if (!groupActive) (e.currentTarget as HTMLElement).style.background = "rgba(43,150,168,.06)"; }}
+                    onMouseLeave={e => { if (!groupActive) (e.currentTarget as HTMLElement).style.background = groupActive ? "rgba(43,150,168,.1)" : "transparent"; }}
                   >
-                    <span style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 22, flexShrink: 0, color: groupActive ? "#2B96A8" : "inherit" }}>
+                    <span style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 20, flexShrink: 0, color: groupActive ? "#2B96A8" : "#9CA3AF" }}>
                       {item.icon}
                     </span>
                     <span style={{ flex: 1 }}>{item.label}</span>
                     <ChevronDown
-                      size={14}
+                      size={16}
                       style={{
                         transform: expanded ? "rotate(180deg)" : "rotate(0deg)",
-                        transition: "transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
-                        color: "rgba(255,255,255,0.4)",
+                        transition: "transform 0.2s",
+                        color: groupActive ? "#2B96A8" : "#9CA3AF",
                       }}
                     />
                   </button>
 
                   {expanded && (
-                    <div style={{ marginTop: "2px", marginLeft: "24px", borderLeft: "1px solid rgba(255,255,255,0.1)" }}>
+                    <div style={{ paddingLeft: 8 }}>
                       {item.items.map((subItem) => {
                         const active = pathname === subItem.href || pathname.startsWith(subItem.href + "/");
                         return (
@@ -209,16 +234,22 @@ export default function Sidebar({ role, userName, userEmail }: SidebarProps) {
                             onClick={onLinkClick}
                             style={{
                               display: "flex", alignItems: "center", gap: 10,
-                              padding: "10px 16px", borderRadius: "0 10px 10px 0",
-                              fontSize: "13.5px", fontWeight: 500,
-                              color: active ? "#2B96A8" : "rgba(255,255,255,0.5)",
-                              background: active ? "rgba(43,150,168,0.1)" : "transparent",
+                              padding: "7px 12px", borderRadius: 8,
+                              fontSize: 13, fontWeight: 400,
+                              color: active ? "#2B96A8" : "#6B7280",
+                              background: active ? "rgba(43,150,168,.08)" : "transparent",
                               textDecoration: "none",
-                              transition: "all 0.2s",
+                              marginBottom: 2,
+                              transition: "all 0.15s",
+                              marginLeft: 4,
                               borderLeft: active ? "2px solid #2B96A8" : "2px solid transparent",
-                              marginLeft: "-1px",
                             }}
+                            onMouseEnter={e => { if (!active) (e.currentTarget as HTMLElement).style.background = "rgba(43,150,168,.05)"; }}
+                            onMouseLeave={e => { if (!active) (e.currentTarget as HTMLElement).style.background = active ? "rgba(43,150,168,.08)" : "transparent"; }}
                           >
+                            <span style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 18, flexShrink: 0, color: active ? "#2B96A8" : "#9CA3AF" }}>
+                              {subItem.icon}
+                            </span>
                             <span>{subItem.label}</span>
                           </Link>
                         );
@@ -231,49 +262,15 @@ export default function Sidebar({ role, userName, userEmail }: SidebarProps) {
           })}
         </nav>
 
-        {/* ── Bottom Section (User & Logout) ── */}
-        <div style={{ padding: "16px", background: "rgba(0,0,0,0.15)" }}>
-          {/* User Card */}
-          <div style={{
-            display: "flex", alignItems: "center", gap: 12,
-            background: "rgba(255,255,255,0.05)", padding: "12px",
-            borderRadius: "16px", border: "1px solid rgba(255,255,255,0.08)",
-            marginBottom: "12px",
-          }}>
-            <div style={{
-              width: 40, height: 40, borderRadius: "12px", overflow: "hidden",
-              background: "linear-gradient(135deg,#2B96A8,#1e7a8a)",
-              display: "flex", alignItems: "center", justifyContent: "center",
-              flexShrink: 0, border: "1px solid rgba(255,255,255,0.1)",
-            }}>
-              {avatarUrl
-                ? <img src={avatarUrl} alt={userName || ""} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                : <span style={{ fontSize: 16, fontWeight: 800, color: "white" }}>{initial}</span>
-              }
-            </div>
-            <div style={{ minWidth: 0, flex: 1 }}>
-              <p style={{ fontSize: "13.5px", fontWeight: 700, color: "#fff", margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                {userName || "Utilisateur"}
-              </p>
-              <p style={{ fontSize: "11px", fontWeight: 600, color: "rgba(255,255,255,0.4)", textTransform: "uppercase", letterSpacing: "0.05em", margin: "2px 0 0" }}>
-                {ROLE_LABEL[role]}
-              </p>
-            </div>
-          </div>
-
+        {/* ── Logout ── */}
+        <div style={{ padding: "10px 8px 16px", borderTop: "1px solid #F3F4F6" }}>
           <button
             onClick={handleSignOut}
-            style={{
-              width: "100%", padding: "12px", background: "rgba(239,68,68,0.1)",
-              border: "1px solid rgba(239,68,68,0.2)", borderRadius: "14px",
-              fontSize: "13px", color: "#FCA5A5", fontWeight: 600,
-              cursor: "pointer", fontFamily: "inherit", textAlign: "left",
-              transition: "all 0.2s", display: "flex", alignItems: "center", gap: 10,
-            }}
-            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = "rgba(239,68,68,0.2)"; (e.currentTarget as HTMLElement).style.borderColor = "rgba(239,68,68,0.3)"; }}
-            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = "rgba(239,68,68,0.1)"; (e.currentTarget as HTMLElement).style.borderColor = "rgba(239,68,68,0.2)"; }}
+            style={{ width: "100%", padding: "9px 12px", background: "none", border: "1px solid #E5E7EB", borderRadius: 10, fontSize: 13, color: "#6B7280", cursor: "pointer", fontFamily: "inherit", textAlign: "left", transition: "all 0.2s", display: "flex", alignItems: "center", gap: 8 }}
+            onMouseEnter={e => { const b = e.currentTarget; b.style.background = "#FEF2F2"; b.style.color = "#DC2626"; b.style.borderColor = "#FECACA"; }}
+            onMouseLeave={e => { const b = e.currentTarget; b.style.background = "none"; b.style.color = "#6B7280"; b.style.borderColor = "#E5E7EB"; }}
           >
-            <LogOut size={16} /> Se déconnecter
+            <LogOut size={15} /> Se déconnecter
           </button>
         </div>
 
@@ -283,11 +280,10 @@ export default function Sidebar({ role, userName, userEmail }: SidebarProps) {
 
   const asideBase: React.CSSProperties = {
     position: "fixed", top: 0, left: 0,
-    height: "100vh", width: 260,
-    background: "#053366", borderRight: "none",
+    height: "100vh", width: 240,
+    background: "white", borderRight: "1px solid #E5E7EB",
     display: "flex", flexDirection: "column",
     zIndex: 50,
-    boxShadow: "4px 0 24px rgba(0,0,0,0.05)",
   };
 
   if (isMobile) {
