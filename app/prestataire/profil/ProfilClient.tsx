@@ -330,7 +330,3 @@ export default function ProfilClient({ profile, email }: Props) {
     </div>
   );
 }
-      </div>
-    </>
-  );
-}

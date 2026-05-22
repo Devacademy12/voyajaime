@@ -3,16 +3,20 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import Stripe from "stripe";
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
-
-// Client admin — bypass RLS
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
-
 export async function POST(req: NextRequest) {
   try {
+    const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+    if (!stripeSecretKey || !supabaseUrl || !supabaseServiceRoleKey) {
+      console.error("Variables d'environnement Stripe/Supabase manquantes");
+      return NextResponse.json({ error: "Configuration serveur incomplète" }, { status: 500 });
+    }
+
+    const stripe = new Stripe(stripeSecretKey);
+    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceRoleKey);
+
     const { session_id } = await req.json();
     if (!session_id) {
       return NextResponse.json({ error: "session_id manquant" }, { status: 400 });
