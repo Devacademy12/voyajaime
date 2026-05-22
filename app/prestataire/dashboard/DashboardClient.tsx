@@ -542,7 +542,7 @@ export default function DashboardClient({ profile, excursions, reservations, pai
     : 0;
 
   const name = String(profile?.agency_name || profile?.full_name || "Prestataire");
-  const initials = name.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2);
+  const initials = name.split(" ").map((n: string) => n[0]).join("").toUpperCase().slice(0, 2);
 
   const stats = [
     { label: "Réservations", value: totalReservations, trend: "+12%", icon: <BookOpen size={18}/>, color: "#053366", bg: "#EFF6FF" },
