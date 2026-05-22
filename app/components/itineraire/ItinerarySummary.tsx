@@ -6,24 +6,24 @@ import { createClient } from "@/lib/supabaseClient";
 import {
   ArrowLeft, Edit3, Send, BookMarked, Layers, PiggyBank,
   Calendar, MapPin, Clock, Star, FileText, LocateFixed,
-  CreditCard,
+  CreditCard, RefreshCw,
 } from "lucide-react";
 import CheckoutModalItineraire from "@/app/components/itineraire/Checkoutmodalitineraire";
 
 /* ─── Types ─────────────────────────────────────────────── */
 export type SummaryActivity = {
   id: string;
-  time: string;         // slot key: "matin" | "aprem" | "soir"
+  time: string;
   customTime?: string;
   note?: string;
-  excursion?: {         // Mode Libre shape
+  excursion?: {
     title: string; city: string;
     price_per_person: number; duration_hours: number;
     rating?: number; photos?: string[];
     categories?: string[];
     available_dates?: any[] | null;
+    description?: string;
   };
-  // Mode Assisté shape (flat activity)
   name?: string; description?: string;
   price?: number; duration?: string;
   photos?: string | string[];
@@ -86,6 +86,9 @@ function getPhotos(act: SummaryActivity): string[] {
   if (!p) return [];
   return Array.isArray(p) ? p : [p];
 }
+function getDescription(act: SummaryActivity): string {
+  return act.excursion?.description ?? act.description ?? "";
+}
 
 /* ─── Component ─────────────────────────────────────────── */
 export default function ItinerarySummary({
@@ -125,7 +128,6 @@ export default function ItinerarySummary({
 
   return (
     <>
-      {/* ── inject styles once ─────────────────────────────── */}
       <style>{CSS}</style>
 
       <div className="its-root">
@@ -258,52 +260,73 @@ export default function ItinerarySummary({
                   ) : (
                     <div className="its-acts">
                       {sorted.map((act, ai) => {
-                        const photos = getPhotos(act);
-                        const price  = getPrice(act);
-                        const rating = getRating(act);
-                        const slotColor = SLOT_COLORS[act.time] ?? "#2B96A8";
+                        const photos      = getPhotos(act);
+                        const price       = getPrice(act);
+                        const rating      = getRating(act);
+                        const description = getDescription(act);
+                        const slotColor   = SLOT_COLORS[act.time] ?? "#2B96A8";
+
                         return (
                           <div key={act.id ?? ai} className="its-act-row">
-                            {/* time pill */}
+
+                            {/* time column */}
                             <div className="its-act-time" style={{ color: slotColor }}>
                               {act.customTime || SLOT_TIMES[act.time] || "—"}
                             </div>
 
-                            {/* slot accent */}
-                            <div className="its-act-accent" style={{ background: slotColor }} />
+                            {/* excursion card */}
+                            <div className="its-act-card">
 
-                            {/* photo */}
-                            {photos[0] && (
-                              <img src={photos[0]} alt="" className="its-act-img" />
-                            )}
-
-                            {/* info */}
-                            <div className="its-act-info">
-                              <div className="its-act-title">{getTitle(act)}</div>
-                              <div className="its-act-meta">
-                                {getCity(act) && (
-                                  <span><MapPin size={8} /> {getCity(act)}</span>
-                                )}
-                                {getDuration(act) && (
-                                  <span><Clock size={8} /> {getDuration(act)}</span>
-                                )}
-                                {rating > 0 && (
-                                  <span><Star size={8} color="#F59E0B" fill="#F59E0B" /> {rating}</span>
-                                )}
-                              </div>
-                              {act.note && (
-                                <div className="its-act-note">
-                                  <FileText size={8} /> {act.note}
-                                </div>
+                              {/* image */}
+                              {photos[0] && (
+                                <img src={photos[0]} alt="" className="its-act-img" />
                               )}
-                            </div>
 
-                            {/* price */}
-                            {price > 0 && (
-                              <div className="its-act-price" style={{ color: slotColor }}>
-                                {price} EUR
+                              {/* body */}
+                              <div className="its-act-body">
+
+                                {/* row 1 : title + price badge */}
+                                <div className="its-act-toprow">
+                                  <div className="its-act-title">{getTitle(act)}</div>
+                                  {price > 0 && (
+                                    <div className="its-act-price-badge">{price} EUR</div>
+                                  )}
+                                </div>
+
+                                {/* row 2 : meta chips */}
+                                <div className="its-act-meta">
+                                  {getDuration(act) && (
+                                    <span><Clock size={9} /> {getDuration(act)}</span>
+                                  )}
+                                  {getCity(act) && (
+                                    <span><MapPin size={9} /> {getCity(act)}</span>
+                                  )}
+                                </div>
+
+                                {/* row 3 : description */}
+                                {description && (
+                                  <div className="its-act-desc">{description}</div>
+                                )}
+
+                                {/* row 4 : note / rating / changer */}
+                                <div className="its-act-bottomrow">
+                                  {act.note && (
+                                    <div className="its-act-note">
+                                      <FileText size={9} /> {act.note}
+                                    </div>
+                                  )}
+                                  {rating > 0 && (
+                                    <div className="its-act-rating">
+                                      <Star size={11} color="#F59E0B" fill="#F59E0B" /> {rating}
+                                    </div>
+                                  )}
+                                  <button className="its-act-changer" onClick={onEdit}>
+                                    <RefreshCw size={11} /> Changer
+                                  </button>
+                                </div>
+
                               </div>
-                            )}
+                            </div>
                           </div>
                         );
                       })}
@@ -347,23 +370,16 @@ export default function ItinerarySummary({
 const CSS = `
 @import url('https://fonts.googleapis.com/css2?family=Sora:wght@600;700;800&family=DM+Sans:wght@400;500;700&display=swap');
 
-/* root */
 .its-root {
   min-height: 100vh;
-<<<<<<< HEAD
   background: #f7f9fc;
   font-family: 'DM Sans', sans-serif;
   padding: 2rem 8rem;
-=======
-  background: #F8FAFB;
-  font-family: inherit'DM Sans', sans-serif;
-  padding: 1.25rem 10rem;
->>>>>>> 521c33b7c05a8b72545c8d5986e8f66c07c371e6
   box-sizing: border-box;
   color: #0f1f38;
 }
 
-/* topbar */
+/* ── topbar ── */
 .its-topbar {
   display: flex;
   align-items: center;
@@ -381,53 +397,27 @@ const CSS = `
 }
 .its-topbar-actions { display: flex; gap: .75rem; }
 
-/* buttons */
+/* ── buttons ── */
 .its-btn {
   display: inline-flex; align-items: center; gap: .5rem;
   padding: .6rem 1.2rem; border-radius: 10px; font-size: .85rem;
-  font-weight: 700; cursor: pointer; border: none; transition: all .2s cubic-bezier(0.4, 0, 0.2, 1);
+  font-weight: 700; cursor: pointer; border: none;
+  transition: all .2s cubic-bezier(0.4, 0, 0.2, 1);
   white-space: nowrap;
 }
 .its-btn-ghost { background: transparent; color: #4a5568; }
 .its-btn-ghost:hover { background: #eef2f8; color: #053366; }
-
-.its-btn-outline { 
-  background: white; 
-  color: #053366; 
-  border: 1.5px solid #dde4ef; 
-}
-.its-btn-outline:hover { 
-  border-color: #2B96A8; 
-  color: #2B96A8; 
-  background: #e8f6f8;
-}
-
-.its-btn-primary { 
-  background: #053366; 
-  color: white; 
-  box-shadow: 0 4px 12px rgba(5, 51, 102, 0.2);
-}
-.its-btn-primary:hover { 
-  background: #031e3d; 
-  transform: translateY(-1px);
-}
-
+.its-btn-outline { background: white; color: #053366; border: 1.5px solid #dde4ef; }
+.its-btn-outline:hover { border-color: #2B96A8; color: #2B96A8; background: #e8f6f8; }
+.its-btn-primary { background: #053366; color: white; box-shadow: 0 4px 12px rgba(5,51,102,.2); }
+.its-btn-primary:hover { background: #031e3d; transform: translateY(-1px); }
 .its-btn-green { background: #059669; color: white; }
-
-.its-btn-pay { 
-  background: #2B96A8; 
-  color: white; 
-  box-shadow: 0 4px 12px rgba(43, 150, 168, 0.2);
-}
-.its-btn-pay:hover { 
-  background: #237d8c; 
-  transform: translateY(-1px);
-}
-
+.its-btn-pay { background: #2B96A8; color: white; box-shadow: 0 4px 12px rgba(43,150,168,.2); }
+.its-btn-pay:hover { background: #237d8c; transform: translateY(-1px); }
 .its-btn-full { width: 100%; justify-content: center; }
 .its-btn:disabled { opacity: .55; cursor: not-allowed; transform: none !important; }
 
-/* layout */
+/* ── layout ── */
 .its-layout {
   display: grid;
   grid-template-columns: 320px 1fr;
@@ -435,7 +425,7 @@ const CSS = `
   align-items: start;
 }
 
-/* sidebar */
+/* ── sidebar ── */
 .its-sidebar {
   background: white;
   border-radius: 20px;
@@ -443,7 +433,7 @@ const CSS = `
   border: 1px solid #dde4ef;
   position: sticky;
   top: 2rem;
-  box-shadow: 0 10px 30px rgba(5, 51, 102, 0.05);
+  box-shadow: 0 10px 30px rgba(5,51,102,.05);
 }
 .its-sidebar-brand {
   display: flex; align-items: center; gap: .5rem;
@@ -458,53 +448,49 @@ const CSS = `
 }
 .its-sidebar-cities { font-size: .85rem; color: #4a5568; margin: 0 0 1.5rem; line-height: 1.5; }
 
-/* kpis */
+/* ── kpis ── */
 .its-kpis { display: flex; flex-direction: column; gap: .75rem; margin-bottom: 2rem; }
-.its-kpi { 
-  display: flex; align-items: center; gap: 1rem; 
-  padding: .85rem 1rem; border-radius: 12px; 
-  background: #f7f9fc; 
-  border: 1px solid #dde4ef;
+.its-kpi {
+  display: flex; align-items: center; gap: 1rem;
+  padding: .85rem 1rem; border-radius: 12px;
+  background: #f7f9fc; border: 1px solid #dde4ef;
 }
-.its-kpi-icon { 
-  width: 36px; height: 36px; border-radius: 10px; 
-  display: flex; align-items: center; justify-content: center; flex-shrink: 0; 
+.its-kpi-icon {
+  width: 36px; height: 36px; border-radius: 10px;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
 }
-.its-kpi-label { font-size: .75rem; color: #8fa0b4; font-weight: 600; text-transform: uppercase; letter-spacing: 0.02em; }
+.its-kpi-label { font-size: .75rem; color: #8fa0b4; font-weight: 600; text-transform: uppercase; letter-spacing: .02em; }
 .its-kpi-val { font-family: 'Sora', sans-serif; font-size: 1rem; font-weight: 700; }
-
 .its-sidebar-ctas { display: flex; flex-direction: column; gap: .75rem; }
 
-/* scroll area */
+/* ── scroll area ── */
 .its-scroll { display: flex; flex-direction: column; gap: 1.5rem; }
 
-/* day card */
+/* ── day card ── */
 .its-day-card {
   background: white; border-radius: 20px; overflow: hidden;
   border: 1px solid #dde4ef;
-  box-shadow: 0 4px 20px rgba(5, 51, 102, 0.04);
+  box-shadow: 0 4px 20px rgba(5,51,102,.04);
   transition: all .3s ease;
 }
-.its-day-card:hover { 
-  box-shadow: 0 12px 40px rgba(5, 51, 102, 0.08); 
+.its-day-card:hover {
+  box-shadow: 0 12px 40px rgba(5,51,102,.08);
   border-color: #c2e8ed;
 }
-
 .its-day-header {
   display: flex; align-items: center; justify-content: space-between;
   padding: 1.25rem 1.75rem; border-bottom: 1px solid #f1f5f9;
   background: linear-gradient(135deg, #f7f9fc 0%, white 100%);
 }
 .its-day-left { display: flex; align-items: center; gap: 1rem; }
-.its-day-title { 
+.its-day-title {
   font-family: 'Sora', sans-serif;
-  font-size: 1.05rem; font-weight: 700; color: #053366; 
+  font-size: 1.05rem; font-weight: 700; color: #053366;
 }
 .its-day-theme { font-weight: 500; color: #4a5568; margin-left: .5rem; }
 .its-day-city {
   display: flex; align-items: center; gap: .35rem;
-  font-size: .8rem; color: #8fa0b4; margin-top: .25rem;
-  font-weight: 500;
+  font-size: .8rem; color: #8fa0b4; margin-top: .25rem; font-weight: 500;
 }
 .its-day-date { color: #8fa0b4; margin-left: .3rem; }
 .its-day-badge {
@@ -514,72 +500,172 @@ const CSS = `
   border: 1px solid #c2e8ed;
 }
 .its-sep { opacity: .3; margin: 0 .2rem; }
-.its-day-empty { padding: 2rem; color: #8fa0b4; font-size: .9rem; font-style: italic; text-align: center; }
+.its-day-empty {
+  padding: 2rem; color: #8fa0b4; font-size: .9rem;
+  font-style: italic; text-align: center;
+}
 
-/* acts */
-.its-acts { padding: 0.5rem 0; }
+/* ── acts list ── */
+.its-acts { padding: .5rem 0; }
+
 .its-act-row {
-  display: flex; align-items: center; gap: 1.25rem;
-  padding: 1rem 1.75rem;
-  transition: background .2s ease;
-  border-bottom: 1px solid #f7f9fc;
+  display: flex;
+  align-items: flex-start;
+  padding: .9rem 1.5rem;
+  gap: 1rem;
+  border-bottom: 1px solid #f1f5f9;
 }
 .its-act-row:last-child { border-bottom: none; }
-.its-act-row:hover { background: #f7f9fc; }
+.its-act-row:hover { background: #fafbfd; }
 
+/* time pill */
 .its-act-time {
   font-family: 'Sora', sans-serif;
-  font-size: .8rem; font-weight: 700;
-  width: 50px; flex-shrink: 0; text-align: center;
+  font-size: .78rem; font-weight: 700;
+  width: 50px; flex-shrink: 0;
+  padding-top: 6px;
+  text-align: center;
 }
-.its-act-accent {
-  width: 4px; height: 40px; border-radius: 4px; flex-shrink: 0; opacity: 0.8;
+
+/* ── excursion card ── */
+.its-act-card {
+  flex: 1;
+  display: flex;
+  background: white;
+  border-radius: 14px;
+  border: 1px solid #dde4ef;
+  overflow: hidden;
+  min-height: 115px;
+  box-shadow: 0 2px 10px rgba(5,51,102,.05);
+  transition: box-shadow .2s, border-color .2s;
 }
+.its-act-card:hover {
+  box-shadow: 0 6px 24px rgba(5,51,102,.09);
+  border-color: #c2e8ed;
+}
+
+/* image */
 .its-act-img {
-  width: 64px; height: 48px; object-fit: cover; border-radius: 10px;
+  width: 150px;
+  min-height: 115px;
+  object-fit: cover;
   flex-shrink: 0;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
 }
-.its-act-info { flex: 1; min-width: 0; }
+
+/* body */
+.its-act-body {
+  flex: 1;
+  padding: .9rem 1.1rem;
+  display: flex;
+  flex-direction: column;
+  gap: .38rem;
+  min-width: 0;
+}
+
+/* title + price row */
+.its-act-toprow {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: .75rem;
+}
 .its-act-title {
   font-family: 'Sora', sans-serif;
   font-size: .95rem; font-weight: 700; color: #053366;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-  margin-bottom: .2rem;
+  flex: 1;
 }
-.its-act-meta {
-  display: flex; align-items: center; gap: .75rem;
-  font-size: .78rem; color: #8fa0b4;
-}
-.its-act-meta span { display: flex; align-items: center; gap: .25rem; }
-.its-act-note {
-  display: flex; align-items: center; gap: .3rem;
-  font-size: .75rem; color: #4a5568; margin-top: .5rem;
-  padding: .3rem .6rem; background: #fdf6e3; border-radius: 6px;
-  width: fit-content;
-}
-.its-act-price {
+.its-act-price-badge {
+  background: #e8f6f8;
+  color: #2B96A8;
   font-family: 'Sora', sans-serif;
-  font-size: 1.05rem; font-weight: 800; flex-shrink: 0;
-  margin-left: auto;
-  color: #053366 !important;
+  font-size: .82rem; font-weight: 700;
+  padding: .22rem .8rem;
+  border-radius: 99px;
+  border: 1px solid #c2e8ed;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
-/* responsive */
+/* meta chips */
+.its-act-meta {
+  display: flex; align-items: center; gap: .5rem;
+  flex-wrap: wrap;
+}
+.its-act-meta span {
+  display: inline-flex; align-items: center; gap: .3rem;
+  font-size: .75rem; color: #4a5568; font-weight: 500;
+  background: #f7f9fc; border: 1px solid #dde4ef;
+  padding: .18rem .6rem; border-radius: 99px;
+}
+
+/* description */
+.its-act-desc {
+  font-size: .82rem; color: #4a5568; line-height: 1.55;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* bottom row */
+.its-act-bottomrow {
+  display: flex; align-items: center; gap: .6rem;
+  flex-wrap: wrap;
+  margin-top: .1rem;
+}
+.its-act-note {
+  display: inline-flex; align-items: center; gap: .3rem;
+  font-size: .75rem; color: #2B96A8; font-weight: 500;
+  background: #e8f6f8; border-radius: 6px;
+  padding: .2rem .6rem;
+  border: 1px solid #c2e8ed;
+}
+.its-act-rating {
+  display: inline-flex; align-items: center; gap: .3rem;
+  font-size: .82rem; color: #053366; font-weight: 700;
+  margin-left: auto;
+}
+.its-act-changer {
+  display: inline-flex; align-items: center; gap: .35rem;
+  font-size: .78rem; font-weight: 600; color: #4a5568;
+  background: white; border: 1.5px solid #dde4ef;
+  border-radius: 8px; padding: .3rem .85rem;
+  cursor: pointer;
+  transition: border-color .15s, color .15s, background .15s;
+  font-family: 'DM Sans', sans-serif;
+}
+.its-act-changer:hover { border-color: #2B96A8; color: #2B96A8; background: #e8f6f8; }
+
+/* ── RESPONSIVE ── */
+
 @media (max-width: 1280px) {
   .its-root { padding: 2rem 4rem; }
 }
+
 @media (max-width: 1024px) {
   .its-root { padding: 2rem 2rem; }
   .its-layout { grid-template-columns: 1fr; }
   .its-sidebar { position: static; width: 100%; max-width: 500px; margin: 0 auto; }
+  .its-act-img { width: 120px; }
 }
+
+@media (max-width: 768px) {
+  .its-root { padding: 1.25rem; }
+  .its-topbar { flex-wrap: wrap; }
+  .its-topbar-title { order: -1; width: 100%; }
+  .its-topbar-actions { gap: .5rem; }
+  .its-act-img { width: 100px; }
+}
+
 @media (max-width: 640px) {
-  .its-root { padding: 1rem 1rem; }
+  .its-root { padding: 1rem; }
   .its-topbar { flex-direction: column; align-items: flex-start; gap: 1rem; }
   .its-topbar-actions { width: 100%; justify-content: space-between; }
-  .its-act-row { padding: 1rem; gap: .75rem; }
-  .its-act-time { width: 40px; font-size: .7rem; }
-  .its-act-img { display: none; }
+  .its-act-row { padding: .75rem 1rem; gap: .6rem; }
+  .its-act-time { width: 38px; font-size: .72rem; }
+  .its-act-card { flex-direction: column; }
+  .its-act-img { width: 100%; height: 140px; min-height: unset; }
+  .its-act-body { padding: .75rem .9rem; }
 }
 `;

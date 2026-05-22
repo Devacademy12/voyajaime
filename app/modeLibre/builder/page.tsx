@@ -14,7 +14,7 @@ import {
   MapPinned, LocateFixed, Landmark, Compass, Building2,
   Trees, Waves, UtensilsCrossed, Tent, Bike, Ship,
   ShoppingBag, Sparkles, Music, AlertCircle, Heart, HelpCircle,
-  CalendarCheck,
+  CalendarCheck, List, Map,
 } from "lucide-react";
 
 import { ExcursionDetailModal } from "@/app/components/excursions/ExcursionDetailModal";
@@ -70,6 +70,7 @@ type TimeKey      = "matin" | "aprem" | "soir";
 type ActivityItem = { id: string; excursion: Excursion; note: string; time: TimeKey; customTime?: string };
 type DayPlan      = { city: string; date?: string; activities: ActivityItem[] };
 type ViewStep     = "builder" | "result";
+type MobileTab    = "itinerary" | "excursions";
 
 type AvailableSlot = {
   date: string;
@@ -189,6 +190,9 @@ function BuilderInner() {
   const [saving,    setSaving]    = useState(false);
   const [saveOk,    setSaveOk]    = useState(false);
   const [view,      setView]      = useState<ViewStep>("builder");
+
+  /* Mobile tab state */
+  const [mobileTab, setMobileTab] = useState<MobileTab>("excursions");
 
   const [categories, setCategories] = useState<Categorie[]>([]);
   const [villes,     setVilles]     = useState<Ville[]>([]);
@@ -426,14 +430,12 @@ function BuilderInner() {
   const totAct    = itin.reduce((acc, d) => acc + (d.activities?.length || 0), 0);
   const totBudget = itin.reduce((acc, d) =>
     acc + (d.activities?.reduce((ss, a) => ss + (a.excursion?.price_per_person || 0), 0) || 0), 0);
-  const isAdded   = (id: string) => itin[activeDay]?.activities.some(a => a.excursion.id === id);
+  const isAdded   = (id: string) => (itin[activeDay]?.activities || []).some(a => a.excursion.id === id);
 
   const toast = (msg: string) => {
     setShowSuccessMsg(msg);
     setTimeout(() => setShowSuccessMsg(null), 3000);
   };
-
-  // favorite button removed — no-op
 
   const openSlotPicker = (exc: Excursion) => {
     if (currentDayDate) {
@@ -602,405 +604,1071 @@ function BuilderInner() {
     return 1;
   }, [view, saveOk]);
 
-  /* ════════ VUE BUILDER ════════ */
   const currentDay = itin[activeDay];
 
-  return (
-    <>
-      <TouristeNav favCount={favorites.size} isLoggedIn={!!user} />
-      <div style={{ paddingTop: 64 }} />
-      <div className={s.root}>
-        {showDatePicker && <DatePickerModal />}
+  /* ─── Mobile day selector strip ─── */
+  const MobileDayStrip = () => (
+    <div style={{
+      display: "flex",
+      overflowX: "auto",
+      gap: "0.5rem",
+      padding: "0.75rem 1rem",
+      background: "#fff",
+      borderBottom: "1px solid #E5E7EB",
+      WebkitOverflowScrolling: "touch",
+      scrollbarWidth: "none",
+      msOverflowStyle: "none",
+    }}>
+      {itin.map((day, dIdx) => (
+        <button
+          key={dIdx}
+          onClick={() => {
+            setActiveDay(dIdx);
+            setMobileTab("excursions");
+          }}
+          style={{
+            flexShrink: 0,
+            padding: "0.4rem 0.85rem",
+            borderRadius: "999px",
+            border: activeDay === dIdx ? `2px solid ${BRAND}` : "2px solid #E5E7EB",
+            background: activeDay === dIdx ? `${BRAND}12` : "#F9FAFB",
+            color: activeDay === dIdx ? BRAND : "#6B7280",
+            fontWeight: activeDay === dIdx ? 700 : 500,
+            fontSize: "0.72rem",
+            cursor: "pointer",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            gap: "2px",
+            minWidth: "60px",
+            transition: "all 0.2s",
+          }}
+        >
+          <span style={{ fontSize: "0.65rem", opacity: 0.7 }}>J{dIdx + 1}</span>
+          <span style={{ fontSize: "0.7rem", maxWidth: "60px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            {day.city}
+          </span>
+          {day.activities.length > 0 && (
+            <span style={{
+              background: BRAND,
+              color: "#fff",
+              borderRadius: "999px",
+              fontSize: "0.55rem",
+              padding: "1px 5px",
+              fontWeight: 700,
+            }}>
+              {day.activities.length} act.
+            </span>
+          )}
+        </button>
+      ))}
+      <button
+        onClick={() => setItin(prev => [...prev, { city: prev[prev.length-1]?.city || "", activities: [] }])}
+        style={{
+          flexShrink: 0,
+          padding: "0.4rem 0.75rem",
+          borderRadius: "999px",
+          border: `2px dashed ${BRAND}`,
+          background: "transparent",
+          color: BRAND,
+          fontSize: "0.72rem",
+          cursor: "pointer",
+          display: "flex",
+          alignItems: "center",
+          gap: "4px",
+          minWidth: "60px",
+        }}
+      >
+        <Plus size={12} /> Jour
+      </button>
+    </div>
+  );
 
-      {/* Toast */}
-      {showSuccessMsg && (
-        <div className={s.toast}>
-          <CheckCircle2 size={14} color={BRAND} />
-          {showSuccessMsg}
+  /* ─── Mobile bottom tab bar ─── */
+  const MobileTabBar = () => (
+    <div style={{
+      position: "fixed",
+      bottom: 0,
+      left: 0,
+      right: 0,
+      display: "flex",
+      background: "#fff",
+      borderTop: "1px solid #E5E7EB",
+      zIndex: 100,
+      boxShadow: "0 -2px 12px rgba(0,0,0,0.08)",
+    }}>
+      <button
+        onClick={() => setMobileTab("excursions")}
+        style={{
+          flex: 1,
+          padding: "0.7rem 0.5rem",
+          border: "none",
+          background: "transparent",
+          color: mobileTab === "excursions" ? BRAND : "#9CA3AF",
+          fontWeight: mobileTab === "excursions" ? 700 : 500,
+          fontSize: "0.68rem",
+          cursor: "pointer",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          gap: "3px",
+          borderTop: mobileTab === "excursions" ? `2px solid ${BRAND}` : "2px solid transparent",
+          transition: "all 0.2s",
+        }}
+      >
+        <Search size={18} />
+        Excursions
+      </button>
+      <button
+        onClick={() => setMobileTab("itinerary")}
+        style={{
+          flex: 1,
+          padding: "0.7rem 0.5rem",
+          border: "none",
+          background: "transparent",
+          color: mobileTab === "itinerary" ? BRAND : "#9CA3AF",
+          fontWeight: mobileTab === "itinerary" ? 700 : 500,
+          fontSize: "0.68rem",
+          cursor: "pointer",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          gap: "3px",
+          borderTop: mobileTab === "itinerary" ? `2px solid ${BRAND}` : "2px solid transparent",
+          transition: "all 0.2s",
+          position: "relative",
+        }}
+      >
+        <List size={18} />
+        Itinéraire
+        {totAct > 0 && (
+          <span style={{
+            position: "absolute",
+            top: "6px",
+            right: "calc(50% - 18px)",
+            background: BRAND,
+            color: "#fff",
+            borderRadius: "999px",
+            fontSize: "0.55rem",
+            padding: "1px 5px",
+            fontWeight: 700,
+          }}>
+            {totAct}
+          </span>
+        )}
+      </button>
+      <button
+        onClick={() => setView("result")}
+        style={{
+          flex: 1,
+          padding: "0.7rem 0.5rem",
+          border: "none",
+          background: BRAND,
+          color: "#fff",
+          fontWeight: 700,
+          fontSize: "0.68rem",
+          cursor: "pointer",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          gap: "3px",
+          transition: "all 0.2s",
+        }}
+      >
+        <ArrowRight size={18} />
+        Résumé
+      </button>
+    </div>
+  );
+
+  /* ─── Mobile itinerary panel ─── */
+  const MobileItineraryPanel = () => (
+    <div style={{ padding: "1rem", paddingBottom: "5rem" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
+        <h2 style={{ fontSize: "0.85rem", fontWeight: 700, color: "#111827", margin: 0 }}>
+          JOUR {activeDay + 1} — {itin[activeDay]?.city}
+        </h2>
+        <button
+          onClick={() => setShowDatePicker(true)}
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "4px",
+            padding: "0.35rem 0.75rem",
+            borderRadius: "999px",
+            border: `1px solid ${BRAND}`,
+            background: "transparent",
+            color: BRAND,
+            fontSize: "0.68rem",
+            fontWeight: 600,
+            cursor: "pointer",
+          }}
+        >
+          <Calendar size={11} />
+          {itin[activeDay]?.date ? formatDate(itin[activeDay].date!, { day: "numeric", month: "short" }) : "FIXER DATE"}
+        </button>
+      </div>
+
+      {/* Stats bar */}
+      <div style={{
+        display: "flex",
+        gap: "0.75rem",
+        marginBottom: "1.25rem",
+        padding: "0.75rem",
+        background: "#F9FAFB",
+        borderRadius: "10px",
+        border: "1px solid #E5E7EB",
+      }}>
+        <div style={{ flex: 1, textAlign: "center" }}>
+          <div style={{ fontSize: "1.1rem", fontWeight: 700, color: BRAND }}>{totAct}</div>
+          <div style={{ fontSize: "0.62rem", color: "#6B7280" }}>activités</div>
+        </div>
+        <div style={{ width: "1px", background: "#E5E7EB" }} />
+        <div style={{ flex: 1, textAlign: "center" }}>
+          <div style={{ fontSize: "1.1rem", fontWeight: 700, color: "#10B981" }}>{totBudget}€</div>
+          <div style={{ fontSize: "0.62rem", color: "#6B7280" }}>budget</div>
+        </div>
+        <div style={{ width: "1px", background: "#E5E7EB" }} />
+        <div style={{ flex: 1, textAlign: "center" }}>
+          <div style={{ fontSize: "1.1rem", fontWeight: 700, color: "#8B5CF6" }}>{days}</div>
+          <div style={{ fontSize: "0.62rem", color: "#6B7280" }}>jours</div>
+        </div>
+      </div>
+
+      {/* Activities for current day */}
+      {(itin[activeDay]?.activities?.length ?? 0) === 0 ? (
+        <div style={{
+          textAlign: "center",
+          padding: "3rem 1rem",
+          color: "#9CA3AF",
+          border: "2px dashed #E5E7EB",
+          borderRadius: "12px",
+        }}>
+          <Search size={32} style={{ marginBottom: "0.75rem", opacity: 0.4 }} />
+          <p style={{ fontSize: "0.85rem", margin: 0 }}>Aucune activité pour ce jour</p>
+          <p style={{ fontSize: "0.72rem", marginTop: "0.5rem" }}>Allez dans l'onglet Excursions pour en ajouter</p>
+          <button
+            onClick={() => setMobileTab("excursions")}
+            style={{
+              marginTop: "1rem",
+              padding: "0.5rem 1.25rem",
+              background: BRAND,
+              color: "#fff",
+              border: "none",
+              borderRadius: "999px",
+              fontSize: "0.75rem",
+              fontWeight: 600,
+              cursor: "pointer",
+            }}
+          >
+            Explorer les excursions
+          </button>
+        </div>
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+          {itin[activeDay]?.activities.map((act) => (
+            <div key={act.id} style={{
+              display: "flex",
+              gap: "0.75rem",
+              background: "#fff",
+              borderRadius: "12px",
+              border: "1px solid #E5E7EB",
+              overflow: "hidden",
+              boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
+            }}>
+              {act.excursion.photos?.[0] && (
+                <img
+                  src={act.excursion.photos[0]}
+                  alt={act.excursion.title}
+                  style={{ width: "80px", objectFit: "cover", flexShrink: 0 }}
+                />
+              )}
+              <div style={{ flex: 1, padding: "0.75rem 0.75rem 0.75rem 0", minWidth: 0 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "0.5rem" }}>
+                  <div>
+                    <div style={{ fontSize: "0.72rem", color: BRAND, fontWeight: 600, marginBottom: "2px" }}>
+                      {act.customTime || "09:00"}
+                    </div>
+                    <div style={{ fontSize: "0.82rem", fontWeight: 600, color: "#111827", lineHeight: 1.3 }}>
+                      {act.excursion.title}
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => rmAct(activeDay, act.id)}
+                    style={{
+                      flexShrink: 0,
+                      padding: "0.3rem",
+                      background: "#FEF2F2",
+                      border: "none",
+                      borderRadius: "6px",
+                      color: "#EF4444",
+                      cursor: "pointer",
+                    }}
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                </div>
+                <div style={{ display: "flex", gap: "0.75rem", marginTop: "0.4rem", fontSize: "0.68rem", color: "#6B7280" }}>
+                  <span style={{ display: "flex", alignItems: "center", gap: "3px" }}>
+                    <Clock size={10} /> {act.excursion.duration_hours}h
+                  </span>
+                  <span style={{ display: "flex", alignItems: "center", gap: "3px" }}>
+                    <PiggyBank size={10} /> {act.excursion.price_per_person}€
+                  </span>
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
       )}
 
-      {/* ══ HEADER ══ */}
-      <h1 className={s.headerTitle}>Créer votre itinéraire de voyage</h1>
-
-      {/* ══ STEPPER ══ */}
-      <div className={s.stepperContainer}>
-        <div className={s.stepper}>
-          {steps.map((step, idx) => (
-            <div key={idx} className={`${s.step} ${idx === currentStep ? s.stepActive : ""} ${idx < currentStep ? s.stepCompleted : ""}`}>
-              <div className={s.stepCircle}>
-                {idx < currentStep ? <CheckCircle2 size={12} /> : null}
+      {/* All days overview */}
+      <div style={{ marginTop: "2rem" }}>
+        <h3 style={{ fontSize: "0.78rem", fontWeight: 700, color: "#6B7280", marginBottom: "0.75rem", letterSpacing: "0.05em" }}>
+          TOUS LES JOURS
+        </h3>
+        <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+          {itin.map((day, dIdx) => (
+            <div
+              key={dIdx}
+              onClick={() => { setActiveDay(dIdx); setMobileTab("excursions"); }}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                padding: "0.65rem 1rem",
+                background: dIdx === activeDay ? `${BRAND}10` : "#F9FAFB",
+                border: dIdx === activeDay ? `1px solid ${BRAND}40` : "1px solid #E5E7EB",
+                borderRadius: "10px",
+                cursor: "pointer",
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+                <div style={{
+                  width: "28px", height: "28px",
+                  borderRadius: "50%",
+                  background: dIdx === activeDay ? BRAND : "#E5E7EB",
+                  color: dIdx === activeDay ? "#fff" : "#6B7280",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  fontSize: "0.65rem", fontWeight: 700,
+                }}>
+                  {dIdx + 1}
+                </div>
+                <div>
+                  <div style={{ fontSize: "0.78rem", fontWeight: 600, color: "#111827" }}>{day.city}</div>
+                  {day.date && (
+                    <div style={{ fontSize: "0.62rem", color: "#6B7280" }}>
+                      {formatDate(day.date, { day: "numeric", month: "short" })}
+                    </div>
+                  )}
+                </div>
               </div>
-              <span className={s.stepLabel}>{step.label}</span>
+              <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                {day.activities.length > 0 && (
+                  <span style={{
+                    background: BRAND,
+                    color: "#fff",
+                    borderRadius: "999px",
+                    fontSize: "0.6rem",
+                    padding: "2px 7px",
+                    fontWeight: 700,
+                  }}>
+                    {day.activities.length}
+                  </span>
+                )}
+                <ChevronRight size={14} color="#9CA3AF" />
+              </div>
             </div>
           ))}
         </div>
       </div>
+    </div>
+  );
 
-      {saveOk ? (
-        <div className={s.successView}>
-          <div className={s.successBox}>
-            <div className={s.successIcon}>
-              <CheckCircle2 size={48} color={BRAND} />
-            </div>
-            <h2 className={s.successTitle}>Itinéraire sauvegardé avec succès !</h2>
-            <p className={s.successDesc}>
-              Votre projet de voyage a été enregistré dans votre espace personnel.
-              Vous pouvez maintenant le consulter, le modifier ou procéder à la réservation finale.
-            </p>
-            <div className={s.successActions}>
-              <button className={s.primaryBtn} onClick={() => router.push("/touriste/itineraires")}>
-                VOIR MES ITINÉRAIRES
-              </button>
-              <button className={s.secondaryBtn} onClick={() => setSaveOk(false)}>
-                RETOURNER AU PATRIMOINE
-              </button>
-            </div>
-          </div>
+  /* ─── Mobile excursions panel ─── */
+  const MobileExcursionsPanel = () => (
+    <div style={{ paddingBottom: "5rem" }}>
+      {/* Context bar */}
+      <div style={{
+        padding: "0.6rem 1rem",
+        background: `${BRAND}08`,
+        borderBottom: "1px solid #E5E7EB",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        flexWrap: "wrap",
+        gap: "0.5rem",
+      }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "0.72rem", color: BRAND, fontWeight: 600 }}>
+          <MapPin size={12} /> {currentDay?.city}
+          {currentDay?.date && (
+            <> · <Calendar size={12} /> {formatDate(currentDay.date, { day: "numeric", month: "short" })}</>
+          )}
         </div>
-      ) : view === "result" ? (
-        <div className={s.summaryWrapper}>
-          <ItinerarySummary
-            days={toSummaryDays(itin, selCities)}
-            nbJours={days}
-            selCities={selCities}
-            saving={saving}
-            saveOk={saveOk}
-            savedItId={savedItId}
-            onBack={() => setView("builder")}
-            onEdit={() => {
-              setSaveOk(false);
-              setView("builder");
-            }}
-            onSave={saveItinerary}
+        {currentDay?.date && (
+          <label style={{ display: "flex", alignItems: "center", gap: "0.4rem", fontSize: "0.65rem", cursor: "pointer", color: BRAND, fontWeight: 600 }}>
+            <input
+              type="checkbox"
+              checked={showOnlyAvailable}
+              onChange={e => setShowOnlyAvailable(e.target.checked)}
+            />
+            Disponibles · {availableCount}/{palette.length}
+          </label>
+        )}
+      </div>
+
+      {/* Filters — horizontally scrollable */}
+      <div style={{
+        display: "flex",
+        gap: "0.5rem",
+        padding: "0.75rem 1rem",
+        overflowX: "auto",
+        WebkitOverflowScrolling: "touch",
+        scrollbarWidth: "none",
+        borderBottom: "1px solid #E5E7EB",
+        alignItems: "center",
+      }}>
+        <select
+          value={selectedCategory}
+          onChange={e => setSelectedCategory(e.target.value)}
+          style={{
+            flexShrink: 0,
+            padding: "0.4rem 0.65rem",
+            borderRadius: "8px",
+            border: "1px solid #E5E7EB",
+            background: "#fff",
+            fontSize: "0.7rem",
+            color: "#374151",
+            cursor: "pointer",
+          }}
+        >
+          <option value="all">Catégorie</option>
+          {categories.map(c => <option key={c.id} value={c.nom}>{c.nom}</option>)}
+        </select>
+
+        <select
+          value={selectedDuration}
+          onChange={e => setSelectedDuration(e.target.value)}
+          style={{
+            flexShrink: 0,
+            padding: "0.4rem 0.65rem",
+            borderRadius: "8px",
+            border: "1px solid #E5E7EB",
+            background: "#fff",
+            fontSize: "0.7rem",
+            color: "#374151",
+            cursor: "pointer",
+          }}
+        >
+          <option value="all">Durée</option>
+          <option value="short">≤ 3h</option>
+          <option value="medium">3–6h</option>
+          <option value="long">&gt; 6h</option>
+        </select>
+
+        <div style={{
+          flexShrink: 0,
+          display: "flex",
+          alignItems: "center",
+          gap: "0.5rem",
+          padding: "0.4rem 0.65rem",
+          borderRadius: "8px",
+          border: "1px solid #E5E7EB",
+          background: "#fff",
+          fontSize: "0.7rem",
+          color: "#374151",
+          minWidth: "130px",
+        }}>
+          <span style={{ whiteSpace: "nowrap" }}>≤ {priceRange}€</span>
+          <input
+            type="range" min="0" max="500" step="10"
+            value={priceRange}
+            onChange={e => setPriceRange(Number(e.target.value))}
+            style={{ width: "70px", accentColor: BRAND }}
           />
         </div>
-      ) : (
-        /* ══ MAIN BUILDER LAYOUT ══ */
-        <div className={s.layoutMain}>
-        
-        {/* ══ LEFT: ITINERARY ══ */}
-        <div className={s.itineraryPanel}>
-          <h2 className={s.panelTitle}>VOTRE ITINÉRAIRE JOUR PAR JOUR</h2>
-          
-          <div className={s.itineraryTimeline}>
-            {itin.map((day, dIdx) => (
-              <div key={dIdx} className={`${s.timelineItem} ${activeDay === dIdx ? s.timelineItemActive : ""}`}>
-                <div className={s.timelineDot} />
-                <div className={s.dayHeader}>
-                  <div className={s.dayTitle}>
-                    JOUR {dIdx + 1}
-                    <span className={s.dayCityName}>{day.city}</span>
-                    {day.date && (
-                      <span className={s.dayDatePill} onClick={(e) => { e.stopPropagation(); setActiveDay(dIdx); setShowDatePicker(true); }}>
-                         {formatDate(day.date, { day: 'numeric', month: 'short' })}
-                      </span>
+
+        <div style={{
+          flexShrink: 0,
+          display: "flex",
+          alignItems: "center",
+          gap: "0.5rem",
+          padding: "0.4rem 0.65rem",
+          borderRadius: "8px",
+          border: "1px solid #E5E7EB",
+          background: "#fff",
+          minWidth: "130px",
+        }}>
+          <Search size={12} color="#9CA3AF" />
+          <input
+            type="text"
+            placeholder="Rechercher…"
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            style={{
+              border: "none",
+              outline: "none",
+              fontSize: "0.7rem",
+              color: "#374151",
+              width: "100%",
+              background: "transparent",
+            }}
+          />
+        </div>
+      </div>
+
+      {/* Cards — vertical list on mobile */}
+      <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem", padding: "0.75rem 1rem" }}>
+        {ldExc ? (
+          Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} style={{
+              height: "100px",
+              borderRadius: "12px",
+              background: "linear-gradient(90deg, #F3F4F6 25%, #E5E7EB 50%, #F3F4F6 75%)",
+              backgroundSize: "200% 100%",
+              animation: "shimmer 1.5s infinite",
+            }} />
+          ))
+        ) : palette.length === 0 ? (
+          <div style={{ textAlign: "center", padding: "3rem", color: "#9CA3AF" }}>
+            <p>Aucune excursion trouvée.</p>
+          </div>
+        ) : (
+          palette.map(exc => (
+            <div
+              key={exc.id}
+              onClick={() => loadExcursionDetails(exc.id)}
+              style={{
+                display: "flex",
+                gap: "0.75rem",
+                background: "#fff",
+                borderRadius: "12px",
+                border: "1px solid #E5E7EB",
+                overflow: "hidden",
+                boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
+                cursor: "pointer",
+                position: "relative",
+              }}
+            >
+              <div style={{ width: "90px", flexShrink: 0, position: "relative", background: "#F3F4F6" }}>
+                {exc.photos?.[0] ? (
+                  <img src={exc.photos[0]} alt={exc.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                ) : (
+                  <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <Camera size={24} color="#D1D5DB" />
+                  </div>
+                )}
+                {currentDay?.date && (
+                  <div style={{
+                    position: "absolute",
+                    top: "6px",
+                    left: "6px",
+                    padding: "2px 6px",
+                    borderRadius: "999px",
+                    fontSize: "0.55rem",
+                    fontWeight: 700,
+                    background: isExcursionAvailableOnDate(exc, currentDay.date) ? "#D1FAE5" : "#FEE2E2",
+                    color: isExcursionAvailableOnDate(exc, currentDay.date) ? "#059669" : "#DC2626",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "2px",
+                  }}>
+                    {isExcursionAvailableOnDate(exc, currentDay.date)
+                      ? <><CheckCircle2 size={8} /> OK</>
+                      : <><AlertCircle size={8} /> Indispo</>
+                    }
+                  </div>
+                )}
+              </div>
+
+              <div style={{ flex: 1, padding: "0.75rem 0.75rem 0.75rem 0", minWidth: 0 }}>
+                <div style={{ fontSize: "0.82rem", fontWeight: 600, color: "#111827", lineHeight: 1.3, marginBottom: "0.35rem" }}>
+                  {exc.title}
+                </div>
+                <div style={{ display: "flex", gap: "0.75rem", fontSize: "0.65rem", color: "#6B7280", marginBottom: "0.5rem" }}>
+                  <span style={{ display: "flex", alignItems: "center", gap: "3px" }}>
+                    <Clock size={10} /> {exc.duration_hours > 0 ? `${exc.duration_hours}h` : "Variable"}
+                  </span>
+                  <span style={{ display: "flex", alignItems: "center", gap: "3px" }}>
+                    <MapPin size={10} /> {exc.city}
+                  </span>
+                  {exc.rating > 0 && (
+                    <span style={{ display: "flex", alignItems: "center", gap: "3px" }}>
+                      <Star size={10} color="#F59E0B" fill="#F59E0B" /> {exc.rating.toFixed(1)}
+                    </span>
+                  )}
+                </div>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <span style={{ fontSize: "0.9rem", fontWeight: 700, color: BRAND }}>
+                    {exc.price_per_person},00 €
+                  </span>
+                  <button
+                    onClick={e => { e.stopPropagation(); openSlotPicker(exc); }}
+                    style={{
+                      padding: "0.35rem 0.85rem",
+                      background: BRAND,
+                      color: "#fff",
+                      border: "none",
+                      borderRadius: "999px",
+                      fontSize: "0.68rem",
+                      fontWeight: 700,
+                      cursor: "pointer",
+                    }}
+                  >
+                    + Ajouter
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+    </div>
+  );
+
+  /* ════════════════════════════════════
+     RENDER
+  ════════════════════════════════════ */
+  return (
+    <>
+      <TouristeNav favCount={favorites.size} isLoggedIn={!!user} />
+      <div style={{ paddingTop: 64 }} />
+
+      {/* Shimmer keyframe */}
+      <style>{`
+        @keyframes shimmer {
+          0%   { background-position: -200% 0; }
+          100% { background-position:  200% 0; }
+        }
+
+        /* ── Desktop layout ── */
+        .builder-desktop-layout {
+          display: flex;
+          gap: 1.5rem;
+        }
+        .builder-itinerary-panel {
+          width: 320px;
+          flex-shrink: 0;
+        }
+        .builder-excursions-panel {
+          flex: 1;
+          min-width: 0;
+        }
+        .builder-mobile-day-strip  { display: none; }
+        .builder-mobile-tab-bar    { display: none; }
+        .builder-mobile-itinerary  { display: none; }
+        .builder-mobile-excursions { display: none; }
+        .builder-mobile-summary-btn { display: none; }
+
+        /* ── Mobile layout (≤ 768px) ── */
+        @media (max-width: 768px) {
+          .builder-desktop-layout   { display: none !important; }
+          .builder-mobile-day-strip  { display: block; }
+          .builder-mobile-tab-bar    { display: flex; }
+          .builder-mobile-itinerary  { display: block; }
+          .builder-mobile-excursions { display: block; }
+          .builder-mobile-summary-btn { display: flex; }
+
+          /* Compact stepper on mobile */
+          .builder-stepper-label { display: none; }
+          .builder-stepper-container {
+            padding: 0.5rem 1rem !important;
+          }
+
+          /* Header */
+          .builder-header-title {
+            font-size: 1rem !important;
+            padding: 0.75rem 1rem 0 !important;
+          }
+
+          /* Success view */
+          .builder-success-box {
+            margin: 1rem !important;
+            padding: 1.5rem !important;
+          }
+        }
+
+        @media (max-width: 480px) {
+          .builder-header-title {
+            font-size: 0.9rem !important;
+          }
+        }
+      `}</style>
+
+      <div className={s.root}>
+        {showDatePicker && <DatePickerModal />}
+
+        {/* Toast */}
+        {showSuccessMsg && (
+          <div className={s.toast}>
+            <CheckCircle2 size={14} color={BRAND} />
+            {showSuccessMsg}
+          </div>
+        )}
+
+        {/* ══ HEADER ══ */}
+        <h1 className={`${s.headerTitle} builder-header-title`}>
+          Créer votre itinéraire de voyage
+        </h1>
+
+        {/* ══ STEPPER ══ */}
+        <div className={`${s.stepperContainer} builder-stepper-container`}>
+          <div className={s.stepper}>
+            {steps.map((step, idx) => (
+              <div key={idx} className={`${s.step} ${idx === currentStep ? s.stepActive : ""} ${idx < currentStep ? s.stepCompleted : ""}`}>
+                <div className={s.stepCircle}>
+                  {idx < currentStep ? <CheckCircle2 size={12} /> : null}
+                </div>
+                <span className={`${s.stepLabel} builder-stepper-label`}>{step.label}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* ══ SAVE OK ══ */}
+        {saveOk ? (
+          <div className={`${s.successView} builder-success-box`}>
+            <div className={s.successBox}>
+              <div className={s.successIcon}>
+                <CheckCircle2 size={48} color={BRAND} />
+              </div>
+              <h2 className={s.successTitle}>Itinéraire sauvegardé avec succès !</h2>
+              <p className={s.successDesc}>
+                Votre projet de voyage a été enregistré dans votre espace personnel.
+                Vous pouvez maintenant le consulter, le modifier ou procéder à la réservation finale.
+              </p>
+              <div className={s.successActions}>
+                <button className={s.primaryBtn} onClick={() => router.push("/touriste/itineraires")}>
+                  VOIR MES ITINÉRAIRES
+                </button>
+                <button className={s.secondaryBtn} onClick={() => setSaveOk(false)}>
+                  RETOURNER AU PATRIMOINE
+                </button>
+              </div>
+            </div>
+          </div>
+
+        /* ══ RESULT / SUMMARY ══ */
+        ) : view === "result" ? (
+          <div className={s.summaryWrapper}>
+            <ItinerarySummary
+              days={toSummaryDays(itin, selCities)}
+              nbJours={days}
+              selCities={selCities}
+              saving={saving}
+              saveOk={saveOk}
+              savedItId={savedItId}
+              onBack={() => setView("builder")}
+              onEdit={() => { setSaveOk(false); setView("builder"); }}
+              onSave={saveItinerary}
+            />
+          </div>
+
+        ) : (
+          <>
+            {/* ══════════════════════════════════
+                DESKTOP LAYOUT
+            ══════════════════════════════════ */}
+            <div className={`${s.layoutMain} builder-desktop-layout`}>
+
+              {/* LEFT: ITINERARY */}
+              <div className={`${s.itineraryPanel} builder-itinerary-panel`}>
+                <h2 className={s.panelTitle}>VOTRE ITINÉRAIRE JOUR PAR JOUR</h2>
+
+                <div className={s.itineraryTimeline}>
+                  {itin.map((day, dIdx) => (
+                    <div key={dIdx} className={`${s.timelineItem} ${activeDay === dIdx ? s.timelineItemActive : ""}`}>
+                      <div className={s.timelineDot} />
+                      <div className={s.dayHeader}>
+                        <div className={s.dayTitle}>
+                          JOUR {dIdx + 1}
+                          <span className={s.dayCityName}>{day.city}</span>
+                          {day.date && (
+                            <span className={s.dayDatePill} onClick={e => { e.stopPropagation(); setActiveDay(dIdx); setShowDatePicker(true); }}>
+                              {formatDate(day.date, { day: "numeric", month: "short" })}
+                            </span>
+                          )}
+                        </div>
+                        <div className={s.dayHeaderActions}>
+                          {!day.date && (
+                            <button className={s.dayDateBtnSmall} onClick={e => { e.stopPropagation(); setActiveDay(dIdx); setShowDatePicker(true); }}>
+                              <Calendar size={10} /> FIXER DATE
+                            </button>
+                          )}
+                          <button className={s.dayAddBtn} onClick={e => {
+                            e.stopPropagation();
+                            setItin(prev => [...prev, { city: prev[prev.length - 1]?.city || "", activities: [] }]);
+                          }}>
+                            <Plus size={10} /> AJOUTER UN JOUR
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className={s.activitySlots}>
+                        {day.activities.length === 0 ? (
+                          <>
+                            <div className={s.activitySlot} onClick={() => setActiveDay(dIdx)}>Ajouter une excursion</div>
+                            <div className={s.activitySlot} onClick={() => setActiveDay(dIdx)}>Ajouter une excursion</div>
+                          </>
+                        ) : (
+                          <>
+                            {day.activities.map(act => (
+                              <div key={act.id} className={s.actCard} onClick={() => setActiveDay(dIdx)}>
+                                <div className={s.actTime}>{act.customTime || "09:00"}</div>
+                                {act.excursion.photos?.[0] && (
+                                  <img src={act.excursion.photos[0]} alt="" className={s.actImg} />
+                                )}
+                                <div className={s.actInfo} style={{ flex: 1 }}>
+                                  <div className={s.actTitle} style={{ fontSize: "0.75rem", fontWeight: 600 }}>{act.excursion.title}</div>
+                                </div>
+                                <div className={s.actActions}>
+                                  <button className={s.actActionDelete} onClick={e => { e.stopPropagation(); rmAct(dIdx, act.id); }}>
+                                    <Trash2 size={12} />
+                                  </button>
+                                </div>
+                              </div>
+                            ))}
+                            <div className={s.activitySlot} onClick={() => setActiveDay(dIdx)}>Ajouter une excursion</div>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* RIGHT: EXCURSIONS */}
+              <div className={`${s.excursionsPanel} builder-excursions-panel`}>
+                <div className={s.panelTop}>
+                  <h2 className={s.panelTitle}>EXPLORER LES EXCURSIONS</h2>
+                  <button className={s.saveBtnFixed} onClick={() => setView("result")}>
+                    <ArrowRight size={14} /> VOIR LE RÉSUMÉ
+                  </button>
+                </div>
+
+                <div className={s.filterHeaderRow}>
+                  <div className={s.dayContext}>
+                    <MapPin size={12} /> {currentDay?.city}
+                    {currentDay?.date && (
+                      <>
+                        <Calendar size={12} style={{ marginLeft: "4px" }} />
+                        {formatDate(currentDay.date, { day: "numeric", month: "long" })}
+                      </>
                     )}
                   </div>
-                  <div className={s.dayHeaderActions}>
-                    {!day.date && (
-                      <button className={s.dayDateBtnSmall} onClick={(e) => { e.stopPropagation(); setActiveDay(dIdx); setShowDatePicker(true); }}>
-                        <Calendar size={10} /> FIXER DATE
-                      </button>
-                    )}
-                    <button className={s.dayAddBtn} onClick={(e) => {
-                      e.stopPropagation();
-                      setItin(prev => [...prev, { city: prev[prev.length-1]?.city || "", activities: [] }]);
-                    }}>
-                      <Plus size={10} /> AJOUTER UN JOUR
-                    </button>
+                  {currentDay?.date && (
+                    <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
+                      <label style={{ display: "flex", alignItems: "center", gap: "0.4rem", fontSize: "0.7rem", cursor: "pointer", color: BRAND, fontWeight: 600 }}>
+                        <input type="checkbox" checked={showOnlyAvailable} onChange={e => setShowOnlyAvailable(e.target.checked)} />
+                        DISPONIBLES UNIQUEMENT
+                      </label>
+                      <div style={{ fontSize: "0.75rem", color: "#6B7280", fontWeight: 500 }}>
+                        {availableCount} / {palette.length} disponibles
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <div className={s.filtersRow} style={{ marginBottom: "1.5rem" }}>
+                  <select className={s.filterSelect} value={selectedCategory} onChange={e => setSelectedCategory(e.target.value)}>
+                    <option value="all">Categorie</option>
+                    {categories.map(c => <option key={c.id} value={c.nom}>{c.nom}</option>)}
+                  </select>
+                  <select className={s.filterSelect} value={selectedDuration} onChange={e => setSelectedDuration(e.target.value)}>
+                    <option value="all">Durée</option>
+                    <option value="short">Courte (≤ 3h)</option>
+                    <option value="medium">Moyenne (3-6h)</option>
+                    <option value="long">Longue ({">"} 6h)</option>
+                  </select>
+                  <div className={s.priceFilter}>
+                    <div className={s.priceRangeLabel}>Prix: {priceRange} EUR</div>
+                    <input type="range" min="0" max="500" step="10" className={s.rangeInput} value={priceRange} onChange={e => setPriceRange(Number(e.target.value))} />
+                  </div>
+                  <div className={s.searchExcursion}>
+                    <input type="text" className={s.searchInputMatch} placeholder="Rechercher" value={search} onChange={e => setSearch(e.target.value)} />
+                    <Search size={14} className={s.searchIconMatch} />
                   </div>
                 </div>
 
-                <div className={s.activitySlots}>
-                  {day.activities.length === 0 ? (
-                    <>
-                      <div className={s.activitySlot} onClick={() => setActiveDay(dIdx)}>
-                        Ajouter une excursion
-                      </div>
-                      <div className={s.activitySlot} onClick={() => setActiveDay(dIdx)}>
-                        Ajouter une excursion
-                      </div>
-                    </>
+                <div className={s.gridMatch}>
+                  {ldExc ? (
+                    Array.from({ length: 6 }).map((_, i) => <div key={i} className={s.skeletonMatch} />)
+                  ) : palette.length === 0 ? (
+                    <div className={s.emptyState} style={{ gridColumn: "1/-1", textAlign: "center", padding: "3rem" }}>
+                      <p style={{ color: "#9CA3AF" }}>Aucune excursion trouvée pour ces critères.</p>
+                    </div>
                   ) : (
-                    <>
-                      {day.activities.map((act) => (
-                        <div key={act.id} className={s.actCard} onClick={() => setActiveDay(dIdx)}>
-                          <div className={s.actTime}>{act.customTime || "09:00"}</div>
-                          {act.excursion.photos?.[0] && (
-                            <img src={act.excursion.photos[0]} alt="" className={s.actImg} />
+                    palette.map(exc => (
+                      <div key={exc.id} className={s.cardMatch} onClick={() => loadExcursionDetails(exc.id)}>
+                        <div className={s.cardImageMatch}>
+                          {exc.photos?.[0] ? (
+                            <img src={exc.photos[0]} alt={exc.title} />
+                          ) : (
+                            <div className="w-full h-full bg-slate-100 flex items-center justify-center">
+                              <Camera size={32} className="text-slate-300" />
+                            </div>
                           )}
-                          <div className={s.actInfo} style={{ flex: 1 }}>
-                            <div className={s.actTitle} style={{ fontSize: '0.75rem', fontWeight: 600 }}>{act.excursion.title}</div>
+                          {currentDay?.date && (
+                            <div className={`${s.availabilityBadge} ${isExcursionAvailableOnDate(exc, currentDay.date) ? s.availOk : s.availKo}`}>
+                              {isExcursionAvailableOnDate(exc, currentDay.date)
+                                ? <><CheckCircle2 size={10} /> Disponible</>
+                                : <><AlertCircle size={10} /> Indisponible</>
+                              }
+                            </div>
+                          )}
+                        </div>
+                        <div className={s.cardInfoMatch}>
+                          <h3 className={s.cardTitleMatch}>{exc.title}</h3>
+                          <p className={s.cardDescMatch}>Découvrez cette magnifique excursion à {exc.city}. Profitez d'une expérience unique en Tunisie.</p>
+                          <div className={s.cardMetaMatch}>
+                            <span className="flex items-center gap-1"><Clock size={12} /> {exc.duration_hours > 0 ? `${exc.duration_hours} h` : "Durée variable"}</span>
+                            <span className="flex items-center gap-1"><MapPin size={12} /> {exc.city}</span>
                           </div>
-                          <div className={s.actActions}>
-                            <button className={s.actActionDelete} onClick={(e) => { e.stopPropagation(); rmAct(dIdx, act.id); }}>
-                              <Trash2 size={12} />
+                          <div className={s.cardFooterMatch}>
+                            <span className={s.priceMatch}>{exc.price_per_person},00 €</span>
+                            <button className={s.addBtnMatch} onClick={e => { e.stopPropagation(); openSlotPicker(exc); }}>
+                              + AJOUTER
                             </button>
                           </div>
                         </div>
-                      ))}
-                      <div className={s.activitySlot} onClick={() => setActiveDay(dIdx)}>
-                        Ajouter une excursion
                       </div>
-                    </>
+                    ))
                   )}
                 </div>
               </div>
-            ))}
-          </div>
-        </div>
+            </div>
 
-        {/* ══ RIGHT: EXCURSIONS ══ */}
-        <div className={s.excursionsPanel}>
-          <div className={s.panelTop}>
-            <h2 className={s.panelTitle}>EXPLORER LES EXCURSIONS</h2>
-            <button className={s.saveBtnFixed} onClick={() => setView("result")}>
-              <ArrowRight size={14} />
-              VOIR LE RÉSUMÉ
-            </button>
-          </div>
+            {/* ══════════════════════════════════
+                MOBILE LAYOUT
+            ══════════════════════════════════ */}
 
-          <div className={s.filterHeaderRow}>
-            <div className={s.dayContext}>
-              <MapPin size={12} /> {currentDay?.city}
-              {currentDay?.date && (
-                <>
-                  <Calendar size={12} style={{ marginLeft: '4px' }} />
-                  {formatDate(currentDay.date, { day: 'numeric', month: 'long' })}
-                </>
+            {/* Day selector strip */}
+            <div className="builder-mobile-day-strip">
+              <MobileDayStrip />
+            </div>
+
+            {/* Tab panels */}
+            <div className="builder-mobile-itinerary" style={{ display: mobileTab === "itinerary" ? "block" : "none" }}>
+              <MobileItineraryPanel />
+            </div>
+            <div className="builder-mobile-excursions" style={{ display: mobileTab === "excursions" ? "block" : "none" }}>
+              <MobileExcursionsPanel />
+            </div>
+
+            {/* Bottom tab bar */}
+            <div className="builder-mobile-tab-bar">
+              <MobileTabBar />
+            </div>
+          </>
+        )}
+
+        {/* ══ Modal Slot Picker ══ */}
+        {pendingExc && (
+          <div className={s.overlay} onClick={() => setPendingExc(null)}>
+            <div className={s.slotBox} onClick={e => e.stopPropagation()} style={{ margin: "0 1rem", maxWidth: "420px", width: "100%" }}>
+              <div className={s.slotBoxTitle}>Programmer l'excursion</div>
+              <p className={s.slotBoxExcTitle}>{pendingExc.title}</p>
+              <p className={s.slotBoxMeta}>
+                <Clock size={11} /> {pendingExc.duration_hours}h
+                <span style={{ margin: "0 .35rem", color: "#D1D5DB" }}>·</span>
+                <PiggyBank size={11} /> {pendingExc.price_per_person} EUR
+              </p>
+              {currentDayDate && (
+                <div className={s.slotDateConfirm}>
+                  <CheckCircle2 size={12} color={BRAND} />
+                  Disponible le {formatDate(currentDayDate)}
+                </div>
               )}
-            </div>
-            {currentDay?.date && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.7rem', cursor: 'pointer', color: BRAND, fontWeight: 600 }}>
-                  <input 
-                    type="checkbox" 
-                    checked={showOnlyAvailable} 
-                    onChange={e => setShowOnlyAvailable(e.target.checked)}
-                  />
-                  DISPONIBLES UNIQUEMENT
-                </label>
-                <div style={{ fontSize: '0.75rem', color: '#6B7280', fontWeight: 500 }}>
-                  {availableCount} / {palette.length} disponibles
-                </div>
-              </div>
-            )}
-          </div>
-
-          <div className={s.filtersRow} style={{ marginBottom: '1.5rem' }}>
-            <select 
-              className={s.filterSelect}
-              value={selectedCategory}
-              onChange={(e) => setSelectedCategory(e.target.value)}
-            >
-              <option value="all">Categorie</option>
-              {categories.map(c => <option key={c.id} value={c.nom}>{c.nom}</option>)}
-            </select>
-
-            <select 
-              className={s.filterSelect}
-              value={selectedDuration}
-              onChange={(e) => setSelectedDuration(e.target.value)}
-            >
-              <option value="all">Durée</option>
-              <option value="short">Courte (≤ 3h)</option>
-              <option value="medium">Moyenne (3-6h)</option>
-              <option value="long">Longue ({">"} 6h)</option>
-            </select>
-
-            <div className={s.priceFilter}>
-              <div className={s.priceRangeLabel}>Prix: {priceRange} EUR</div>
-              <input 
-                type="range" 
-                min="0" max="500" step="10"
-                className={s.rangeInput}
-                value={priceRange}
-                onChange={(e) => setPriceRange(Number(e.target.value))}
-              />
-            </div>
-
-            <div className={s.searchExcursion}>
-              <input 
-                type="text" 
-                className={s.searchInputMatch}
-                placeholder="Rechercher"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-              />
-              <Search size={14} className={s.searchIconMatch} />
-            </div>
-          </div>
-
-          <div className={s.gridMatch}>
-            {ldExc ? (
-              Array.from({ length: 6 }).map((_, i) => (
-                <div key={i} className={s.skeletonMatch} />
-              ))
-            ) : palette.length === 0 ? (
-              <div className={s.emptyState} style={{ gridColumn: '1/-1', textAlign: 'center', padding: '3rem' }}>
-                <p style={{ color: '#9CA3AF' }}>Aucune excursion trouvée pour ces critères.</p>
-              </div>
-            ) : (
-              palette.map(exc => (
-                <div key={exc.id} className={s.cardMatch} onClick={() => loadExcursionDetails(exc.id)}>
-                  <div className={s.cardImageMatch}>
-                    {exc.photos?.[0] ? (
-                      <img src={exc.photos[0]} alt={exc.title} />
-                    ) : (
-                      <div className="w-full h-full bg-slate-100 flex items-center justify-center">
-                        <Camera size={32} className="text-slate-300" />
-                      </div>
-                    )}
-
-                    {currentDay?.date && (
-                      <div className={`${s.availabilityBadge} ${isExcursionAvailableOnDate(exc, currentDay.date) ? s.availOk : s.availKo}`}>
-                        {isExcursionAvailableOnDate(exc, currentDay.date) ? (
-                          <><CheckCircle2 size={10} /> Disponible</>
-                        ) : (
-                          <><AlertCircle size={10} /> Indisponible</>
-                        )}
-                      </div>
-                    )}
+              {SLOTS.map(slot => (
+                <div
+                  key={slot.key}
+                  className={`${s.slotOption} ${pickSlot === slot.key ? s.slotOptionSel : ""}`}
+                  style={pickSlot === slot.key ? { borderColor: slot.color } : {}}
+                  onClick={() => {
+                    setPickSlot(slot.key);
+                    const depTime = currentDayDate
+                      ? getDepartureTimeForDate(pendingExc, currentDayDate)
+                      : pendingExc.departure_time;
+                    setPickTime(depTime?.substring(0, 5) || slot.defaultTime);
+                  }}
+                >
+                  <div className={s.slotOptionIcon} style={{ background: `${slot.color}18` }}>
+                    {React.cloneElement(slot.icon as React.ReactElement, { size: 14, color: slot.color })}
                   </div>
-
-                  <div className={s.cardInfoMatch}>
-                    <h3 className={s.cardTitleMatch}>{exc.title}</h3>
-                    <p className={s.cardDescMatch}>Découvrez cette magnifique excursion à {exc.city}. Profitez d'une expérience unique en Tunisie.</p>
-                    
-                    <div className={s.cardMetaMatch}>
-                      <span className="flex items-center gap-1"><Clock size={12}/> {exc.duration_hours > 0 ? `${exc.duration_hours} h` : "Durée variable"}</span>
-                      <span className="flex items-center gap-1"><MapPin size={12}/> {exc.city}</span>
-                    </div>
-
-                    <div className={s.cardFooterMatch}>
-                      <span className={s.priceMatch}>{exc.price_per_person},00 €</span>
-                      <button 
-                        className={s.addBtnMatch}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          openSlotPicker(exc);
-                        }}
-                      >
-                        + AJOUTER
-                      </button>
-                    </div>
+                  <div style={{ flex: 1 }}>
+                    <div className={s.slotOptionLabel} style={{ color: slot.color }}>{slot.label}</div>
+                    <div className={s.slotOptionHint}>{slot.hint}</div>
                   </div>
+                  {pickSlot === slot.key && (
+                    <input
+                      type="time" className={s.timeInput}
+                      value={pickTime}
+                      onChange={e => setPickTime(e.target.value)}
+                      onClick={e => e.stopPropagation()}
+                    />
+                  )}
                 </div>
-              ))
-            )}
+              ))}
+              <div className={s.slotActions}>
+                <button className={s.cancelBtn} onClick={() => setPendingExc(null)}>Annuler</button>
+                <button className={s.confirmBtn} onClick={confirmAdd}>
+                  <CheckCircle2 size={13} /> Ajouter à l'itinéraire
+                </button>
+              </div>
+            </div>
           </div>
-        </div>
+        )}
+
+        {/* ══ Modal Note ══ */}
+        {editNote && (
+          <div className={s.overlay} onClick={() => setEditNote(null)}>
+            <div className={s.noteBox} onClick={e => e.stopPropagation()} style={{ margin: "0 1rem", maxWidth: "420px", width: "100%" }}>
+              <div className={s.noteTitle}>
+                <FileText size={16} color={BRAND} /> Note personnelle
+              </div>
+              <textarea
+                autoFocus className={s.noteTextarea}
+                value={noteText} onChange={e => setNoteText(e.target.value)}
+                placeholder="Ajoutez un rappel ou une information utile..."
+                rows={3}
+              />
+              <div className={s.slotActions}>
+                <button className={s.cancelBtn} onClick={() => setEditNote(null)}>Annuler</button>
+                <button className={s.confirmBtn} onClick={() => saveNote(activeDay, editNote)}>
+                  <CheckCircle2 size={13} /> Enregistrer
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ══ Modal Excursion Detail ══ */}
+        {selectedExcursion && (
+          <ExcursionDetailModal
+            excursion={selectedExcursion}
+            onClose={() => setSelectedExcursion(null)}
+            onAdd={() => {
+              const exc: Excursion = {
+                id:               selectedExcursion.id,
+                title:            selectedExcursion.title,
+                city:             selectedExcursion.city,
+                price_per_person: selectedExcursion.price_per_person,
+                duration_hours:   selectedExcursion.duration_hours,
+                rating:           selectedExcursion.rating,
+                reviews_count:    selectedExcursion.reviews_count,
+                categories:       selectedExcursion.categories,
+                photos:           selectedExcursion.photos,
+                departure_time:   selectedExcursion.depart_time || undefined,
+                available_dates:  selectedExcursion.available_dates,
+              };
+              openSlotPicker(exc);
+              setSelectedExcursion(null);
+            }}
+          />
+        )}
+
+        {loadingDetails && <LoadingSpinner />}
       </div>
-    )}
-
-      {/* ══ Modal Slot Picker ══ */}
-      {pendingExc && (
-        <div className={s.overlay} onClick={() => setPendingExc(null)}>
-          <div className={s.slotBox} onClick={e => e.stopPropagation()}>
-            <div className={s.slotBoxTitle}>Programmer l'excursion</div>
-            <p className={s.slotBoxExcTitle}>{pendingExc.title}</p>
-            <p className={s.slotBoxMeta}>
-              <Clock size={11} /> {pendingExc.duration_hours}h
-              <span style={{ margin: "0 .35rem", color: "#D1D5DB" }}>·</span>
-              <PiggyBank size={11} /> {pendingExc.price_per_person} EUR
-            </p>
-            {currentDayDate && (
-              <div className={s.slotDateConfirm}>
-                <CheckCircle2 size={12} color={BRAND} />
-                Disponible le {formatDate(currentDayDate)}
-              </div>
-            )}
-            {SLOTS.map(slot => (
-              <div
-                key={slot.key}
-                className={`${s.slotOption} ${pickSlot === slot.key ? s.slotOptionSel : ""}`}
-                style={pickSlot === slot.key ? { borderColor: slot.color } : {}}
-                onClick={() => {
-                  setPickSlot(slot.key);
-                  const depTime = currentDayDate
-                    ? getDepartureTimeForDate(pendingExc, currentDayDate)
-                    : pendingExc.departure_time;
-                  setPickTime(depTime?.substring(0, 5) || slot.defaultTime);
-                }}
-              >
-                <div className={s.slotOptionIcon} style={{ background: `${slot.color}18` }}>
-                  {React.cloneElement(slot.icon as React.ReactElement, { size: 14, color: slot.color })}
-                </div>
-                <div style={{ flex: 1 }}>
-                  <div className={s.slotOptionLabel} style={{ color: slot.color }}>{slot.label}</div>
-                  <div className={s.slotOptionHint}>{slot.hint}</div>
-                </div>
-                {pickSlot === slot.key && (
-                  <input
-                    type="time" className={s.timeInput}
-                    value={pickTime}
-                    onChange={e => setPickTime(e.target.value)}
-                    onClick={e => e.stopPropagation()}
-                  />
-                )}
-              </div>
-            ))}
-            <div className={s.slotActions}>
-              <button className={s.cancelBtn} onClick={() => setPendingExc(null)}>Annuler</button>
-              <button className={s.confirmBtn} onClick={confirmAdd}>
-                <CheckCircle2 size={13} /> Ajouter à l'itinéraire
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ══ Modal Note ══ */}
-      {editNote && (
-        <div className={s.overlay} onClick={() => setEditNote(null)}>
-          <div className={s.noteBox} onClick={e => e.stopPropagation()}>
-            <div className={s.noteTitle}>
-              <FileText size={16} color={BRAND} /> Note personnelle
-            </div>
-            <textarea
-              autoFocus className={s.noteTextarea}
-              value={noteText} onChange={e => setNoteText(e.target.value)}
-              placeholder="Ajoutez un rappel ou une information utile..."
-              rows={3}
-            />
-            <div className={s.slotActions}>
-              <button className={s.cancelBtn} onClick={() => setEditNote(null)}>Annuler</button>
-              <button className={s.confirmBtn} onClick={() => saveNote(activeDay, editNote)}>
-                <CheckCircle2 size={13} /> Enregistrer
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ══ Modal Excursion Detail ══ */}
-      {selectedExcursion && (
-        <ExcursionDetailModal
-          excursion={selectedExcursion}
-          onClose={() => setSelectedExcursion(null)}
-          onAdd={() => {
-            const exc: Excursion = {
-              id:               selectedExcursion.id,
-              title:            selectedExcursion.title,
-              city:             selectedExcursion.city,
-              price_per_person: selectedExcursion.price_per_person,
-              duration_hours:   selectedExcursion.duration_hours,
-              rating:           selectedExcursion.rating,
-              reviews_count:    selectedExcursion.reviews_count,
-              categories:       selectedExcursion.categories,
-              photos:           selectedExcursion.photos,
-              departure_time:   selectedExcursion.depart_time || undefined,
-              available_dates:  selectedExcursion.available_dates,
-            };
-            openSlotPicker(exc);
-            setSelectedExcursion(null);
-          }}
-        />
-      )}
-
-      {loadingDetails && <LoadingSpinner />}
-    </div>
     </>
   );
 }
@@ -1011,7 +1679,7 @@ function BuilderInner() {
 export default function BuilderPage() {
   return (
     <Suspense fallback={
-      <div className="fallback" style={{ display:"flex", alignItems:"center", justifyContent:"center", minHeight:"100vh", flexDirection:"column", gap:".75rem" }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "100vh", flexDirection: "column", gap: ".75rem" }}>
         <Loader2 size={32} color="#2B96A8" style={{ animation: "spin 1s linear infinite" }} />
         <style>{`@keyframes spin { to { transform: rotate(360deg) } }`}</style>
         <span style={{ color: "#9CA3AF", fontSize: ".85rem" }}>Chargement de l'itinéraire…</span>

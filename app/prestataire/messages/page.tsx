@@ -49,13 +49,21 @@ export default function PrestataireMessagesPage() {
   const [sending,       setSending]       = useState(false);
   const [loading,       setLoading]       = useState(true);
   const [search,        setSearch]        = useState("");
+  const [profile,       setProfile]       = useState<{agency_name:string, full_name:string} | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef  = useRef<HTMLInputElement>(null);
+
+  const name = profile?.agency_name || profile?.full_name || "Prestataire";
+  const initials = name.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2);
 
   useEffect(() => {
     supabase.auth.getUser().then(async ({ data: { user } }) => {
       if (!user) return;
       setUserId(user.id);
+
+      const { data: prof } = await supabase.from("profiles").select("agency_name, full_name").eq("user_id", user.id).single();
+      setProfile(prof);
+
       await loadConversations(user.id);
       setLoading(false);
 
@@ -157,14 +165,120 @@ export default function PrestataireMessagesPage() {
 
   if (loading) return (
     <div className="page-loader">
-      <Loader2 size={28} className="spin" style={{ color: "#2B96A8" }} />
+      <Loader2 size={32} className="spin" color="#2B96A8" />
     </div>
   );
 
   return (
-    <div className="messages-page-wrapper">
-      <div className="messages-page">
+    <div className="pw">
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
 
+        @keyframes fadeUp {
+          from { opacity: 0; transform: translateY(12px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+
+        .pw {
+          font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+          background: #F5F7FA;
+          min-height: 100vh;
+          padding: 28px 36px 36px;
+          width: 100%;
+          box-sizing: border-box;
+          display: flex;
+          flex-direction: column;
+        }
+
+        /* ── Header ── */
+        .pw-header {
+          display: flex;
+          align-items: flex-start;
+          justify-content: space-between;
+          gap: 16px;
+          margin-bottom: 24px;
+          animation: fadeUp .35s ease both;
+          flex-shrink: 0;
+        }
+        .pw-header-eyebrow {
+          display: inline-flex; align-items: center; gap: 6px;
+          background: #EFF9FB; border: 1px solid rgba(43,150,168,.22);
+          border-radius: 20px; padding: 4px 12px;
+          font-size: 11px; font-weight: 700; color: #2B96A8;
+          text-transform: uppercase; letter-spacing: .08em;
+          margin-bottom: 10px;
+        }
+        .pw-header-title {
+          font-size: clamp(22px, 4vw, 30px); font-weight: 800;
+          color: #053366; line-height: 1.1; letter-spacing: -.02em;
+        }
+        .pw-header-sub {
+          font-size: 13px; color: #94A3B8; margin-top: 5px; font-weight: 500;
+        }
+        .pw-header-badge {
+          display: flex; align-items: center; gap: 8px;
+          background: #fff; border: 1.5px solid #E2E8F0; border-radius: 12px;
+          padding: 10px 16px; flex-shrink: 0;
+        }
+        .pw-header-badge-avatar {
+          width: 32px; height: 32px; border-radius: 8px;
+          background: linear-gradient(135deg, #053366, #2B96A8);
+          display: flex; align-items: center; justify-content: center;
+          font-size: 12px; font-weight: 800; color: #fff;
+        }
+        .pw-header-badge-name { font-size: 13px; font-weight: 700; color: #053366; }
+        .pw-header-badge-role { font-size: 11px; color: #94A3B8; font-weight: 500; }
+
+        .messages-container {
+          flex: 1;
+          display: flex;
+          background: #fff;
+          border-radius: 24px;
+          border: 1.5px solid #E2E8F0;
+          overflow: hidden;
+          box-shadow: 0 4px 20px rgba(0,0,0,0.03);
+          animation: fadeUp .45s ease both;
+          height: 600px; /* Fixed height for the message box within flex container */
+        }
+        
+        .sidebar { width: 340px !important; min-width: 340px !important; background: #fff !important; border-right: 1.5px solid #F1F5F9 !important; }
+        .sidebar-header { border-bottom: 1.5px solid #F1F5F9 !important; padding: 20px !important; }
+        .search-input { background: #F8FAFC !important; border: 1.5px solid #E2E8F0 !important; border-radius: 12px !important; }
+        .conv-row { border-bottom: 1px solid #F8FAFC !important; padding: 16px 20px !important; transition: all .2s; cursor: pointer; }
+        .conv-row.active { background: #EFF9FB !important; border-left: 4px solid #053366 !important; }
+        .chat-header { border-bottom: 1.5px solid #F1F5F9 !important; height: 72px !important; padding: 0 24px !important; background: #fff !important; }
+        .msg-bubble.prestataire { background: #053366 !important; color: #fff !important; border-radius: 16px 16px 4px 16px !important; }
+        .msg-bubble.touriste { background: #F1F5F9 !important; color: #053366 !important; border-radius: 16px 16px 16px 4px !important; }
+        .input-area { border-top: 1.5px solid #F1F5F9 !important; padding: 16px 24px !important; background: #fff !important; }
+        .msg-input { background: #F8FAFC !important; border: 1.5px solid #E2E8F0 !important; border-radius: 12px !important; padding: 10px 16px !important; font-family: inherit; }
+        .send-btn { background: #053366 !important; border-radius: 12px !important; width: 44px !important; height: 44px !important; display: flex !important; align-items: center !important; justify-content: center !important; transition: all .2s !important; }
+        .send-btn:hover { background: #042952 !important; transform: scale(1.05); }
+
+        @media (max-width: 768px) {
+          .pw { padding: 16px; }
+          .sidebar.hidden-mobile { display: none !important; }
+        }
+      `}</style>
+
+      <header className="pw-header">
+        <div className="pw-header-left">
+          <div className="pw-header-eyebrow">🗨️ Messagerie</div>
+          <h1 className="pw-header-title">Mes Conversations</h1>
+          <p className="pw-header-sub">
+            {totalUnread > 0 ? `${totalUnread} message(s) non lu(s)` : "Aucun nouveau message"}
+          </p>
+        </div>
+
+        <div className="pw-header-badge" style={{ alignSelf: "flex-start" }}>
+          <div className="pw-header-badge-avatar">{initials}</div>
+          <div>
+            <div className="pw-header-badge-name">{name}</div>
+            <div className="pw-header-badge-role">Prestataire</div>
+          </div>
+        </div>
+      </header>
+
+      <div className="messages-container">
         {/* ── Sidebar ── */}
         <div className={`sidebar${convOpen ? " hidden-mobile" : ""}`}>
           <div className="sidebar-header">
@@ -175,8 +289,7 @@ export default function PrestataireMessagesPage() {
                 <span className="unread-badge">{totalUnread}</span>
               )}
             </div>
-            <p className="sidebar-subtitle">Conversations avec vos touristes</p>
-            <div className="search-wrapper">
+            <div className="search-wrapper" style={{ marginTop: 12 }}>
               <Search size={13} className="search-icon" style={{ color: "#9CA3AF" }} />
               <input
                 className="search-input"
