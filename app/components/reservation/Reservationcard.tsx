@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import {
-  MapPin, Clock, CalendarDays, Users, Star, Compass,
+  MapPin, Clock, CalendarDays, Star, Compass,
   CheckCircle, CreditCard, TrendingUp, Timer, Trash2,
 } from "lucide-react";
+
 import { Reservation, STATUS_CFG, daysUntil, fmtDate } from "./type";
 import CancellationModal from "./CancellationModal";
 import styles from "@/public/style/Reservations.module.css";
@@ -18,190 +19,188 @@ interface Props {
 }
 
 export default function ReservationCard({ r, onPay, onRefresh, onExpired }: Props) {
-  const exc   = r.excursion;
-  const s     = STATUS_CFG[r.status] ?? STATUS_CFG.pending;
+  const exc = r.excursion;
+  const s = STATUS_CFG[r.status] ?? STATUS_CFG.pending;
   const photo = exc?.photos?.[0];
-  const paid  = r.payment_status === "paid" || r.status === "confirmed" || r.status === "completed";
-  const days  = daysUntil(r.date);
+
+  const paid =
+    r.payment_status === "paid" ||
+    r.status === "confirmed" ||
+    r.status === "completed";
+
+  const days = daysUntil(r.date);
 
   const [timeLeftCard, setTimeLeftCard] = useState<number | null>(null);
   const [showCancellationModal, setShowCancellationModal] = useState(false);
 
+  // ✅ STOP DOUBLE CALL
+  const expiredTriggered = useRef(false);
+
   useEffect(() => {
     if (r.status !== "pending" || paid || !r.payment_deadline) return;
+
     const deadline = new Date(r.payment_deadline).getTime();
+
     const tick = () => {
       const left = Math.max(0, Math.floor((deadline - Date.now()) / 1000));
       setTimeLeftCard(left);
-      if (left === 0) {
-        if (onRefresh) onRefresh();
-        if (onExpired) onExpired(r.id);
+
+      // ✅ ONLY ONCE
+      if (left === 0 && !expiredTriggered.current) {
+        expiredTriggered.current = true;
+
+        // refresh UI
+        onRefresh?.();
+
+        // notify parent ONCE
+        onExpired?.(r.id);
       }
     };
+
     tick();
     const id = setInterval(tick, 1000);
-    return () => clearInterval(id);
-  }, [r.status, r.payment_deadline, paid, onRefresh, onExpired, r.id]);
 
-  const cardUrgent = timeLeftCard !== null && timeLeftCard <= 300 && timeLeftCard > 0;
+    return () => clearInterval(id);
+  }, [r.status, r.payment_deadline, paid, r.id, onRefresh, onExpired]);
+
+  const cardUrgent =
+    timeLeftCard !== null && timeLeftCard <= 300 && timeLeftCard > 0;
+
   const timerColor = cardUrgent ? "#EF4444" : "#0D9488";
 
   return (
     <div className={styles["rp-card"]}>
 
-      {/* ── Image ── */}
+      {/* IMAGE */}
       <div className={styles["rp-img-wrap"]}>
-        {photo
-          ? <img src={photo} alt={exc?.title || ""} />
-          : (
-            <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <Compass size={40} color="rgba(0,0,0,.15)" strokeWidth={1} />
-            </div>
-          )
-        }
+        {photo ? (
+          <img src={photo} alt={exc?.title || ""} />
+        ) : (
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%" }}>
+            <Compass size={40} color="rgba(0,0,0,.15)" />
+          </div>
+        )}
+
         <div className={styles["rp-img-gradient"]} />
 
-        {/* Status pill */}
-        <div className={styles["rp-status"]} style={{ background: s.bg, border: `1px solid ${s.border}`, color: s.text }}>
+        {/* STATUS */}
+        <div
+          className={styles["rp-status"]}
+          style={{ background: s.bg, border: `1px solid ${s.border}`, color: s.text }}
+        >
           <span className={styles["rp-status-dot"]} style={{ background: s.dot }} />
           {s.label}
         </div>
 
-        {/* Right badge: Paid or Days */}
+        {/* PAID / DAYS */}
         {paid ? (
           <div className={styles["rp-paid-tag"]}>
-            <CheckCircle size={10} strokeWidth={2.5} /> Payée
+            <CheckCircle size={10} /> Payée
           </div>
-        ) : days >= 0 && (
+        ) : days >= 0 ? (
           <div className={styles["rp-days-tag"]}>
             <CalendarDays size={10} />
             {days === 0 ? "Aujourd'hui" : days === 1 ? "Demain" : `J-${days}`}
           </div>
-        )}
+        ) : null}
 
-        {/* Title overlay */}
+        {/* TITLE */}
         <div className={styles["rp-img-info"]}>
-          <h3 className={styles["rp-img-title"]}>{exc?.title ?? "Excursion"}</h3>
+          <h3 className={styles["rp-img-title"]}>
+            {exc?.title ?? "Excursion"}
+          </h3>
+
           <div className={styles["rp-img-meta"]}>
-            <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
-              <MapPin size={10} />{exc?.city}
-            </span>
-            {exc?.duration_hours && (
-              <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                <Clock size={10} />{exc.duration_hours}h
+            <span><MapPin size={10} /> {exc?.city}</span>
+            <span><Clock size={10} /> {exc?.duration_hours}h</span>
+            {exc?.rating ? (
+              <span style={{ color: "#F59E0B" }}>
+                <Star size={10} /> {exc.rating.toFixed(1)}
               </span>
-            )}
-            {exc?.rating && exc.rating > 0 && (
-              <span style={{ display: "flex", alignItems: "center", gap: 4, color: "#F59E0B" }}>
-                <Star size={10} fill="#F59E0B" />{exc.rating.toFixed(1)}
-              </span>
-            )}
+            ) : null}
           </div>
         </div>
       </div>
 
-      {/* ── Body ── */}
+      {/* BODY */}
       <div className={styles["rp-body"]}>
         <div className={styles["rp-details"]}>
           {[
-            { lbl: "Date",      val: fmtDate(r.date, true) },
-            { lbl: "Heure",     val: r.time },
+            { lbl: "Date", val: fmtDate(r.date, true) },
+            { lbl: "Heure", val: r.time },
             { lbl: "Personnes", val: `${r.people_count}p` },
-            { lbl: "Durée",     val: `${exc?.duration_hours ?? "–"}h` },
-          ].map(({ lbl, val }) => (
-            <div key={lbl} className={styles["rp-detail"]}>
-              <p className={styles["rp-detail-lbl"]}>{lbl}</p>
-              <p className={styles["rp-detail-val"]}>{val}</p>
+            { lbl: "Durée", val: `${exc?.duration_hours ?? "–"}h` },
+          ].map((d) => (
+            <div key={d.lbl} className={styles["rp-detail"]}>
+              <p>{d.lbl}</p>
+              <p>{d.val}</p>
             </div>
           ))}
         </div>
 
-        {/* Countdown timer */}
+        {/* TIMER */}
         {timeLeftCard !== null && timeLeftCard > 0 && (
-          <div className={`${styles["rp-timer-bar"]} ${cardUrgent ? styles["rp-timer-urgent"] : styles["rp-timer-normal"]}`}>
-            <span style={{ fontSize: 11, fontWeight: 600, color: timerColor, display: "flex", alignItems: "center", gap: 5 }}>
-              <Timer size={11} />
-              {cardUrgent ? "Urgent — expiré bientôt" : "Paiement requis avant"}
+          <div
+            className={styles["rp-timer-bar"]}
+            style={{ color: timerColor }}
+          >
+            <span>
+              <Timer size={11} />{" "}
+              {cardUrgent ? "Urgent" : "Paiement requis"}
             </span>
-            <span style={{ fontSize: 13, fontFamily: "monospace", fontWeight: 800, color: timerColor }}>
-              {Math.floor(timeLeftCard / 60).toString().padStart(2, "0")}:
-              {(timeLeftCard % 60).toString().padStart(2, "0")}
+
+            <span style={{ fontFamily: "monospace" }}>
+              {String(Math.floor(timeLeftCard / 60)).padStart(2, "0")}:
+              {String(timeLeftCard % 60).padStart(2, "0")}
             </span>
           </div>
         )}
 
+        {/* EXPIRED */}
         {timeLeftCard === 0 && (
-          <div style={{ padding: "9px 12px", background: "rgba(239,68,68,.08)", border: "1px solid rgba(239,68,68,.2)", borderRadius: 10, marginBottom: 14 }}>
-            <span style={{ fontSize: 11, color: "#EF4444", fontWeight: 700 }}>Délai expiré — annulée automatiquement</span>
+          <div style={{ color: "#EF4444", fontWeight: 700 }}>
+            Délai expiré
           </div>
         )}
       </div>
 
-      {/* ── Footer ── */}
+      {/* FOOTER */}
       <div className={styles["rp-footer"]}>
         <div>
-          <p className={styles["rp-price-label"]}>Total</p>
-          <p className={styles["rp-price-amount"]}>
-            {r.total_price} <span style={{ fontSize: 12, fontWeight: 500, color: "#94A3B8" }}>EUR</span>
+          <p>Total</p>
+          <p>
+            {r.total_price} <span>EUR</span>
           </p>
-          <p className={styles["rp-booking-code"]}>#{r.booking_code}</p>
+          <p>#{r.booking_code}</p>
         </div>
 
         {!paid && r.status !== "cancelled" && timeLeftCard !== 0 && (
           <button onClick={onPay} className={styles["rp-pay-btn"]}>
-            <CreditCard size={13} strokeWidth={2} /> Payer
+            <CreditCard size={13} /> Payer
           </button>
         )}
 
-        {paid && r.status !== "cancelled" && (
+        {paid && (
           <div style={{ display: "flex", gap: 8 }}>
-            <Link
-              href={`/excursions/${exc?.id}`}
-              style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "10px 16px", background: "rgba(13,148,136,.08)", color: "#0D9488", border: "1px solid rgba(13,148,136,.2)", borderRadius: 10, fontSize: 12, fontWeight: 700, textDecoration: "none" }}
-            >
+            <Link href={`/excursions/${exc?.id}`}>
               <TrendingUp size={12} /> Détails
             </Link>
-            
-            <button
-              onClick={() => setShowCancellationModal(true)}
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 6,
-                padding: "10px 16px",
-                background: "rgba(239,68,68,.08)",
-                color: "#EF4444",
-                border: "1px solid rgba(239,68,68,.2)",
-                borderRadius: 10,
-                fontSize: 12,
-                fontWeight: 700,
-                textDecoration: "none",
-                cursor: "pointer",
-                transition: "all 0.2s",
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.background = "rgba(239,68,68,.12)";
-                e.currentTarget.style.borderColor = "rgba(239,68,68,.4)";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.background = "rgba(239,68,68,.08)";
-                e.currentTarget.style.borderColor = "rgba(239,68,68,.2)";
-              }}
-            >
+
+            <button onClick={() => setShowCancellationModal(true)}>
               <Trash2 size={12} /> Annuler
             </button>
           </div>
         )}
       </div>
 
-      {/* ── Cancellation Modal ── */}
+      {/* MODAL */}
       {showCancellationModal && (
         <CancellationModal
           reservation={r}
           onClose={() => setShowCancellationModal(false)}
           onCancelled={() => {
             setShowCancellationModal(false);
-            if (onRefresh) onRefresh();
+            onRefresh?.();
           }}
         />
       )}
