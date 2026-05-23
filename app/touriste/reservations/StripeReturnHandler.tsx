@@ -129,27 +129,9 @@ export function StripeReturnHandler() {
               Votre réservation est confirmée.<br />
               Un email de confirmation vous a été envoyé.
             </p>
-            <p style={{ fontSize: 12, color: "#94A3B8", margin: "0 0 20px" }}>
+            <p style={{ fontSize: 12, color: "#94A3B8", margin: 0 }}>
               Redirection dans {SUCCESS_DISPLAY_MS / 1000} secondes…
             </p>
-            <button
-              onClick={() => router.replace("/touriste/reservations")}
-              style={{
-                background: "#0D9488",
-                color: "#FFFFFF",
-                border: "none",
-                borderRadius: 8,
-                padding: "10px 24px",
-                fontSize: 14,
-                fontWeight: 600,
-                cursor: "pointer",
-                transition: "background 0.2s",
-              }}
-              onMouseOver={(e) => (e.currentTarget.style.background = "#0B7A70")}
-              onMouseOut={(e) => (e.currentTarget.style.background = "#0D9488")}
-            >
-              Aller à mes réservations
-            </button>
           </>
         )}
 
