@@ -71,23 +71,7 @@ export async function POST(req: NextRequest) {
     const net_amount     = amount - platform_fee;
     const prestataire_id = reservation.excursions?.prestataire_id ?? null;
 
-    // ── 3. Mettre à jour la réservation ───────────────────────────
-    // FIX : payment_status="paid" était manquant → page réservations toujours "pending"
-    const { error: reservationError } = await supabase
-      .from("reservations")
-      .update({
-        status:         "confirmed",
-        payment_status: "paid",
-        paid_at:        new Date().toISOString(),
-      })
-      .eq("id", reservation_id);
-
-    if (reservationError) {
-      console.error("Erreur mise à jour réservation:", reservationError);
-      return NextResponse.json({ error: "Erreur BDD réservation" }, { status: 500 });
-    }
-
-    // ── 4. Insérer dans la table paiements ────────────────────────
+    // ── 3. Insérer dans la table paiements ────────────────────────
     const { error: paiementError } = await supabase
       .from("paiements")
       .upsert({
@@ -103,6 +87,21 @@ export async function POST(req: NextRequest) {
 
     if (paiementError) {
       console.error("Erreur création paiement (non bloquant):", paiementError);
+    }
+
+    // ── 4. Mettre à jour la réservation ───────────────────────────
+    // Non bloquant : le paiement doit rester enregistré même si un trigger SQL est cassé.
+    const { error: reservationError } = await supabase
+      .from("reservations")
+      .update({
+        status:         "confirmed",
+        payment_status: "paid",
+        paid_at:        new Date().toISOString(),
+      })
+      .eq("id", reservation_id);
+
+    if (reservationError) {
+      console.error("Erreur mise à jour réservation (non bloquante):", reservationError);
     }
 
     // ── 5. Envoyer un email de confirmation de réservation ────────
