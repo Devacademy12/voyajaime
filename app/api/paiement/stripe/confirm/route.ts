@@ -71,7 +71,6 @@ export async function POST(req: NextRequest) {
     const paiementPayload = {
       reservation_id: reservationId,
       prestataire_id: prestataireId,
-      excursion_id: excursionId,
       touriste_id: reservation.touriste_id ?? null,
       amount,
       platform_fee: platformFee,
