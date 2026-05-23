@@ -70,8 +70,6 @@ export async function POST(req: NextRequest) {
     const platform_fee   = reservation.platform_fee;
     const net_amount     = amount - platform_fee;
     const prestataire_id = reservation.excursions?.prestataire_id ?? null;
-    const excursion_id   = reservation.excursion_id ?? reservation.excursions?.id ?? null;
-    const touriste_id    = reservation.touriste_id ?? null;
 
     // ── 3. Mettre à jour la réservation ───────────────────────────
     // FIX : payment_status="paid" était manquant → page réservations toujours "pending"
@@ -90,14 +88,10 @@ export async function POST(req: NextRequest) {
     }
 
     // ── 4. Insérer dans la table paiements ────────────────────────
-    // FIX : touriste_id + excursion_id étaient manquants
-    // → dashboards admin et prestataire ne pouvaient pas joindre les données
     const { error: paiementError } = await supabase
       .from("paiements")
       .upsert({
         reservation_id,
-        excursion_id,
-        touriste_id,
         prestataire_id,
         amount,
         platform_fee,
