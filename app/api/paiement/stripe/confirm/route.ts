@@ -110,24 +110,7 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // ── 3. Mettre à jour la réservation ──────────────────────────────
-    const { error: resaError } = await supabaseAdmin
-      .from("reservations")
-      .update({
-        status:         "confirmed",
-        payment_status: "paid",
-        payment_method: "stripe",
-        paid_at:        new Date().toISOString(),
-      })
-      .eq("id", reservationId)
-      .neq("status", "cancelled");
-
-    if (resaError) {
-      console.error("[confirm] update reservations:", resaError.message);
-      return NextResponse.json({ error: resaError.message }, { status: 500 });
-    }
-
-    // ── 4. Mettre à jour reservation_itineraires (non bloquant) ─────
+    // ── 3. Mettre à jour reservation_itineraires (non bloquant) ─────
     const { error: itinError } = await supabaseAdmin
       .from("reservation_itineraires")
       .update({ payment_status: "paid" })
