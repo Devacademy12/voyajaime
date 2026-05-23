@@ -39,6 +39,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "reservation_id manquant dans metadata" }, { status: 400 });
     }
 
+    const dbWarnings: string[] = [];
+
     // ── 2. Upsert paiements (admin — bypass RLS) ─────────────────────
     const { error: upsertError } = await supabaseAdmin
       .from("paiements")
@@ -57,7 +59,7 @@ export async function POST(req: NextRequest) {
 
     if (upsertError) {
       console.error("[confirm] upsert paiements:", upsertError.message);
-      return NextResponse.json({ error: upsertError.message }, { status: 500 });
+      dbWarnings.push(`paiements: ${upsertError.message}`);
     }
 
     // ── 3. Mettre à jour la réservation ──────────────────────────────
@@ -74,16 +76,25 @@ export async function POST(req: NextRequest) {
 
     if (resaError) {
       console.error("[confirm] update reservations:", resaError.message);
-      return NextResponse.json({ error: resaError.message }, { status: 500 });
+      dbWarnings.push(`reservations: ${resaError.message}`);
     }
 
     // ── 4. Mettre à jour reservation_itineraires (non bloquant) ─────
-    await supabaseAdmin
+    const { error: itinError } = await supabaseAdmin
       .from("reservation_itineraires")
       .update({ payment_status: "paid" })
       .eq("reservation_id", reservationId);
 
-    return NextResponse.json({ paid: true, reservation_id: reservationId });
+    if (itinError) {
+      console.warn("[confirm] update reservation_itineraires:", itinError.message);
+      dbWarnings.push(`reservation_itineraires: ${itinError.message}`);
+    }
+
+    return NextResponse.json({
+      paid: true,
+      reservation_id: reservationId,
+      warnings: dbWarnings.length > 0 ? dbWarnings : undefined,
+    });
 
   } catch (err: any) {
     console.error("[confirm] erreur:", err);
