@@ -484,8 +484,8 @@ export default function ItinerairesClient() {
         photoMap[e.id]   = e.photos || [];
         detailsMap[e.id] = {
           meeting_point: e.meeting_point,
-          start_date:    e.start_date,
-          start_time:    e.depart_time,
+          start_date:    null,
+          start_time:    null,
           city:          e.city,
           title:         e.title,
         };
@@ -498,20 +498,20 @@ export default function ItinerairesClient() {
       if (candidateIds.size > 0) {
         const { data: excs } = await sb
           .from("excursions")
-          .select("id, title, city, photos, meeting_point, start_date, depart_time")
+          .select("id, title, city, photos, meeting_point")
           .in("id", Array.from(candidateIds));
         excs?.forEach(indexExc);
       }
       if (planCities.size > 0) {
         const { data: excsByCity } = await sb
           .from("excursions")
-          .select("id, title, city, photos, meeting_point, start_date, depart_time")
+          .select("id, title, city, photos, meeting_point")
           .in("city", Array.from(planCities));
         excsByCity?.forEach(indexExc);
       }
       const { data: allExcs } = await sb
         .from("excursions")
-        .select("id, title, city, photos, meeting_point, start_date, depart_time")
+        .select("id, title, city, photos, meeting_point")
         .limit(500);
       allExcs?.forEach(indexExc);
 

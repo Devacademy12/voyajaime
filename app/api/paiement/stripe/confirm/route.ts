@@ -73,6 +73,12 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: resaError.message }, { status: 500 });
     }
 
+    // ── 4. Mettre à jour reservation_itineraires (non bloquant) ─────
+    await supabaseAdmin
+      .from("reservation_itineraires")
+      .update({ payment_status: "paid" })
+      .eq("reservation_id", reservationId);
+
     return NextResponse.json({ paid: true, reservation_id: reservationId });
 
   } catch (err: any) {

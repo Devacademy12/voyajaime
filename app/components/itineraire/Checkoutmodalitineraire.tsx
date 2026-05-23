@@ -658,21 +658,29 @@ export default function CheckoutModalItineraire({
           .select("id")
           .single();
 
-        if (insErr || !inserted) {
-          setErrorMsg(`Erreur insertion : ${insErr?.message ?? "inconnue"}`);
+        if (insErr || !inserted?.id) {
+          setErrorMsg(`Erreur insertion réservation : ${insErr?.message ?? "ID non retourné — vérifiez les policies RLS de la table reservations"}`);
           setStatus("error"); return;
         }
 
-        // Enregistrer dans itineraire_reservations
-        await supabase.from("itineraire_reservations").insert([{
+        // Enregistrer dans reservation_itineraires
+        const { error: itinResErr } = await supabase.from("reservation_itineraires").insert([{
           itineraire_id:  itineraireId,
           reservation_id: inserted.id,
           excursion_id:   p.exc.id,
-          day_number:     p.exc.plan_day || 1,
-          plan_time:      p.exc.plan_time || null,
-          plan_date:      p.exc.plan_date || null,
+          day_number:     p.exc.plan_day ?? 1,
+          plan_time:      p.exc.plan_time ?? null,
+          plan_date:      p.exc.plan_date ?? null,
           payment_status: "unpaid",
+          user_id:        user.id,
+          status:         "pending",
+          total_price:    tot + fee,
+          platform_fee:   fee,
         }]);
+        if (itinResErr) {
+          console.error("Erreur reservation_itineraires:", itinResErr.message);
+          // Non bloquant : la réservation principale est créée, on continue
+        }
 
         await supabase.rpc("decrement_slot", { exc_id: p.exc.id, date_str: p.selectedDate, qty: p.people });
         codes.push(code);
