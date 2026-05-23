@@ -55,10 +55,30 @@ export default async function TouristeReservations({
     </div>
   );
 
+  const reservationIds = (reservations || []).map((r) => r.id);
+  const { data: paiements } = reservationIds.length > 0
+    ? await supabase
+        .from("paiements")
+        .select("reservation_id, status, paid_at")
+        .in("reservation_id", reservationIds)
+    : { data: [] };
+
+  const paidMap = new Map<string, { status: string; paid_at: string | null }>();
+  (paiements || []).forEach((p: any) => {
+    if (p?.reservation_id && p.status === "paid") {
+      paidMap.set(p.reservation_id, {
+        status: p.status,
+        paid_at: p.paid_at ?? null,
+      });
+    }
+  });
+
   const formattedReservations: Reservation[] = (reservations || [])
     .filter(r => r.excursion !== null && r.excursion !== undefined)
     .map(r => {
       const excursionData = Array.isArray(r.excursion) ? r.excursion[0] : r.excursion;
+      const paymentRow = paidMap.get(r.id);
+      const isPaid = r.payment_status === "paid" || paymentRow?.status === "paid";
       return {
         id: r.id,
         booking_code: r.booking_code,
@@ -67,10 +87,10 @@ export default async function TouristeReservations({
         people_count: r.people_count,
         total_price: r.total_price,
         platform_fee: r.platform_fee,
-        status: r.status,
-        payment_status: r.payment_status || null,
+        status: isPaid && r.status === "pending" ? "confirmed" : r.status,
+        payment_status: isPaid ? "paid" : (r.payment_status || null),
         payment_deadline: r.payment_deadline || null,
-        paid_at: (r as any).paid_at || null,   // ✅ AJOUTÉ
+        paid_at: (r as any).paid_at || paymentRow?.paid_at || null,
         excursion: excursionData ? {
           id: excursionData.id,
           title: excursionData.title || "Excursion inconnue",
