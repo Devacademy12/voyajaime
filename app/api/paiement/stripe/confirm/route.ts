@@ -15,7 +15,6 @@ export async function POST(req: NextRequest) {
     const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
     if (!stripeSecretKey || !supabaseUrl || !supabaseServiceRoleKey) {
-      console.error("Variables d'environnement Stripe/Supabase manquantes");
       return NextResponse.json({ error: "Configuration serveur incomplète" }, { status: 500 });
     }
 
@@ -35,39 +34,30 @@ export async function POST(req: NextRequest) {
     }
 
     const reservationId = session.metadata?.reservation_id;
-
     if (!reservationId) {
       return NextResponse.json({ error: "reservation_id manquant dans metadata" }, { status: 400 });
     }
 
+    // ── 2. Récupérer la réservation ─────────────────────────────────
     const { data: reservationData, error: reservationFetchError } = await supabaseAdmin
       .from("reservations")
-      .select(`
-        id,
-        touriste_id,
-        excursion_id,
-        total_price,
-        platform_fee,
-        excursions ( id, prestataire_id )
-      `)
+      .select(`id, touriste_id, excursion_id, total_price, platform_fee, excursions(id, prestataire_id)`)
       .eq("id", reservationId)
       .single();
 
     if (reservationFetchError || !reservationData) {
-      console.error("[confirm] reservation fetch:", reservationFetchError?.message);
       return NextResponse.json({ error: "Réservation introuvable" }, { status: 404 });
     }
 
     const reservation = reservationData as any;
     const excursion = firstRow(reservation.excursions as any);
     const prestataireId = excursion?.prestataire_id ?? null;
-    const excursionId = reservation.excursion_id ?? excursion?.id ?? null;
     const amount = Number(reservation.total_price ?? session.amount_total! / 100);
     const platformFee = Number(reservation.platform_fee ?? (amount * 0.1).toFixed(2));
     const netAmount = Number((amount - platformFee).toFixed(2));
     const paidAt = new Date().toISOString();
 
-    // ── 2. Enregistrer le paiement en base ─────────────────────────
+    // ── 3. Enregistrer le paiement ──────────────────────────────────
     const paiementPayload = {
       reservation_id: reservationId,
       prestataire_id: prestataireId,
@@ -76,38 +66,35 @@ export async function POST(req: NextRequest) {
       net_amount: netAmount,
       status: "paid",
       paid_at: paidAt,
+      stripe_session_id: session.id,
     };
 
-    const { data: existingPaiement, error: existingPaiementError } = await supabaseAdmin
+    const { data: existingPaiement } = await supabaseAdmin
       .from("paiements")
       .select("id")
       .eq("reservation_id", reservationId)
       .maybeSingle();
 
-    if (existingPaiementError) {
-      console.error("[confirm] select paiements:", existingPaiementError.message);
-      return NextResponse.json({ error: existingPaiementError.message }, { status: 500 });
+    if (existingPaiement?.id) {
+      await supabaseAdmin.from("paiements").update(paiementPayload).eq("id", existingPaiement.id);
+    } else {
+      await supabaseAdmin.from("paiements").insert(paiementPayload);
     }
 
-    if (existingPaiement?.id) {
-      const { error: updatePaiementError } = await supabaseAdmin
-        .from("paiements")
-        .update(paiementPayload)
-        .eq("id", existingPaiement.id);
+    // ── 4. ✅ METTRE À JOUR LA RÉSERVATION ──────────────────────────
+    const { error: reservationUpdateError } = await supabaseAdmin
+      .from("reservations")
+      .update({
+        status:         "confirmed",
+        payment_status: "paid",
+        paid_at:        paidAt,
+      })
+      .eq("id", reservationId)
+      .neq("status", "cancelled");
 
-      if (updatePaiementError) {
-        console.error("[confirm] update paiements:", updatePaiementError.message);
-        return NextResponse.json({ error: updatePaiementError.message }, { status: 500 });
-      }
-    } else {
-      const { error: insertPaiementError } = await supabaseAdmin
-        .from("paiements")
-        .insert(paiementPayload);
-
-      if (insertPaiementError) {
-        console.error("[confirm] insert paiements:", insertPaiementError.message);
-        return NextResponse.json({ error: insertPaiementError.message }, { status: 500 });
-      }
+    if (reservationUpdateError) {
+      console.error("[confirm] update reservation:", reservationUpdateError.message);
+      // Non bloquant
     }
 
     return NextResponse.json({ paid: true, reservation_id: reservationId });
