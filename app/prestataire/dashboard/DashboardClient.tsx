@@ -407,11 +407,132 @@ function ExcursionRatingsChart({ excursions }: { excursions: Record<string, unkn
     </div>
   );
 }
+/* ─── CSS ───────────────────────────────────────────────────── */
+const CSS = `
+  @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(12px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .pw {
+    font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+    background: #F5F7FA;
+    min-height: 100vh;
+    padding: 28px 36px 64px;
+    width: 100%;
+  }
+
+  /* ── Header ── */
+  .pw-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 28px;
+    animation: fadeUp .35s ease both;
+    flex-wrap: wrap;
+  }
+  .pw-header-eyebrow {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: #EFF9FB; border: 1px solid rgba(43,150,168,.22);
+    border-radius: 20px; padding: 4px 12px;
+    font-size: 11px; font-weight: 700; color: #2B96A8;
+    text-transform: uppercase; letter-spacing: .08em;
+    margin-bottom: 10px;
+  }
+  .pw-header-title {
+    font-size: clamp(22px, 4vw, 30px); font-weight: 800;
+    color: #053366; line-height: 1.1; letter-spacing: -.02em;
+  }
+  .pw-header-sub {
+    font-size: 13px; color: #94A3B8; margin-top: 5px; font-weight: 500;
+  }
+  .pw-header-badge {
+    display: flex; align-items: center; gap: 8px;
+    background: #fff; border: 1.5px solid #E2E8F0; border-radius: 12px;
+    padding: 10px 16px; flex-shrink: 0; align-self: flex-start;
+  }
+  .pw-header-badge-avatar {
+    width: 32px; height: 32px; border-radius: 8px;
+    background: linear-gradient(135deg, #053366, #2B96A8);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 800; color: #fff;
+  }
+  .pw-header-badge-name {
+    font-size: 13px; font-weight: 700; color: #053366;
+  }
+  .pw-header-badge-role {
+    font-size: 11px; color: #94A3B8; font-weight: 500;
+  }
+
+  /* ── Metrics grid ── */
+  .pw-metrics {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 12px; margin-bottom: 24px;
+    animation: fadeUp .4s ease both;
+  }
+  .pw-metric {
+    background: #fff; border-radius: 16px; border: 1.5px solid #E2E8F0;
+    padding: 18px 20px;
+    transition: box-shadow .2s, transform .2s; cursor: default;
+  }
+  .pw-metric:hover { box-shadow: 0 6px 20px rgba(5,51,102,.07); transform: translateY(-2px); }
+  .pw-metric-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+  .pw-metric-icon {
+    width: 38px; height: 38px; border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .pw-metric-trend {
+    font-size: 10px; font-weight: 700; color: #2B96A8;
+    background: #EFF9FB; border-radius: 6px; padding: 2px 6px;
+  }
+  .pw-metric-num { font-size: 24px; font-weight: 800; color: #053366; line-height: 1; letter-spacing: -.02em; }
+  .pw-metric-lbl { font-size: 11px; color: #94A3B8; margin-top: 4px; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; }
+
+  /* ── Cards ── */
+  .pw-card {
+    background: #fff; border-radius: 16px; border: 1.5px solid #E2E8F0;
+    padding: 24px; animation: fadeUp .45s ease both;
+  }
+  .pw-grid {
+    display: grid; grid-template-columns: 1fr 1.2fr; gap: 24px; margin-bottom: 24px;
+  }
+
+  .pw-btn-group {
+    display: flex; gap: 10px; margin-bottom: 24px; flex-wrap: wrap;
+    animation: fadeUp .5s ease both;
+  }
+  .pw-btn {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 10px 20px; border-radius: 12px; font-size: 13.5px; font-weight: 700;
+    cursor: pointer; transition: all .2s; border: none; font-family: inherit;
+    text-decoration: none;
+  }
+  .pw-btn-primary {
+    background: #053366; color: #fff;
+    box-shadow: 0 4px 12px rgba(5,51,102,0.15);
+  }
+  .pw-btn-primary:hover { background: #042952; transform: translateY(-1px); }
+  .pw-btn-secondary {
+    background: #fff; color: #053366; border: 1.5px solid #E2E8F0;
+  }
+  .pw-btn-secondary:hover { background: #F8FAFC; border-color: #CBD5E1; }
+
+  @media (max-width: 1024px) {
+    .pw-grid { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 768px) {
+    .pw { padding: 20px 16px; }
+    .pw-metrics { grid-template-columns: repeat(2, 1fr); }
+  }
+`;
+
 // ─── Composant principal ─────────────────────────────────────────────────────
 export default function DashboardClient({ profile, excursions, reservations, paiements }: Props) {
-  const revenue    = paiements?.filter(p => p.status === "paid").reduce((s, p) => s + Number(p.net_amount), 0) || 0;
   const pending    = reservations?.filter(r => r.status === "pending").length || 0;
-  const activeExc  = excursions?.filter(e => e.is_active).length || 0;
   const avgRating  = excursions.length
     ? (excursions.reduce((s, e) => s + (Number(e.rating) || 0), 0) / excursions.length).toFixed(1)
     : "—";
@@ -421,123 +542,92 @@ export default function DashboardClient({ profile, excursions, reservations, pai
     : 0;
 
   const name = String(profile?.agency_name || profile?.full_name || "Prestataire");
+  const initials = name.split(" ").map((n: string) => n[0]).join("").toUpperCase().slice(0, 2);
 
   const stats = [
-    { label: "Réservations totales", value: totalReservations, change: "+12%",              icon: <BookOpen size={22} strokeWidth={1.8}/>, color: "#02AFCF", bg: "rgba(2,175,207,.1)"   },
-    { label: "Taux complétion",       value: `${completionRate}%`, change: "+5%",           icon: <CheckCircle2 size={22} strokeWidth={1.8}/>, color: "#22C55E", bg: "rgba(34,197,94,.1)"  },
-    { label: "En attente",            value: pending, change: pending > 0 ? `${pending} à traiter` : "0", icon: <Clock size={22} strokeWidth={1.8}/>, color: "#F59E0B", bg: "rgba(245,158,11,.1)" },
-    { label: "Note moyenne",          value: avgRating, change: `${avgRating}/5`,           icon: <Star size={22} strokeWidth={1.8}/>, color: "#8B5CF6", bg: "rgba(139,92,246,.1)"  },
+    { label: "Réservations", value: totalReservations, trend: "+12%", icon: <BookOpen size={18}/>, color: "#053366", bg: "#EFF6FF" },
+    { label: "Taux complétion", value: `${completionRate}%`, trend: "+5%", icon: <CheckCircle2 size={18}/>, color: "#059669", bg: "#ECFDF5" },
+    { label: "En attente", value: pending, trend: pending > 0 ? "Action" : "OK", icon: <Clock size={18}/>, color: "#D97706", bg: "#FFFBEB" },
+    { label: "Note moyenne", value: avgRating, trend: "★", icon: <Star size={18}/>, color: "#7C3AED", bg: "#F5F3FF" },
   ];
 
   return (
-    <div style={{ fontFamily: "'DM Sans',system-ui,sans-serif", background: "#F8FAFF", minHeight: "100vh" }}>
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Playfair+Display:wght@700;900&display=swap');
-        @keyframes fadeUp { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
-        .dp-card { animation: fadeUp .35s ease both; }
-        .dp-stat:hover { transform: translateY(-3px); box-shadow: 0 10px 30px rgba(5,51,102,.1) !important; transition: all .2s; }
-        .dp-action { display:inline-flex; align-items:center; gap:8px; padding:11px 22px; border-radius:12px; font-size:14px; font-weight:700; cursor:pointer; text-decoration:none; font-family:inherit; transition:all .2s; border:none; }
-        .dp-action-primary { background:linear-gradient(135deg,#02AFCF,#259FFC); color:white; box-shadow:0 4px 16px rgba(2,175,207,.35); }
-        .dp-action-primary:hover { box-shadow:0 6px 22px rgba(2,175,207,.5); transform:translateY(-2px); }
-        .dp-action-secondary { background:white; color:#053366; border:1.5px solid #DCE5FF !important; }
-        .dp-action-secondary:hover { background:#DCE5FF; }
-        .dp-resa-row { display:flex; justify-content:space-between; align-items:center; padding:13px 16px; background:white; border-radius:12px; border:1px solid #EEF2FF; transition:all .15s; }
-        .dp-resa-row:hover { background:#F8FAFF; border-color:#DCE5FF; }
-        .dp-stats { display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin-bottom:28px; }
-        .dp-actions { display:flex; gap:12px; margin-bottom:28px; flex-wrap:wrap; }
-        .dp-resa-inner { display:flex; justify-content:space-between; align-items:center; }
-        @media(max-width:900px) { .dp-stats { grid-template-columns:repeat(2,1fr); } }
-        @media(max-width:767px) {
-          .dp-stats   { grid-template-columns:repeat(2,1fr); gap:10px; }
-          .dp-actions { flex-direction:column; }
-          .dp-actions .dp-action { justify-content:center; width:100%; box-sizing:border-box; }
-          .dp-resa-inner { flex-direction:column; align-items:flex-start; gap:8px; }
-          .dp-resa-badge { align-self:flex-end; }
-          .dp-charts-grid { grid-template-columns:1fr !important; }
-          .dp-main-pad { padding:16px !important; }
-        }
-        @media(max-width:400px) {
-          .dp-stats { grid-template-columns:1fr 1fr; gap:8px; }
-        }
-      `}</style>
+    <div className="pw">
+      <style>{CSS}</style>
 
-      <div className="dp-main-pad" style={{ maxWidth: 1400, margin: "0 auto", padding: "32px 40px" }}>
-        {/* Header */}
-        <div className="dp-card" style={{ marginBottom: 32, animationDelay: "0s" }}>
-          <h1 style={{ fontSize: 28, fontWeight: 800, color: "#053366", margin: 0, letterSpacing: "-0.5px" }}>
-            Dashboard
-          </h1>
-          <p style={{ color: "#9CA3AF", fontSize: 14, margin: "4px 0 0" }}>
-            Bienvenue, {name}
-          </p>
+      {/* Header */}
+      <header className="pw-header">
+        <div className="pw-header-left">
+          <div className="pw-header-eyebrow">
+            <TrendingUp size={12} /> Vue d'ensemble
+          </div>
+          <h1 className="pw-header-title">Tableau de bord</h1>
+          <p className="pw-header-sub">Suivez vos performances et gérez vos activités.</p>
         </div>
 
-        {/* Stats */}
-        <div className="dp-stats">
-          {stats.map((s, i) => (
-            <div key={s.label} className="dp-card dp-stat" style={{
-              background: "white", borderRadius: 20, border: "1px solid #EBEBEB",
-              padding: "20px", display: "flex", flexDirection: "column", gap: 12,
-              boxShadow: "0 2px 10px rgba(5,51,102,.05)", animationDelay: `${i * .07}s`
-            }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <div style={{ width: 44, height: 44, borderRadius: 12, background: s.bg, display: "flex", alignItems: "center", justifyContent: "center", color: s.color }}>
-                  {s.icon}
-                </div>
-                <span style={{
-                  fontSize: 12, fontWeight: 600,
-                  color: s.change.includes("+") || s.change.includes("%") ? "#22C55E" : "#EF4444",
-                  background: s.change.includes("+") || s.change.includes("%") ? "rgba(34,197,94,.1)" : "rgba(239,68,68,.1)",
-                  padding: "4px 8px", borderRadius: 20
-                }}>
-                  {s.change}
-                </span>
+        <div className="pw-header-badge">
+          <div className="pw-header-badge-avatar">{initials}</div>
+          <div>
+            <div className="pw-header-badge-name">{name}</div>
+            <div className="pw-header-badge-role">Prestataire Partenaire</div>
+          </div>
+        </div>
+      </header>
+
+      {/* Quick Actions */}
+      <div className="pw-btn-group">
+        <a href="/prestataire/excursions/nouveau" className="pw-btn pw-btn-primary">
+          <Plus size={16} /> Nouvelle excursion
+        </a>
+        <a href="/prestataire/paiements-reservations" className="pw-btn pw-btn-secondary">
+          <CalendarDays size={16} /> Calendrier
+        </a>
+        <a href="/prestataire/messages" className="pw-btn pw-btn-secondary">
+          <Eye size={16} /> Mes messages
+        </a>
+      </div>
+
+      {/* Stats */}
+      <div className="pw-metrics">
+        {stats.map((s) => (
+          <div key={s.label} className="pw-metric">
+            <div className="pw-metric-top">
+              <div className="pw-metric-icon" style={{ background: s.bg, color: s.color }}>
+                {s.icon}
               </div>
-              <div>
-                <p style={{ fontSize: 13, color: "#6B7280", fontWeight: 500, marginBottom: 4 }}>{s.label}</p>
-                <p style={{ fontSize: 28, fontWeight: 900, color: "#053366", lineHeight: 1 }}>{String(s.value)}</p>
-              </div>
+              <div className="pw-metric-trend">{s.trend}</div>
             </div>
-          ))}
-        </div>
+            <div className="pw-metric-num">{s.value}</div>
+            <div className="pw-metric-lbl">{s.label}</div>
+          </div>
+        ))}
+      </div>
 
-        {/* Graphique + Calendrier */}
-        <div className="dp-card dp-charts-grid" style={{ marginBottom: 28, animationDelay: ".14s", display: "grid", gridTemplateColumns: "1fr 1.2fr", gap: 24 }}>
+      {/* Charts & Calendar */}
+      <div className="pw-grid">
+        <div className="pw-card">
           <ExcursionRatingsChart excursions={excursions} />
+        </div>
+        <div className="pw-card">
           <ReservationCalendar reservations={reservations} />
         </div>
+      </div>
 
-        {/* Actions */}
-        <div className="dp-card dp-actions" style={{ animationDelay: ".28s" }}>
-          <a href="/prestataire/excursions/nouveau" className="dp-action dp-action-primary">
-            <Plus size={16} /> Ajouter une excursion
-          </a>
-          <a href="/prestataire/paiements-reservations" className="dp-action dp-action-secondary">
-            <CalendarDays size={16} /> Voir les réservations
-          </a>
-          <a href="/prestataire/paiements-reservations" className="dp-action dp-action-secondary">
-            <Wallet size={16} /> Mes paiements
+      {/* Empty State */}
+      {reservations.length === 0 && (
+        <div className="pw-card" style={{ textAlign: "center", padding: "64px 20px" }}>
+          <div style={{ width: 56, height: 56, borderRadius: 16, background: "#EFF9FB", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 20px" }}>
+            <CalendarClock size={28} color="#2B96A8" />
+          </div>
+          <h3 style={{ fontSize: 18, fontWeight: 800, color: "#053366", marginBottom: 8 }}>C'est bien calme ici...</h3>
+          <p style={{ fontSize: 14, color: "#94A3B8", marginBottom: 24, maxWidth: 380, marginInline: "auto" }}>
+            Dès que vous recevrez vos premières réservations, elles apparaîtront ici. Assurez-vous que vos excursions sont bien publiées.
+          </p>
+          <a href="/prestataire/excursions/nouveau" className="pw-btn pw-btn-primary">
+            Publier une excursion
           </a>
         </div>
-
-        
-
-      
-
-        {/* Empty state */}
-        {reservations.length === 0 && (
-          <div className="dp-card" style={{ textAlign: "center", padding: "48px 20px", background: "white", borderRadius: 20, border: "1px solid #EEF2FF", animationDelay: ".36s" }}>
-            <div style={{ width: 56, height: 56, borderRadius: 16, background: "rgba(2,175,207,.1)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
-              <CheckCircle2 size={28} color="#02AFCF" strokeWidth={1.5} />
-            </div>
-            <p style={{ fontSize: 16, fontWeight: 700, color: "#053366", marginBottom: 8 }}>Aucune réservation pour l&apos;instant</p>
-            <p style={{ fontSize: 14, color: "#9CA3AF", marginBottom: 24 }}>Publiez vos excursions pour commencer à recevoir des réservations</p>
-            <a href="/prestataire/excursions/nouveau" className="dp-action dp-action-primary" style={{ display: "inline-flex" }}>
-              <Plus size={16} /> Créer une excursion
-            </a>
-          </div>
-        )}
-      </div>
+      )}
     </div>
   );
 }

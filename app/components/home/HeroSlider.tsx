@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, useCallback } from "react";
 import Link from "next/link";
-import { MapPin, ChevronDown, Sparkles, Map, Play, Volume2, VolumeX, Star, Calendar, Users, Compass } from "lucide-react";
+import { MapPin, ChevronDown, Sparkles, Map, Play, Volume2, VolumeX, Star, Calendar, Users, Compass, ArrowRight } from "lucide-react";
 import { createClient } from "@/lib/supabaseClient";
 import { ROUTES } from "@/app/lib/routes";
 
@@ -95,7 +95,7 @@ function rawToDisplay(raw: RawSlide): SlideDisplay {
     id: raw.id, type: raw.type, excursionId,
     imageUrl, videoUrl: raw.video_url || null,
     title, subtitle,
-    color: raw.custom_color || "#02AFCF",
+    color: raw.custom_color || "#2B96A8",
     categories,
   };
 }
@@ -298,112 +298,61 @@ export default function HomeSlider() {
 
         .btn-primary {
           display: inline-flex; align-items: center; gap: 12px;
-          padding: 16px 36px; border-radius: 100px;
-          background: linear-gradient(135deg, #02AFCF 0%, #0891b2 100%);
+          padding: 16px 36px; border-radius: 12px;
+          background: #2B96A8;
           color: white; font-size: 16px; font-weight: 700;
-          text-decoration: none; font-family: inherit'Inter', sans-serif;
+          text-decoration: none; font-family: 'DM Sans', sans-serif;
           transition: all 0.4s cubic-bezier(0.34, 1.2, 0.64, 1);
-          box-shadow: 0 8px 28px rgba(2, 175, 207, 0.35);
+          box-shadow: 0 8px 24px rgba(43, 150, 168, 0.3);
           white-space: nowrap;
           letter-spacing: 0.3px;
-          border: none;
+          border: 2px solid #2B96A8;
           cursor: pointer;
           position: relative;
           overflow: hidden;
         }
         
-        .btn-primary::before {
-          content: '';
-          position: absolute;
-          top: 0;
-          left: -100%;
-          width: 100%;
-          height: 100%;
-          background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
-          transition: left 0.5s ease;
-        }
-        
         .btn-primary:hover { 
           transform: translateY(-4px); 
-          box-shadow: 0 16px 40px rgba(2, 175, 207, 0.5);
+          background: transparent;
+          color: #2B96A8;
+          box-shadow: 0 16px 40px rgba(43, 150, 168, 0.2);
           gap: 14px;
-        }
-        
-        .btn-primary:hover::before {
-          left: 100%;
         }
         
         .btn-primary:active { transform: translateY(-2px); }
 
         .btn-ghost {
           display: inline-flex; align-items: center; gap: 12px;
-          padding: 16px 36px; border-radius: 100px;
-          background: rgba(255, 255, 255, 0.12);
+          padding: 16px 36px; border-radius: 12px;
+          background: rgba(255, 255, 255, 0.1);
           backdrop-filter: blur(12px);
-          border: 1.5px solid rgba(255, 255, 255, 0.4);
-          color: white; font-size: 16px; font-weight: 600;
-          text-decoration: none; font-family: inherit'Inter', sans-serif;
+          border: 2px solid rgba(255, 255, 255, 0.8);
+          color: white; font-size: 16px; font-weight: 700;
+          text-decoration: none; font-family: 'DM Sans', sans-serif;
           transition: all 0.4s cubic-bezier(0.34, 1.2, 0.64, 1);
           white-space: nowrap;
           letter-spacing: 0.3px;
           cursor: pointer;
-          position: relative;
-          overflow: hidden;
-        }
-        
-        .btn-ghost::before {
-          content: '';
-          position: absolute;
-          top: 50%;
-          left: 50%;
-          width: 0;
-          height: 0;
-          border-radius: 50%;
-          background: rgba(255, 255, 255, 0.2);
-          transform: translate(-50%, -50%);
-          transition: width 0.6s, height 0.6s;
         }
         
         .btn-ghost:hover { 
-          background: rgba(255, 255, 255, 0.2);
-          border-color: rgba(255, 255, 255, 0.7);
+          background: white;
+          color: #053366;
+          border-color: white;
           transform: translateY(-4px);
           gap: 14px;
-        }
-        
-        .btn-ghost:hover::before {
-          width: 300px;
-          height: 300px;
-        }
-        
-        .btn-ghost:active { transform: translateY(-2px); }
-
-        .dot-btn { 
-          background: none; 
-          border: none; 
-          cursor: pointer; 
-          padding: 8px;
-          transition: all 0.3s cubic-bezier(0.34, 1.2, 0.64, 1);
-        }
-        
-        .dot-btn:hover { 
-          transform: scale(1.2); 
-        }
-        
-        .dot-btn:hover .dot-inactive {
-          background: rgba(255, 255, 255, 0.8);
-          transform: scale(1.1);
         }
 
         .mute-btn {
           position: absolute; 
           bottom: 32px; 
           right: 32px;
-          background: rgba(0, 0, 0, 0.6); 
+          background: rgba(0, 0, 0, 0.5); 
           backdrop-filter: blur(12px);
-          border: 1px solid rgba(255, 255, 255, 0.2);
+          border: 1px solid rgba(255, 255, 255, 0.15);
           color: white; 
-          border-radius: 100px; 
+          border-radius: 50px; 
           padding: 10px 20px;
           cursor: pointer; 
           display: flex; 
@@ -411,7 +360,7 @@ export default function HomeSlider() {
           gap: 10px;
           font-size: 13px; 
           font-weight: 500; 
-          font-family: inherit'Inter', sans-serif;
+          font-family: 'DM Sans', sans-serif;
           transition: all 0.3s ease;
           z-index: 20;
         }
@@ -445,7 +394,7 @@ export default function HomeSlider() {
           position: "relative", 
           height: "100vh", 
           overflow: "hidden", 
-          fontFamily: "'Inter', system-ui, sans-serif" 
+          fontFamily: "'DM Sans', system-ui, sans-serif" 
         }}
         aria-label="Slider principal"
       >
@@ -460,8 +409,8 @@ export default function HomeSlider() {
             }}>
               <div style={{ 
                 width: 60, height: 60, 
-                border: "3px solid rgba(2,175,207,0.2)", 
-                borderTop: "3px solid #02AFCF", 
+                border: "3px solid rgba(43,150,168,0.2)", 
+                borderTop: "3px solid #2B96A8", 
                 borderRadius: "50%", 
                 animation: "spin .9s linear infinite" 
               }}/>
@@ -681,17 +630,17 @@ export default function HomeSlider() {
                 alignItems: "center",
               }}>
                 <a href="#chemins" className="btn-primary">
-                  <Sparkles size={18}/> 
+                  <Compass size={18}/> 
                   <span>Planifier mon voyage</span>
                 </a>
                 {slide.type === "excursion" && slide.excursionId
-                  ? <Link href={ROUTES.excursion(slide.excursionId)} className="btn-ghost">
+                  ? <Link href={ROUTES.excursion(slide.excursionId)} className="btn-ghost" style={{ gap: 10 }}>
                       <Map size={18}/> 
-                      <span>Découvrir</span>
+                      <span>Découvrir l&apos;excursion</span>
                     </Link>
-                  : <Link href={ROUTES.excursions} className="btn-ghost">
-                      <Compass size={18}/> 
-                      <span>Explorer</span>
+                  : <Link href={ROUTES.excursions} className="btn-ghost" style={{ gap: 10 }}>
+                      <ArrowRight size={18}/> 
+                      <span>Explorer le catalogue</span>
                     </Link>
                 }
               </div>

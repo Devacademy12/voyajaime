@@ -133,7 +133,7 @@ export default function PopularExcursions({
                       </div>
                       <div style={{
                         padding: "7px 14px",
-                        background: user ? "#02AFCF" : "#F3F4F6",
+                        background: user ? "#2B96A8" : "#F3F4F6",
                         color:      user ? "white"   : "#9CA3AF",
                         borderRadius: 10, fontSize: 12, fontWeight: 700,
                         display: "inline-flex", alignItems: "center", gap: 5,

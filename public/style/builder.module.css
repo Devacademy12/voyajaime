@@ -1125,6 +1125,172 @@
 .confirmBtn:hover { background: var(--teal); }
 .confirmBtn:disabled { background: #9CA3AF; cursor: not-allowed; }
 
+.dayHeaderActions {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.dayDatePill {
+  margin-left: 0.5rem;
+  font-size: 0.65rem;
+  font-weight: 500;
+  color: var(--teal);
+  background: var(--teal-soft);
+  padding: 0.1rem 0.4rem;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.dayDateBtnSmall {
+  display: flex;
+  align-items: center;
+  gap: 0.15rem;
+  border: 1px dashed var(--teal-mid);
+  background: transparent;
+  color: var(--teal);
+  font-size: 0.55rem;
+  font-weight: 600;
+  padding: 0.15rem 0.3rem;
+  border-radius: 3px;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.dayDateBtnSmall:hover {
+  background: var(--teal-soft);
+  border-style: solid;
+}
+
+.availabilityBadge {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.65rem;
+  font-weight: 600;
+  margin-top: 0.4rem;
+}
+.availOk { color: #059669; }
+.availKo { color: #DC2626; }
+
+.filterHeaderRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.dayContext {
+  font-size: 0.95rem;
+  color: var(--navy);
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: white;
+  padding: 0.5rem 1rem;
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border);
+}
+
+.dayContext svg {
+  color: var(--teal);
+}
+
+/* Stepper Completed State */
+.stepCompleted .stepCircle {
+  background: var(--teal) !important;
+  border-color: var(--teal) !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+}
+.stepCompleted::after {
+  background: var(--teal) !important;
+}
+
+/* Success View */
+.successView {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem 1rem;
+  min-height: 60vh;
+}
+.successBox {
+  background: white;
+  border-radius: var(--radius-xl);
+  padding: 3rem;
+  box-shadow: var(--shadow-lg);
+  max-width: 600px;
+  width: 100%;
+  text-align: center;
+}
+.successIcon {
+  margin-bottom: 1.5rem;
+  display: flex;
+  justify-content: center;
+}
+.successTitle {
+  font-family: 'Sora', sans-serif;
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--navy);
+  margin-bottom: 1rem;
+}
+.successDesc {
+  color: var(--text-2);
+  line-height: 1.6;
+  margin-bottom: 2rem;
+}
+.successActions {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+}
+.primaryBtn {
+  background: var(--teal);
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: var(--radius-md);
+  font-weight: 700;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.primaryBtn:hover {
+  background: var(--navy);
+  transform: translateY(-2px);
+}
+.secondaryBtn {
+  background: var(--teal-soft);
+  color: var(--teal);
+  border: 1px solid var(--teal-mid);
+  padding: 0.75rem 1.5rem;
+  border-radius: var(--radius-md);
+  font-weight: 700;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.secondaryBtn:hover {
+  background: var(--teal-mid);
+  color: white;
+}
+
+/* Summary Wrapper */
+.summaryWrapper {
+  animation: fadeIn 0.3s ease-out;
+}
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
 /* Note modal */
 .noteTitle {
   display: flex;
@@ -1336,4 +1502,450 @@
   .catTitle span:last-of-type { display: none; } /* hide "Excursions disponibles" text */
   .dayTabCity { display: none; }
   .helpBtn span { display: none; }
+}
+
+/* ── Restructuring for Image Match ───────────────────────── */
+.headerTitle {
+  font-size: clamp(28px, 4vw, 42px);
+  font-weight: 800;
+  color: #053366;
+  margin: 0 0 32px;
+  line-height: 1.2;
+  letter-spacing: -0.5px;
+  text-align: center;
+  
+}
+
+.stepperContainer {
+  max-width: 900px;
+  margin: 0 auto 3rem;
+  padding: 0 1rem;
+}
+
+.stepper {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: relative;
+  z-index: 1;
+}
+
+.stepper::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  height: 2.5px;
+  background: var(--navy);
+  transform: translateY(-50%);
+  z-index: -1;
+  opacity: 0.15;
+}
+
+.step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.8rem;
+  position: relative;
+  background: var(--surface);
+  padding: 0 0.5rem;
+}
+
+.stepCircle {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--white);
+  border: 2px solid var(--navy);
+  position: relative;
+  z-index: 2;
+  transition: all 0.3s ease;
+}
+
+.stepActive .stepCircle {
+  background: var(--navy);
+  box-shadow: 0 0 0 4px var(--surface), 0 0 0 6px var(--navy);
+}
+
+.stepLabel {
+  font-size: 0.70rem;
+  font-weight: 700;
+  color: var(--text-3);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+}
+
+.stepActive .stepLabel {
+  color: var(--navy);
+}
+
+.layoutMain {
+  display: grid;
+  grid-template-columns: 360px 1fr;
+  gap: 2.5rem;
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0 2rem 4rem;
+}
+
+.itineraryPanel {
+  background: var(--white);
+  border-radius: var(--radius-lg);
+  padding: 1.75rem;
+  box-shadow: 0 4px 20px rgba(5, 51, 102, 0.04);
+  height: fit-content;
+  border: 1px solid var(--border);
+}
+
+.itineraryTimeline {
+  position: relative;
+  padding-left: 1.5rem;
+  margin-top: 1rem;
+}
+
+.itineraryTimeline::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 2px;
+  background: var(--border);
+}
+
+.timelineItem {
+  position: relative;
+  margin-bottom: 2.5rem;
+}
+
+.timelineDot {
+  position: absolute;
+  left: -1.82rem;
+  top: 0.35rem;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--border);
+  border: 2px solid var(--white);
+  z-index: 2;
+}
+
+.timelineItemActive .timelineDot {
+  background: var(--teal);
+}
+
+.dayHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+}
+
+.dayTitle {
+  font-family: 'Sora', sans-serif;
+  font-size: 0.9rem;
+  font-weight: 800;
+  color: var(--navy);
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.dayCityName {
+  color: var(--teal);
+  margin-left: 0.5rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.dayAddBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.3rem 0.65rem;
+  background: var(--teal-soft);
+  color: var(--teal);
+  border: 1.5px solid var(--teal-mid);
+  border-radius: var(--radius-sm);
+  font-size: 0.68rem;
+  font-weight: 700;
+  cursor: pointer;
+  text-transform: uppercase;
+  transition: all 0.2s;
+}
+.dayAddBtn:hover {
+  background: var(--teal-mid);
+}
+
+.activitySlots {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.activitySlot {
+  background: var(--surface);
+  border: 1.5px dashed var(--border);
+  border-radius: var(--radius-md);
+  padding: 0.85rem;
+  text-align: center;
+  color: var(--text-3);
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.activitySlot:hover {
+  border-color: var(--teal);
+  color: var(--teal);
+  background: var(--teal-soft);
+}
+
+.excursionsPanel {
+  display: flex;
+  flex-direction: column;
+}
+
+.panelTop {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1.5rem;
+}
+
+.filtersRow {
+  display: flex;
+  gap: 0.8rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.filterSelect {
+  padding: 0.5rem 0.8rem;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-md);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: var(--text-2);
+  background: var(--white);
+  min-width: 120px;
+}
+
+.priceFilter {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-width: 150px;
+}
+
+.priceRangeLabel {
+  font-size: 0.72rem;
+  color: var(--text-3);
+  font-weight: 600;
+}
+
+.rangeInput {
+  width: 100%;
+  accent-color: var(--teal);
+}
+
+.searchExcursion {
+  position: relative;
+  flex: 1;
+  max-width: 240px;
+}
+
+.searchIconMatch {
+  position: absolute;
+  right: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-3);
+  pointer-events: none;
+}
+
+.searchInputMatch {
+  width: 100%;
+  padding: 0.5rem 2.2rem 0.5rem 1rem;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-md);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.82rem;
+  outline: none;
+}
+
+.saveBtnFixed {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.65rem 1.4rem;
+  background: #2B96A8;
+  color: var(--white);
+  border: none;
+  border-radius: var(--radius-md);
+  font-weight: 700;
+  font-size: 0.82rem;
+  cursor: pointer;
+  text-transform: uppercase;
+  transition: background 0.2s;
+}
+.saveBtnFixed:hover {
+  background: #237d8c;
+}
+
+.gridMatch {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1.5rem;
+  padding: 0.5rem;
+}
+
+.cardMatch {
+  background: var(--white);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: 0 4px 20px rgba(5, 51, 102, 0.08);
+  display: flex;
+  flex-direction: column;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 1px solid var(--border);
+  height: 100%;
+  min-height: 380px; /* Fixed minimum height for all cards */
+}
+
+.cardMatch:hover { 
+  transform: translateY(-8px);
+  box-shadow: 0 15px 35px rgba(5, 51, 102, 0.15);
+  border-color: var(--teal);
+}
+
+.cardImageMatch {
+  height: 180px; /* Increased height for better clarity */
+  position: relative;
+  overflow: hidden;
+  background: #f1f5f9;
+  flex-shrink: 0;
+}
+
+.cardImageMatch img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.6s ease;
+}
+
+.cardMatch:hover .cardImageMatch img {
+  transform: scale(1.1);
+}
+
+/* Specific overlay for availability status on image */
+.availabilityBadge {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.3rem 0.6rem;
+  border-radius: 99px;
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  backdrop-filter: blur(4px);
+}
+
+.availOk {
+  background: rgba(5, 150, 105, 0.9);
+  color: white;
+}
+
+.availKo {
+  background: rgba(217, 119, 6, 0.9);
+  color: white;
+}
+
+.cardInfoMatch {
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  flex: 1;
+}
+
+.cardTitleMatch {
+  font-family: 'Sora', sans-serif;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--navy);
+  margin: 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  line-height: 1.4;
+  min-height: 2.8em;
+}
+
+.cardDescMatch {
+  font-size: 0.8rem;
+  color: var(--text-2);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  line-height: 1.6;
+  margin-bottom: 0.5rem;
+  height: 3.2em;
+}
+
+.cardMetaMatch {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  font-size: 0.75rem;
+  color: var(--text-3);
+  margin-top: auto;
+  border-top: 1px solid var(--navy-soft);
+  padding-top: 0.75rem;
+}
+
+.cardFooterMatch {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 0.25rem;
+  padding-top: 0.75rem;
+}
+
+.priceMatch {
+  font-family: 'Sora', sans-serif;
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--teal);
+}
+
+.addBtnMatch {
+  padding: 0.6rem 1.2rem;
+  background: var(--navy);
+  color: var(--white);
+  border: none;
+  border-radius: var(--radius-md);
+  font-size: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+  text-transform: uppercase;
+  transition: all 0.2s;
+}
+
+.skeletonMatch {
+  height: 380px;
+  border-radius: var(--radius-lg);
+  background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
 }

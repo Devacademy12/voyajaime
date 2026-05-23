@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Bot, ClipboardList, Mountain, Map, Search, Sparkles, ArrowRight, Building2 } from "lucide-react";
+import { Compass, ClipboardList, Mountain, Map, Search, Stars, ArrowRight, Building2 } from "lucide-react";
 import { ROUTES } from "@/app/lib/routes";
 import { SlideExcursion, FALLBACK_IMG } from "@/lib/homeUtils";
 
@@ -41,34 +41,34 @@ export default function PathsSection({ slides, user, openAuth }: PathsSectionPro
         <div className="paths-container" style={{ display: "flex", gap: 20 }}>
 
           {/* Mode Assisté */}
-          <div className="path-card" style={{ background: "rgba(43,150,168,0.16)", borderColor: "rgba(43,150,168,0.38)" }}>
+          <div className="path-card" style={{ background: "rgba(43,150,168,0.16)", borderColor: "rgba(43,150,168,0.4)" }}>
             <div style={{
               display: "inline-flex", alignItems: "center", gap: 6,
               padding: "5px 12px", borderRadius: 20,
-              background: "rgba(43,150,168,0.28)", border: "1px solid rgba(43,150,168,0.5)",
+              background: "rgba(43,150,168,0.3)", border: "1px solid rgba(43,150,168,0.5)",
               alignSelf: "flex-start",
             }}>
-              <Sparkles size={11} color="#7EDCED" />
-              <span style={{ fontSize: 10, fontWeight: 800, color: "#7EDCED", letterSpacing: 1 }}>IA · RAPIDE</span>
+              <Stars size={11} color="#A5F3FC" />
+              <span style={{ fontSize: 10, fontWeight: 800, color: "#A5F3FC", letterSpacing: 1 }}>ASSISTANT · SUR-MESURE</span>
             </div>
 
             <div style={{ display: "flex", alignItems: "center", gap: 14, marginTop: 4 }}>
-              <Bot size={40} color="rgba(255,255,255,0.88)" style={{ flexShrink: 0 }} />
+              <Compass size={40} color="rgba(255,255,255,0.9)" style={{ flexShrink: 0 }} />
               <div>
                 <h3 style={{ fontFamily: "'Playfair Display',serif", fontSize: 26, fontWeight: 900, color: "white", marginBottom: 4, letterSpacing: "-0.5px" }}>
                   Mode Assisté
                 </h3>
-                <p style={{ fontSize: 13, color: "#7EDCED", fontWeight: 600 }}>Itinéraire généré par IA en 1 minute</p>
+                <p style={{ fontSize: 13, color: "#A5F3FC", fontWeight: 600 }}>Un itinéraire guidé par vos envies</p>
               </div>
             </div>
 
-            <p style={{ fontSize: 14, color: "rgba(255,255,255,0.7)", lineHeight: 1.7 }}>
-              Répondez à 3 questions simples. Notre IA génère votre itinéraire jour par jour, avec des alternatives locales.
+            <p style={{ fontSize: 14, color: "rgba(255,255,255,0.8)", lineHeight: 1.7 }}>
+              Répondez à quelques questions sur vos préférences. Nous préparons pour vous un itinéraire optimisé et local.
             </p>
             <Link
               href={ROUTES.ModeAssiste}
               className="path-card-btn"
-              style={{ background: "#2B96A8", color: "white", boxShadow: "0 6px 22px rgba(43,150,168,0.42)" }}
+              style={{ background: "#2B96A8", color: "white", boxShadow: "0 6px 22px rgba(43,150,168,0.42)", border: "2px solid #2B96A8" }}
             >
               Je veux qu&apos;on me propose <ArrowRight size={15} />
             </Link>
@@ -102,9 +102,9 @@ export default function PathsSection({ slides, user, openAuth }: PathsSectionPro
             <Link
               href="/modeLibre?mode=libre"
               className="path-card-btn"
-              style={{ background: "rgba(255,255,255,0.14)", border: "1.5px solid rgba(255,255,255,0.32)", color: "white" }}
+              style={{ background: "rgba(255,255,255,0.15)", border: "2px solid white", color: "white" }}
             >
-              Je veux décider moi-même <ArrowRight size={15} />
+              Je crée mon itinéraire <ArrowRight size={15} />
             </Link>
           </div>
 
@@ -136,9 +136,9 @@ export default function PathsSection({ slides, user, openAuth }: PathsSectionPro
             <Link
               href={ROUTES.excursions}
               className="path-card-btn"
-              style={{ background: "transparent", border: "1.5px solid rgba(255,255,255,0.28)", color: "rgba(255,255,255,0.82)" }}
+              style={{ background: "transparent", border: "2px solid rgba(255,255,255,0.6)", color: "white" }}
             >
-              Voir toutes les excursions <ArrowRight size={15} />
+              Découvrir le catalogue <ArrowRight size={15} />
             </Link>
           </div>
         </div>

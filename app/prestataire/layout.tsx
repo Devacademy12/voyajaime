@@ -18,16 +18,16 @@ export default async function PrestataireLayout({ children }: { children: React.
   if (!profile.is_validated) return <ValidationPending userId={user.id} profilComplete={!!profile.profil_complete} />;
 
   return (
-    <div style={{ minHeight: "100vh", background: "#F9FAFB" }}>
+    <div style={{ minHeight: "100vh", background: "#F5F7FA", fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
       <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+        
         .prestataire-main {
-          padding: 72px 16px 40px 16px;
           min-height: 100vh;
         }
         @media (min-width: 768px) {
           .prestataire-main {
-            margin-left: 240px;
-            padding: 36px 36px 48px 36px;
+            margin-left: 250px;
           }
         }
       `}</style>

@@ -964,6 +964,9 @@ export default function ModeAssiste() {
   const [excursions, setExcursions] = useState<Excursion[]>([]);
   const [dbLoading,  setDbLoading]  = useState(true);
 
+  const [user, setUser] = useState<{ id: string } | null>(null);
+  const [favorites, setFavorites] = useState<Set<string>>(new Set());
+
   const [itinerary, setItinerary]   = useState<Itinerary | null>(null);
   const [genError,  setGenError]    = useState("");
   const [loadingMsg, setLoadingMsg] = useState("");
@@ -1004,6 +1007,14 @@ export default function ModeAssiste() {
         setVilles((v||[]) as Ville[]);
         setCategories((c||[]) as Categorie[]);
         setExcursions((e||[]) as Excursion[]);
+
+        const { data: { user: authUser } } = await supabase.auth.getUser();
+        if (authUser) {
+          setUser({ id: authUser.id });
+          const { data: favs } = await supabase
+            .from("favoris").select("excursion_id").eq("touriste_id", authUser.id);
+          if (favs) setFavorites(new Set(favs.map((f: any) => f.excursion_id)));
+        }
       } catch {}
       finally { setDbLoading(false); }
     })();
@@ -1169,7 +1180,7 @@ setItinerary(validated);      setAppStep("itineraire");
   return (
     <div style={{ minHeight:"100vh", background:"#F6F9FB", fontFamily:"'DM Sans',system-ui,sans-serif" }}>
       <style>{CSS}</style>
-      <TouristeNav/>
+      <TouristeNav favCount={favorites.size} isLoggedIn={!!user} />
       <div style={{ paddingTop: 64 }}/>
 <DebugPanel
   webhookUrl={N8N_WEBHOOK_URL}

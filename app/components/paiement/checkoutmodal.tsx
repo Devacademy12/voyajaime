@@ -370,7 +370,7 @@ export default function CheckoutModal({ reservation, onClose, onPaid, autoStart 
               )}
 
               {/* ─── STEP 2 — PAIEMENT ─── */}
-              {(step === 2 || (autoStart && step === 2)) && (
+              {step === 2 && (
                 <>
                   <div className="co-header">
                     <div style={{ display: "flex", alignItems: "center", gap: 10 }}>

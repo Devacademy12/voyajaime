@@ -3,10 +3,6 @@
 //  Emplacement : /lib/routes.ts
 // ─────────────────────────────────────────────
 
-import ModeAssiste from "../modeAssister/page";
-import BuilderPage from "../modeLibre/builder/page";
-import ModeLibrePage from "../modeLibre/page";
-
 export const ROUTES = {
 
   // ── Public ──────────────────────────────────

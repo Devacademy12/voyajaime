@@ -13,7 +13,7 @@ const ICON_MAP: Record<string, React.ReactNode> = {
   map:    <MapPin size={20} strokeWidth={1.8} />,
   users:  <Users  size={20} strokeWidth={1.8} />,
 };
-const COLORS = ["#02AFCF", "#7C3AED", "#059669", "#E11D48"];
+const COLORS = ["#2B96A8", "#4A5568", "#053366", "#D97706"];
 
 interface MissionData {
   title: string | null;
@@ -50,43 +50,134 @@ interface AboutSectionProps {
 const CSS = `
   @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@400;500;600;700;800&display=swap');
 
-  .about-stat-card{
-    text-align:center;padding:24px 16px;border-radius:18px;
-    background:white;border:1.5px solid #EEF2FF;
-    transition:all .22s;position:relative;overflow:hidden;
+  .about-section {
+    padding: 100px 40px;
+    background: #FAFAF9; /* Beige léger, artisanal */
+    position: relative;
+    overflow: hidden;
   }
-  .about-stat-card::before{
-    content:'';position:absolute;top:0;left:0;right:0;height:3px;
-    background:linear-gradient(90deg,#02AFCF,#053366);
+
+  /* Décoration d'arrière-plan discrète */
+  .about-section::after {
+    content: '';
+    position: absolute;
+    bottom: -50px;
+    right: -50px;
+    width: 300px;
+    height: 300px;
+    background: radial-gradient(circle, rgba(43,150,168,0.05) 0%, transparent 70%);
+    border-radius: 50%;
+    z-index: 0;
   }
-  .about-stat-card:hover{transform:translateY(-4px);box-shadow:0 10px 28px rgba(2,175,207,.12)}
 
-  .about-value-card{
-    border-radius:16px;padding:20px 22px;border:1.5px solid #EEF2FF;
-    background:white;transition:all .22s;
-    display:flex;align-items:flex-start;gap:14px;
+  .about-stat-card {
+    text-align: center;
+    padding: 32px 20px;
+    border-radius: 24px;
+    background: white;
+    border: 1px solid #F3F4F6;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 4px 20px rgba(0,0,0,0.03);
   }
-  .about-value-card:hover{transform:translateY(-3px);box-shadow:0 8px 24px rgba(0,0,0,.07)}
-
-  .about-link{
-    display:inline-flex;align-items:center;gap:7px;
-    font-size:14px;font-weight:700;color:#02AFCF;
-    text-decoration:none;transition:gap .18s;
+  .about-stat-card:hover {
+    transform: translateY(-8px);
+    border-color: #2B96A8;
+    box-shadow: 0 20px 40px rgba(43,150,168,0.08);
   }
-  .about-link:hover{gap:12px}
 
-  .rich-preview p{margin-bottom:12px;line-height:1.78;font-size:15px;color:#374151}
-  .rich-preview strong{font-weight:700;color:#111827}
-  .rich-preview em{font-style:italic}
-  .rich-preview blockquote{border-left:3px solid #02AFCF;padding-left:14px;color:#6B7280;font-style:italic;margin:12px 0}
-
-  .about-accent-line{width:30px;height:3px;background:linear-gradient(90deg,#02AFCF,#7C3AED);border-radius:2px}
-
-  @media(max-width:900px){
-    .about-main-grid{grid-template-columns:1fr!important}
+  .about-value-card {
+    border-radius: 20px;
+    padding: 24px;
+    border: 1px solid #F3F4F6;
+    background: white;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.02);
   }
-  @media(max-width:640px){
-    .about-stats-grid{grid-template-columns:1fr 1fr!important}
+  .about-value-card:hover {
+    border-color: #2B96A8;
+    transform: translateX(8px);
+    background: #F0F9FA;
+  }
+
+  .about-eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 3px;
+    color: #2B96A8;
+    text-transform: uppercase;
+    margin-bottom: 20px;
+  }
+  .about-eyebrow::before {
+    content: '';
+    width: 30px;
+    height: 2px;
+    background: #2B96A8;
+    border-radius: 2px;
+  }
+
+  .about-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 22px;
+    font-size: 14px;
+    font-weight: 700;
+    color: #2B96A8;
+    text-decoration: none;
+    transition: all 0.3s;
+    border: 1.5px solid #2B96A8;
+    border-radius: 12px;
+  }
+  .about-link:hover {
+    gap: 12px;
+    background: #2B96A8;
+    color: white;
+  }
+
+  .about-btn-primary {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 28px;
+    background: #2B96A8;
+    color: white;
+    border-radius: 16px;
+    font-size: 15px;
+    font-weight: 700;
+    text-decoration: none;
+    transition: all 0.3s;
+    box-shadow: 0 8px 24px rgba(43,150,168,0.25);
+    border: 2px solid #2B96A8;
+  }
+  .about-btn-primary:hover {
+    background: transparent;
+    color: #2B96A8;
+    transform: translateY(-2px);
+    box-shadow: 0 12px 32px rgba(43,150,168,0.2);
+  }
+
+  .rich-preview {
+    font-size: 17px;
+    color: #4B5563;
+    line-height: 1.8;
+    margin-bottom: 40px;
+    font-weight: 400;
+  }
+  .rich-preview p { margin-bottom: 16px; }
+  .rich-preview b, .rich-preview strong { color: #053366; font-weight: 700; }
+
+  @media(max-width: 900px) {
+    .about-main-grid { grid-template-columns: 1fr !important; gap: 60px !important; }
+    .about-section { padding: 60px 24px; }
+  }
+  @media(max-width: 640px) {
+    .about-stats-grid { grid-template-columns: 1fr !important; }
   }
 `;
 
@@ -120,54 +211,47 @@ export default function AboutSection() {
   const hasValues = (values?.meta?.items?.length ?? 0) > 0;
 
   return (
-    <section aria-labelledby="home-about-heading" style={{ padding: "96px 40px", background: "#F8FAFF" }}>
+    <section className="about-section" aria-labelledby="home-about-heading">
       <style>{CSS}</style>
-      <div style={{ maxWidth: 1160, margin: "0 auto" }}>
+      <div style={{ maxWidth: 1100, margin: "0 auto", position: "relative", zIndex: 1 }}>
 
         {/* Header */}
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 56, flexWrap: "wrap", gap: 16 }}>
-          <div>
-            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
-              <div className="about-accent-line" />
-              <p style={{ fontSize: 11, fontWeight: 800, letterSpacing: "2.5px", color: "#02AFCF", textTransform: "uppercase" }}>
-                Qui sommes-nous
-              </p>
-            </div>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 60, flexWrap: "wrap", gap: 20 }}>
+          <div style={{ maxWidth: 700 }}>
             <h2
               id="home-about-heading"
               style={{
-                fontFamily: "'Playfair Display',serif",
-                fontSize: "clamp(26px,3.5vw,44px)",
+                fontFamily: "'Playfair Display', serif",
+                fontSize: "clamp(32px, 5vw, 48px)",
                 fontWeight: 900,
                 color: "#053366",
-                letterSpacing: "-1px",
+                letterSpacing: "-1.5px",
                 lineHeight: 1.1,
                 margin: 0,
               }}
             >
-              {mission?.title ?? "À propos de VoyajAime"}
+              {mission?.title ?? "Découvrez l'âme de Tunisie"}
             </h2>
           </div>
-          <Link href="/about" className="about-link" aria-label="En savoir plus sur VoyajAime">
-            En savoir plus <ArrowRight size={15} />
+          <Link href="/about" className="about-link">
+            Notre vision <ArrowRight size={16} />
           </Link>
         </div>
 
         {/* Main grid */}
         <div
           className="about-main-grid"
-          style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 36, alignItems: "start" }}
+          style={{ display: "grid", gridTemplateColumns: "1.2fr 0.8fr", gap: 80, alignItems: "start" }}
         >
           {/* Gauche — mission + stats */}
           <div>
             {mission?.content ? (
               <div
                 className="rich-preview"
-                style={{ marginBottom: 32 }}
-                dangerouslySetInnerHTML={{ __html: mission.content.slice(0, 600) }}
+                dangerouslySetInnerHTML={{ __html: mission.content.slice(0, 800) }}
               />
             ) : mission?.subtitle ? (
-              <p style={{ fontSize: 15, color: "#374151", lineHeight: 1.78, marginBottom: 32 }}>
+              <p className="rich-preview">
                 {mission.subtitle}
               </p>
             ) : null}
@@ -175,21 +259,21 @@ export default function AboutSection() {
             {hasStats && (
               <div
                 className="about-stats-grid"
-                style={{ display: "grid", gridTemplateColumns: "repeat(2,1fr)", gap: 14 }}
+                style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 16, marginTop: 40 }}
               >
                 {stats!.meta.items!.slice(0, 4).map((item, i) => (
                   <div key={i} className="about-stat-card">
                     <p style={{
-                      fontFamily: "'Playfair Display',serif",
-                      fontSize: 36,
+                      fontFamily: "'Playfair Display', serif",
+                      fontSize: 32,
                       fontWeight: 900,
-                      color: "#02AFCF",
-                      marginBottom: 6,
+                      color: "#2B96A8",
+                      marginBottom: 4,
                       lineHeight: 1,
                     }}>
                       {item.value}
                     </p>
-                    <p style={{ fontSize: 12, fontWeight: 600, color: "#9CA3AF", letterSpacing: ".2px" }}>{item.label}</p>
+                    <p style={{ fontSize: 13, fontWeight: 600, color: "#6B7280", letterSpacing: "0.2px" }}>{item.label}</p>
                   </div>
                 ))}
               </div>
@@ -198,50 +282,35 @@ export default function AboutSection() {
 
           {/* Droite — valeurs */}
           {hasValues && (
-            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-              {values!.meta.items!.slice(0, 4).map((item, i) => (
+            <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+              {values!.meta.items!.slice(0, 3).map((item, i) => (
                 <div key={i} className="about-value-card">
                   <div style={{
-                    width: 46,
-                    height: 46,
-                    borderRadius: 14,
-                    background: `${COLORS[i % COLORS.length]}12`,
+                    width: 52,
+                    height: 52,
+                    borderRadius: 16,
+                    background: `${COLORS[i % COLORS.length]}15`,
                     color: COLORS[i % COLORS.length],
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
                     flexShrink: 0,
                   }}>
-                    {ICON_MAP[item.icon] ?? <Star size={20} strokeWidth={1.8} />}
+                    {ICON_MAP[item.icon] ?? <Star size={24} strokeWidth={1.5} />}
                   </div>
-                  <div>
-                    <h3 style={{ fontSize: 14, fontWeight: 800, color: "#111827", marginBottom: 4 }}>{item.title}</h3>
-                    <p style={{ fontSize: 13, color: "#9CA3AF", lineHeight: 1.6 }}>{item.text}</p>
+                  <div style={{ flex: 1 }}>
+                    <h3 style={{ fontSize: 16, fontWeight: 800, color: "#053366", marginBottom: 2 }}>{item.title}</h3>
+                    <p style={{ fontSize: 13, color: "#6B7280", lineHeight: 1.5 }}>{item.text}</p>
                   </div>
                 </div>
               ))}
 
-              <Link
-                href="/about"
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: 8,
-                  padding: "12px 22px",
-                  marginTop: 8,
-                  background: "linear-gradient(135deg,#02AFCF,#053366)",
-                  color: "white",
-                  borderRadius: 12,
-                  fontSize: 13,
-                  fontWeight: 700,
-                  textDecoration: "none",
-                  alignSelf: "flex-start",
-                  boxShadow: "0 4px 16px rgba(2,175,207,.28)",
-                  transition: "all .2s",
-                }}
-              >
-                Découvrir notre histoire <ArrowRight size={13} />
-              </Link>
+              <div style={{ marginTop: 20 }}>
+                <Link href="/about" className="about-btn-primary">
+                  <span>En savoir plus</span>
+                  <ArrowRight size={18} />
+                </Link>
+              </div>
             </div>
           )}
         </div>
@@ -249,3 +318,4 @@ export default function AboutSection() {
     </section>
   );
 }
+  

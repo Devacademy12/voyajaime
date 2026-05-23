@@ -262,7 +262,7 @@ export default function ExcursionsPage() {
 
   return (
     <>
-      <TouristeNav />
+      <TouristeNav favCount={favorites.size} isLoggedIn={!!user} />
       <div className={styles.navSpacer} />
 
       <style>{`
