@@ -7,7 +7,7 @@ import {
   X, Users, MapPin, Clock,
   Check, Minus, Plus, ShieldCheck, RefreshCcw, Lock,
   Loader2, CheckCircle, AlertCircle, ChevronLeft, ChevronRight,
-  MessageSquare, Route,
+  MessageSquare, Route, CreditCard,
 } from "lucide-react";
 import PaymentModal from "@/app/components/paiement/checkoutmodal";
 import type { Reservation } from "@/app/components/reservation/type";
@@ -106,50 +106,23 @@ function buildDateMap(exc: Excursion): Map<string, TimeSlot[]> {
   return map;
 }
 
-/* ─── Validation Functions ──────────────────────────────────────────── */
-
-/**
- * Vérifie si une date/heure est dans le passé
- * @param date Date au format YYYY-MM-DD
- * @param time Heure au format HH:MM
- * @returns true si la date/heure est dans le passé
- */
 function isTimeInPast(date: string, time: string): boolean {
-  const now = new Date();
-  const reservationDateTime = new Date(`${date}T${time}:00`);
-  return reservationDateTime < now;
+  return new Date(`${date}T${time}:00`) < new Date();
 }
 
-/**
- * Convertit une heure (HH:MM) en nombre de minutes depuis minuit
- */
 function timeToMinutes(time: string): number {
   const [h, m] = time.split(":").map(Number);
   return h * 60 + m;
 }
 
-/**
- * Vérifie s'il y a un conflit d'heure entre deux réservations
- * Deux réservations se chevauchent si elles ont un chevauchement temporel
- */
 function hasTimeOverlap(
-  date1: string,
-  time1: string,
-  duration1: number,
-  date2: string,
-  time2: string,
-  duration2: number
+  date1: string, time1: string, duration1: number,
+  date2: string, time2: string, duration2: number
 ): boolean {
-  // Dates différentes = pas de conflit
   if (date1 !== date2) return false;
-
-  const start1 = timeToMinutes(time1);
-  const end1 = start1 + duration1 * 60;
-  const start2 = timeToMinutes(time2);
-  const end2 = start2 + duration2 * 60;
-
-  // Deux périodes se chevauchent si : start1 < end2 AND start2 < end1
-  return start1 < end2 && start2 < end1;
+  const s1 = timeToMinutes(time1), e1 = s1 + duration1 * 60;
+  const s2 = timeToMinutes(time2), e2 = s2 + duration2 * 60;
+  return s1 < e2 && s2 < e1;
 }
 
 /* ─── CSS ────────────────────────────────────────────────────────────── */
@@ -173,11 +146,10 @@ const CSS = `
     overflow: hidden;
     display: flex;
     animation: co2Up .3s cubic-bezier(.34,1.4,.64,1);
-    font-family: inherit'DM Sans', sans-serif;
+    font-family: 'DM Sans', sans-serif;
     max-height: 96vh;
   }
 
-  /* Left */
   .co2-left {
     width: 340px; flex-shrink: 0;
     background: linear-gradient(160deg,#0B3D52 0%,#0E5068 55%,#0B7EA3 100%);
@@ -196,7 +168,6 @@ const CSS = `
     background: rgba(255,255,255,.04);
   }
 
-  /* Right */
   .co2-right { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
   .co2-right-scroll { flex: 1; overflow-y: auto; padding: 28px 28px 0; }
   .co2-right-scroll::-webkit-scrollbar { width: 3px }
@@ -207,12 +178,11 @@ const CSS = `
     background: #FAFBFC;
   }
 
-  /* Calendar grid */
   .cal-grid { display: grid; grid-template-columns: repeat(7,1fr); gap: 4px; margin-top: 8px; }
   .cal-day-btn {
     aspect-ratio: 1; border-radius: 10px; border: none;
     font-size: 13px; font-weight: 600; cursor: pointer;
-    font-family: inherit'DM Sans', sans-serif; transition: all .15s;
+    font-family: 'DM Sans', sans-serif; transition: all .15s;
     position: relative; display: flex; align-items: center;
     justify-content: center; flex-direction: column; gap: 1px;
   }
@@ -243,7 +213,6 @@ const CSS = `
   }
   .cal-dot { width: 4px; height: 4px; border-radius: 50%; background: #10B981; flex-shrink: 0 }
 
-  /* Slots */
   .slot-pill {
     display: flex; align-items: center; justify-content: space-between;
     padding: 13px 16px; border-radius: 14px;
@@ -256,32 +225,34 @@ const CSS = `
   .slot-pill.full { opacity: .55; cursor: not-allowed; border-color: #FEE2E2 }
   .slot-pill:not(.full):not(.sel):hover { border-color: #2B96A8; background: #F8FDFE }
 
-  /* Counter */
   .co2-counter-btn {
     width: 36px; height: 36px; border: none; border-radius: 10px;
     background: #F3F4F6; cursor: pointer;
     display: flex; align-items: center; justify-content: center;
-    transition: all .15s; font-family: inherit'DM Sans', sans-serif;
+    transition: all .15s; font-family: 'DM Sans', sans-serif;
   }
   .co2-counter-btn:hover:not(:disabled) { background: #E5E7EB }
   .co2-counter-btn:disabled { opacity: .3; cursor: not-allowed }
 
-  /* CTA */
   .co2-cta {
     width: 100%; padding: 15px; border: none; border-radius: 14px;
     font-size: 15px; font-weight: 800; cursor: pointer;
-    font-family: inherit'DM Sans', sans-serif; transition: all .2s;
+    font-family: 'DM Sans', sans-serif; transition: all .2s;
     display: flex; align-items: center; justify-content: center; gap: 8px;
   }
   .co2-cta.on { background: linear-gradient(135deg,#2B96A8,#1b7a90); color: white }
   .co2-cta.on:hover { transform: translateY(-1px); box-shadow: 0 8px 22px rgba(43,150,168,.35) }
+  .co2-cta.green { background: linear-gradient(135deg,#059669,#047857); color: white }
+  .co2-cta.green:hover { transform: translateY(-1px); box-shadow: 0 8px 22px rgba(5,150,105,.35) }
   .co2-cta.off { background: #E5E7EB; color: #9CA3AF; cursor: not-allowed }
+  .co2-cta.secondary { background: #F3F4F6; color: #374151; font-size: 13px }
+  .co2-cta.secondary:hover { background: #E5E7EB }
   .co2-cta.spin { background: #7CC4D1; color: white; cursor: not-allowed }
 
   .co2-textarea {
     width: 100%; padding: 10px 13px; min-height: 64px;
     border: 1.5px solid #E5E7EB; border-radius: 12px;
-    font-size: 13px; font-family: inherit'DM Sans', sans-serif;
+    font-size: 13px; font-family: 'DM Sans', sans-serif;
     color: #374151; resize: none; outline: none;
     background: #F9FAFB; box-sizing: border-box; transition: border .15s;
   }
@@ -300,6 +271,7 @@ const CSS = `
   @keyframes co2Fade { from { opacity: 0 } to { opacity: 1 } }
   @keyframes co2Up { from { opacity: 0; transform: translateY(22px) } to { opacity: 1; transform: translateY(0) } }
   @keyframes coSpin { to { transform: rotate(360deg) } }
+  @keyframes pulsGreen { 0%,100%{box-shadow:0 0 0 0 rgba(5,150,105,.3)} 50%{box-shadow:0 0 0 8px rgba(5,150,105,0)} }
 
   @media (max-width: 680px) {
     .co2-shell { flex-direction: column; }
@@ -321,7 +293,7 @@ function MiniCalendar({
   const initDate = firstAvailable ? new Date(firstAvailable) : today;
   const [viewYear,  setViewYear]  = useState(initDate.getFullYear());
   const [viewMonth, setViewMonth] = useState(initDate.getMonth());
- 
+
   const daysInMonth  = new Date(viewYear, viewMonth + 1, 0).getDate();
   const firstWeekday = (new Date(viewYear, viewMonth, 1).getDay() + 6) % 7;
   const cells: (number | null)[] = [
@@ -486,13 +458,13 @@ export default function CheckoutModal({
     }))
   );
 
-  const [activeIdx,      setActiveIdx]      = useState(0);
-  const [status,         setStatus]         = useState<"idle"|"loading"|"success"|"error">("idle");
-  const [errorMsg,       setErrorMsg]       = useState("");
-  const [bookingCodes,   setBookingCodes]   = useState<string[]>([]);
-  const [savedItinId,    setSavedItinId]    = useState<string | null>(null);
-  const [showPaymentModal, setShowPaymentModal] = useState(false);
-  const [reservations, setReservations] = useState<Reservation[]>([]);
+  const [activeIdx,        setActiveIdx]        = useState(0);
+  const [status,           setStatus]           = useState<"idle"|"loading"|"success"|"error">("idle");
+  const [errorMsg,         setErrorMsg]         = useState("");
+  const [bookingCodes,     setBookingCodes]      = useState<string[]>([]);
+  const [savedItinId,      setSavedItinId]       = useState<string | null>(null);
+  const [showPaymentModal, setShowPaymentModal]  = useState(false);
+  const [reservations,     setReservations]      = useState<Reservation[]>([]);
 
   const patch = (idx: number, p: Partial<typeof perExc[0]>) =>
     setPerExc(prev => prev.map((x, i) => i === idx ? { ...x, ...p } : x));
@@ -514,7 +486,6 @@ export default function CheckoutModal({
     perExc.every(p => !p.selectedSlot || p.selectedSlot.slots >= p.people) &&
     !isLoading;
 
-  // Clamp people when slot changes
   useEffect(() => {
     perExc.forEach((p, i) => {
       const max = p.selectedSlot?.slots || p.exc.max_people || 1;
@@ -541,12 +512,10 @@ export default function CheckoutModal({
           date: p.selectedDate, heure: p.selectedSlot!.time, personnes: p.people,
           prix_total: (p.selectedSlot!.price * p.people) + Math.round(p.selectedSlot!.price * p.people * 0.1),
         }));
-
         const { data: newItin, error: itinErr } = await supabase
           .from("itineraires")
           .insert([{ user_id: user.id, nb_jours: planItems.length, villes_selectionnees: villes, categories_selectionnees: [], plan: planItems }])
           .select("id").single();
-
         if (itinErr || !newItin) { setErrorMsg(`Erreur itinéraire : ${itinErr?.message ?? "inconnue"}`); setStatus("error"); return; }
         itineraireId = newItin.id;
         setSavedItinId(newItin.id);
@@ -555,45 +524,38 @@ export default function CheckoutModal({
       }
 
       const codes: string[] = [];
+      // ✅ Stocker les vrais IDs retournés par Supabase
+      const insertedRows: { id: string; code: string; deadline: string; p: typeof perExc[0] }[] = [];
 
       for (const p of perExc) {
         if (!p.selectedSlot) continue;
 
-        // ── VALIDATION 1 : Vérifier que la date/heure n'est pas dans le passé ──
         if (isTimeInPast(p.selectedDate, p.selectedSlot.time)) {
-          setErrorMsg(`❌ Impossible de réserver pour une date/heure déjà passée (${p.selectedDate} à ${p.selectedSlot.time}).`);
-          setStatus("error");
-          return;
+          setErrorMsg(`❌ Date/heure déjà passée (${p.selectedDate} à ${p.selectedSlot.time}).`);
+          setStatus("error"); return;
         }
 
-        // ── VALIDATION 2 : Vérifier qu'il n'y a pas déjà une réservation pour la même excursion à cette date ──
         const { data: existing, error: checkErr } = await supabase
           .from("reservations").select("id")
           .eq("touriste_id", user.id).eq("excursion_id", p.exc.id).eq("date", p.selectedDate)
           .not("status", "eq", "cancelled").maybeSingle();
-
         if (checkErr) { setErrorMsg(`Erreur vérification : ${checkErr.message}`); setStatus("error"); return; }
         if (existing) { setErrorMsg(`Vous avez déjà une réservation pour "${p.exc.title}" à cette date.`); setStatus("error"); return; }
 
-        // ── VALIDATION 3 : Vérifier qu'il n'y a pas de chevauchement d'heure avec d'autres réservations ──
         const { data: conflicting, error: conflictErr } = await supabase
           .from("reservations")
           .select("id, excursion_id, date, time, excursions(duration_hours)")
-          .eq("touriste_id", user.id)
-          .eq("date", p.selectedDate)
+          .eq("touriste_id", user.id).eq("date", p.selectedDate)
           .not("status", "eq", "cancelled");
-
-        if (conflictErr) { setErrorMsg(`Erreur vérification horaire : ${conflictErr.message}`); setStatus("error"); return; }
+        if (conflictErr) { setErrorMsg(`Erreur horaire : ${conflictErr.message}`); setStatus("error"); return; }
 
         const duration = p.exc.duration_hours || 1;
         for (const conflict of conflicting || []) {
-          const otherExc = Array.isArray(conflict.excursions) ? conflict.excursions[0] : conflict.excursions;
+          const otherExc      = Array.isArray(conflict.excursions) ? conflict.excursions[0] : conflict.excursions;
           const otherDuration = otherExc?.duration_hours || 1;
-          
           if (hasTimeOverlap(p.selectedDate, p.selectedSlot.time, duration, conflict.date, conflict.time, otherDuration)) {
-            setErrorMsg(`⚠️ Vous avez déjà une réservation qui chevauche cet horaire. Consultez votre calendrier.`);
-            setStatus("error");
-            return;
+            setErrorMsg("⚠️ Chevauchement horaire avec une autre réservation.");
+            setStatus("error"); return;
           }
         }
 
@@ -601,6 +563,7 @@ export default function CheckoutModal({
         const tot  = p.selectedSlot.price * p.people;
         const fee  = Math.round(tot * 0.1);
 
+        // ── Étape 1 : insert ────────────────────────────────────────
         const { error: insErr } = await supabase.from("reservations").insert([{
           touriste_id:    user.id,
           excursion_id:   p.exc.id,
@@ -618,40 +581,51 @@ export default function CheckoutModal({
           special_notes:  null,
         }]);
 
-        if (insErr) { setErrorMsg(`Erreur : ${insErr.message}`); setStatus("error"); return; }
+        if (insErr) { setErrorMsg(`Erreur insertion : ${insErr.message}`); setStatus("error"); return; }
+
+        // ── Étape 2 : récupérer le vrai ID via booking_code ─────────
+        const { data: inserted, error: fetchErr } = await supabase
+          .from("reservations")
+          .select("id, payment_deadline")
+          .eq("booking_code", code)
+          .single();
+
+        if (fetchErr || !inserted?.id) {
+          setErrorMsg(`Erreur récupération ID : ${fetchErr?.message ?? "introuvable"}`);
+          setStatus("error"); return;
+        }
 
         await supabase.rpc("decrement_slot", { exc_id: p.exc.id, date_str: p.selectedDate, qty: p.people });
         codes.push(code);
+        insertedRows.push({ id: inserted.id, code, deadline: inserted.payment_deadline, p });
       }
 
-      setBookingCodes(codes);
-      setStatus("success");
+      // ── Construire les objets Reservation avec vrais IDs ──────────
+      const builtReservations: Reservation[] = insertedRows.map(({ id, code, deadline, p }) => ({
+        id,                        // ✅ vrai UUID Supabase
+        booking_code:     code,
+        date:             p.selectedDate,
+        time:             p.selectedSlot!.time,
+        people_count:     p.people,
+        total_price:      (p.selectedSlot!.price * p.people) + Math.round(p.selectedSlot!.price * p.people * 0.1),
+        platform_fee:     Math.round(p.selectedSlot!.price * p.people * 0.1),
+        status:           "pending",
+        payment_status:   "unpaid",
+        payment_deadline: deadline || new Date(Date.now() + 3600000).toISOString(),
+        excursion_id:     p.exc.id,
+        excursion: {
+          id:               p.exc.id,
+          title:            p.exc.title,
+          city:             p.exc.city,
+          photos:           [],
+          duration_hours:   p.exc.duration_hours,
+          price_per_person: p.selectedSlot!.price,
+        },
+      }));
 
-      // Construire les objets Reservation pour le PaymentModal
-      const builtReservations: Reservation[] = perExc
-        .filter(p => p.selectedSlot)
-        .map((p, idx) => ({
-          id: "",
-          booking_code: codes[idx],
-          date: p.selectedDate,
-          time: p.selectedSlot!.time,
-          people_count: p.people,
-          total_price: (p.selectedSlot!.price * p.people) + Math.round(p.selectedSlot!.price * p.people * 0.1),
-          platform_fee: Math.round(p.selectedSlot!.price * p.people * 0.1),
-          status: "pending",
-          payment_status: "unpaid",
-          payment_deadline: new Date(Date.now() + 3600000).toISOString(),
-          excursion_id: p.exc.id,
-          excursion: {
-            id: p.exc.id,
-            title: p.exc.title,
-            city: p.exc.city,
-            photos: [],
-            duration_hours: p.exc.duration_hours,
-            price_per_person: p.selectedSlot!.price,
-          },
-        }));
+      setBookingCodes(codes);
       setReservations(builtReservations);
+      setStatus("success");
 
     } catch (err) {
       setErrorMsg(err instanceof Error ? err.message : "Erreur inconnue.");
@@ -659,22 +633,23 @@ export default function CheckoutModal({
     }
   };
 
-  /* ── Success ── */
+  /* ── Success Screen ── */
   if (status === "success") {
     const confirmedItems = perExc.filter(p => p.selectedSlot);
     return (
       <>
         <style>{CSS}</style>
-        <div className="co2-overlay" onClick={e => { if (e.target === e.currentTarget) onClose?.(); }}>
+        <div className="co2-overlay" onClick={e => { if (e.target === e.currentTarget && !showPaymentModal) onClose?.(); }}>
           <div className="co2-shell" style={{ maxWidth:500, display:"block", padding:"40px 36px", textAlign:"center" }}>
-            <div style={{ width:72, height:72, borderRadius:"50%", background:"linear-gradient(135deg,#D1FAE5,#A7F3D0)", display:"flex", alignItems:"center", justifyContent:"center", margin:"0 auto 20px", boxShadow:"0 8px 24px rgba(5,150,105,.2)" }}>
+
+            <div style={{ width:72, height:72, borderRadius:"50%", background:"linear-gradient(135deg,#D1FAE5,#A7F3D0)", display:"flex", alignItems:"center", justifyContent:"center", margin:"0 auto 20px", boxShadow:"0 8px 24px rgba(5,150,105,.2)", animation:"pulsGreen 2s ease-in-out infinite" }}>
               <CheckCircle size={36} color="#059669"/>
             </div>
 
             <h2 style={{ fontFamily:"'Cormorant Garamond',serif", fontSize:28, fontWeight:700, color:"#111827", marginBottom:8 }}>
               {isItinerary ? "Itinéraire réservé !" : "Réservation confirmée !"}
             </h2>
-            <p style={{ fontSize:13, color:"#6B7280", marginBottom: savedItinId ? 10 : 22 }}>
+            <p style={{ fontSize:13, color:"#6B7280", marginBottom: savedItinId ? 10 : 20 }}>
               {confirmedItems.length} excursion{confirmedItems.length > 1 ? "s" : ""} confirmée{confirmedItems.length > 1 ? "s" : ""}
             </p>
 
@@ -698,18 +673,27 @@ export default function CheckoutModal({
               </div>
             ))}
 
-            <div style={{ background:"#FFFBEB", border:"1px solid #FDE68A", borderRadius:12, padding:"12px 16px", marginBottom:20, marginTop:4 }}>
-              <p style={{ fontSize:12, color:"#92400E", fontWeight:600 }}>
-                💳 Rendez-vous dans <strong>Mes réservations</strong> pour finaliser le paiement.
+            <div style={{ background:"#FFFBEB", border:"1px solid #FDE68A", borderRadius:12, padding:"12px 16px", marginBottom:20, marginTop:8 }}>
+              <p style={{ fontSize:12, color:"#92400E", fontWeight:600, margin:0 }}>
+                💳 Finalisez le paiement pour confirmer vos places.
               </p>
             </div>
 
-            <button className="co2-cta on" onClick={() => onClose?.()}>
-              <Check size={15}/> Fermer
-            </button>
+            <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
+              {/* ✅ Bouton payer maintenant avec vrai ID */}
+              {reservations.length > 0 && (
+                <button className="co2-cta green" onClick={() => setShowPaymentModal(true)}>
+                  <CreditCard size={15}/> Payer maintenant — {reservations[0].total_price} EUR
+                </button>
+              )}
+              <button className="co2-cta secondary" onClick={() => onClose?.()}>
+                Payer plus tard dans Mes réservations
+              </button>
+            </div>
           </div>
         </div>
 
+        {/* ✅ PaymentModal avec le vrai ID de réservation */}
         {showPaymentModal && reservations.length > 0 && (
           <PaymentModal
             reservation={reservations[0]}
@@ -725,7 +709,7 @@ export default function CheckoutModal({
     );
   }
 
-  /* ── Main form ── */
+  /* ── Main Form ── */
   const cur          = perExc[activeIdx];
   const slotsForDate = cur.selectedDate ? (cur.dateMap.get(cur.selectedDate) || []) : [];
   const maxPeople    = cur.selectedSlot?.slots || cur.exc.max_people || 1;
@@ -742,8 +726,6 @@ export default function CheckoutModal({
 
           {/* ── LEFT PANEL ── */}
           <div className="co2-left">
-
-            {/* Title */}
             <div style={{ position:"relative", zIndex:1 }}>
               {isItinerary && (
                 <div className="itin-badge" style={{ marginBottom:10 }}>
@@ -766,7 +748,6 @@ export default function CheckoutModal({
               </div>
             </div>
 
-            {/* Itinerary progress */}
             {isItinerary && (
               <div style={{ position:"relative", zIndex:1 }}>
                 <div style={{ display:"flex", justifyContent:"space-between", fontSize:11, color:"rgba(255,255,255,.5)", marginBottom:6 }}>
@@ -783,19 +764,11 @@ export default function CheckoutModal({
               </div>
             )}
 
-            {/* Itinerary tabs */}
             {isItinerary && (
               <div style={{ display:"flex", flexDirection:"column", gap:6, position:"relative", zIndex:1, overflowY:"auto", maxHeight:180 }}>
                 {allExc.map((e, i) => (
                   <button key={e.id} onClick={() => setActiveIdx(i)}
-                    style={{
-                      background: i===activeIdx ? "rgba(255,255,255,.18)" : "rgba(255,255,255,.07)",
-                      border: `1px solid ${i===activeIdx ? "rgba(255,255,255,.35)" : "rgba(255,255,255,.1)"}`,
-                      borderRadius:10, padding:"8px 12px", cursor:"pointer",
-                      display:"flex", alignItems:"center", justifyContent:"space-between",
-                      color:"white", fontFamily:"'DM Sans',sans-serif", fontSize:12, fontWeight:600,
-                      transition:"all .15s", flexShrink:0,
-                    }}>
+                    style={{ background: i===activeIdx ? "rgba(255,255,255,.18)" : "rgba(255,255,255,.07)", border: `1px solid ${i===activeIdx ? "rgba(255,255,255,.35)" : "rgba(255,255,255,.1)"}`, borderRadius:10, padding:"8px 12px", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"space-between", color:"white", fontFamily:"'DM Sans',sans-serif", fontSize:12, fontWeight:600, transition:"all .15s", flexShrink:0 }}>
                     <div style={{ display:"flex", alignItems:"center", gap:6, overflow:"hidden" }}>
                       <span style={{ flexShrink:0, width:18, height:18, borderRadius:"50%", background: i===activeIdx ? "rgba(255,255,255,.25)" : "rgba(255,255,255,.1)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:10, fontWeight:800 }}>{i+1}</span>
                       <span style={{ overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{sanitizeText(e.title)}</span>
@@ -809,7 +782,6 @@ export default function CheckoutModal({
               </div>
             )}
 
-            {/* Calendar */}
             <div style={{ position:"relative", zIndex:1 }}>
               <p style={{ fontSize:11, fontWeight:700, color:"rgba(255,255,255,.5)", textTransform:"uppercase", letterSpacing:"1.5px", margin:"0 0 4px" }}>
                 Choisissez une date
@@ -821,7 +793,6 @@ export default function CheckoutModal({
               />
             </div>
 
-            {/* Price summary */}
             {subtotal > 0 && (
               <div style={{ marginTop:"auto", background:"rgba(255,255,255,.1)", borderRadius:14, padding:"14px 16px", position:"relative", zIndex:1 }}>
                 {isItinerary ? (
@@ -852,8 +823,6 @@ export default function CheckoutModal({
           {/* ── RIGHT PANEL ── */}
           <div className="co2-right">
             <div className="co2-right-scroll">
-
-              {/* Header */}
               <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:22 }}>
                 <div>
                   <h3 style={{ fontFamily:"'Cormorant Garamond',serif", fontSize:20, fontWeight:700, color:"#111827", margin:"0 0 2px" }}>
@@ -871,14 +840,12 @@ export default function CheckoutModal({
                 </button>
               </div>
 
-              {/* Error banner */}
               {status === "error" && (
                 <div style={{ display:"flex", alignItems:"center", gap:8, padding:"11px 14px", background:"#FEF2F2", border:"1px solid #FCA5A5", borderRadius:10, marginBottom:16, fontSize:13, color:"#DC2626", fontWeight:600 }}>
                   <AlertCircle size={15}/>{errorMsg}
                 </div>
               )}
 
-              {/* Slots */}
               {!cur.selectedDate ? (
                 <div style={{ textAlign:"center", padding:"40px 20px", background:"#F9FAFB", borderRadius:16, border:"1.5px dashed #E5E7EB", marginBottom:20 }}>
                   <p style={{ fontSize:13, color:"#9CA3AF", margin:0 }}>Choisissez une date sur le calendrier pour voir les créneaux disponibles</p>
@@ -897,7 +864,6 @@ export default function CheckoutModal({
                 </div>
               )}
 
-              {/* People counter */}
               {cur.selectedSlot && (
                 <div style={{ marginBottom:20 }}>
                   <p style={{ fontSize:12, fontWeight:700, color:"#374151", marginBottom:10, display:"flex", alignItems:"center", gap:5 }}>
@@ -920,7 +886,6 @@ export default function CheckoutModal({
                 </div>
               )}
 
-              {/* Navigation (itinerary) */}
               {isItinerary && (
                 <div style={{ display:"flex", gap:8, marginBottom:20 }}>
                   {activeIdx > 0 && (
@@ -938,7 +903,6 @@ export default function CheckoutModal({
                 </div>
               )}
 
-              {/* Special needs */}
               <div style={{ marginBottom:8 }}>
                 <label style={{ fontSize:11, fontWeight:700, color:"#374151", display:"flex", alignItems:"center", gap:5, marginBottom:6, textTransform:"uppercase", letterSpacing:".5px" }}>
                   <MessageSquare size={11} color="#2B96A8"/>
@@ -956,8 +920,6 @@ export default function CheckoutModal({
 
             {/* Footer */}
             <div className="co2-right-footer">
-
-              {/* Price recap (single) */}
               {!isItinerary && cur.selectedSlot && (
                 <div style={{ background:"#F9FAFB", borderRadius:12, padding:"12px 14px", marginBottom:14, border:"1px solid #F0F0F0" }}>
                   <div style={{ display:"flex", justifyContent:"space-between", fontSize:12, color:"#6B7280", marginBottom:5 }}>
@@ -975,7 +937,6 @@ export default function CheckoutModal({
                 </div>
               )}
 
-              {/* Itinerary partial warning */}
               {isItinerary && configuredCount > 0 && configuredCount < allExc.length && (
                 <div style={{ background:"#FFFBEB", border:"1px solid #FDE68A", borderRadius:10, padding:"9px 12px", marginBottom:12, fontSize:12, color:"#92400E", display:"flex", alignItems:"center", gap:7 }}>
                   <AlertCircle size={13} color="#F59E0B"/>

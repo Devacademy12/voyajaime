@@ -300,40 +300,28 @@ export default function ReservationsClient({ reservations: init, autoOpenId }: P
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { moveExpiredToHistory(init); }, []);
 
-  useEffect(() => {
-    if (autoOpenId) {
-      const target = reservations.find(r => r.id === autoOpenId);
-      // ✅ CORRIGÉ : ne pas ouvrir si déjà payé OU déjà confirmé OU deadline dépassée
-      if (
-        target &&
-        target.payment_status !== "paid" &&
-        target.status !== "cancelled" &&
-        target.status !== "confirmed" &&       // ✅ AJOUTÉ
-        !isPaymentDeadlinePassed(target)       // ✅ AJOUTÉ
-      ) {
-        setCheckout(target);
-      }
-    } else {
-      // ✅ CORRIGÉ : ne pas ouvrir le checkout si deadline dépassée
-      const latestUnpaid = reservations
-        .filter(r => {
-          if (r.status !== "pending") return false;
-          if (r.payment_status === "paid") return false;
-          // Ne pas ouvrir si la deadline est passée
-          if (isPaymentDeadlinePassed(r)) return false;
-          return true;
-        })
-        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0];
-      if (latestUnpaid) setCheckout(latestUnpaid);
-    }
-  }, [reservations, autoOpenId]);
+ useEffect(() => {
+  if (!autoOpenId) return;
+
+  const target = reservations.find(r => r.id === autoOpenId);
+
+  if (
+    target &&
+    target.payment_status !== "paid" &&
+    target.status !== "cancelled" &&
+    target.status !== "confirmed" &&
+    !isPaymentDeadlinePassed(target)
+  ) {
+    setCheckout(target);
+  }
+}, [reservations, autoOpenId]);
 
   function handlePaid(id: string) {
     setReservations(prev =>
       prev.map(r => r.id === id ? { ...r, payment_status: "paid", status: "confirmed" } : r)
     );
-    setCheckout(null);
-    setTimeout(() => refreshReservations(), 2000);
+    //setCheckout(null);
+    //setTimeout(() => refreshReservations(), 2000);
   }
 
   /* ── Stats config ── */
