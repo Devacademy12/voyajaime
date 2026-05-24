@@ -7,36 +7,70 @@ import TouristeNav from "@/app/components/touriste/TouristeNav";
 import ItineraireDisplay from "@/app/components/itineraire/ItineraireDisplay";
 import {
   MapPin, Sparkles, Bot, Loader2, ChevronLeft, ChevronRight, CalendarDays,
-  Heart, ArrowRight, ArrowLeft, CheckCircle, Euro, AlertTriangle, Bug,
+  Heart, ArrowRight, ArrowLeft, CheckCircle, Euro, AlertTriangle,
 } from "lucide-react";
 import styles from "@/public/style/ModeAssiste.module.css";
 
 const N8N_WEBHOOK_URL = process.env.NEXT_PUBLIC_N8N_WEBHOOK_URL || "";
 
-/* ── Types ── */
+/* ══════════════════════════════════════════
+   TYPES
+══════════════════════════════════════════ */
 type Ville     = { id: string; nom?: string; name?: string; city?: string; description?: string; [key: string]: unknown };
 type Categorie = { id: string; nom?: string; name?: string; label?: string; [key: string]: unknown };
+
+/** Mirrors the real Supabase excursions table */
 type Excursion = {
-
-  id: string; title: string; city: string;
-  price_per_person?: number; duration_hours?: number;
-  description?: string; categories?: string[];
-  photos?: string[]; languages?: string[];
-  inclusions?: string[]; rating?: number; reviews_count?: number; max_people?: number;
-  start_date?: string; end_date?: string; is_active?: boolean;
-  depart_time?: string;
+  id: string;
+  title: string;
+  city: string;
+  price_per_person?: number;
+  duration_hours?: number;
+  description?: string;
+  categories?: string[];
+  photos?: string[];
+  languages?: string[];
+  inclusions?: string[];
+  rating?: number;
+  reviews_count?: number;
+  max_people?: number;
+  available_dates?: unknown;   // JSONB — null means always available
+  is_active?: boolean;
+  depart_time?: string;        // Postgres time "HH:MM:SS"
 };
+
 type Activity = {
-  id: string; name: string; description?: string;
-  time?: string; duration?: string; price?: number; icon?: string;
-  photos?: string | string[]; languages?: string | string[];
-  inclusion?: string | string[]; city?: string; rating?: number;
+  id: string;
+  name: string;
+  description?: string;
+  time?: string;
+  duration?: string;           // "6h", "2.5h"
+  duration_hours?: number;     // raw number for calculations
+  price?: number;
+  icon?: string;
+  photos?: string | string[];
+  languages?: string | string[];
+  inclusion?: string | string[];
+  city?: string;
+  rating?: number;
+  is_free_day?: boolean;
 };
-type DayPlan   = { day: number; city: string; theme?: string; emoji?: string; activities: Activity[] };
-type Itinerary = { title: string; days: DayPlan[] };
-type CityDateRange = { city: string; start: Date | null; end: Date | null; };
 
-/* ── Constantes ── */
+type DayPlan = {
+  day: number;
+  city: string;
+  date?: string;
+  theme?: string;
+  emoji?: string;
+  activities: Activity[];
+};
+
+type Itinerary = { title: string; days: DayPlan[] };
+type CityDateRange = { city: string; start: Date | null; end: Date | null };
+
+/* ══════════════════════════════════════════
+   CONSTANTS
+══════════════════════════════════════════ */
 const LOADING_MSGS = [
   "Analyse des meilleures excursions disponibles...",
   "Cartographie de votre itinéraire personnalisé...",
@@ -48,11 +82,18 @@ const MONTHS_FULL  = ["Janvier","Février","Mars","Avril","Mai","Juin","Juillet"
 const MONTHS_SHORT = ["Jan","Fév","Mar","Avr","Mai","Juin","Juil","Aoû","Sep","Oct","Nov","Déc"];
 const DAYS_FR      = ["Lun","Mar","Mer","Jeu","Ven","Sam","Dim"];
 
-/* ── Helpers ── */
-function daysBetween(a: Date, b: Date) { return Math.round((b.getTime() - a.getTime()) / 86400000) + 1; }
-function fmtShort(d: Date) { return `${d.getDate()} ${MONTHS_SHORT[d.getMonth()]}`; }
-function formatDateForN8N(date: Date): string { return date.toISOString().split('T')[0]; }
-
+/* ══════════════════════════════════════════
+   HELPERS
+══════════════════════════════════════════ */
+function daysBetween(a: Date, b: Date) {
+  return Math.round((b.getTime() - a.getTime()) / 86400000) + 1;
+}
+function fmtShort(d: Date) {
+  return `${d.getDate()} ${MONTHS_SHORT[d.getMonth()]}`;
+}
+function formatDateForN8N(date: Date): string {
+  return date.toISOString().split("T")[0];
+}
 function datesOverlap(s1: Date|null, e1: Date|null, s2: Date|null, e2: Date|null): boolean {
   if (!s1||!e1||!s2||!e2) return false;
   const a = new Date(s1); a.setHours(0,0,0,0);
@@ -61,179 +102,166 @@ function datesOverlap(s1: Date|null, e1: Date|null, s2: Date|null, e2: Date|null
   const d = new Date(e2); d.setHours(0,0,0,0);
   return a <= d && c <= b;
 }
-
 function getBlockedDates(cityDates: CityDateRange[], excludeCity: string) {
-  return cityDates.filter(c => c.city !== excludeCity && c.start && c.end)
+  return cityDates
+    .filter(c => c.city !== excludeCity && c.start && c.end)
     .map(c => ({ start: c.start!, end: c.end! }));
 }
 
-function extractItinerary(
-  raw: unknown,
-  excursions: Excursion[]
-): Itinerary {
-
+/* ══════════════════════════════════════════
+   extractItinerary — parse N8N response
+══════════════════════════════════════════ */
+function extractItinerary(raw: unknown, excursions: Excursion[]): Itinerary {
   const findDaysObject = (obj: any): any => {
     if (!obj) return null;
-
-    if (
-      obj.days &&
-      Array.isArray(obj.days)
-    ) {
-      return obj;
-    }
-
-    if (obj.itinerary?.days) {
-      return obj.itinerary;
-    }
-
-    if (obj.result?.days) {
-      return obj.result;
-    }
-
-    if (obj.data?.days) {
-      return obj.data;
-    }
-
+    if (obj.days && Array.isArray(obj.days)) return obj;
+    if (obj.itinerary?.days) return obj.itinerary;
+    if (obj.result?.days)    return obj.result;
+    if (obj.data?.days)      return obj.data;
     for (const key in obj) {
-      if (
-        typeof obj[key] === "object" &&
-        obj[key] !== null
-      ) {
-        const found = findDaysObject(
-          obj[key]
-        );
-
+      if (typeof obj[key] === "object" && obj[key] !== null) {
+        const found = findDaysObject(obj[key]);
         if (found) return found;
       }
     }
-
     return null;
   };
 
   try {
-
-    let parsed = raw;
-
+    let parsed: any = raw;
     if (typeof raw === "string") {
-
-      const cleaned = raw
-        .replace(/```json\n?/g, "")
-        .replace(/```\n?/g, "")
-        .trim();
-
-      const match =
-        cleaned.match(/\{[\s\S]*\}/);
-
-      parsed = match
-        ? JSON.parse(match[0])
-        : JSON.parse(cleaned);
+      const cleaned = raw.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
+      const match   = cleaned.match(/\{[\s\S]*\}/);
+      parsed = match ? JSON.parse(match[0]) : JSON.parse(cleaned);
     }
 
     const obj = findDaysObject(parsed);
-
-    if (!obj?.days) {
-      throw new Error(
-        "Aucun itinéraire valide"
-      );
-    }
+    if (!obj?.days) throw new Error("Aucun itinéraire valide");
 
     return {
+      title: obj.title || "Mon voyage en Tunisie",
+      days: obj.days.map((day: any, idx: number) => ({
+        day:   day.day  || idx + 1,
+        city:  day.city || "Ville inconnue",
+        date:  day.date || "",
+        theme: day.theme || "Découverte",
+        activities: (day.activities || []).map((act: any) => {
+          // Match excursion by ID then by title
+          const excursion =
+            excursions.find(e => String(e.id) === String(act.id)) ||
+            excursions.find(e =>
+              e.title?.toLowerCase() === (act.name || act.title || "").toLowerCase()
+            );
 
-      title:
-        obj.title ||
-        "Mon voyage en Tunisie",
+          // Real duration from N8N (already correct) or DB fallback
+          const durationHours =
+            parseFloat(String(act.duration_hours)) ||
+            excursion?.duration_hours ||
+            2;
 
-      days: obj.days.map(
-        (day: any, idx: number) => ({
+          const durationStr = durationHours % 1 === 0
+            ? `${durationHours}h`
+            : `${durationHours}h`;
 
-          day:
-            day.day || idx + 1,
-
-          city:
-            day.city ||
-            "Ville inconnue",
-
-          theme:
-            day.theme ||
-            "Découverte",
-
-          activities:
-            (day.activities || []).map(
-              (act: any) => {
-
-                const excursion =
-                  excursions.find(
-                    e =>
-                      e.id === act.id ||
-                      e.title
-                        ?.toLowerCase()
-                        === act.name
-                          ?.toLowerCase()
-                  );
-
-                return {
-
-                  id:
-                    act.id ||
-                    `act-${Date.now()}-${Math.random()}`,
-
-                  name:
-                    act.name ||
-                    act.title ||
-                    "Activité",
-
-                  description:
-                    act.description || "",
-
-                  time:
-                    excursion?.depart_time ||
-                    act.time ||
-                    "",
-
-                  duration:
-                    act.duration || "2h",
-
-                  price:
-                    typeof act.price === "number"
-                      ? act.price
-                      : parseFloat(act.price) || 0,
-
-                  photos:
-                    act.photos || [],
-
-                  languages:
-                    act.languages || ["Français"],
-
-                  inclusion:
-                    act.inclusion ||
-                    act.inclusions ||
-                    [],
-
-                  city:
-                    act.city ||
-                    day.city,
-
-                  rating:
-                    act.rating || 4.5,
-                };
-              }
-            ),
-        })),
+          return {
+            id:             act.id || `act-${Date.now()}-${Math.random()}`,
+            name:           act.name        || act.title      || "Activité",
+            description:    act.description || "",
+            // time = depart_time from N8N (already "HH:MM" format)
+            time:           act.depart_time || act.time || excursion?.depart_time || "",
+            duration:       durationStr,
+            duration_hours: durationHours,
+            price:
+              typeof act.price === "number"
+                ? act.price
+                : parseFloat(String(act.price)) || 0,
+            photos:    act.photos    || excursion?.photos    || [],
+            languages: act.languages || excursion?.languages || ["Français"],
+            inclusion: act.inclusions || act.inclusion || excursion?.inclusions || [],
+            city:      act.city || day.city,
+            rating:    act.rating ?? excursion?.rating ?? null,
+            is_free_day: act.is_free_day ?? false,
+          };
+        }),
+      })),
     };
-
   } catch (err) {
-
     throw new Error(
-      `Impossible de parser l'itinéraire: ${
-        err instanceof Error
-          ? err.message
-          : "Format invalide"
-      }`
+      `Impossible de parser l'itinéraire: ${err instanceof Error ? err.message : "Format invalide"}`
     );
   }
 }
 
-/* ══════ CSS ══════ */
+/* ══════════════════════════════════════════
+   removeTimeConflicts — client-side safety net
+══════════════════════════════════════════ */
+function removeTimeConflicts(itinerary: Itinerary): Itinerary {
+  return {
+    ...itinerary,
+    days: itinerary.days.map(day => {
+      const usedTimes = new Set<string>();
+      return {
+        ...day,
+        activities: day.activities.filter(act => {
+          if (act.is_free_day) return true;
+          const t = act.time || "09:00";
+          if (usedTimes.has(t)) return false;
+          usedTimes.add(t);
+          return true;
+        }),
+      };
+    }),
+  };
+}
+
+/* ══════════════════════════════════════════
+   filterUnavailableActivities
+   — keeps free-days and active excursions
+══════════════════════════════════════════ */
+function filterUnavailableActivities(itinerary: Itinerary, excursions: Excursion[]): Itinerary {
+  return {
+    ...itinerary,
+    days: itinerary.days.map(day => {
+      const filtered = day.activities.filter(act => {
+        // Always keep free-days generated by N8N
+        if (act.is_free_day || act.name === "Journée libre" || String(act.id).startsWith("free-day-")) {
+          return true;
+        }
+        // Match by UUID first, then by title
+        const exc =
+          excursions.find(e => String(e.id) === String(act.id)) ||
+          excursions.find(e => e.title?.toLowerCase() === act.name?.toLowerCase());
+        return exc?.is_active === true;
+      });
+
+      if (filtered.length === 0) {
+        return {
+          ...day,
+          activities: [{
+            id:          `free-day-${day.date || day.day}-${day.city}`,
+            name:        "Journée libre",
+            description: `Profitez de ${day.city} librement : marchés locaux, cafés, plages ou balades.`,
+            time:        "",
+            duration:    "0h",
+            duration_hours: 0,
+            price:       0,
+            photos:      [],
+            languages:   [],
+            inclusion:   [],
+            city:        day.city,
+            rating:      undefined,
+            is_free_day: true,
+          }],
+        };
+      }
+      return { ...day, activities: filtered };
+    }),
+  };
+}
+
+/* ══════════════════════════════════════════
+   CSS
+══════════════════════════════════════════ */
 const CSS = `
 @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@400;500;600;700;800&display=swap');
 *, *::before, *::after { box-sizing: border-box; }
@@ -252,7 +280,7 @@ const CSS = `
 .ma2-page {
   min-height: calc(100vh - 64px);
   background: var(--bg);
-  font-family: inherit'DM Sans', system-ui, sans-serif;
+  font-family: 'DM Sans', system-ui, sans-serif;
   display: flex; flex-direction: column;
 }
 
@@ -274,12 +302,12 @@ const CSS = `
   letter-spacing: .04em;
 }
 .ma2-topbar h1 {
-  font-family: inherit'Playfair Display', serif;
+  font-family: 'Playfair Display', serif;
   font-size: 20px; font-weight: 900; color: var(--title); margin: 0;
 }
 .ma2-topbar h1 span { color: var(--primary); }
 
-/* ── Step indicator ── */
+/* ── Steps ── */
 .ma2-steps-indicator {
   display: flex; align-items: center; justify-content: center;
   padding: 18px 32px 0; flex-shrink: 0;
@@ -293,7 +321,7 @@ const CSS = `
   color: var(--muted); transition: all .3s ease; position: relative; z-index: 1;
 }
 .ma2-step-pip-circle.done   { background: var(--primary); border-color: var(--primary); color: white; }
-.ma2-step-pip-circle.active { background: var(--title);   border-color: var(--title);   color: white; box-shadow: 0 4px 14px -3px rgba(5,51,102,.35); }
+.ma2-step-pip-circle.active { background: var(--title); border-color: var(--title); color: white; box-shadow: 0 4px 14px -3px rgba(5,51,102,.35); }
 .ma2-step-pip-label { font-size: 10px; font-weight: 700; color: var(--muted); letter-spacing: .04em; text-transform: uppercase; white-space: nowrap; transition: color .3s; }
 .ma2-step-pip-label.active { color: var(--title); }
 .ma2-step-pip-label.done   { color: var(--primary); }
@@ -348,13 +376,13 @@ const CSS = `
 }
 .ma2-card-body { padding: 20px 22px; flex: 1; overflow-y: auto; overflow-x: hidden; }
 
-/* ── Cities grid ── */
+/* ── Cities ── */
 .ma2-cities-grid { display: flex; flex-wrap: wrap; gap: 9px; }
 .ma2-city-btn {
   padding: 9px 18px; border-radius: 22px;
   border: 2px solid var(--border); background: var(--white);
   color: var(--text); font-size: 13px; font-weight: 600;
-  cursor: pointer; font-family: inheritinherit; transition: all .18s;
+  cursor: pointer; font-family: inherit; transition: all .18s;
 }
 .ma2-city-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 10px -4px rgba(0,0,0,.12); }
 .ma2-city-btn.on {
@@ -383,7 +411,7 @@ const CSS = `
   padding: 7px 12px; border-radius: 10px;
   border: 1.5px solid var(--border); background: var(--white);
   font-size: 12px; font-weight: 600; color: var(--muted);
-  cursor: pointer; font-family: inheritinherit; transition: all .15s; white-space: nowrap;
+  cursor: pointer; font-family: inherit; transition: all .15s; white-space: nowrap;
 }
 .ma2-date-btn:hover { border-color: var(--primary); color: var(--primary); }
 .ma2-date-btn.active { border-color: var(--primary); background: rgba(43,150,168,.07); color: var(--primary); }
@@ -407,21 +435,15 @@ const CSS = `
   border: 1px solid rgba(43,150,168,.2); border-radius: 20px;
   font-size: 11px; font-weight: 600; color: var(--title);
 }
-.ma2-cal-empty {
-  display: flex; flex-direction: column; align-items: center;
-  justify-content: center; padding: 40px 20px; gap: 12px; text-align: center;
-}
-.ma2-cal-empty-icon { width: 52px; height: 52px; border-radius: 16px; background: #F1F5F9; display: flex; align-items: center; justify-content: center; }
-.ma2-cal-empty-text { font-size: 13px; color: var(--muted); max-width: 240px; line-height: 1.5; }
 
-/* ── Cats ── */
+/* ── Categories ── */
 .ma2-cats-wrap { display: flex; flex-wrap: wrap; gap: 9px; }
 .ma2-cat-chip {
   display: flex; align-items: center; gap: 6px;
   padding: 8px 15px; border-radius: 24px;
   border: 2px solid var(--border); background: var(--white);
   color: var(--text); font-size: 13px; font-weight: 500;
-  cursor: pointer; font-family: inheritinherit; transition: all .18s;
+  cursor: pointer; font-family: inherit; transition: all .18s;
 }
 .ma2-cat-chip:hover { transform: translateY(-1px); box-shadow: 0 4px 10px -4px rgba(0,0,0,.12); }
 .ma2-cat-chip.on {
@@ -434,7 +456,7 @@ const CSS = `
   width: 100%; padding: 10px 38px 10px 14px;
   border-radius: 12px; border: 1.5px solid var(--border);
   font-size: 14px; color: var(--title); outline: none;
-  background: #FAFBFC; transition: border-color .2s; font-family: inheritinherit;
+  background: #FAFBFC; transition: border-color .2s; font-family: inherit;
 }
 .ma2-budget-input:focus { border-color: var(--primary); }
 .ma2-budget-hint { font-size: 11px; color: var(--primary); margin-top: 6px; }
@@ -456,21 +478,20 @@ const CSS = `
   padding: 12px 22px; border-radius: 50px;
   border: 2px solid var(--border); background: var(--white);
   color: var(--text); font-size: 14px; font-weight: 700;
-  font-family: inheritinherit; cursor: pointer; transition: all .18s;
+  font-family: inherit; cursor: pointer; transition: all .18s;
 }
 .ma2-back-btn:hover { border-color: var(--title); color: var(--title); }
 .ma2-next-btn {
   flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px;
   padding: 13px 28px; border-radius: 50px;
   border: none; background: var(--title); color: white;
-  font-size: 15px; font-weight: 700; font-family: inheritinherit;
+  font-size: 15px; font-weight: 700; font-family: inherit;
   cursor: pointer; transition: all .22s;
   box-shadow: 0 10px 28px -8px rgba(5,51,102,.40);
 }
 .ma2-next-btn.primary { background: var(--primary); box-shadow: 0 10px 28px -8px rgba(43,150,168,.50); }
 .ma2-next-btn:hover:not(:disabled) { transform: translateY(-2px); }
 .ma2-next-btn:disabled { background: #E5E7EB; color: var(--muted); box-shadow: none; cursor: not-allowed; transform: none; }
-.ma2-next-btn.danger-next { background: #2B96A8; }
 
 /* ── Summary pill ── */
 .ma2-summary-pill {
@@ -485,7 +506,7 @@ const CSS = `
 /* ── Loading ── */
 .ma2-loading-row { display: flex; align-items: center; gap: 10px; padding: 12px 0; color: #64748b; font-size: 13px; }
 
-/* ── Gen screen ── */
+/* ── Generation screen ── */
 .ma2-gen-screen {
   flex: 1; display: flex; flex-direction: column;
   align-items: center; justify-content: center;
@@ -499,16 +520,14 @@ const CSS = `
   animation: ma2pulse 2s ease-in-out infinite;
 }
 @keyframes ma2pulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.08)} }
-.ma2-gen-title { font-family: inherit'Playfair Display', serif; font-size: 22px; font-weight: 900; color: var(--title); margin: 0; }
+.ma2-gen-title { font-family: 'Playfair Display', serif; font-size: 22px; font-weight: 900; color: var(--title); margin: 0; }
 .ma2-gen-msg { font-size: 14px; color: var(--muted); max-width: 340px; line-height: 1.5; }
 .ma2-gen-dots { display: flex; gap: 8px; justify-content: center; }
 .ma2-gen-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--primary); animation: ma2bounce 1.4s infinite; }
 @keyframes ma2bounce { 0%,80%,100%{transform:scale(0)} 40%{transform:scale(1)} }
 
-/* ── Mini Calendar popup ── */
-.ma2-cal-pop {
-  background: white; border-radius: 14px; overflow: hidden;
-}
+/* ── Mini Calendar ── */
+.ma2-cal-pop { background: white; border-radius: 14px; overflow: hidden; }
 .ma2-cal-pop-header {
   display: flex; align-items: center; justify-content: space-between;
   padding: 10px 12px; border-bottom: 1px solid #F1F5F9;
@@ -520,21 +539,15 @@ const CSS = `
   display: flex; align-items: center;
 }
 .ma2-cal-nav-btn:hover { color: var(--primary); background: rgba(43,150,168,.08); }
-.ma2-cal-days-header {
-  display: grid; grid-template-columns: repeat(7,1fr);
-  padding: 8px 6px 2px;
-}
+.ma2-cal-days-header { display: grid; grid-template-columns: repeat(7,1fr); padding: 8px 6px 2px; }
 .ma2-cal-day-name { text-align: center; font-size: 10px; font-weight: 700; color: var(--muted); }
-.ma2-cal-grid {
-  display: grid; grid-template-columns: repeat(7,1fr);
-  padding: 4px 6px 10px; gap: 2px;
-}
+.ma2-cal-grid { display: grid; grid-template-columns: repeat(7,1fr); padding: 4px 6px 10px; gap: 2px; }
 .ma2-cal-day-btn {
   aspect-ratio: 1; border: none; background: none;
   border-radius: 8px; font-size: 12px; font-weight: 500;
   color: var(--text); cursor: pointer; transition: all .12s;
   display: flex; align-items: center; justify-content: center;
-  font-family: inheritinherit;
+  font-family: inherit;
 }
 .ma2-cal-day-btn:hover:not(:disabled) { background: rgba(43,150,168,.10); color: var(--primary); }
 .ma2-cal-day-btn:disabled { color: #D1D5DB; cursor: not-allowed; }
@@ -543,12 +556,10 @@ const CSS = `
 .ma2-cal-legend { display: flex; align-items: center; gap: 6px; padding: 6px 10px 10px; font-size: 10px; color: var(--muted); }
 .ma2-cal-legend-dot { width: 8px; height: 8px; border-radius: 50%; background: #FCA5A5; }
 
-/* ── Scrollbar ── */
 ::-webkit-scrollbar { width: 4px; height: 4px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
 
-/* ── Responsive ── */
 @media (max-width: 640px) {
   .ma2-topbar { padding: 12px 16px; gap: 8px; }
   .ma2-topbar h1 { font-size: 15px; }
@@ -560,12 +571,10 @@ const CSS = `
 }
 `;
 
-/* ════════════════════════════
+/* ══════════════════════════════════════════
    MiniCalPop
-════════════════════════════ */
-function MiniCalPop({
-  value, onChange, minDate, onClose, blockedRanges,
-}: {
+══════════════════════════════════════════ */
+function MiniCalPop({ value, onChange, minDate, onClose, blockedRanges }: {
   value: Date | null;
   onChange: (d: Date) => void;
   minDate?: Date | null;
@@ -613,17 +622,12 @@ function MiniCalPop({
       </div>
       <div className="ma2-cal-days-header">{DAYS_FR.map(d => <div key={d} className="ma2-cal-day-name">{d}</div>)}</div>
       <div className="ma2-cal-grid">
-        {cells.map((day, i) => {
-          const disabled = isDisabled(day);
-          const blocked  = isBlocked(day);
-          const selected = isSelected(day);
-          return (
-            <button key={i} disabled={disabled}
-              onClick={() => { if (day && !disabled) { onChange(new Date(year, month, day)); onClose(); } }}
-              className={["ma2-cal-day-btn", selected ? "selected" : "", blocked ? "blocked" : ""].join(" ")}
-            >{day || ""}</button>
-          );
-        })}
+        {cells.map((day, i) => (
+          <button key={i} disabled={isDisabled(day)}
+            onClick={() => { if (day && !isDisabled(day)) { onChange(new Date(year, month, day)); onClose(); } }}
+            className={["ma2-cal-day-btn", isSelected(day) ? "selected" : "", isBlocked(day) ? "blocked" : ""].join(" ")}
+          >{day || ""}</button>
+        ))}
       </div>
       {!!blockedRanges?.length && (
         <div className="ma2-cal-legend">
@@ -635,15 +639,15 @@ function MiniCalPop({
   );
 }
 
-/* ════════════════════════════
+/* ══════════════════════════════════════════
    CityDateRow
-════════════════════════════ */
+══════════════════════════════════════════ */
 function CityDateRow({ cdr, onStart, onEnd, allCityDates }: {
-  cdr: CityDateRange; onStart: (d:Date)=>void; onEnd: (d:Date)=>void; allCityDates: CityDateRange[];
+  cdr: CityDateRange; onStart: (d: Date) => void; onEnd: (d: Date) => void; allCityDates: CityDateRange[];
 }) {
   const [openPop, setOpenPop] = useState<"start"|"end"|null>(null);
-  const minEnd = cdr.start ? new Date(cdr.start) : undefined;
-  const nights = cdr.start && cdr.end ? daysBetween(cdr.start, cdr.end) : 0;
+  const minEnd  = cdr.start ? new Date(cdr.start) : undefined;
+  const nights  = cdr.start && cdr.end ? daysBetween(cdr.start, cdr.end) : 0;
   const blocked = getBlockedDates(allCityDates, cdr.city);
 
   const portal = openPop ? createPortal(
@@ -652,12 +656,11 @@ function CityDateRow({ cdr, onStart, onEnd, allCityDates }: {
       <div style={{
         position:"fixed", top:"80px", left:"50%",
         transform:"translateX(-50%) scale(0.88)", transformOrigin:"top center",
-        zIndex:9999, boxShadow:"0 4px 20px rgba(0,0,0,0.15)",
-        borderRadius:12, background:"#fff",
-      }} onWheel={e=>e.stopPropagation()}>
+        zIndex:9999, boxShadow:"0 4px 20px rgba(0,0,0,0.15)", borderRadius:12, background:"#fff",
+      }} onWheel={e => e.stopPropagation()}>
         <MiniCalPop
           value={openPop === "start" ? cdr.start : cdr.end}
-          onChange={d => { if (openPop==="start") onStart(d); else onEnd(d); setOpenPop(null); }}
+          onChange={d => { if (openPop === "start") onStart(d); else onEnd(d); setOpenPop(null); }}
           minDate={openPop === "end" ? minEnd : undefined}
           onClose={() => setOpenPop(null)}
           blockedRanges={blocked}
@@ -671,19 +674,17 @@ function CityDateRow({ cdr, onStart, onEnd, allCityDates }: {
       <div className="ma2-city-date-row">
         <div className="ma2-city-date-row-left">
           <span className="ma2-city-name">{cdr.city}</span>
-          {nights > 0 && <span className="ma2-city-nights">• {nights} jour{nights>1?"s":""}</span>}
+          {nights > 0 && <span className="ma2-city-nights">• {nights} jour{nights > 1 ? "s" : ""}</span>}
         </div>
         <div className="ma2-city-date-btns">
-          <button onClick={() => setOpenPop(openPop==="start"?null:"start")}
-            className={["ma2-date-btn", cdr.start?"active":""].join(" ")}>
-            <CalendarDays size={12}/>
-            {cdr.start ? fmtShort(cdr.start) : "Arrivée"}
+          <button onClick={() => setOpenPop(openPop === "start" ? null : "start")}
+            className={["ma2-date-btn", cdr.start ? "active" : ""].join(" ")}>
+            <CalendarDays size={12}/>{cdr.start ? fmtShort(cdr.start) : "Arrivée"}
           </button>
           <ArrowRight size={14} color="#94a3b8"/>
-          <button onClick={() => { if (cdr.start) setOpenPop(openPop==="end"?null:"end"); }}
-            className={["ma2-date-btn", cdr.end?"active":"", !cdr.start?"disabled":""].join(" ")}>
-            <CalendarDays size={12}/>
-            {cdr.end ? fmtShort(cdr.end) : "Départ"}
+          <button onClick={() => { if (cdr.start) setOpenPop(openPop === "end" ? null : "end"); }}
+            className={["ma2-date-btn", cdr.end ? "active" : "", !cdr.start ? "disabled" : ""].join(" ")}>
+            <CalendarDays size={12}/>{cdr.end ? fmtShort(cdr.end) : "Départ"}
           </button>
         </div>
       </div>
@@ -692,306 +693,62 @@ function CityDateRow({ cdr, onStart, onEnd, allCityDates }: {
   );
 }
 
-/* ════════════════════════════
-   DebugPanel
-════════════════════════════ */
-function DebugPanel({
-  webhookUrl,
-  excursions,
-  citySchedule,
-  selectedCities,
-}: {
-  webhookUrl: string;
-  excursions: Excursion[];
-  citySchedule: any[];
-  selectedCities: string[];
-}) {
-  const [open, setOpen] = useState(false);
-  const [status, setStatus] = useState<"idle" | "loading" | "ok" | "error">("idle");
-  const [log, setLog] = useState<string[]>([]);
-
-  const addLog = (msg: string) =>
-    setLog((p) => [...p, `[${new Date().toLocaleTimeString()}] ${msg}`]);
-
-  const runTest = async () => {
-    setStatus("loading");
-    setLog([]);
-
-    addLog("▶ Démarrage du test...");
-    addLog(`URL: ${webhookUrl}`);
-
-    /* ───────── VALIDATION ───────── */
-
-    const validExcursions = excursions.filter((exc) => exc.is_active);
-
-    const usedSlots: Record<string, string[]> = {};
-
-    citySchedule.forEach((cityData) => {
-      const currentDate = new Date(cityData.startDate!);
-      const endDate = new Date(cityData.endDate!);
-
-      while (currentDate <= endDate) {
-        const dayKey = currentDate.toISOString().split("T")[0];
-        usedSlots[dayKey] = [];
-        currentDate.setDate(currentDate.getDate() + 1);
-      }
-    });
-
-    const compatibleExcursions = validExcursions.filter((exc) => {
-      if (!selectedCities.includes(exc.city)) return false;
-      if (!exc.start_date || !exc.end_date) return false;
-
-      const excStart = new Date(exc.start_date);
-      const excEnd = new Date(exc.end_date);
-
-      return citySchedule.some((cityData) => {
-        const userStart = new Date(cityData.startDate!);
-        const userEnd = new Date(cityData.endDate!);
-
-        return (
-          cityData.city === exc.city &&
-          excStart <= userEnd &&
-          excEnd >= userStart
-        );
-      });
-    });
-
-    const finalExcursions: any[] = [];
-
-    compatibleExcursions.forEach((exc) => {
-      const departure = (exc as any).departure_time || "09:00";
-
-      const matchingCity = citySchedule.find((c) => c.city === exc.city);
-      if (!matchingCity) return;
-
-      const dayKey = matchingCity.startDate!;
-      if (!usedSlots[dayKey]) usedSlots[dayKey] = [];
-
-      if (usedSlots[dayKey].includes(departure)) return;
-
-      usedSlots[dayKey].push(departure);
-
-      finalExcursions.push({
-        ...exc,
-        departure_time: departure,
-      });
-    });
-
-    console.log("Excursions valides :", finalExcursions);
-
-    /* ───────── TEST WEBHOOK ───────── */
-
-    const payload = {
-      destination: "Tunis",
-      startDate: "2025-06-01",
-      endDate: "2025-06-03",
-      budget: 500,
-      travelers: 1,
-      interests: ["Culture"],
-      cities: ["Tunis"],
-      citySchedule,
-      message: "Test debug",
-    };
-
-    addLog("📤 Payload envoyé");
-
-    try {
-      const res = await fetch(webhookUrl, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-
-      addLog(`📥 Status: ${res.status}`);
-
-      const text = await res.text();
-
-      if (!res.ok) {
-        setStatus("error");
-        return;
-      }
-
-      const json = JSON.parse(text);
-
-      if (json.days) {
-        addLog(`✅ OK: ${json.days.length} jours`);
-        setStatus("ok");
-      } else {
-        addLog("⚠️ Réponse invalide");
-        setStatus("error");
-      }
-    } catch (err: any) {
-      addLog("❌ Erreur: " + err.message);
-      setStatus("error");
-    }
-  };
-
-  if (!open) {
-    return (
-      <button
-        onClick={() => setOpen(true)}
-        style={{
-          position: "fixed",
-          bottom: 24,
-          right: 24,
-          background: "#1e293b",
-          color: "#fff",
-          padding: "10px 14px",
-          borderRadius: 10,
-          border: "none",
-          cursor: "pointer",
-        }}
-      >
-        Debug N8N
-      </button>
-    );
-  }
-
-  return (
-    <div style={{ position: "fixed", inset: 0, background: "#0008" }}>
-      <div
-        style={{
-          background: "#111",
-          color: "#fff",
-          padding: 20,
-          margin: 50,
-          borderRadius: 12,
-        }}
-      >
-        <h3>Debug Panel</h3>
-
-        <button onClick={runTest}>Run Test</button>
-
-        <pre style={{ marginTop: 10 }}>
-          {log.join("\n")}
-        </pre>
-
-        <button onClick={() => setOpen(false)}>Close</button>
-      </div>
-    </div>
-  );
-}
-
-/* ════════════════════════════
+/* ══════════════════════════════════════════
    Steps config
-════════════════════════════ */
+══════════════════════════════════════════ */
 const STEPS = [
-  { label: "Destinations", icon: <MapPin     size={15} color="#2B96A8"/> },
+  { label: "Destinations", icon: <MapPin      size={15} color="#2B96A8"/> },
   { label: "Calendrier",   icon: <CalendarDays size={15} color="#2B96A8"/> },
-  { label: "Intérêts",     icon: <Heart       size={15} color="#2B96A8"/> },
+  { label: "Intérêts",     icon: <Heart        size={15} color="#2B96A8"/> },
 ];
-function removeTimeConflicts(
-  itinerary: Itinerary
-): Itinerary {
 
-  return {
-    ...itinerary,
-
-    days: itinerary.days.map(day => {
-
-      const usedTimes = new Set<string>();
-
-      const filteredActivities =
-        day.activities.filter(act => {
-
-          const time =
-            act.time ||
-            "09:00";
-
-          if (usedTimes.has(time)) {
-            return false;
-          }
-
-          usedTimes.add(time);
-
-          return true;
-        });
-
-      return {
-        ...day,
-        activities: filteredActivities
-      };
-    })
-  };
-}
-//fitre unavailebale  by date and city
-function filterUnavailableActivities(
-  itinerary: Itinerary,
-  excursions: Excursion[]
-): Itinerary {
-
-  return {
-    ...itinerary,
-
-    days: itinerary.days.map(day => ({
-
-      ...day,
-
-      activities: day.activities.filter(act => {
-
-        const exc = excursions.find(
-          e => e.id === act.id
-        );
-
-        if (!exc) {
-          return false;
-        }
-
-        return exc.is_active === true;
-      })
-    }))
-  };
-}
-
-/* ════════════════════════════
-   Main Component
-════════════════════════════ */
+/* ══════════════════════════════════════════
+   MAIN COMPONENT
+══════════════════════════════════════════ */
 export default function ModeAssiste() {
   const supabase = createClient();
 
-  const [appStep, setAppStep]               = useState<"questions"|"generation"|"itineraire">("questions");
-  const [cardStep, setCardStep]             = useState(0);
-  const [slideDir, setSlideDir]             = useState<"left"|"right">("left");
-  const [animKey,  setAnimKey]              = useState(0);
+  const [appStep,   setAppStep]   = useState<"questions"|"generation"|"itineraire">("questions");
+  const [cardStep,  setCardStep]  = useState(0);
+  const [slideDir,  setSlideDir]  = useState<"left"|"right">("left");
+  const [animKey,   setAnimKey]   = useState(0);
 
   const [selectedCities, setSelectedCities] = useState<string[]>([]);
-  const [cityDates, setCityDates]           = useState<CityDateRange[]>([]);
-  const [selectedCats, setSelectedCats]     = useState<string[]>([]);
-  const [budget, setBudget]                 = useState<string>("");
+  const [cityDates,      setCityDates]      = useState<CityDateRange[]>([]);
+  const [selectedCats,   setSelectedCats]   = useState<string[]>([]);
+  const [budget,         setBudget]         = useState<string>("");
 
   const [villes,     setVilles]     = useState<Ville[]>([]);
   const [categories, setCategories] = useState<Categorie[]>([]);
   const [excursions, setExcursions] = useState<Excursion[]>([]);
   const [dbLoading,  setDbLoading]  = useState(true);
 
-  const [user, setUser] = useState<{ id: string } | null>(null);
+  const [user,      setUser]      = useState<{ id: string } | null>(null);
   const [favorites, setFavorites] = useState<Set<string>>(new Set());
 
-  const [itinerary, setItinerary]   = useState<Itinerary | null>(null);
-  const [genError,  setGenError]    = useState("");
+  const [itinerary,  setItinerary]  = useState<Itinerary | null>(null);
+  const [genError,   setGenError]   = useState("");
   const [loadingMsg, setLoadingMsg] = useState("");
   const msgIdxRef = useRef(0);
 
-  const [dateError, setDateError]   = useState("");
-  const [showCheckout, setShowCheckout] = useState(false);
-  const [saving, setSaving]             = useState(false);
-  const [saveStatus, setSaveStatus]     = useState<"idle"|"ok"|"error"|"login">("idle");
+  const [dateError,     setDateError]     = useState("");
+  const [showCheckout,  setShowCheckout]  = useState(false);
+  const [saving,        setSaving]        = useState(false);
+  const [saveStatus,    setSaveStatus]    = useState<"idle"|"ok"|"error"|"login">("idle");
 
   /* ── Derived ── */
   const totalDays = cityDates.reduce(
     (acc, cdr) => acc + (cdr.start && cdr.end ? daysBetween(cdr.start, cdr.end) : 0), 0
   );
-  const allDatesSet = cityDates.length > 0 && cityDates.every(c => c.start && c.end);
-  const totalPrice  = itinerary?.days.reduce(
-    (acc, d) => acc + d.activities.reduce((a, act) => a + (Number(act.price)||0), 0), 0
+  const allDatesSet  = cityDates.length > 0 && cityDates.every(c => c.start && c.end);
+  const totalPrice   = itinerary?.days.reduce(
+    (acc, d) => acc + d.activities.reduce((a, act) => a + (Number(act.price) || 0), 0), 0
   ) ?? 0;
   const itineraryAsExc = itinerary ? {
     id: "itinerary-" + Date.now(), title: itinerary.title,
     city: selectedCities.join(", "), duration_hours: totalDays * 8,
     price_per_person: totalPrice, max_people: 20,
   } : null;
-
-  /* Step 2 can proceed without categories (optional) */
   const canGenerate = selectedCities.length > 0 && allDatesSet && !dateError && !!N8N_WEBHOOK_URL;
 
   /* ── Load Supabase ── */
@@ -1004,9 +761,9 @@ export default function ModeAssiste() {
           supabase.from("categories").select("*").order("nom"),
           supabase.from("excursions").select("*").eq("is_active", true),
         ]);
-        setVilles((v||[]) as Ville[]);
-        setCategories((c||[]) as Categorie[]);
-        setExcursions((e||[]) as Excursion[]);
+        setVilles((v || []) as Ville[]);
+        setCategories((c || []) as Categorie[]);
+        setExcursions((e || []) as Excursion[]);
 
         const { data: { user: authUser } } = await supabase.auth.getUser();
         if (authUser) {
@@ -1015,12 +772,12 @@ export default function ModeAssiste() {
             .from("favoris").select("excursion_id").eq("touriste_id", authUser.id);
           if (favs) setFavorites(new Set(favs.map((f: any) => f.excursion_id)));
         }
-      } catch {}
+      } catch { /* silent */ }
       finally { setDbLoading(false); }
     })();
   }, []);
 
-  /* ── Navigation between cards ── */
+  /* ── Navigation ── */
   const goCard = (next: number) => {
     setSlideDir(next > cardStep ? "left" : "right");
     setAnimKey(k => k + 1);
@@ -1039,14 +796,14 @@ export default function ModeAssiste() {
     setSelectedCats(p => p.includes(id) ? p.filter(x => x !== id) : [...p, id]);
 
   const updateCityStart = (city: string, d: Date) => {
-    const cur = cityDates.find(c => c.city === city);
+    const cur      = cityDates.find(c => c.city === city);
     const conflict = cityDates.find(c => c.city !== city && datesOverlap(d, cur?.end ?? null, c.start, c.end));
     if (conflict) { setDateError(`Conflit avec "${conflict.city}"`); return; }
     setDateError("");
     setCityDates(prev => prev.map(c => c.city !== city ? c : { ...c, start: d, end: c.end && c.end < d ? null : c.end }));
   };
   const updateCityEnd = (city: string, d: Date) => {
-    const cur = cityDates.find(c => c.city === city);
+    const cur      = cityDates.find(c => c.city === city);
     const conflict = cityDates.find(c => c.city !== city && datesOverlap(cur?.start ?? null, d, c.start, c.end));
     if (conflict) { setDateError(`Conflit avec "${conflict.city}"`); return; }
     setDateError("");
@@ -1063,38 +820,48 @@ export default function ModeAssiste() {
       setLoadingMsg(LOADING_MSGS[msgIdxRef.current]);
     }, 2000);
     try {
-      const catNames = selectedCats.map(id => categories.find(c => c.id === id)?.nom).filter(Boolean) as string[];
-      const citySchedule = cityDates
-        .map(cdr => ({ city: cdr.city, startDate: cdr.start ? formatDateForN8N(cdr.start) : null, endDate: cdr.end ? formatDateForN8N(cdr.end) : null, daysCount: cdr.start && cdr.end ? daysBetween(cdr.start, cdr.end) : 0 }))
-        .filter(s => s.startDate && s.endDate);
-      const payload = {
-        destination: selectedCities.join(", "), startDate: citySchedule[0]?.startDate||"",
-        endDate: citySchedule[citySchedule.length-1]?.endDate||"",
-        budget: budget ? Number(budget) : 0, travelers: 1, interests: catNames,
-        cities: selectedCities, citySchedule,
-message: `Séjour en Tunisie du ${citySchedule[0]?.startDate} au ${citySchedule[citySchedule.length-1]?.endDate}`,
+      const catNames = selectedCats
+        .map(id => categories.find(c => c.id === id)?.nom)
+        .filter(Boolean) as string[];
 
+      const citySchedule = cityDates
+        .map(cdr => ({
+          city:      cdr.city,
+          startDate: cdr.start ? formatDateForN8N(cdr.start) : null,
+          endDate:   cdr.end   ? formatDateForN8N(cdr.end)   : null,
+          daysCount: cdr.start && cdr.end ? daysBetween(cdr.start, cdr.end) : 0,
+        }))
+        .filter(s => s.startDate && s.endDate);
+
+      const payload = {
+        destination: selectedCities.join(", "),
+        startDate:   citySchedule[0]?.startDate || "",
+        endDate:     citySchedule[citySchedule.length - 1]?.endDate || "",
+        budget:      budget ? Number(budget) : 0,
+        travelers:   1,
+        interests:   catNames,
+        cities:      selectedCities,
+        citySchedule,
+        message: `Séjour en Tunisie du ${citySchedule[0]?.startDate} au ${citySchedule[citySchedule.length - 1]?.endDate}`,
       };
-      const res = await fetch(N8N_WEBHOOK_URL, { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(payload) });
+
+      const res = await fetch(N8N_WEBHOOK_URL, {
+        method:  "POST",
+        headers: { "Content-Type": "application/json" },
+        body:    JSON.stringify(payload),
+      });
       clearInterval(iv);
       if (!res.ok) throw new Error(`n8n error ${res.status}`);
+
       const data = await res.json();
-const parsed =
-  extractItinerary(
-    data,
-    excursions
-  );
 
-const noConflicts =
-  removeTimeConflicts(parsed);
+      // Parse → remove time conflicts → filter invalid
+      const parsed     = extractItinerary(data, excursions);
+      const noConflict = removeTimeConflicts(parsed);
+      const validated  = filterUnavailableActivities(noConflict, excursions);
 
-const validated =
-  filterUnavailableActivities(
-    noConflicts,
-    excursions
-  );
-
-setItinerary(validated);      setAppStep("itineraire");
+      setItinerary(validated);
+      setAppStep("itineraire");
     } catch (err) {
       clearInterval(iv);
       setGenError(err instanceof Error ? err.message : "Erreur inconnue");
@@ -1102,58 +869,38 @@ setItinerary(validated);      setAppStep("itineraire");
     }
   };
 
-  const handleChangeActivity = (
-  dayIdx: number,
-  actIdx: number,
-  alt: Activity
-) => {
-
-  setItinerary(prev => {
-
-    if (!prev) return prev;
-
-    return {
-
-      ...prev,
-
-      days: prev.days.map(
-        (day, dIdx) => {
-
-          if (dIdx !== dayIdx) {
-            return day;
-          }
-
-          return {
-
+  /* ── Change activity ── */
+  const handleChangeActivity = (dayIdx: number, actIdx: number, alt: Activity) => {
+    setItinerary(prev => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        days: prev.days.map((day, dIdx) =>
+          dIdx !== dayIdx ? day : {
             ...day,
+            activities: day.activities.map((act, aIdx) => aIdx === actIdx ? alt : act),
+          }
+        ),
+      };
+    });
+  };
 
-            activities:
-              day.activities.map(
-                (act, aIdx) =>
-
-                  aIdx === actIdx
-                    ? alt
-                    : act
-              ),
-          };
-        }
-      ),
-    };
-  });
-};
-
+  /* ── Save ── */
   const saveItinerary = async () => {
     if (!itinerary) return;
     setSaving(true); setSaveStatus("idle");
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { setSaveStatus("login"); setSaving(false); return; }
-      const catNames = selectedCats.map(id => categories.find(c=>c.id===id)?.nom).filter(Boolean) as string[];
+      const catNames = selectedCats.map(id => categories.find(c => c.id === id)?.nom).filter(Boolean) as string[];
       const { error } = await supabase.from("itineraires").insert({
-        user_id: user.id, nb_jours: totalDays, villes_selectionnees: selectedCities,
-        categories_selectionnees: catNames, budget: budget ? Number(budget) : null,
-        city_schedule: cityDates.map(c => ({ city: c.city, start: c.start?.toISOString(), end: c.end?.toISOString() })),
-        plan: itinerary,
+        user_id:                  user.id,
+        nb_jours:                 totalDays,
+        villes_selectionnees:     selectedCities,
+        categories_selectionnees: catNames,
+        budget:                   budget ? Number(budget) : null,
+        city_schedule:            cityDates.map(c => ({ city: c.city, start: c.start?.toISOString(), end: c.end?.toISOString() })),
+        plan:                     itinerary,
       });
       setSaveStatus(error ? "error" : "ok");
     } catch { setSaveStatus("error"); }
@@ -1166,32 +913,30 @@ setItinerary(validated);      setAppStep("itineraire");
     setBudget(""); setGenError(""); setDateError(""); setShowCheckout(false); setSaveStatus("idle");
   };
 
-  /* ── Summary pill content ── */
+  /* ── Summary pill ── */
   const summaryParts: string[] = [];
-  if (selectedCities.length) summaryParts.push(selectedCities.slice(0,2).join(", ") + (selectedCities.length>2 ? ` +${selectedCities.length-2}`:``));
-  if (totalDays > 0) summaryParts.push(`${totalDays}j`);
-  if (selectedCats.length) summaryParts.push(`${selectedCats.length} intérêt${selectedCats.length>1?"s":""}`);
+  if (selectedCities.length)
+    summaryParts.push(selectedCities.slice(0, 2).join(", ") + (selectedCities.length > 2 ? ` +${selectedCities.length - 2}` : ""));
+  if (totalDays > 0)
+    summaryParts.push(`${totalDays}j`);
+  if (selectedCats.length)
+    summaryParts.push(`${selectedCats.length} intérêt${selectedCats.length > 1 ? "s" : ""}`);
 
-  /* ── Can advance each step ── */
   const canStep0 = selectedCities.length > 0;
   const canStep1 = allDatesSet && !dateError;
 
-  /* ════════ RENDER ════════ */
+  /* ══════════════════════════════════════════
+     RENDER
+  ══════════════════════════════════════════ */
   return (
     <div style={{ minHeight:"100vh", background:"#F6F9FB", fontFamily:"'DM Sans',system-ui,sans-serif" }}>
       <style>{CSS}</style>
       <TouristeNav favCount={favorites.size} isLoggedIn={!!user} />
       <div style={{ paddingTop: 64 }}/>
-<DebugPanel
-  webhookUrl={N8N_WEBHOOK_URL}
-  excursions={excursions}
-  citySchedule={cityDates}
-  selectedCities={selectedCities}
-/>
-      {/* ── Questions / wizard flow ── */}
+
+      {/* ── QUESTIONS WIZARD ── */}
       {appStep === "questions" && (
         <div className="ma2-page">
-          {/* Topbar */}
           <div className="ma2-topbar">
             <div className="badge"><Sparkles size={13}/> Mode Assisté</div>
             <h1>Composez votre itinéraire <span>sur mesure</span></h1>
@@ -1215,7 +960,6 @@ setItinerary(validated);      setAppStep("itineraire");
           </div>
 
           <div className="ma2-body">
-            {/* Error banner */}
             {genError && (
               <div className="ma2-err-banner">
                 <span><strong>Erreur :</strong> {genError}</span>
@@ -1225,14 +969,14 @@ setItinerary(validated);      setAppStep("itineraire");
 
             <div className="ma2-card-viewport">
 
-              {/* ─── Step 0 : Destinations ─── */}
+              {/* Step 0 : Destinations */}
               {cardStep === 0 && (
                 <div key={`c-${animKey}`} className={`ma2-card dir-${slideDir}`}>
                   <div className="ma2-card-header">
                     <div className="ma2-card-icon"><MapPin size={16} color="#2B96A8"/></div>
                     <h2>Destinations</h2>
                     {selectedCities.length > 0 && (
-                      <span className="count-badge">{selectedCities.length} sélectionnée{selectedCities.length>1?"s":""}</span>
+                      <span className="count-badge">{selectedCities.length} sélectionnée{selectedCities.length > 1 ? "s" : ""}</span>
                     )}
                     <span className="step-badge">Étape 1 / 3</span>
                   </div>
@@ -1243,10 +987,9 @@ setItinerary(validated);      setAppStep("itineraire");
                       <div className="ma2-cities-grid">
                         {villes.map(v => {
                           const nom = String(v.nom || v.name || "");
-                          const on  = selectedCities.includes(nom);
                           return (
                             <button key={v.id} onClick={() => toggleCity(nom)}
-                              className={["ma2-city-btn", on?"on":""].join(" ")}>
+                              className={["ma2-city-btn", selectedCities.includes(nom) ? "on" : ""].join(" ")}>
                               {nom}
                             </button>
                           );
@@ -1257,7 +1000,7 @@ setItinerary(validated);      setAppStep("itineraire");
                 </div>
               )}
 
-              {/* ─── Step 1 : Calendrier ─── */}
+              {/* Step 1 : Calendrier */}
               {cardStep === 1 && (
                 <div key={`c-${animKey}`} className={`ma2-card dir-${slideDir}`}>
                   <div className="ma2-card-header">
@@ -1268,25 +1011,22 @@ setItinerary(validated);      setAppStep("itineraire");
                   </div>
                   <div className="ma2-card-body">
                     <p className="ma2-dates-step-label">
-                      {cityDates.filter(c=>c.start&&c.end).length}/{cityDates.length} étapes configurées
+                      {cityDates.filter(c => c.start && c.end).length}/{cityDates.length} étapes configurées
                     </p>
-
                     {dateError && (
                       <div className="ma2-date-conflict-banner">
-                        <div style={{ display:"flex",alignItems:"flex-start",gap:8 }}>
-                          <AlertTriangle size={15} style={{ marginTop:1,flexShrink:0 }}/>
+                        <div style={{ display:"flex", alignItems:"flex-start", gap:8 }}>
+                          <AlertTriangle size={15} style={{ marginTop:1, flexShrink:0 }}/>
                           <span>{dateError}</span>
                         </div>
                         <button onClick={() => setDateError("")}>✕</button>
                       </div>
                     )}
-
                     {cityDates.map(cdr => (
                       <CityDateRow key={cdr.city} cdr={cdr} allCityDates={cityDates}
                         onStart={d => updateCityStart(cdr.city, d)}
                         onEnd={d   => updateCityEnd(cdr.city, d)}/>
                     ))}
-
                     {allDatesSet && !dateError && (
                       <div className="ma2-recap-box">
                         <div className="ma2-recap-title"><CheckCircle size={14} color="#2B96A8"/> Récapitulatif</div>
@@ -1304,19 +1044,19 @@ setItinerary(validated);      setAppStep("itineraire");
                 </div>
               )}
 
-              {/* ─── Step 2 : Intérêts + Budget ─── */}
+              {/* Step 2 : Intérêts + Budget */}
               {cardStep === 2 && (
                 <div key={`c-${animKey}`} className={`ma2-card dir-${slideDir}`}>
                   <div className="ma2-card-header">
                     <div className="ma2-card-icon"><Heart size={16} color="#2B96A8"/></div>
                     <h2>Centres d&apos;intérêt</h2>
                     {selectedCats.length > 0 && (
-                      <span className="count-badge">{selectedCats.length} choisi{selectedCats.length>1?"s":""}</span>
+                      <span className="count-badge">{selectedCats.length} choisi{selectedCats.length > 1 ? "s" : ""}</span>
                     )}
                     <span className="step-badge">Étape 3 / 3</span>
                   </div>
                   <div className="ma2-card-body">
-                    <p style={{ fontSize:12,color:"#9CA3AF",marginBottom:14,fontStyle:"italic",textAlign:"center" }}>
+                    <p style={{ fontSize:12, color:"#9CA3AF", marginBottom:14, fontStyle:"italic", textAlign:"center" }}>
                       Optionnel — passez directement si vous voulez tout découvrir
                     </p>
                     {dbLoading ? (
@@ -1325,24 +1065,22 @@ setItinerary(validated);      setAppStep("itineraire");
                       <div className="ma2-cats-wrap">
                         {categories.map(cat => {
                           const catName = String(cat.nom || cat.name || cat.label || "");
-                          const isOn    = selectedCats.includes(cat.id);
                           return (
                             <button key={cat.id} onClick={() => toggleCat(cat.id)}
-                              className={["ma2-cat-chip", isOn?"on":""].join(" ")}>
+                              className={["ma2-cat-chip", selectedCats.includes(cat.id) ? "on" : ""].join(" ")}>
                               <Sparkles size={12}/>{catName}
                             </button>
                           );
                         })}
                       </div>
                     )}
-
                     <div className="ma2-budget-section">
                       <p className="ma2-budget-label"><Euro size={14} color="#2B96A8"/> Budget total (optionnel)</p>
                       <div style={{ position:"relative" }}>
                         <input type="number" min={0} placeholder="Ex: 500"
                           value={budget} onChange={e => setBudget(e.target.value)}
                           className="ma2-budget-input"/>
-                        <span style={{ position:"absolute",right:14,top:"50%",transform:"translateY(-50%)",color:"#9CA3AF",fontSize:14,fontWeight:600,pointerEvents:"none" }}>€</span>
+                        <span style={{ position:"absolute", right:14, top:"50%", transform:"translateY(-50%)", color:"#9CA3AF", fontSize:14, fontWeight:600, pointerEvents:"none" }}>€</span>
                       </div>
                       {budget && Number(budget) > 0 && (
                         <p className="ma2-budget-hint">Budget de <strong>{Number(budget).toLocaleString("fr-FR")} €</strong> pris en compte</p>
@@ -1351,7 +1089,6 @@ setItinerary(validated);      setAppStep("itineraire");
                   </div>
                 </div>
               )}
-
             </div>
 
             {/* Summary pill */}
@@ -1373,23 +1110,20 @@ setItinerary(validated);      setAppStep("itineraire");
                   <ArrowLeft size={16}/> Retour
                 </button>
               )}
-
               {cardStep === 0 && (
                 <button className="ma2-next-btn" onClick={() => goCard(1)} disabled={!canStep0}>
                   Définir les dates <ArrowRight size={17}/>
                 </button>
               )}
-
               {cardStep === 1 && (
                 <button className="ma2-next-btn" onClick={() => goCard(2)} disabled={!canStep1}>
                   Choisir mes intérêts <ArrowRight size={17}/>
                 </button>
               )}
-
               {cardStep === 2 && (
                 <>
                   {dateError && (
-                    <p style={{ fontSize:12,color:"#c2410c",display:"flex",alignItems:"center",gap:5 }}>
+                    <p style={{ fontSize:12, color:"#c2410c", display:"flex", alignItems:"center", gap:5 }}>
                       <AlertTriangle size={13}/> Corrigez les conflits de dates
                     </p>
                   )}
@@ -1403,7 +1137,7 @@ setItinerary(validated);      setAppStep("itineraire");
         </div>
       )}
 
-      {/* ── Generation screen ── */}
+      {/* ── GENERATION SCREEN ── */}
       {appStep === "generation" && (
         <div className="ma2-page">
           <div className="ma2-gen-screen">
@@ -1419,7 +1153,7 @@ setItinerary(validated);      setAppStep("itineraire");
         </div>
       )}
 
-      {/* ── Itinerary result ── */}
+      {/* ── ITINERARY RESULT ── */}
       {appStep === "itineraire" && itinerary && (
         <div style={{ flex:1, overflow:"auto" }}>
           <ItineraireDisplay
