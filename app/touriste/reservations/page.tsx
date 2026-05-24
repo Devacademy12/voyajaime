@@ -8,7 +8,7 @@ type Reservation = {
   people_count: number; total_price: number; platform_fee: number;
   status: string; payment_status: string | null;
   payment_deadline?: string | null;
-  paid_at?: string | null;           // ✅ AJOUTÉ
+  paid_at?: string | null;
   excursion: {
     id: string; title: string; city: string; photos: string[];
     duration_hours: number; price_per_person: number; rating?: number;
@@ -58,60 +58,67 @@ export default async function TouristeReservations({
   const formattedReservations: Reservation[] = (reservations || [])
     .filter(r => r.excursion !== null && r.excursion !== undefined)
     .map(r => {
-      const excursionData = Array.isArray(r.excursion) ? r.excursion[0] : r.excursion;
+      const exc = Array.isArray(r.excursion) ? r.excursion[0] : r.excursion;
+      // ✅ Normaliser l'heure : "09:00:00" → "09:00"
+      const timeNormalized = r.time ? r.time.slice(0, 5) : "";
       return {
-        id: r.id,
-        booking_code: r.booking_code,
-        date: r.date,
-        time: r.time,
-        people_count: r.people_count,
-        total_price: r.total_price,
-        platform_fee: r.platform_fee,
-        status: r.status,
-        payment_status: r.payment_status || null,
+        id:               r.id,
+        booking_code:     r.booking_code,
+        date:             r.date,
+        time:             timeNormalized,
+        people_count:     r.people_count,
+        total_price:      r.total_price,
+        platform_fee:     r.platform_fee,
+        status:           r.status,
+        payment_status:   r.payment_status || null,
         payment_deadline: r.payment_deadline || null,
-        paid_at: (r as any).paid_at || null,   // ✅ AJOUTÉ
-        excursion: excursionData ? {
-          id: excursionData.id,
-          title: excursionData.title || "Excursion inconnue",
-          city: excursionData.city || "",
-          photos: excursionData.photos || [],
-          duration_hours: excursionData.duration_hours || 0,
-          price_per_person: excursionData.price_per_person || 0,
-          rating: excursionData.rating || 0,
+        paid_at:          (r as any).paid_at || null,
+        excursion: exc ? {
+          id:               exc.id,
+          title:            exc.title || "Excursion inconnue",
+          city:             exc.city  || "",
+          photos:           exc.photos || [],
+          duration_hours:   exc.duration_hours   || 0,
+          price_per_person: exc.price_per_person || 0,
+          rating:           exc.rating || 0,
         } : null,
       };
     });
 
   return (
     <>
-      {/* ── Responsive wrapper styles ── */}
       <style>{`
-        .resa-page-wrap {
+        .resa-page {
           width: 100%;
-          background: #F8FAFC;
           min-height: 100vh;
-          position: relative;
-          padding: 36px 0 60px;
+          background: #F8FAFC;
+          box-sizing: border-box;
+        }
+        .resa-page-inner {
+          max-width: 1200px;
+          margin: 0 auto;
+          padding: 36px 32px 60px;
           box-sizing: border-box;
         }
         @media (max-width: 900px) {
-          .resa-page-wrap { padding: 24px 0 48px; }
+          .resa-page-inner { padding: 24px 20px 48px; }
         }
         @media (max-width: 640px) {
-          .resa-page-wrap { padding: 16px 0 40px; }
+          .resa-page-inner { padding: 16px 14px 40px; }
         }
       `}</style>
 
-      <div className="resa-page-wrap">
+      <div className="resa-page">
         <Suspense fallback={null}>
           <StripeReturnHandler />
         </Suspense>
 
-        <ReservationsClient
-          reservations={formattedReservations}
-          autoOpenId={autoOpenId}
-        />
+        <div className="resa-page-inner">
+          <ReservationsClient
+            reservations={formattedReservations}
+            autoOpenId={autoOpenId}
+          />
+        </div>
       </div>
     </>
   );

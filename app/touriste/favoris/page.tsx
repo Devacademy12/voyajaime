@@ -13,23 +13,81 @@ export default async function TouristeFavoris() {
     .eq("touriste_id", user!.id)
     .order("created_at", { ascending: false });
 
-  /* Supabase retourne excursion comme un tableau — on prend le premier élément */
   const favoris = (raw || []).map(f => ({
     id: f.id,
     excursion: Array.isArray(f.excursion) ? (f.excursion[0] ?? null) : f.excursion,
   }));
 
   return (
-    <div style={{ padding:"36px 0 60px", width:"100%" }}>
-      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:36 }}>
-        <div>
-          <h1 style={{ fontSize: 28, fontWeight: 700, color: "#053366", margin: 0 }}>Mes favoris</h1>
+    <>
+      <style>{`
+        .fav-page {
+          width: 100%;
+          min-height: 100vh;
+          background: #F8FAFC;
+          box-sizing: border-box;
+        }
+        .fav-page-inner {
+          max-width: 1200px;
+          margin: 0 auto;
+          padding: 36px 32px 60px;
+          box-sizing: border-box;
+        }
+        .fav-page-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 32px;
+          flex-wrap: wrap;
+          gap: 12px;
+        }
+        .fav-page-title {
+          font-size: clamp(22px, 3vw, 28px);
+          font-weight: 700;
+          color: #053366;
+          margin: 0;
+          letter-spacing: -0.3px;
+        }
+        .fav-discover-btn {
+          padding: 10px 20px;
+          background: #02AFCF;
+          color: white;
+          border-radius: 12px;
+          text-decoration: none;
+          font-size: 13px;
+          font-weight: 700;
+          box-shadow: 0 4px 14px rgba(2,175,207,0.28);
+          display: inline-flex;
+          align-items: center;
+          gap: 7px;
+          transition: background .15s, box-shadow .15s;
+          white-space: nowrap;
+        }
+        .fav-discover-btn:hover {
+          background: #0891b2;
+          box-shadow: 0 6px 18px rgba(2,175,207,0.38);
+        }
+        @media (max-width: 900px) {
+          .fav-page-inner { padding: 24px 20px 48px; }
+        }
+        @media (max-width: 640px) {
+          .fav-page-inner { padding: 16px 14px 40px; }
+          .fav-page-header { margin-bottom: 20px; }
+        }
+      `}</style>
+
+      <div className="fav-page">
+        <div className="fav-page-inner">
+          <div className="fav-page-header">
+            <h1 className="fav-page-title">Mes favoris</h1>
+            <Link href="/excursions" className="fav-discover-btn">
+              <Compass size={15} strokeWidth={2} /> Découvrir plus
+            </Link>
+          </div>
+
+          <FavorisClient favoris={favoris} userId={user!.id} />
         </div>
-        <Link href="/excursions" style={{ padding:"11px 22px", background:"#02AFCF", color:"white", borderRadius:12, textDecoration:"none", fontSize:14, fontWeight:700, boxShadow:"0 4px 14px rgba(43,150,168,0.3)", display:"inline-flex", alignItems:"center", gap:8 }}>
-          <Compass size={16} strokeWidth={2} /> Découvrir plus
-        </Link>
       </div>
-      <FavorisClient favoris={favoris} userId={user!.id} />
-    </div>
+    </>
   );
 }
