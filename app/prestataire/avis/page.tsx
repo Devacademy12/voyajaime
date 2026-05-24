@@ -109,7 +109,7 @@ export default async function PrestataireAvis() {
           color: #053366; line-height: 1.1; letter-spacing: -.02em;
         }
         .pw-header-sub {
-          font-size: 13px; color: #94A3B8; margin-top: 5px; font-weight: 500;
+          font-size: 13px; color: #053366; margin-top: 5px; font-weight: 500;
         }
         .pw-header-badge {
           display: flex; align-items: center; gap: 8px;
@@ -135,20 +135,12 @@ export default async function PrestataireAvis() {
 
       <header className="pw-header">
         <div className="pw-header-left">
-          <div className="pw-header-eyebrow">⭐ Retours clients</div>
           <h1 className="pw-header-title">Avis clients</h1>
           <p className="pw-header-sub">
             {approved.length} avis publiés {avgRating && <>· Note moyenne : <strong>{avgRating}/5</strong></>}
           </p>
         </div>
 
-        <div className="pw-header-badge">
-          <div className="pw-header-badge-avatar">{initials}</div>
-          <div>
-            <div className="pw-header-badge-name">{name}</div>
-            <div className="pw-header-badge-role">Prestataire</div>
-          </div>
-        </div>
       </header>
 
       {avis.length === 0 ? (
