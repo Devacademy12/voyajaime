@@ -3,6 +3,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import Stripe from "stripe";
 
+function firstRow<T>(value: T | T[] | null | undefined): T | null {
+  if (!value) return null;
+  return Array.isArray(value) ? (value[0] ?? null) : value;
+}
+
 export async function POST(req: NextRequest) {
   try {
     const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
@@ -10,7 +15,6 @@ export async function POST(req: NextRequest) {
     const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
     if (!stripeSecretKey || !supabaseUrl || !supabaseServiceRoleKey) {
-      console.error("Variables d'environnement Stripe/Supabase manquantes");
       return NextResponse.json({ error: "Configuration serveur incomplète" }, { status: 500 });
     }
 
@@ -30,58 +34,68 @@ export async function POST(req: NextRequest) {
     }
 
     const reservationId = session.metadata?.reservation_id;
-    const prestataireId = session.metadata?.prestataire_id || null;
-    const amount        = Number(session.metadata?.amount        || session.amount_total! / 100);
-    const platformFee   = Number(session.metadata?.platform_fee  || (amount * 0.10).toFixed(2));
-    const netAmount     = Number(session.metadata?.net_amount    || (amount * 0.90).toFixed(2));
-
     if (!reservationId) {
       return NextResponse.json({ error: "reservation_id manquant dans metadata" }, { status: 400 });
     }
 
-    // ── 2. Upsert paiements (admin — bypass RLS) ─────────────────────
-    const { error: upsertError } = await supabaseAdmin
-      .from("paiements")
-      .upsert(
-        {
-          reservation_id: reservationId,
-          prestataire_id: prestataireId,
-          amount,
-          platform_fee: platformFee,
-          net_amount:   netAmount,
-          status:       "paid",
-          paid_at:      new Date().toISOString(),
-        },
-        { onConflict: "reservation_id", ignoreDuplicates: false }
-      );
+    // ── 2. Récupérer la réservation ─────────────────────────────────
+    const { data: reservationData, error: reservationFetchError } = await supabaseAdmin
+      .from("reservations")
+      .select(`id, touriste_id, excursion_id, total_price, platform_fee, excursions(id, prestataire_id)`)
+      .eq("id", reservationId)
+      .single();
 
-    if (upsertError) {
-      console.error("[confirm] upsert paiements:", upsertError.message);
-      return NextResponse.json({ error: upsertError.message }, { status: 500 });
+    if (reservationFetchError || !reservationData) {
+      return NextResponse.json({ error: "Réservation introuvable" }, { status: 404 });
     }
 
-    // ── 3. Mettre à jour la réservation ──────────────────────────────
-    const { error: resaError } = await supabaseAdmin
+    const reservation = reservationData as any;
+    const excursion = firstRow(reservation.excursions as any);
+    const prestataireId = excursion?.prestataire_id ?? null;
+    const amount = Number(reservation.total_price ?? session.amount_total! / 100);
+    const platformFee = Number(reservation.platform_fee ?? (amount * 0.1).toFixed(2));
+    const netAmount = Number((amount - platformFee).toFixed(2));
+    const paidAt = new Date().toISOString();
+
+    // ── 3. Enregistrer le paiement ──────────────────────────────────
+    const paiementPayload = {
+      reservation_id: reservationId,
+      prestataire_id: prestataireId,
+      amount,
+      platform_fee: platformFee,
+      net_amount: netAmount,
+      status: "paid",
+      paid_at: paidAt,
+      stripe_session_id: session.id,
+    };
+
+    const { data: existingPaiement } = await supabaseAdmin
+      .from("paiements")
+      .select("id")
+      .eq("reservation_id", reservationId)
+      .maybeSingle();
+
+    if (existingPaiement?.id) {
+      await supabaseAdmin.from("paiements").update(paiementPayload).eq("id", existingPaiement.id);
+    } else {
+      await supabaseAdmin.from("paiements").insert(paiementPayload);
+    }
+
+    // ── 4. ✅ METTRE À JOUR LA RÉSERVATION ──────────────────────────
+    const { error: reservationUpdateError } = await supabaseAdmin
       .from("reservations")
       .update({
         status:         "confirmed",
         payment_status: "paid",
-        payment_method: "stripe",
-        paid_at:        new Date().toISOString(),
+        paid_at:        paidAt,
       })
       .eq("id", reservationId)
       .neq("status", "cancelled");
 
-    if (resaError) {
-      console.error("[confirm] update reservations:", resaError.message);
-      return NextResponse.json({ error: resaError.message }, { status: 500 });
+    if (reservationUpdateError) {
+      console.error("[confirm] update reservation:", reservationUpdateError.message);
+      // Non bloquant
     }
-
-    // ── 4. Mettre à jour reservation_itineraires (non bloquant) ─────
-    await supabaseAdmin
-      .from("reservation_itineraires")
-      .update({ payment_status: "paid" })
-      .eq("reservation_id", reservationId);
 
     return NextResponse.json({ paid: true, reservation_id: reservationId });
 

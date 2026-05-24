@@ -120,6 +120,22 @@ export default function ItinerarySummary({
   const totBudget = days.reduce((s, d) =>
     s + d.activities.reduce((ss, a) => ss + getPrice(a), 0), 0);
 
+  const checkoutExcursions = days.flatMap((day, dayIndex) =>
+    day.activities.map((act, actIndex) => ({
+      id: act.id ?? `${dayIndex}-${actIndex}`,
+      title: getTitle(act),
+      city: getCity(act),
+      duration_hours: act.excursion?.duration_hours ?? (Number.parseFloat(getDuration(act)) || 0),
+      price_per_person: getPrice(act),
+      max_people: 20,
+      available_dates: act.available_dates ?? act.excursion?.available_dates ?? null,
+      plan_date: day.date,
+      plan_time: (act.time as "matin" | "aprem" | "soir") || undefined,
+      plan_day: day.day ?? dayIndex + 1,
+      note: act.note,
+    }))
+  ).filter((exc) => Boolean(exc.id));
+
   const saveBtnLabel = saving
     ? "Enregistrement…"
     : saveOk
@@ -342,23 +358,8 @@ export default function ItinerarySummary({
       {/* ── Checkout Modal ───────────────────────────────────── */}
       {checkoutOpen && (
         <CheckoutModalItineraire
-          excursions={days.flatMap((day, dIdx) =>
-            day.activities.map(act => ({
-              id: act.id,
-              title: getTitle(act),
-              city: getCity(act),
-              duration_hours: parseFloat(getDuration(act)) || 0,
-              price_per_person: getPrice(act),
-              max_people: 20,
-              available_dates: act.excursion?.available_dates ?? act.available_dates ?? null,
-              plan_date: day.date,
-              plan_time: act.time as any,
-              plan_day: day.day ?? dIdx + 1,
-              note: act.note,
-            }))
-          )}
+          excursions={checkoutExcursions}
           itineraireId={savedItId ?? undefined}
-          itineraireTitle={title ?? `Résumé — ${nbJours} jours en Tunisie`}
           onClose={() => setCheckoutOpen(false)}
         />
       )}
