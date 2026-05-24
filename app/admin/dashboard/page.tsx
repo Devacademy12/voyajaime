@@ -148,11 +148,8 @@ const topVilles = Object.entries(villeCount)
       <div className="fa" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <div>
           <h1 style={{ fontSize: 20, fontWeight: 800, color: "#053366", margin: 0, letterSpacing: "-0.4px" }}>
-            Dashboard Admin
+            Tableau de bord
           </h1>
-          <p style={{ color: "#9CA3AF", fontSize: 12, margin: "2px 0 0" }}>
-            Vue globale · VoyajAime
-          </p>
         </div>
         {pendingPrestataires && pendingPrestataires.length > 0 && (
           

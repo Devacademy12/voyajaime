@@ -558,19 +558,7 @@ export default function DashboardClient({ profile, excursions, reservations, pai
       {/* Header */}
       <header className="pw-header">
         <div className="pw-header-left">
-          <div className="pw-header-eyebrow">
-            <TrendingUp size={12} /> Vue d'ensemble
-          </div>
           <h1 className="pw-header-title">Tableau de bord</h1>
-          <p className="pw-header-sub">Suivez vos performances et gérez vos activités.</p>
-        </div>
-
-        <div className="pw-header-badge">
-          <div className="pw-header-badge-avatar">{initials}</div>
-          <div>
-            <div className="pw-header-badge-name">{name}</div>
-            <div className="pw-header-badge-role">Prestataire Partenaire</div>
-          </div>
         </div>
       </header>
 
