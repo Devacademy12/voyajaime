@@ -231,16 +231,8 @@ export default function ProfilClient({ profile, email }: Props) {
             <User size={12} /> Mon Profil
           </div>
           <h1 className="pw-header-title">Paramètres du compte</h1>
-          <p className="pw-header-sub">Gérez vos informations personnelles et publiques.</p>
         </div>
 
-        <div className="pw-header-badge">
-          <div className="pw-header-badge-avatar">{initials}</div>
-          <div>
-            <div className="pw-header-badge-name">{name}</div>
-            <div className="pw-header-badge-role">{isValidated ? "Partenaire vérifié" : "En cours de vérification"}</div>
-          </div>
-        </div>
       </header>
 
       <form onSubmit={handleSave} className="pf-grid">

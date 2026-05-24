@@ -582,20 +582,9 @@ export default function PrestaReservationsClient({
         {/* ── Header ── */}
         <div className="pw-header">
           <div className="pw-header-left">
-            <div className="pw-header-eyebrow">
-              <Star size={10} />
-              Espace prestataire
-            </div>
             <h1 className="pw-header-title">Réservations & Paiements</h1>
-            <p className="pw-header-sub">Suivi complet de vos excursions, touristes et revenus nets</p>
           </div>
-          <div className="pw-header-badge">
-            <div className="pw-header-badge-avatar">{displayInitials}</div>
-            <div>
-              <div className="pw-header-badge-name">{displayName}</div>
-              <div className="pw-header-badge-role">Prestataire vérifié</div>
-            </div>
-          </div>
+          
         </div>
 
         {/* ── Tabs ── */}

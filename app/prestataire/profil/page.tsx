@@ -8,10 +8,7 @@ export default async function PrestataireProfil() {
 
   return (
     <div>
-      <div style={{ marginBottom: "28px" }}>
-        <h1 style={{ fontSize: "24px", fontWeight: 700, color: "#111827" }}>Mon profil</h1>
-        <p style={{ color: "#6B7280", marginTop: "4px" }}>Gérez vos informations professionnelles</p>
-      </div>
+      
       <ProfilClient profile={profile} email={user!.email || ""} />
     </div>
   );

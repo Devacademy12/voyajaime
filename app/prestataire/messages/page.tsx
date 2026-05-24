@@ -262,19 +262,8 @@ export default function PrestataireMessagesPage() {
 
       <header className="pw-header">
         <div className="pw-header-left">
-          <div className="pw-header-eyebrow">🗨️ Messagerie</div>
           <h1 className="pw-header-title">Mes Conversations</h1>
-          <p className="pw-header-sub">
-            {totalUnread > 0 ? `${totalUnread} message(s) non lu(s)` : "Aucun nouveau message"}
-          </p>
-        </div>
-
-        <div className="pw-header-badge" style={{ alignSelf: "flex-start" }}>
-          <div className="pw-header-badge-avatar">{initials}</div>
-          <div>
-            <div className="pw-header-badge-name">{name}</div>
-            <div className="pw-header-badge-role">Prestataire</div>
-          </div>
+          
         </div>
       </header>
 

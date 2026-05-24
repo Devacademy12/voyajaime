@@ -37,24 +37,7 @@ export default async function PrestataireExcursions() {
         }}>
           <div>
             {/* Eyebrow badge — même style que pw-header-eyebrow */}
-            <div style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: "6px",
-              background: "#EFF9FB",
-              border: "1px solid rgba(43,150,168,.22)",
-              borderRadius: "20px",
-              padding: "4px 12px",
-              fontSize: "11px",
-              fontWeight: 700,
-              color: "#2B96A8",
-              textTransform: "uppercase",
-              letterSpacing: ".08em",
-              marginBottom: "10px"
-            }}>
-              ✦ Espace prestataire
-            </div>
-
+           
             <h1 style={{
               fontSize: "28px",
               fontWeight: 800,
@@ -64,7 +47,7 @@ export default async function PrestataireExcursions() {
             }}>
               Mes excursions
             </h1>
-            <p style={{ fontSize: "14px", color: "#94A3B8", margin: 0, fontWeight: 500 }}>
+            <p style={{ fontSize: "14px", color: "#053366", margin: 0, fontWeight: 500 }}>
               {count} excursion{count !== 1 ? "s" : ""} publiée{count !== 1 ? "s" : ""}
             </p>
           </div>
