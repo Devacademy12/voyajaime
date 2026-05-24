@@ -15,7 +15,6 @@ export default function HomeFooter({ user, openAuth }: HomeFooterProps) {
   const router = useRouter();
   const handleOpenAuth = (mode: "login" | "register" | "prestataire") => {
     if (openAuth) return openAuth(mode);
-    // Fallback: navigate to auth page with optional mode query
     const url = mode ? `/auth?mode=${mode}` : "/auth";
     router.push(url);
   };
@@ -23,8 +22,6 @@ export default function HomeFooter({ user, openAuth }: HomeFooterProps) {
 
   return (
     <footer style={{ background: "#0D1117", color: "white", fontFamily: "inherit" }}>
-
-    
 
       {/* ── Main grid ── */}
       <div style={{
@@ -34,28 +31,35 @@ export default function HomeFooter({ user, openAuth }: HomeFooterProps) {
         gap: 40,
       }}>
 
-        {/* Col 1 — Brand */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-          <Logo />
-          <p style={{ fontSize: 13, color: "#6B7280", lineHeight: 1.7, maxWidth: 280, margin: 0 }}>
+        {/* Col 1 — Brand avec logo au-dessus */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+          <div style={{ display: "flex", justifyContent: "flex-start" }}>
+            <Logo />
+          </div>
+          <p style={{ 
+            fontSize: 13, 
+            color: "#6B7280", 
+            lineHeight: 1.7, 
+            maxWidth: 280, 
+            margin: 0,
+            marginTop: 0 
+          }}>
             La plateforme de référence pour découvrir la Tunisie autrement. Des excursions authentiques, des guides passionnés.
           </p>
-          
         </div>
 
         {/* Col 2 — Explorer */}
         <FooterCol title="Explorer" links={[
-          { label: "Toutes les excursions",    href: ROUTES.excursions },
-          
+          { label: "Toutes les excursions", href: ROUTES.excursions },
         ]} />
 
         {/* Col 3 — Informations */}
         <FooterCol title="Informations" links={[
-          { label: "À propos",                      href: "/about" },
-          { label: "Comment ça marche",             href: "#chemins" },
-          { label: "Devenir prestataire",           href: "#", onClick: () => handleOpenAuth("prestataire") },
-          { label: "Conditions générales",          href: "/cgv" },
-          { label: "Politique de confidentialité",  href: "/confidentialite" },
+          { label: "À propos", href: "/about" },
+          { label: "Comment ça marche", href: "#chemins" },
+          { label: "Devenir prestataire", href: "#", onClick: () => handleOpenAuth("prestataire") },
+          { label: "Conditions générales", href: "/cgv" },
+          { label: "Politique de confidentialité", href: "/confidentialite" },
         ]} />
 
         {/* Col 4 — Contact */}
@@ -64,8 +68,8 @@ export default function HomeFooter({ user, openAuth }: HomeFooterProps) {
           <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
             {[
               { icon: <MapPin size={14} />, text: "Tunis, Tunisie" },
-              { icon: <Phone  size={14} />, text: "+216 XX XXX XXX" },
-              { icon: <Mail   size={14} />, text: "contact@voyajaime.tn" },
+              { icon: <Phone size={14} />, text: "+216 XX XXX XXX" },
+              { icon: <Mail size={14} />, text: "contact@voyajaime.tn" },
             ].map(c => (
               <div key={c.text} style={{ display: "flex", alignItems: "center", gap: 10, color: "#9CA3AF", fontSize: 13 }}>
                 <span style={{ color: "#2B96A8", flexShrink: 0 }}>{c.icon}</span>
@@ -115,9 +119,9 @@ export default function HomeFooter({ user, openAuth }: HomeFooterProps) {
         </p>
         <div style={{ display: "flex", gap: 20 }}>
           {[
-            { label: "CGV",             href: "/cgv" },
+            { label: "CGV", href: "/cgv" },
             { label: "Confidentialité", href: "/confidentialite" },
-            { label: "Cookies",         href: "/cookies" },
+            { label: "Cookies", href: "/cookies" },
           ].map(l => (
             <Link
               key={l.label}
