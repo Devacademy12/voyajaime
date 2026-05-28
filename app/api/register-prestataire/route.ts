@@ -10,7 +10,6 @@ export async function POST(req: Request) {
   }
 
   try {
-    // Lire le body avec gestion d'erreur — évite le crash si le body n'est pas JSON
     let body: Record<string, string>;
     try {
       body = await req.json();
@@ -26,33 +25,52 @@ export async function POST(req: Request) {
       auth: { autoRefreshToken: false, persistSession: false },
     });
 
-    // 1. Retry loop — attendre que l'utilisateur existe dans auth.users (max 5s)
-    let userEmail: string | null = email || null;
-    let userExists = false;
-    for (let i = 0; i < 10; i++) {
-      const { data: u } = await supabase.auth.admin.getUserById(userId);
-      if (u?.user?.id) {
-        userExists = true;
-        userEmail = userEmail || u.user.email || null;
-        break;
-      }
-      await new Promise(r => setTimeout(r, 500));
+    // 1. Confirmer email + metadata — avec un retry si l'user n'est pas encore propagé
+    const tryUpdate = async () =>
+      supabase.auth.admin.updateUserById(userId, {
+        email_confirm: true,
+        user_metadata: {
+          role: "prestataire",
+          full_name: fullName,
+          agency_name: agencyName,
+          city,
+        },
+      });
+
+    let { error: updateErr } = await tryUpdate();
+
+    // Si user pas encore visible dans Auth, on attend 2s et on réessaie
+    if (updateErr?.message?.toLowerCase().includes("not found")) {
+      await new Promise((r) => setTimeout(r, 2000));
+      ({ error: updateErr } = await tryUpdate());
     }
-    if (!userExists) return NextResponse.json({ error: "Utilisateur non trouvé après création" }, { status: 404 });
 
-    // 2. Confirmer email + metadata
-    await supabase.auth.admin.updateUserById(userId, {
-      email_confirm: true,
-      user_metadata: { role: "prestataire", full_name: fullName, agency_name: agencyName, city },
-    });
+    // Deuxième retry après 3s supplémentaires
+    if (updateErr?.message?.toLowerCase().includes("not found")) {
+      await new Promise((r) => setTimeout(r, 3000));
+      ({ error: updateErr } = await tryUpdate());
+    }
 
-    // 3. Upload avatar si fourni
+    if (updateErr) {
+      console.error("[register-prestataire] updateUserById error:", updateErr.message);
+      return NextResponse.json(
+        { error: "Utilisateur non trouvé après création. Réessayez dans quelques secondes." },
+        { status: 404 }
+      );
+    }
+
+    // 2. Upload avatar si fourni
     let avatarUrl: string | null = null;
     if (avatarBase64 && avatarExt) {
       try {
         const buffer = Buffer.from(avatarBase64, "base64");
         const path = `${userId}/avatar-${Date.now()}.${avatarExt}`;
-        const mimeMap: Record<string, string> = { jpg: "image/jpeg", jpeg: "image/jpeg", png: "image/png", webp: "image/webp" };
+        const mimeMap: Record<string, string> = {
+          jpg: "image/jpeg",
+          jpeg: "image/jpeg",
+          png: "image/png",
+          webp: "image/webp",
+        };
         const mime = mimeMap[avatarExt] || "image/jpeg";
 
         const { data: uploaded, error: uploadErr } = await supabase.storage
@@ -60,36 +78,44 @@ export async function POST(req: Request) {
           .upload(path, buffer, { contentType: mime, upsert: true });
 
         if (!uploadErr && uploaded) {
-          const { data: { publicUrl } } = supabase.storage.from("avatars").getPublicUrl(uploaded.path);
+          const {
+            data: { publicUrl },
+          } = supabase.storage.from("avatars").getPublicUrl(uploaded.path);
           avatarUrl = publicUrl;
         }
       } catch (e) {
         console.warn("[register-prestataire] Avatar upload failed:", e);
-        // Continue without avatar
       }
     }
 
-    // 4. Upsert profil
+    // 3. Upsert profil
     const { data: profile, error: profileError } = await supabase
       .from("profiles")
-      .upsert({
-        user_id: userId,
-        role: "prestataire",
-        full_name: fullName || "",
-        agency_name: agencyName || "",
-        city: city || "",
-        is_validated: false,
-        avatar_url: avatarUrl,
-      }, { onConflict: "user_id" })
+      .upsert(
+        {
+          user_id: userId,
+          role: "prestataire",
+          full_name: fullName || "",
+          agency_name: agencyName || "",
+          city: city || "",
+          is_validated: false,
+          avatar_url: avatarUrl,
+        },
+        { onConflict: "user_id" }
+      )
       .select()
       .single();
 
     if (profileError) {
       console.error("[register-prestataire] profileError:", profileError.message);
-      return NextResponse.json({ error: profileError.message, code: profileError.code }, { status: 500 });
+      return NextResponse.json(
+        { error: profileError.message, code: profileError.code },
+        { status: 500 }
+      );
     }
 
-    // ✉️ Email de bienvenue (optionnel — ne bloque pas si RESEND_API_KEY absent)
+    // 4. Email de bienvenue (optionnel)
+    const userEmail = email || null;
     if (userEmail && process.env.RESEND_API_KEY) {
       try {
         const { sendWelcomePrestataire } = await import("@/lib/emails/resend");
@@ -102,7 +128,6 @@ export async function POST(req: Request) {
 
     console.log("[register-prestataire] ✅ Profil créé:", profile.user_id);
     return NextResponse.json({ success: true, profile });
-
   } catch (err) {
     const msg = err instanceof Error ? err.message : "Erreur inconnue";
     console.error("[register-prestataire] Exception:", msg);

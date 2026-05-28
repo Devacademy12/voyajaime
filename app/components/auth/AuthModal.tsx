@@ -6,7 +6,7 @@ import { sanitizeText } from "@/app/lib/sanitize";
 import {
   Eye, EyeOff, X, ArrowRight, ArrowLeft,
   Mail, Lock, User, Building2, MapPin,
-  CheckCircle, AlertCircle, Loader2,  // ← Globe rajouté
+  CheckCircle, AlertCircle, Loader2,
 } from "lucide-react";
 
 const CITIES = ["Tunis","Sfax","Sousse","Kairouan","Hammamet","Tozeur","Djerba","Tataouine","Gafsa","Douz"];
@@ -60,17 +60,12 @@ const CSS = `
     max-height:92vh;overflow-y:auto;
     box-shadow:0 32px 80px rgba(5,51,102,.18);
   }
-
-  /* ── Left accent strip ── */
   .am-strip {
     height:4px;
     background:linear-gradient(90deg,#053366,#02AFCF);
     border-radius:24px 24px 0 0;
   }
-
   .am-inner { padding:32px 36px 28px; }
-
-  /* ── Close ── */
   .am-close {
     position:absolute;top:18px;right:18px;
     width:30px;height:30px;
@@ -80,26 +75,18 @@ const CSS = `
     transition:all .15s;
   }
   .am-close:hover { background:#F3F4F6;color:#374151;border-color:#D1D5DB; }
-
-  /* ── Header ── */
   .am-head { margin-bottom:24px; }
   .am-back  { background:none;border:1.5px solid #E5E7EB;border-radius:7px;color:#053366;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:600;padding:0;margin-bottom:12px;display:flex;align-items:center;gap:4px;transition:color .15s; }
   .am-back:hover { color:#6B7280; }
   .am-title { font-size:22px;font-weight:800;color:#053366;letter-spacing:-.5px;line-height:1.15;margin:0 0 5px; }
   .am-title em { font-family:'Instrument Serif',serif;font-style:italic;color:#02AFCF;font-weight:400; }
   .am-sub   { font-size:13px;color:#9CA3AF;font-weight:500;margin:0; }
-
-  /* ── Tabs ── */
   .am-tabs { display:flex;background:#F3F4F6;border-radius:12px;padding:3px;margin-bottom:20px;gap:3px; }
   .am-tab  { flex:1;padding:9px;border:none;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .2s;color:#9CA3AF;background:transparent; }
   .am-tab.on { background:white;color:#053366;box-shadow:0 1px 4px rgba(5,51,102,.1); }
-
-  /* ── Alerts ── */
   .am-alert { padding:10px 13px;border-radius:10px;font-size:12px;line-height:1.5;font-weight:500;margin-bottom:16px;display:flex;align-items:flex-start;gap:7px; }
   .am-alert-err { background:#FEF2F2;border:1px solid #FECACA;color:#DC2626; }
   .am-alert-ok  { background:#F0FDF4;border:1px solid #BBF7D0;color:#15803D; }
-
-  /* ── Google btn ── */
   .am-google {
     width:100%;padding:11px 16px;
     background:white;color:#374151;
@@ -110,12 +97,8 @@ const CSS = `
     box-sizing:border-box;
   }
   .am-google:hover { border-color:#D1D5DB;box-shadow:0 2px 8px rgba(0,0,0,.06);background:#FAFAFA; }
-
-  /* ── Divider ── */
   .am-divider { display:flex;align-items:center;gap:10px;margin:14px 0;font-size:11px;color:#C4C9D4;font-weight:700;letter-spacing:.5px; }
   .am-divider::before,.am-divider::after { content:'';flex:1;height:1px;background:#EBEBEB; }
-
-  /* ── Fields ── */
   .am-fields  { display:flex;flex-direction:column;gap:12px; }
   .am-field   { display:flex;flex-direction:column;gap:5px; }
   .am-label   { font-size:11px;font-weight:700;color:#374151;letter-spacing:.4px;text-transform:uppercase;display:flex;align-items:center;gap:5px; }
@@ -133,22 +116,14 @@ const CSS = `
   .am-input.no-icon { padding-left:14px; }
   .am-eye { position:absolute;right:12px;background:none;border:none;cursor:pointer;color:#C4C9D4;display:flex;align-items:center;padding:0;transition:color .15s; }
   .am-eye:hover { color:#6B7280; }
-
-  /* ── Password strength ── */
   .am-strength { margin-top:6px; }
   .am-bars { display:flex;gap:3px;margin-bottom:3px; }
   .am-bar  { flex:1;height:3px;border-radius:2px;background:#E5E7EB;transition:background .25s; }
   .am-bar-label { font-size:11px;font-weight:700; }
-
-  /* ── Grid row ── */
   .am-row { display:grid;grid-template-columns:1fr 1fr;gap:12px; }
-
-  /* ── Forgot ── */
   .am-forgot-row { text-align:right;margin-top:-4px; }
   .am-forgot { background:none;border:none;font-size:12px;color:#02AFCF;cursor:pointer;font-family:'DM Sans',sans-serif;font-weight:600;padding:0;transition:all .2s; }
   .am-forgot:hover { color:#0099B5;text-decoration:underline; }
-
-  /* ── Submit ── */
   .am-submit {
     width:100%;padding:13px;margin-top:16px;
     background:#053366;color:white;border:none;border-radius:12px;
@@ -159,14 +134,10 @@ const CSS = `
   }
   .am-submit:hover:not(:disabled) { background:#02AFCF;transform:translateY(-1px);box-shadow:0 8px 24px rgba(2,175,207,.25); }
   .am-submit:disabled { opacity:.55;cursor:not-allowed;transform:none; }
-
-  /* ── Footer ── */
   .am-footer { font-size:12px;color:#9CA3AF;text-align:center;margin-top:20px;padding-top:16px;border-top:1px solid #F3F4F6;line-height:1.6; }
   .am-footer button { background:none;border:none;color:#053366;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:12px;transition:all .2s; }
   .am-footer button:hover { color:#02AFCF;text-decoration:underline; }
-
   .am-spin-icon { animation:am-spin .7s linear infinite; }
-
   @media(max-width:480px){
     .am-inner { padding:24px 20px 20px; }
     .am-row   { grid-template-columns:1fr; }
@@ -176,16 +147,16 @@ const CSS = `
 export default function AuthModal({ isOpen, onClose, defaultMode = "login" }: AuthModalProps) {
   const supabase = createClient();
   const [mode, setMode] = useState<Mode>(defaultMode);
-  const [email, setEmail]       = useState("");
-  const [password, setPassword] = useState("");
-  const [fullName, setFullName] = useState("");
+  const [email, setEmail]           = useState("");
+  const [password, setPassword]     = useState("");
+  const [fullName, setFullName]     = useState("");
   const [agencyName, setAgencyName] = useState("");
-  const [city, setCity]         = useState("");
-  const [showPwd, setShowPwd]   = useState(false);
-  const [loading, setLoading]   = useState(false);
+  const [city, setCity]             = useState("");
+  const [showPwd, setShowPwd]       = useState(false);
+  const [loading, setLoading]       = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
-  const [error, setError]       = useState<string | null>(null);
-  const [success, setSuccess]   = useState<string | null>(null);
+  const [error, setError]           = useState<string | null>(null);
+  const [success, setSuccess]       = useState<string | null>(null);
 
   const isPresta = mode === "prestataire";
 
@@ -207,13 +178,16 @@ export default function AuthModal({ isOpen, onClose, defaultMode = "login" }: Au
     } else {
       document.body.style.overflow = "";
     }
-    return () => { document.removeEventListener("keydown", handleKeyDown); document.body.style.overflow = ""; };
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+      document.body.style.overflow = "";
+    };
   }, [isOpen, handleKeyDown]);
 
   const errMsg: Record<string, string> = {
-    "Invalid login credentials":            "Email ou mot de passe incorrect.",
-    "Email not confirmed":                  "Confirmez votre email avant de vous connecter.",
-    "User already registered":              "Un compte existe déjà avec cet email.",
+    "Invalid login credentials":                "Email ou mot de passe incorrect.",
+    "Email not confirmed":                      "Confirmez votre email avant de vous connecter.",
+    "User already registered":                  "Un compte existe déjà avec cet email.",
     "Password should be at least 6 characters": "Minimum 8 caractères requis.",
   };
 
@@ -222,15 +196,18 @@ export default function AuthModal({ isOpen, onClose, defaultMode = "login" }: Au
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null); setSuccess(null);
-    if (!emailRegex.test(email.trim()))                         { setError("Adresse email invalide."); return; }
-    if (mode !== "login" && password.length < 8)               { setError("Minimum 8 caractères requis."); return; }
-    if (mode === "register" && fullName.trim().length < 2)      { setError("Veuillez entrer votre nom complet."); return; }
+
+    if (!emailRegex.test(email.trim()))                    { setError("Adresse email invalide."); return; }
+    if (mode !== "login" && password.length < 8)           { setError("Minimum 8 caractères requis."); return; }
+    if (mode === "register" && fullName.trim().length < 2) { setError("Veuillez entrer votre nom complet."); return; }
     if (isPresta) {
       if (fullName.trim().length < 2)   { setError("Veuillez entrer votre nom complet."); return; }
       if (agencyName.trim().length < 2) { setError("Le nom de l'agence est trop court."); return; }
     }
+
     setLoading(true);
     try {
+      /* ── LOGIN ── */
       if (mode === "login") {
         const cleanEmail = sanitizeText(email);
         const { data, error } = await supabase.auth.signInWithPassword({ email: cleanEmail, password });
@@ -242,13 +219,17 @@ export default function AuthModal({ isOpen, onClose, defaultMode = "login" }: Au
           const saved = sessionStorage.getItem("redirect_after_login") || "/";
           sessionStorage.removeItem("redirect_after_login");
           window.location.href = saved;
-        } else { window.location.href = `/${role}/dashboard`; }
+        } else {
+          window.location.href = `/${role}/dashboard`;
+        }
 
+      /* ── REGISTER (touriste) ── */
       } else if (mode === "register") {
         const cleanEmail    = sanitizeText(email);
         const cleanFullName = sanitizeText(fullName);
         const { data, error } = await supabase.auth.signUp({
-          email: cleanEmail, password,
+          email: cleanEmail,
+          password,
           options: {
             emailRedirectTo: `${window.location.origin}/api/auth/callback`,
             data: { role: "touriste", full_name: cleanFullName || cleanEmail },
@@ -260,9 +241,14 @@ export default function AuthModal({ isOpen, onClose, defaultMode = "login" }: Au
           { user_id: data.user.id, role: "touriste", full_name: cleanFullName || cleanEmail },
           { onConflict: "user_id" }
         );
-        if (!data.user.email_confirmed_at) setSuccess("Vérifiez votre email pour confirmer votre inscription !");
-        else { onClose(); window.location.href = "/"; }
+        if (!data.user.email_confirmed_at) {
+          setSuccess("Vérifiez votre email pour confirmer votre inscription !");
+        } else {
+          onClose();
+          window.location.href = "/";
+        }
 
+      /* ── PRESTATAIRE ── */
       } else {
         const cleanEmail      = sanitizeText(email);
         const cleanFullName   = sanitizeText(fullName);
@@ -271,7 +257,8 @@ export default function AuthModal({ isOpen, onClose, defaultMode = "login" }: Au
 
         // 1. Créer le compte Supabase Auth
         const { data, error } = await supabase.auth.signUp({
-          email: cleanEmail, password,
+          email: cleanEmail,
+          password,
           options: {
             emailRedirectTo: `${window.location.origin}/api/auth/callback`,
             data: { role: "prestataire", full_name: cleanFullName, agency_name: cleanAgencyName, city: cleanCity },
@@ -279,17 +266,20 @@ export default function AuthModal({ isOpen, onClose, defaultMode = "login" }: Au
         });
         if (error) throw error;
 
-        // signUp retourne data.user = null si l'email existe déjà
-        if (!data.user) {
+        const userId = data.user?.id ?? data.session?.user?.id;
+        if (!userId) {
           throw new Error("Cet email est déjà utilisé. Essayez de vous connecter.");
         }
 
-        // 2. Appel API avec détection explicite HTML vs JSON
+        // 2. Attendre que Supabase Auth propage l'utilisateur avant d'appeler l'API
+        await new Promise((r) => setTimeout(r, 1000));
+
+        // 3. Appel API route
         const res = await fetch("/api/register-prestataire", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            userId:     data.user.id,
+            userId,
             email:      cleanEmail,
             fullName:   cleanFullName,
             agencyName: cleanAgencyName,
@@ -310,7 +300,9 @@ export default function AuthModal({ isOpen, onClose, defaultMode = "login" }: Au
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Erreur inconnue";
       setError(errMsg[msg] || msg);
-    } finally { setLoading(false); }
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleGoogle = async () => {
@@ -328,7 +320,8 @@ export default function AuthModal({ isOpen, onClose, defaultMode = "login" }: Au
     setLoading(true); setError(null); setSuccess(null);
     try {
       const res = await fetch("/api/auth/forgot-password", {
-        method: "POST", headers: { "Content-Type": "application/json" },
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: sanitizeText(email) }),
       });
       const data = await res.json();
@@ -337,7 +330,9 @@ export default function AuthModal({ isOpen, onClose, defaultMode = "login" }: Au
       setEmail("");
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Impossible d'envoyer l'email. Réessayez.");
-    } finally { setLoading(false); }
+    } finally {
+      setLoading(false);
+    }
   };
 
   if (!isOpen) return null;
@@ -352,10 +347,8 @@ export default function AuthModal({ isOpen, onClose, defaultMode = "login" }: Au
         <div className="am-overlay" onClick={onClose} />
 
         <div className="am-modal">
-          {/* Accent strip */}
           <div className="am-strip" />
 
-          {/* Close button */}
           <button className="am-close" onClick={onClose} aria-label="Fermer">
             <X size={14} strokeWidth={2.5} />
           </button>
@@ -370,8 +363,8 @@ export default function AuthModal({ isOpen, onClose, defaultMode = "login" }: Au
                 </button>
               )}
               <h1 className="am-title">
-                {mode === "login"    ? <>Se connecter </>
-                  : isPresta         ? <>Devenir prestataire</>
+                {mode === "login" ? <>Se connecter</>
+                  : isPresta      ? <>Devenir prestataire</>
                   : <>Créer un compte</>}
               </h1>
               <p className="am-sub">
@@ -384,7 +377,7 @@ export default function AuthModal({ isOpen, onClose, defaultMode = "login" }: Au
             {/* ── Tabs ── */}
             {!isPresta && (
               <div className="am-tabs">
-                {(["login","register"] as const).map(m => (
+                {(["login", "register"] as const).map((m) => (
                   <button key={m} className={`am-tab ${mode === m ? "on" : ""}`}
                     onClick={() => { setMode(m); setError(null); setSuccess(null); }}>
                     {m === "login" ? "Connexion" : "Inscription"}
@@ -394,7 +387,7 @@ export default function AuthModal({ isOpen, onClose, defaultMode = "login" }: Au
             )}
 
             {/* ── Alerts ── */}
-            {error   && (
+            {error && (
               <div className="am-alert am-alert-err">
                 <AlertCircle size={14} style={{ flexShrink: 0, marginTop: 1 }} /> {error}
               </div>
@@ -409,17 +402,16 @@ export default function AuthModal({ isOpen, onClose, defaultMode = "login" }: Au
             {!isPresta && (
               <>
                 <button className="am-google" onClick={handleGoogle} disabled={googleLoading}>
-                  {googleLoading
-                    ? <Loader2 size={15} className="am-spin-icon" />
-                    : (
-                      <svg width="16" height="16" viewBox="0 0 18 18" fill="none">
-                        <path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.874 2.684-6.615z" fill="#4285F4"/>
-                        <path d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z" fill="#34A853"/>
-                        <path d="M3.964 10.71A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.042l3.007-2.332z" fill="#FBBC05"/>
-                        <path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58z" fill="#EA4335"/>
-                      </svg>
-                    )
-                  }
+                  {googleLoading ? (
+                    <Loader2 size={15} className="am-spin-icon" />
+                  ) : (
+                    <svg width="16" height="16" viewBox="0 0 18 18" fill="none">
+                      <path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.874 2.684-6.615z" fill="#4285F4"/>
+                      <path d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z" fill="#34A853"/>
+                      <path d="M3.964 10.71A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.042l3.007-2.332z" fill="#FBBC05"/>
+                      <path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58z" fill="#EA4335"/>
+                    </svg>
+                  )}
                   Continuer avec Google
                 </button>
                 <div className="am-divider">OU</div>
@@ -433,58 +425,53 @@ export default function AuthModal({ isOpen, onClose, defaultMode = "login" }: Au
                 {isPresta ? (
                   <>
                     <div className="am-row">
-                      {/* Nom */}
                       <div className="am-field">
                         <label className="am-label"><User size={11} />Nom complet</label>
                         <div className="am-input-wrap">
                           <span className="am-icon-left"><User size={15} /></span>
                           <input className="am-input" type="text" placeholder="Prénom Nom"
-                            value={fullName} onChange={e => setFullName(e.target.value)} required />
+                            value={fullName} onChange={(e) => setFullName(e.target.value)} required />
                         </div>
                       </div>
-                      {/* Agence */}
                       <div className="am-field">
                         <label className="am-label"><Building2 size={11} />Agence</label>
                         <div className="am-input-wrap">
                           <span className="am-icon-left"><Building2 size={15} /></span>
                           <input className="am-input" type="text" placeholder="Nom de l'agence"
-                            value={agencyName} onChange={e => setAgencyName(e.target.value)} required />
+                            value={agencyName} onChange={(e) => setAgencyName(e.target.value)} required />
                         </div>
                       </div>
                     </div>
 
                     <div className="am-row">
-                      {/* Ville */}
                       <div className="am-field">
                         <label className="am-label"><MapPin size={11} />Ville</label>
                         <div className="am-input-wrap">
                           <span className="am-icon-left"><MapPin size={15} /></span>
-                          <select className="am-input" value={city} onChange={e => setCity(e.target.value)} required
+                          <select className="am-input" value={city} onChange={(e) => setCity(e.target.value)} required
                             style={{ appearance: "none" }}>
                             <option value="">Sélectionner</option>
-                            {CITIES.map(c => <option key={c} value={c}>{c}</option>)}
+                            {CITIES.map((c) => <option key={c} value={c}>{c}</option>)}
                           </select>
                         </div>
                       </div>
-                      {/* Email */}
                       <div className="am-field">
                         <label className="am-label"><Mail size={11} />Email</label>
                         <div className="am-input-wrap">
                           <span className="am-icon-left"><Mail size={15} /></span>
                           <input className="am-input" type="email" placeholder="votre@email.com"
-                            value={email} onChange={e => setEmail(e.target.value)} required autoComplete="email" />
+                            value={email} onChange={(e) => setEmail(e.target.value)} required autoComplete="email" />
                         </div>
                       </div>
                     </div>
 
-                    {/* Password */}
                     <div className="am-field">
                       <label className="am-label"><Lock size={11} />Mot de passe</label>
                       <div className="am-input-wrap">
                         <span className="am-icon-left"><Lock size={15} /></span>
                         <input className="am-input" type={showPwd ? "text" : "password"}
                           placeholder="Minimum 8 caractères"
-                          value={password} onChange={e => setPassword(e.target.value)} required autoComplete="new-password"
+                          value={password} onChange={(e) => setPassword(e.target.value)} required autoComplete="new-password"
                           style={{ paddingRight: 40 }} />
                         <button type="button" className="am-eye" onClick={() => setShowPwd(!showPwd)}>
                           {showPwd ? <EyeOff size={15} /> : <Eye size={15} />}
@@ -493,8 +480,9 @@ export default function AuthModal({ isOpen, onClose, defaultMode = "login" }: Au
                       {strength && (
                         <div className="am-strength">
                           <div className="am-bars">
-                            {[1,2,3,4].map(i => (
-                              <div key={i} className="am-bar" style={{ background: i <= strength.level ? strength.color : "#E5E7EB" }} />
+                            {[1, 2, 3, 4].map((i) => (
+                              <div key={i} className="am-bar"
+                                style={{ background: i <= strength.level ? strength.color : "#E5E7EB" }} />
                             ))}
                           </div>
                           <span className="am-bar-label" style={{ color: strength.color }}>{strength.label}</span>
@@ -504,29 +492,26 @@ export default function AuthModal({ isOpen, onClose, defaultMode = "login" }: Au
                   </>
                 ) : (
                   <>
-                    {/* Nom (register only) */}
                     {mode === "register" && (
                       <div className="am-field">
                         <label className="am-label"><User size={11} />Nom complet</label>
                         <div className="am-input-wrap">
                           <span className="am-icon-left"><User size={15} /></span>
                           <input className="am-input" type="text" placeholder="Prénom et Nom"
-                            value={fullName} onChange={e => setFullName(e.target.value)} required />
+                            value={fullName} onChange={(e) => setFullName(e.target.value)} required />
                         </div>
                       </div>
                     )}
 
-                    {/* Email */}
                     <div className="am-field">
                       <label className="am-label"><Mail size={11} />Email</label>
                       <div className="am-input-wrap">
                         <span className="am-icon-left"><Mail size={15} /></span>
                         <input className="am-input" type="email" placeholder="votre@email.com"
-                          value={email} onChange={e => setEmail(e.target.value)} required autoComplete="email" />
+                          value={email} onChange={(e) => setEmail(e.target.value)} required autoComplete="email" />
                       </div>
                     </div>
 
-                    {/* Password */}
                     <div className="am-field">
                       <label className="am-label"><Lock size={11} />Mot de passe</label>
                       <div className="am-input-wrap">
@@ -534,7 +519,7 @@ export default function AuthModal({ isOpen, onClose, defaultMode = "login" }: Au
                         <input className="am-input"
                           type={showPwd ? "text" : "password"}
                           placeholder={mode === "login" ? "Votre mot de passe" : "Minimum 8 caractères"}
-                          value={password} onChange={e => setPassword(e.target.value)} required
+                          value={password} onChange={(e) => setPassword(e.target.value)} required
                           autoComplete={mode === "login" ? "current-password" : "new-password"}
                           style={{ paddingRight: 40 }} />
                         <button type="button" className="am-eye" onClick={() => setShowPwd(!showPwd)}>
@@ -544,8 +529,9 @@ export default function AuthModal({ isOpen, onClose, defaultMode = "login" }: Au
                       {strength && (
                         <div className="am-strength">
                           <div className="am-bars">
-                            {[1,2,3,4].map(i => (
-                              <div key={i} className="am-bar" style={{ background: i <= strength.level ? strength.color : "#E5E7EB" }} />
+                            {[1, 2, 3, 4].map((i) => (
+                              <div key={i} className="am-bar"
+                                style={{ background: i <= strength.level ? strength.color : "#E5E7EB" }} />
                             ))}
                           </div>
                           <span className="am-bar-label" style={{ color: strength.color }}>{strength.label}</span>
@@ -556,7 +542,6 @@ export default function AuthModal({ isOpen, onClose, defaultMode = "login" }: Au
                 )}
               </div>
 
-              {/* Forgot password */}
               {mode === "login" && (
                 <div className="am-forgot-row" style={{ marginTop: 8 }}>
                   <button type="button" className="am-forgot" onClick={handleForgotPassword}>
@@ -565,15 +550,15 @@ export default function AuthModal({ isOpen, onClose, defaultMode = "login" }: Au
                 </div>
               )}
 
-              {/* Submit */}
               <button type="submit" className="am-submit" disabled={loading}>
-                {loading
-                  ? <><Loader2 size={15} className="am-spin-icon" /> Chargement…</>
-                  : <>
-                      {mode === "login" ? "Se connecter" : isPresta ? "Envoyer ma demande" : "Créer mon compte"}
-                      <ArrowRight size={15} />
-                    </>
-                }
+                {loading ? (
+                  <><Loader2 size={15} className="am-spin-icon" /> Chargement…</>
+                ) : (
+                  <>
+                    {mode === "login" ? "Se connecter" : isPresta ? "Envoyer ma demande" : "Créer mon compte"}
+                    <ArrowRight size={15} />
+                  </>
+                )}
               </button>
             </form>
 
@@ -581,7 +566,7 @@ export default function AuthModal({ isOpen, onClose, defaultMode = "login" }: Au
             <div className="am-footer">
               {!isPresta ? (
                 <p>Vous êtes prestataire ?{" "}
-                  <button  onClick={() => { setMode("prestataire"); setError(null); setSuccess(null); }}>
+                  <button onClick={() => { setMode("prestataire"); setError(null); setSuccess(null); }}>
                     Inscrivez votre activité →
                   </button>
                 </p>
