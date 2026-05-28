@@ -272,7 +272,7 @@ export default function AuthModal({ isOpen, onClose, defaultMode = "login" }: Au
         }
 
         // 2. Attendre que Supabase Auth propage l'utilisateur avant d'appeler l'API
-        await new Promise((r) => setTimeout(r, 1000));
+await new Promise((r) => setTimeout(r, 3000));
 
         // 3. Appel API route
         const res = await fetch("/api/register-prestataire", {

@@ -25,69 +25,63 @@ export async function POST(req: Request) {
     auth: { autoRefreshToken: false, persistSession: false },
   });
 
-  try {
-    // ── Upsert profil directement — pas besoin que l'user soit confirmé ──
-    // La FK profiles.user_id → auth.users.id existe dès le signUp,
-    // même si l'email n'est pas encore confirmé.
+  const profileData = {
+    user_id:      userId,
+    role:         "prestataire",
+    full_name:    fullName   || "",
+    agency_name:  agencyName || "",
+    city:         city       || "",
+    is_validated: false,
+  };
+
+  // Retry loop : attend que auth.users contienne le userId (max 15s)
+  const MAX_ATTEMPTS = 10;
+  const DELAY_MS     = 1500;
+  let lastError: string | null = null;
+
+  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+    // Vérifier que l'user existe dans auth.users avant d'upsert
+    const { data: authUser } = await supabase.auth.admin.getUserById(userId);
+
+    if (!authUser?.user?.id) {
+      console.log(`[register-prestataire] attempt ${attempt}/${MAX_ATTEMPTS} — user not in auth yet, waiting...`);
+      await new Promise((r) => setTimeout(r, DELAY_MS));
+      continue;
+    }
+
+    // L'user existe → upsert profil
     const { error: profileError } = await supabase
       .from("profiles")
-      .upsert(
-        {
-          user_id:      userId,
-          role:         "prestataire",
-          full_name:    fullName  || "",
-          agency_name:  agencyName || "",
-          city:         city      || "",
-          is_validated: false,
-        },
-        { onConflict: "user_id" }
-      );
+      .upsert(profileData, { onConflict: "user_id" });
 
-    if (profileError) {
-      // Si FK violation → l'user n'existe vraiment pas encore, on attend 3s et on réessaie une fois
-      if (profileError.code === "23503") {
-        await new Promise((r) => setTimeout(r, 3000));
-
-        const { error: retryError } = await supabase
-          .from("profiles")
-          .upsert(
-            {
-              user_id:      userId,
-              role:         "prestataire",
-              full_name:    fullName  || "",
-              agency_name:  agencyName || "",
-              city:         city      || "",
-              is_validated: false,
-            },
-            { onConflict: "user_id" }
-          );
-
-        if (retryError) {
-          console.error("[register-prestataire] retry profileError:", retryError.message);
-          return NextResponse.json({ error: retryError.message }, { status: 500 });
+    if (!profileError) {
+      // Succès — email de bienvenue optionnel
+      if (process.env.RESEND_API_KEY) {
+        try {
+          const { sendWelcomePrestataire } = await import("@/lib/emails/resend");
+          await sendWelcomePrestataire({ email, fullName: fullName || email, userId });
+        } catch (e) {
+          console.warn("[register-prestataire] email échoué (non bloquant):", e);
         }
-      } else {
-        console.error("[register-prestataire] profileError:", profileError.message);
-        return NextResponse.json({ error: profileError.message }, { status: 500 });
       }
+      console.log(`[register-prestataire] ✅ Profil créé à l'attempt ${attempt} pour`, userId);
+      return NextResponse.json({ success: true });
     }
 
-    // ── Email de bienvenue (optionnel, non bloquant) ──
-    if (process.env.RESEND_API_KEY) {
-      try {
-        const { sendWelcomePrestataire } = await import("@/lib/emails/resend");
-        await sendWelcomePrestataire({ email, fullName: fullName || email, userId });
-      } catch (e) {
-        console.warn("[register-prestataire] email échoué (non bloquant):", e);
-      }
+    lastError = profileError.message;
+    console.error(`[register-prestataire] attempt ${attempt} profileError:`, lastError);
+
+    // Si ce n'est pas une FK violation, inutile de réessayer
+    if (profileError.code !== "23503") {
+      return NextResponse.json({ error: lastError }, { status: 500 });
     }
 
-    console.log("[register-prestataire] ✅ Profil créé pour", userId);
-    return NextResponse.json({ success: true });
-
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : "Erreur inconnue";
-    console.error("[register-prestataire] Exception:", msg);
-    return NextResponse.json({ error: msg }, { status: 500 });
+    await new Promise((r) => setTimeout(r, DELAY_MS));
   }
+
+  console.error("[register-prestataire] ❌ Échec après", MAX_ATTEMPTS, "tentatives");
+  return NextResponse.json(
+    { error: lastError || "Utilisateur non disponible après création. Réessayez." },
+    { status: 500 }
+  );
 }
