@@ -38,7 +38,6 @@ export async function POST(req: Request) {
           full_name:    fullName  || "",
           agency_name:  agencyName || "",
           city:         city      || "",
-          email:        email,
           is_validated: false,
         },
         { onConflict: "user_id" }
@@ -58,7 +57,6 @@ export async function POST(req: Request) {
               full_name:    fullName  || "",
               agency_name:  agencyName || "",
               city:         city      || "",
-              email:        email,
               is_validated: false,
             },
             { onConflict: "user_id" }
