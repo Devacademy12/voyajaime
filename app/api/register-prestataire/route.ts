@@ -9,125 +9,84 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Configuration serveur manquante" }, { status: 500 });
   }
 
+  let body: Record<string, string>;
   try {
-    let body: Record<string, string>;
-    try {
-      body = await req.json();
-    } catch {
-      return NextResponse.json({ error: "Body JSON invalide" }, { status: 400 });
-    }
+    body = await req.json();
+  } catch {
+    return NextResponse.json({ error: "Body JSON invalide" }, { status: 400 });
+  }
 
-    const { userId, email, fullName, agencyName, city, avatarBase64, avatarExt } = body;
+  const { userId, email, fullName, agencyName, city } = body;
+  if (!userId || !email) {
+    return NextResponse.json({ error: "userId et email obligatoires" }, { status: 400 });
+  }
 
-    if (!userId) return NextResponse.json({ error: "userId manquant" }, { status: 400 });
+  const supabase = createClient(url, key, {
+    auth: { autoRefreshToken: false, persistSession: false },
+  });
 
-    const supabase = createClient(url, key, {
-      auth: { autoRefreshToken: false, persistSession: false },
-    });
-
-    // 1. Confirmer email + metadata — avec un retry si l'user n'est pas encore propagé
-    const tryUpdate = async () =>
-      supabase.auth.admin.updateUserById(userId, {
-        email_confirm: true,
-        user_metadata: {
-          role: "prestataire",
-          full_name: fullName,
-          agency_name: agencyName,
-          city,
-        },
-      });
-
-    let { error: updateErr } = await tryUpdate();
-
-    // Si user pas encore visible dans Auth, on attend 2s et on réessaie
-    if (updateErr?.message?.toLowerCase().includes("not found")) {
-      await new Promise((r) => setTimeout(r, 2000));
-      ({ error: updateErr } = await tryUpdate());
-    }
-
-    // Deuxième retry après 3s supplémentaires
-    if (updateErr?.message?.toLowerCase().includes("not found")) {
-      await new Promise((r) => setTimeout(r, 3000));
-      ({ error: updateErr } = await tryUpdate());
-    }
-
-    if (updateErr) {
-      console.error("[register-prestataire] updateUserById error:", updateErr.message);
-      return NextResponse.json(
-        { error: "Utilisateur non trouvé après création. Réessayez dans quelques secondes." },
-        { status: 404 }
-      );
-    }
-
-    // 2. Upload avatar si fourni
-    let avatarUrl: string | null = null;
-    if (avatarBase64 && avatarExt) {
-      try {
-        const buffer = Buffer.from(avatarBase64, "base64");
-        const path = `${userId}/avatar-${Date.now()}.${avatarExt}`;
-        const mimeMap: Record<string, string> = {
-          jpg: "image/jpeg",
-          jpeg: "image/jpeg",
-          png: "image/png",
-          webp: "image/webp",
-        };
-        const mime = mimeMap[avatarExt] || "image/jpeg";
-
-        const { data: uploaded, error: uploadErr } = await supabase.storage
-          .from("avatars")
-          .upload(path, buffer, { contentType: mime, upsert: true });
-
-        if (!uploadErr && uploaded) {
-          const {
-            data: { publicUrl },
-          } = supabase.storage.from("avatars").getPublicUrl(uploaded.path);
-          avatarUrl = publicUrl;
-        }
-      } catch (e) {
-        console.warn("[register-prestataire] Avatar upload failed:", e);
-      }
-    }
-
-    // 3. Upsert profil
-    const { data: profile, error: profileError } = await supabase
+  try {
+    // ── Upsert profil directement — pas besoin que l'user soit confirmé ──
+    // La FK profiles.user_id → auth.users.id existe dès le signUp,
+    // même si l'email n'est pas encore confirmé.
+    const { error: profileError } = await supabase
       .from("profiles")
       .upsert(
         {
-          user_id: userId,
-          role: "prestataire",
-          full_name: fullName || "",
-          agency_name: agencyName || "",
-          city: city || "",
+          user_id:      userId,
+          role:         "prestataire",
+          full_name:    fullName  || "",
+          agency_name:  agencyName || "",
+          city:         city      || "",
+          email:        email,
           is_validated: false,
-          avatar_url: avatarUrl,
         },
         { onConflict: "user_id" }
-      )
-      .select()
-      .single();
+      );
 
     if (profileError) {
-      console.error("[register-prestataire] profileError:", profileError.message);
-      return NextResponse.json(
-        { error: profileError.message, code: profileError.code },
-        { status: 500 }
-      );
-    }
+      // Si FK violation → l'user n'existe vraiment pas encore, on attend 3s et on réessaie une fois
+      if (profileError.code === "23503") {
+        await new Promise((r) => setTimeout(r, 3000));
 
-    // 4. Email de bienvenue (optionnel)
-    const userEmail = email || null;
-    if (userEmail && process.env.RESEND_API_KEY) {
-      try {
-        const { sendWelcomePrestataire } = await import("@/lib/emails/resend");
-        await sendWelcomePrestataire({ email: userEmail, fullName: fullName || userEmail, userId });
-        console.log("[register-prestataire] ✅ Email de bienvenue envoyé à", userEmail);
-      } catch (emailErr) {
-        console.warn("[register-prestataire] Email de bienvenue échoué (non bloquant):", emailErr);
+        const { error: retryError } = await supabase
+          .from("profiles")
+          .upsert(
+            {
+              user_id:      userId,
+              role:         "prestataire",
+              full_name:    fullName  || "",
+              agency_name:  agencyName || "",
+              city:         city      || "",
+              email:        email,
+              is_validated: false,
+            },
+            { onConflict: "user_id" }
+          );
+
+        if (retryError) {
+          console.error("[register-prestataire] retry profileError:", retryError.message);
+          return NextResponse.json({ error: retryError.message }, { status: 500 });
+        }
+      } else {
+        console.error("[register-prestataire] profileError:", profileError.message);
+        return NextResponse.json({ error: profileError.message }, { status: 500 });
       }
     }
 
-    console.log("[register-prestataire] ✅ Profil créé:", profile.user_id);
-    return NextResponse.json({ success: true, profile });
+    // ── Email de bienvenue (optionnel, non bloquant) ──
+    if (process.env.RESEND_API_KEY) {
+      try {
+        const { sendWelcomePrestataire } = await import("@/lib/emails/resend");
+        await sendWelcomePrestataire({ email, fullName: fullName || email, userId });
+      } catch (e) {
+        console.warn("[register-prestataire] email échoué (non bloquant):", e);
+      }
+    }
+
+    console.log("[register-prestataire] ✅ Profil créé pour", userId);
+    return NextResponse.json({ success: true });
+
   } catch (err) {
     const msg = err instanceof Error ? err.message : "Erreur inconnue";
     console.error("[register-prestataire] Exception:", msg);
