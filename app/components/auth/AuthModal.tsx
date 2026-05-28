@@ -6,7 +6,7 @@ import { sanitizeText } from "@/app/lib/sanitize";
 import {
   Eye, EyeOff, X, ArrowRight, ArrowLeft,
   Mail, Lock, User, Building2, MapPin,
-  CheckCircle, AlertCircle, Loader2,  // ← Globe rajouté
+  CheckCircle, AlertCircle, Loader2,
 } from "lucide-react";
 
 const CITIES = ["Tunis","Sfax","Sousse","Kairouan","Hammamet","Tozeur","Djerba","Tataouine","Gafsa","Douz"];
@@ -28,6 +28,8 @@ function pwdStrength(p: string) {
   if (score === 2) return { level: 3, label: "Bon",      color: "#10B981" };
   return              { level: 4, label: "Excellent", color: "#059669" };
 }
+
+const REDIRECT_URL = "https://voyajaime.com/api/auth/callback";
 
 const CSS = `
   @import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Instrument+Serif:ital@0;1&family=DM+Sans:wght@400;500;600;700&display=swap');
@@ -60,17 +62,12 @@ const CSS = `
     max-height:92vh;overflow-y:auto;
     box-shadow:0 32px 80px rgba(5,51,102,.18);
   }
-
-  /* ── Left accent strip ── */
   .am-strip {
     height:4px;
     background:linear-gradient(90deg,#053366,#02AFCF);
     border-radius:24px 24px 0 0;
   }
-
   .am-inner { padding:32px 36px 28px; }
-
-  /* ── Close ── */
   .am-close {
     position:absolute;top:18px;right:18px;
     width:30px;height:30px;
@@ -80,26 +77,18 @@ const CSS = `
     transition:all .15s;
   }
   .am-close:hover { background:#F3F4F6;color:#374151;border-color:#D1D5DB; }
-
-  /* ── Header ── */
   .am-head { margin-bottom:24px; }
   .am-back  { background:none;border:1.5px solid #E5E7EB;border-radius:7px;color:#053366;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:600;padding:0;margin-bottom:12px;display:flex;align-items:center;gap:4px;transition:color .15s; }
   .am-back:hover { color:#6B7280; }
   .am-title { font-size:22px;font-weight:800;color:#053366;letter-spacing:-.5px;line-height:1.15;margin:0 0 5px; }
   .am-title em { font-family:'Instrument Serif',serif;font-style:italic;color:#02AFCF;font-weight:400; }
   .am-sub   { font-size:13px;color:#9CA3AF;font-weight:500;margin:0; }
-
-  /* ── Tabs ── */
   .am-tabs { display:flex;background:#F3F4F6;border-radius:12px;padding:3px;margin-bottom:20px;gap:3px; }
   .am-tab  { flex:1;padding:9px;border:none;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .2s;color:#9CA3AF;background:transparent; }
   .am-tab.on { background:white;color:#053366;box-shadow:0 1px 4px rgba(5,51,102,.1); }
-
-  /* ── Alerts ── */
   .am-alert { padding:10px 13px;border-radius:10px;font-size:12px;line-height:1.5;font-weight:500;margin-bottom:16px;display:flex;align-items:flex-start;gap:7px; }
   .am-alert-err { background:#FEF2F2;border:1px solid #FECACA;color:#DC2626; }
   .am-alert-ok  { background:#F0FDF4;border:1px solid #BBF7D0;color:#15803D; }
-
-  /* ── Google btn ── */
   .am-google {
     width:100%;padding:11px 16px;
     background:white;color:#374151;
@@ -110,12 +99,8 @@ const CSS = `
     box-sizing:border-box;
   }
   .am-google:hover { border-color:#D1D5DB;box-shadow:0 2px 8px rgba(0,0,0,.06);background:#FAFAFA; }
-
-  /* ── Divider ── */
   .am-divider { display:flex;align-items:center;gap:10px;margin:14px 0;font-size:11px;color:#C4C9D4;font-weight:700;letter-spacing:.5px; }
   .am-divider::before,.am-divider::after { content:'';flex:1;height:1px;background:#EBEBEB; }
-
-  /* ── Fields ── */
   .am-fields  { display:flex;flex-direction:column;gap:12px; }
   .am-field   { display:flex;flex-direction:column;gap:5px; }
   .am-label   { font-size:11px;font-weight:700;color:#374151;letter-spacing:.4px;text-transform:uppercase;display:flex;align-items:center;gap:5px; }
@@ -133,22 +118,14 @@ const CSS = `
   .am-input.no-icon { padding-left:14px; }
   .am-eye { position:absolute;right:12px;background:none;border:none;cursor:pointer;color:#C4C9D4;display:flex;align-items:center;padding:0;transition:color .15s; }
   .am-eye:hover { color:#6B7280; }
-
-  /* ── Password strength ── */
   .am-strength { margin-top:6px; }
   .am-bars { display:flex;gap:3px;margin-bottom:3px; }
   .am-bar  { flex:1;height:3px;border-radius:2px;background:#E5E7EB;transition:background .25s; }
   .am-bar-label { font-size:11px;font-weight:700; }
-
-  /* ── Grid row ── */
   .am-row { display:grid;grid-template-columns:1fr 1fr;gap:12px; }
-
-  /* ── Forgot ── */
   .am-forgot-row { text-align:right;margin-top:-4px; }
   .am-forgot { background:none;border:none;font-size:12px;color:#02AFCF;cursor:pointer;font-family:'DM Sans',sans-serif;font-weight:600;padding:0;transition:all .2s; }
   .am-forgot:hover { color:#0099B5;text-decoration:underline; }
-
-  /* ── Submit ── */
   .am-submit {
     width:100%;padding:13px;margin-top:16px;
     background:#053366;color:white;border:none;border-radius:12px;
@@ -159,12 +136,9 @@ const CSS = `
   }
   .am-submit:hover:not(:disabled) { background:#02AFCF;transform:translateY(-1px);box-shadow:0 8px 24px rgba(2,175,207,.25); }
   .am-submit:disabled { opacity:.55;cursor:not-allowed;transform:none; }
-
-  /* ── Footer ── */
   .am-footer { font-size:12px;color:#9CA3AF;text-align:center;margin-top:20px;padding-top:16px;border-top:1px solid #F3F4F6;line-height:1.6; }
   .am-footer button { background:none;border:none;color:#053366;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:12px;transition:all .2s; }
   .am-footer button:hover { color:#02AFCF;text-decoration:underline; }
-
   .am-spin-icon { animation:am-spin .7s linear infinite; }
 
   @media(max-width:480px){
@@ -175,17 +149,17 @@ const CSS = `
 
 export default function AuthModal({ isOpen, onClose, defaultMode = "login" }: AuthModalProps) {
   const supabase = createClient();
-  const [mode, setMode] = useState<Mode>(defaultMode);
-  const [email, setEmail]       = useState("");
-  const [password, setPassword] = useState("");
-  const [fullName, setFullName] = useState("");
+  const [mode, setMode]           = useState<Mode>(defaultMode);
+  const [email, setEmail]         = useState("");
+  const [password, setPassword]   = useState("");
+  const [fullName, setFullName]   = useState("");
   const [agencyName, setAgencyName] = useState("");
-  const [city, setCity]         = useState("");
-  const [showPwd, setShowPwd]   = useState(false);
-  const [loading, setLoading]   = useState(false);
+  const [city, setCity]           = useState("");
+  const [showPwd, setShowPwd]     = useState(false);
+  const [loading, setLoading]     = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
-  const [error, setError]       = useState<string | null>(null);
-  const [success, setSuccess]   = useState<string | null>(null);
+  const [error, setError]         = useState<string | null>(null);
+  const [success, setSuccess]     = useState<string | null>(null);
 
   const isPresta = mode === "prestataire";
 
@@ -207,13 +181,16 @@ export default function AuthModal({ isOpen, onClose, defaultMode = "login" }: Au
     } else {
       document.body.style.overflow = "";
     }
-    return () => { document.removeEventListener("keydown", handleKeyDown); document.body.style.overflow = ""; };
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+      document.body.style.overflow = "";
+    };
   }, [isOpen, handleKeyDown]);
 
   const errMsg: Record<string, string> = {
-    "Invalid login credentials":            "Email ou mot de passe incorrect.",
-    "Email not confirmed":                  "Confirmez votre email avant de vous connecter.",
-    "User already registered":              "Un compte existe déjà avec cet email.",
+    "Invalid login credentials":                "Email ou mot de passe incorrect.",
+    "Email not confirmed":                      "Confirmez votre email avant de vous connecter.",
+    "User already registered":                  "Un compte existe déjà avec cet email.",
     "Password should be at least 6 characters": "Minimum 8 caractères requis.",
   };
 
@@ -222,69 +199,93 @@ export default function AuthModal({ isOpen, onClose, defaultMode = "login" }: Au
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null); setSuccess(null);
-    if (!emailRegex.test(email.trim()))                         { setError("Adresse email invalide."); return; }
-    if (mode !== "login" && password.length < 8)               { setError("Minimum 8 caractères requis."); return; }
-    if (mode === "register" && fullName.trim().length < 2)      { setError("Veuillez entrer votre nom complet."); return; }
+
+    if (!emailRegex.test(email.trim()))                    { setError("Adresse email invalide."); return; }
+    if (mode !== "login" && password.length < 8)           { setError("Minimum 8 caractères requis."); return; }
+    if (mode === "register" && fullName.trim().length < 2) { setError("Veuillez entrer votre nom complet."); return; }
     if (isPresta) {
       if (fullName.trim().length < 2)   { setError("Veuillez entrer votre nom complet."); return; }
       if (agencyName.trim().length < 2) { setError("Le nom de l'agence est trop court."); return; }
+      if (!city)                        { setError("Veuillez sélectionner une ville."); return; }
     }
+
     setLoading(true);
     try {
+      // ── LOGIN ──
       if (mode === "login") {
-        const cleanEmail = sanitizeText(email);
-        const { data, error } = await supabase.auth.signInWithPassword({ email: cleanEmail, password });
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email: sanitizeText(email),
+          password,
+        });
         if (error) throw error;
-        const { data: profile } = await supabase.from("profiles").select("role").eq("user_id", data.user.id).single();
+
+        const { data: profile } = await supabase
+          .from("profiles").select("role").eq("user_id", data.user.id).single();
         const role = profile?.role || "touriste";
+
         onClose();
         if (role === "touriste") {
           const saved = sessionStorage.getItem("redirect_after_login") || "/";
           sessionStorage.removeItem("redirect_after_login");
           window.location.href = saved;
-        } else { window.location.href = `/${role}/dashboard`; }
+        } else {
+          window.location.href = `/${role}/dashboard`;
+        }
 
+      // ── REGISTER TOURISTE ──
       } else if (mode === "register") {
         const cleanEmail    = sanitizeText(email);
         const cleanFullName = sanitizeText(fullName);
+
         const { data, error } = await supabase.auth.signUp({
-          email: cleanEmail, password,
+          email: cleanEmail,
+          password,
           options: {
-            emailRedirectTo: `${window.location.origin}/api/auth/callback`,
-            data: { role: "touriste", full_name: cleanFullName || cleanEmail },
+            emailRedirectTo: REDIRECT_URL,
+            data: {
+              role:      "touriste",
+              full_name: cleanFullName || cleanEmail,
+            },
           },
         });
         if (error) throw error;
-        if (!data.user) return;
+        if (!data.user) throw new Error("Cet email est déjà utilisé. Essayez de vous connecter.");
+
         await supabase.from("profiles").upsert(
           { user_id: data.user.id, role: "touriste", full_name: cleanFullName || cleanEmail },
           { onConflict: "user_id" }
         );
-        if (!data.user.email_confirmed_at) setSuccess("Vérifiez votre email pour confirmer votre inscription !");
-        else { onClose(); window.location.href = "/"; }
 
+        if (!data.user.email_confirmed_at) {
+          setSuccess("Vérifiez votre email pour confirmer votre inscription !");
+        } else {
+          onClose();
+          window.location.href = "/";
+        }
+
+      // ── REGISTER PRESTATAIRE ──
       } else {
         const cleanEmail      = sanitizeText(email);
         const cleanFullName   = sanitizeText(fullName);
         const cleanAgencyName = sanitizeText(agencyName);
         const cleanCity       = sanitizeText(city);
 
-        // 1. Créer le compte Supabase Auth
         const { data, error } = await supabase.auth.signUp({
-          email: cleanEmail, password,
+          email: cleanEmail,
+          password,
           options: {
-            emailRedirectTo: `${window.location.origin}/api/auth/callback`,
-            data: { role: "prestataire", full_name: cleanFullName, agency_name: cleanAgencyName, city: cleanCity },
+            emailRedirectTo: REDIRECT_URL,
+            data: {
+              role:        "prestataire",
+              full_name:   cleanFullName,
+              agency_name: cleanAgencyName,
+              city:        cleanCity,
+            },
           },
         });
         if (error) throw error;
+        if (!data.user) throw new Error("Cet email est déjà utilisé. Essayez de vous connecter.");
 
-        // signUp retourne data.user = null si l'email existe déjà
-        if (!data.user) {
-          throw new Error("Cet email est déjà utilisé. Essayez de vous connecter.");
-        }
-
-        // 2. Appel API avec détection explicite HTML vs JSON
         const res = await fetch("/api/register-prestataire", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -307,28 +308,35 @@ export default function AuthModal({ isOpen, onClose, defaultMode = "login" }: Au
 
         setSuccess("Compte créé ! Vérifiez votre email pour continuer l'inscription.");
       }
+
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Erreur inconnue";
       setError(errMsg[msg] || msg);
-    } finally { setLoading(false); }
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleGoogle = async () => {
     setGoogleLoading(true); setError(null);
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
-      options: { redirectTo: `${window.location.origin}/api/auth/callback` },
+      options: { redirectTo: REDIRECT_URL },
     });
-    if (error) { setError("Impossible de se connecter avec Google."); setGoogleLoading(false); }
+    if (error) {
+      setError("Impossible de se connecter avec Google.");
+      setGoogleLoading(false);
+    }
   };
 
   const handleForgotPassword = async () => {
-    if (!email) { setError("Entrez votre email d'abord."); return; }
+    if (!email)                          { setError("Entrez votre email d'abord."); return; }
     if (!emailRegex.test(email.trim())) { setError("Adresse email invalide."); return; }
     setLoading(true); setError(null); setSuccess(null);
     try {
       const res = await fetch("/api/auth/forgot-password", {
-        method: "POST", headers: { "Content-Type": "application/json" },
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: sanitizeText(email) }),
       });
       const data = await res.json();
@@ -337,7 +345,9 @@ export default function AuthModal({ isOpen, onClose, defaultMode = "login" }: Au
       setEmail("");
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Impossible d'envoyer l'email. Réessayez.");
-    } finally { setLoading(false); }
+    } finally {
+      setLoading(false);
+    }
   };
 
   if (!isOpen) return null;
@@ -352,10 +362,8 @@ export default function AuthModal({ isOpen, onClose, defaultMode = "login" }: Au
         <div className="am-overlay" onClick={onClose} />
 
         <div className="am-modal">
-          {/* Accent strip */}
           <div className="am-strip" />
 
-          {/* Close button */}
           <button className="am-close" onClick={onClose} aria-label="Fermer">
             <X size={14} strokeWidth={2.5} />
           </button>
@@ -370,21 +378,21 @@ export default function AuthModal({ isOpen, onClose, defaultMode = "login" }: Au
                 </button>
               )}
               <h1 className="am-title">
-                {mode === "login"    ? <>Se connecter </>
-                  : isPresta         ? <>Devenir prestataire</>
-                  : <>Créer un compte</>}
+                {mode === "login" ? <>Se connecter</>
+                  : isPresta      ? <>Devenir prestataire</>
+                  :                 <>Créer un compte</>}
               </h1>
               <p className="am-sub">
-                {mode === "login"  ? "Connectez-vous pour continuer votre aventure"
-                  : isPresta       ? "Listez vos excursions sur VoyajAime"
-                  : "Rejoignez des milliers de voyageurs en Tunisie"}
+                {mode === "login" ? "Connectez-vous pour continuer votre aventure"
+                  : isPresta      ? "Listez vos excursions sur VoyajAime"
+                  :                 "Rejoignez des milliers de voyageurs en Tunisie"}
               </p>
             </div>
 
             {/* ── Tabs ── */}
             {!isPresta && (
               <div className="am-tabs">
-                {(["login","register"] as const).map(m => (
+                {(["login", "register"] as const).map(m => (
                   <button key={m} className={`am-tab ${mode === m ? "on" : ""}`}
                     onClick={() => { setMode(m); setError(null); setSuccess(null); }}>
                     {m === "login" ? "Connexion" : "Inscription"}
@@ -394,7 +402,7 @@ export default function AuthModal({ isOpen, onClose, defaultMode = "login" }: Au
             )}
 
             {/* ── Alerts ── */}
-            {error   && (
+            {error && (
               <div className="am-alert am-alert-err">
                 <AlertCircle size={14} style={{ flexShrink: 0, marginTop: 1 }} /> {error}
               </div>
@@ -433,7 +441,6 @@ export default function AuthModal({ isOpen, onClose, defaultMode = "login" }: Au
                 {isPresta ? (
                   <>
                     <div className="am-row">
-                      {/* Nom */}
                       <div className="am-field">
                         <label className="am-label"><User size={11} />Nom complet</label>
                         <div className="am-input-wrap">
@@ -442,7 +449,6 @@ export default function AuthModal({ isOpen, onClose, defaultMode = "login" }: Au
                             value={fullName} onChange={e => setFullName(e.target.value)} required />
                         </div>
                       </div>
-                      {/* Agence */}
                       <div className="am-field">
                         <label className="am-label"><Building2 size={11} />Agence</label>
                         <div className="am-input-wrap">
@@ -454,7 +460,6 @@ export default function AuthModal({ isOpen, onClose, defaultMode = "login" }: Au
                     </div>
 
                     <div className="am-row">
-                      {/* Ville */}
                       <div className="am-field">
                         <label className="am-label"><MapPin size={11} />Ville</label>
                         <div className="am-input-wrap">
@@ -466,7 +471,6 @@ export default function AuthModal({ isOpen, onClose, defaultMode = "login" }: Au
                           </select>
                         </div>
                       </div>
-                      {/* Email */}
                       <div className="am-field">
                         <label className="am-label"><Mail size={11} />Email</label>
                         <div className="am-input-wrap">
@@ -477,15 +481,14 @@ export default function AuthModal({ isOpen, onClose, defaultMode = "login" }: Au
                       </div>
                     </div>
 
-                    {/* Password */}
                     <div className="am-field">
                       <label className="am-label"><Lock size={11} />Mot de passe</label>
                       <div className="am-input-wrap">
                         <span className="am-icon-left"><Lock size={15} /></span>
                         <input className="am-input" type={showPwd ? "text" : "password"}
                           placeholder="Minimum 8 caractères"
-                          value={password} onChange={e => setPassword(e.target.value)} required autoComplete="new-password"
-                          style={{ paddingRight: 40 }} />
+                          value={password} onChange={e => setPassword(e.target.value)} required
+                          autoComplete="new-password" style={{ paddingRight: 40 }} />
                         <button type="button" className="am-eye" onClick={() => setShowPwd(!showPwd)}>
                           {showPwd ? <EyeOff size={15} /> : <Eye size={15} />}
                         </button>
@@ -494,7 +497,8 @@ export default function AuthModal({ isOpen, onClose, defaultMode = "login" }: Au
                         <div className="am-strength">
                           <div className="am-bars">
                             {[1,2,3,4].map(i => (
-                              <div key={i} className="am-bar" style={{ background: i <= strength.level ? strength.color : "#E5E7EB" }} />
+                              <div key={i} className="am-bar"
+                                style={{ background: i <= strength.level ? strength.color : "#E5E7EB" }} />
                             ))}
                           </div>
                           <span className="am-bar-label" style={{ color: strength.color }}>{strength.label}</span>
@@ -504,7 +508,6 @@ export default function AuthModal({ isOpen, onClose, defaultMode = "login" }: Au
                   </>
                 ) : (
                   <>
-                    {/* Nom (register only) */}
                     {mode === "register" && (
                       <div className="am-field">
                         <label className="am-label"><User size={11} />Nom complet</label>
@@ -516,7 +519,6 @@ export default function AuthModal({ isOpen, onClose, defaultMode = "login" }: Au
                       </div>
                     )}
 
-                    {/* Email */}
                     <div className="am-field">
                       <label className="am-label"><Mail size={11} />Email</label>
                       <div className="am-input-wrap">
@@ -526,7 +528,6 @@ export default function AuthModal({ isOpen, onClose, defaultMode = "login" }: Au
                       </div>
                     </div>
 
-                    {/* Password */}
                     <div className="am-field">
                       <label className="am-label"><Lock size={11} />Mot de passe</label>
                       <div className="am-input-wrap">
@@ -545,7 +546,8 @@ export default function AuthModal({ isOpen, onClose, defaultMode = "login" }: Au
                         <div className="am-strength">
                           <div className="am-bars">
                             {[1,2,3,4].map(i => (
-                              <div key={i} className="am-bar" style={{ background: i <= strength.level ? strength.color : "#E5E7EB" }} />
+                              <div key={i} className="am-bar"
+                                style={{ background: i <= strength.level ? strength.color : "#E5E7EB" }} />
                             ))}
                           </div>
                           <span className="am-bar-label" style={{ color: strength.color }}>{strength.label}</span>
@@ -581,7 +583,7 @@ export default function AuthModal({ isOpen, onClose, defaultMode = "login" }: Au
             <div className="am-footer">
               {!isPresta ? (
                 <p>Vous êtes prestataire ?{" "}
-                  <button  onClick={() => { setMode("prestataire"); setError(null); setSuccess(null); }}>
+                  <button onClick={() => { setMode("prestataire"); setError(null); setSuccess(null); }}>
                     Inscrivez votre activité →
                   </button>
                 </p>
