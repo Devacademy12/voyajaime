@@ -72,13 +72,6 @@ export async function POST(req: Request) {
     // car l'user vient d'être créé et peut déjà avoir un invite pending
     if (inviteErr) {
       console.warn("[register] invite warning:", inviteErr.message);
-      // Fallback : générer le lien de confirmation manuellement
-      await supabaseAdmin.auth.admin.generateLink({
-        type: "signup",
-        email: cleanEmail,
-        password,
-        options: { redirectTo: "https://voyajaime.com/api/auth/callback" },
-      });
     }
 
     // Si prestataire → enregistrement agence
