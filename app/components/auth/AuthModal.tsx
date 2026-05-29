@@ -255,14 +255,10 @@ export default function AuthModal({ isOpen, onClose, defaultMode = "login" }: Au
   const json = await res.json();
 
   if (!res.ok) {
-    if (res.status === 409) {
-      throw new Error("Un compte existe déjà avec cet email.");
-    }
     throw new Error(json.error || "Erreur lors de la création du compte.");
   }
 
   setSuccess("Vérifiez votre email pour confirmer votre inscription !");
-
       // ── REGISTER PRESTATAIRE ──
       } else {
         const cleanEmail      = sanitizeText(email);

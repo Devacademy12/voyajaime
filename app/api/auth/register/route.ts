@@ -2,27 +2,37 @@ import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { sanitizeText } from "@/app/lib/sanitize";
 
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  { auth: { autoRefreshToken: false, persistSession: false } }
-);
+// ✅ PLUS de createClient au niveau module
 
 export async function POST(req: Request) {
   try {
+    // ✅ Initialisé DANS le handler → les env vars sont garanties disponibles
+    const supabaseAdmin = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      { auth: { autoRefreshToken: false, persistSession: false } }
+    );
+
+    console.log("[register] ENV check:", {
+      url:    !!process.env.NEXT_PUBLIC_SUPABASE_URL,
+      svcKey: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
+    });
+
     const body = await req.json();
     const { email, password, fullName, role, agencyName, city } = body;
+
+    console.log("[register] body:", { email, role, hasPassword: !!password });
 
     if (!email || !password || password.length < 8) {
       return NextResponse.json({ error: "Données invalides." }, { status: 400 });
     }
 
     const cleanEmail      = sanitizeText(email);
-    const cleanFullName   = sanitizeText(fullName) || cleanEmail;
+    const cleanFullName   = fullName   ? sanitizeText(fullName)   : cleanEmail;
     const cleanAgencyName = agencyName ? sanitizeText(agencyName) : null;
     const cleanCity       = city       ? sanitizeText(city)       : null;
 
-    // Créer via Admin API → pas de rate limit Supabase
+    // ── Créer l'utilisateur via Admin API (pas de rate limit) ──
     const { data, error } = await supabaseAdmin.auth.admin.createUser({
       email: cleanEmail,
       password,
@@ -36,6 +46,7 @@ export async function POST(req: Request) {
     });
 
     if (error) {
+      console.error("[register] createUser error:", error.message);
       if (
         error.message.includes("already been registered") ||
         error.message.includes("already registered")
@@ -49,9 +60,10 @@ export async function POST(req: Request) {
     }
 
     const userId = data.user.id;
+    console.log("[register] user created:", userId);
 
-    // Créer le profil
-    await supabaseAdmin.from("profiles").upsert(
+    // ── Créer le profil ──
+    const { error: profileError } = await supabaseAdmin.from("profiles").upsert(
       {
         user_id:   userId,
         role:      role || "touriste",
@@ -62,31 +74,48 @@ export async function POST(req: Request) {
       { onConflict: "user_id" }
     );
 
-    // Envoyer l'email de confirmation via resend (Admin API)
-    // Supabase enverra l'email avec le lien de confirmation
-    const { error: inviteErr } = await supabaseAdmin.auth.admin.inviteUserByEmail(
-      cleanEmail,
-      { redirectTo: "https://voyajaime.com/api/auth/callback" }
-    );
-    // inviteUserByEmail échoue si l'user existe déjà → on ignore l'erreur ici
-    // car l'user vient d'être créé et peut déjà avoir un invite pending
-    if (inviteErr) {
-      console.warn("[register] invite warning:", inviteErr.message);
+    if (profileError) {
+      console.error("[register] profile error:", profileError.message);
+      // Non-bloquant : l'user Auth est créé, le profil peut être recréé
     }
 
-    // Si prestataire → enregistrement agence
+    // ── Envoyer l'email de confirmation ──
+    // generateLink génère le lien ET déclenche l'envoi de l'email de confirmation
+    const { error: linkError } = await supabaseAdmin.auth.admin.generateLink({
+      type: "signup",
+      email: cleanEmail,
+      password,
+      options: {
+        redirectTo: "https://voyajaime.com/api/auth/callback",
+      },
+    });
+
+    if (linkError) {
+      console.error("[register] generateLink error:", linkError.message);
+      // Non-bloquant : l'user peut redemander la confirmation depuis le login
+    }
+
+    // ── Prestataire → enregistrement agence ──
     if (role === "prestataire" && cleanAgencyName) {
-      await fetch("https://voyajaime.com/api/register-prestataire", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          userId,
-          email:      cleanEmail,
-          fullName:   cleanFullName,
-          agencyName: cleanAgencyName,
-          city:       cleanCity,
-        }),
-      });
+      try {
+        const res = await fetch("https://voyajaime.com/api/register-prestataire", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            userId,
+            email:      cleanEmail,
+            fullName:   cleanFullName,
+            agencyName: cleanAgencyName,
+            city:       cleanCity,
+          }),
+        });
+        if (!res.ok) {
+          console.error("[register] register-prestataire error:", res.status);
+        }
+      } catch (e) {
+        console.error("[register] register-prestataire fetch error:", e);
+        // Non-bloquant
+      }
     }
 
     return NextResponse.json({ success: true, userId });
