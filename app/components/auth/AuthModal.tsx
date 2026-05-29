@@ -237,47 +237,31 @@ export default function AuthModal({ isOpen, onClose, defaultMode = "login" }: Au
         }
 
       // ── REGISTER TOURISTE ──
-      } else if (mode === "register") {
-        const cleanEmail    = sanitizeText(email);
-        const cleanFullName = sanitizeText(fullName);
+} else if (mode === "register") {
+  const cleanEmail    = sanitizeText(email);
+  const cleanFullName = sanitizeText(fullName);
 
-        const { data, error } = await supabase.auth.signUp({
-          email: cleanEmail,
-          password,
-          options: {
-            emailRedirectTo: REDIRECT_URL,
-            data: {
-              role:      "touriste",
-              full_name: cleanFullName || cleanEmail,
-            },
-          },
-        });
+  const res = await fetch("/api/auth/register", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      email:    cleanEmail,
+      password,
+      fullName: cleanFullName,
+      role:     "touriste",
+    }),
+  });
 
-        if (error) {
-          const msg = error.message.toLowerCase();
-          if (
-            msg.includes("rate limit") ||
-            msg.includes("too many") ||
-            (error as unknown as { status?: number }).status === 429
-          ) {
-            throw new Error("Trop de tentatives. Veuillez patienter quelques minutes avant de réessayer.");
-          }
-          throw error;
-        }
+  const json = await res.json();
 
-        if (!data.user) throw new Error("Cet email est déjà utilisé. Essayez de vous connecter.");
+  if (!res.ok) {
+    if (res.status === 409) {
+      throw new Error("Un compte existe déjà avec cet email.");
+    }
+    throw new Error(json.error || "Erreur lors de la création du compte.");
+  }
 
-        await supabase.from("profiles").upsert(
-          { user_id: data.user.id, role: "touriste", full_name: cleanFullName || cleanEmail },
-          { onConflict: "user_id" }
-        );
-
-        if (!data.user.email_confirmed_at) {
-          setSuccess("Vérifiez votre email pour confirmer votre inscription !");
-        } else {
-          onClose();
-          window.location.href = "/";
-        }
+  setSuccess("Vérifiez votre email pour confirmer votre inscription !");
 
       // ── REGISTER PRESTATAIRE ──
       } else {
