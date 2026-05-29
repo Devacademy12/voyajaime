@@ -45,25 +45,55 @@ export async function POST(req: Request) {
 
     const { data: profile, error: profileError } = await supabase
       .from("profiles")
-      .upsert(upsertData, { onConflict: "user_id" })
+      .upsert(upsertData, { onConflict: "user_id", ignoreDuplicates: false })
       .select()
       .single();
 
     if (profileError) {
       console.error("[register-prestataire] profileError:", profileError.message, profileError.code);
 
-      // FK violation → user pas encore propagé, retry après 3s
+      // 409 ou 23505 = profil existe déjà → le récupérer et retourner succès
+      if (profileError.code === "23505" || profileError.message.includes("409")) {
+        console.log("[register-prestataire] Profil existe déjà, récupération...");
+        const { data: existing, error: fetchError } = await supabase
+          .from("profiles")
+          .select()
+          .eq("user_id", userId)
+          .single();
+
+        if (existing) {
+          console.log("[register-prestataire] Profil existant retourné:", existing.user_id);
+          return NextResponse.json({ success: true, profile: existing });
+        }
+
+        if (fetchError) {
+          console.error("[register-prestataire] fetch existing error:", fetchError.message);
+          return NextResponse.json({ error: fetchError.message }, { status: 500 });
+        }
+      }
+
+      // 23503 = FK violation → user pas encore propagé, retry après 3s
       if (profileError.code === "23503") {
         console.log("[register-prestataire] FK violation, retry dans 3s...");
         await new Promise(r => setTimeout(r, 3000));
 
         const { data: retryProfile, error: retryError } = await supabase
           .from("profiles")
-          .upsert(upsertData, { onConflict: "user_id" })
+          .upsert(upsertData, { onConflict: "user_id", ignoreDuplicates: false })
           .select()
           .single();
 
         if (retryError) {
+          // Retry aussi pour 23505 après le délai
+          if (retryError.code === "23505") {
+            const { data: existing } = await supabase
+              .from("profiles")
+              .select()
+              .eq("user_id", userId)
+              .single();
+            if (existing) return NextResponse.json({ success: true, profile: existing });
+          }
+
           console.error("[register-prestataire] retry error:", retryError.message);
           return NextResponse.json(
             { error: retryError.message, code: retryError.code },
