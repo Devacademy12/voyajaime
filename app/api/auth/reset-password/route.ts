@@ -19,14 +19,12 @@ export async function POST(req: Request) {
       );
     }
 
-    // Créer un client Supabase standard (pas admin)
     const supabase = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
       { auth: { autoRefreshToken: false, persistSession: false } }
     );
 
-    // Restaurer la session depuis les tokens envoyés par le client
     const { error: sessionError } = await supabase.auth.setSession({
       access_token: accessToken,
       refresh_token: refreshToken,
@@ -39,20 +37,18 @@ export async function POST(req: Request) {
       );
     }
 
-    // Mettre à jour le mot de passe
     const { error: updateError } = await supabase.auth.updateUser({
       password: newPassword,
     });
 
     if (updateError) {
-      console.error("Erreur mise à jour:", updateError);
+      console.error("[reset-password] updateUser error:", updateError);
       return NextResponse.json(
         { error: "Impossible de mettre à jour le mot de passe" },
         { status: 500 }
       );
     }
 
-    // Déconnecter
     await supabase.auth.signOut();
 
     return NextResponse.json({
@@ -61,7 +57,7 @@ export async function POST(req: Request) {
     });
 
   } catch (error) {
-    console.error("reset-password error:", error);
+    console.error("[reset-password] unexpected error:", error);
     return NextResponse.json(
       { error: "Une erreur est survenue" },
       { status: 500 }
