@@ -31,42 +31,7 @@ export async function POST(req: Request) {
       auth: { autoRefreshToken: false, persistSession: false },
     });
 
-    // 1. Attendre que l'utilisateur existe dans auth.users (max 5s)
-    let userEmail: string | null = email || null;
-    let userExists = false;
-    for (let i = 0; i < 10; i++) {
-      const { data: u } = await supabase.auth.admin.getUserById(userId);
-      if (u?.user?.id) {
-        userExists = true;
-        userEmail = userEmail || u.user.email || null;
-        break;
-      }
-      await new Promise(r => setTimeout(r, 500));
-    }
-
-    if (!userExists) {
-      return NextResponse.json(
-        { error: "Utilisateur non trouvé après création" },
-        { status: 404 }
-      );
-    }
-
-    // 2. Confirmer email + metadata
-    const { error: updateError } = await supabase.auth.admin.updateUserById(userId, {
-      email_confirm: true,
-      user_metadata: {
-        role:        "prestataire",
-        full_name:   fullName,
-        agency_name: agencyName,
-        city,
-      },
-    });
-
-    if (updateError) {
-      console.error("[register-prestataire] updateUserById error:", updateError.message);
-    }
-
-    // 3. Upsert profil
+    // 1. Upsert profil directement — userId vient du signUp, il est valide
     const { data: profile, error: profileError } = await supabase
       .from("profiles")
       .upsert(
@@ -76,7 +41,7 @@ export async function POST(req: Request) {
           full_name:    fullName    || "",
           agency_name:  agencyName  || "",
           city:         city        || "",
-          email:        userEmail   || "",
+          email:        email       || "",
           is_validated: false,
         },
         { onConflict: "user_id" }
@@ -86,22 +51,67 @@ export async function POST(req: Request) {
 
     if (profileError) {
       console.error("[register-prestataire] profileError:", profileError.message);
+
+      // Si le profil échoue car l'user n'existe pas encore → attendre et réessayer
+      if (profileError.code === "23503") {
+        console.log("[register-prestataire] FK violation, attente 3s...");
+        await new Promise(r => setTimeout(r, 3000));
+
+        const { data: retryProfile, error: retryError } = await supabase
+          .from("profiles")
+          .upsert(
+            {
+              user_id:      userId,
+              role:         "prestataire",
+              full_name:    fullName    || "",
+              agency_name:  agencyName  || "",
+              city:         city        || "",
+              email:        email       || "",
+              is_validated: false,
+            },
+            { onConflict: "user_id" }
+          )
+          .select()
+          .single();
+
+        if (retryError) {
+          console.error("[register-prestataire] retry profileError:", retryError.message);
+          return NextResponse.json(
+            { error: retryError.message, code: retryError.code },
+            { status: 500 }
+          );
+        }
+
+        console.log("[register-prestataire] Profil créé (retry):", retryProfile.user_id);
+        return NextResponse.json({ success: true, profile: retryProfile });
+      }
+
       return NextResponse.json(
         { error: profileError.message, code: profileError.code },
         { status: 500 }
       );
     }
 
-    // 4. Email de bienvenue (optionnel)
-    if (userEmail && process.env.RESEND_API_KEY) {
+    // 2. Mettre à jour metadata (non bloquant)
+    supabase.auth.admin.updateUserById(userId, {
+      user_metadata: {
+        role:        "prestataire",
+        full_name:   fullName,
+        agency_name: agencyName,
+        city,
+      },
+    }).catch(e => console.warn("[register-prestataire] updateUserById failed:", e));
+
+    // 3. Email de bienvenue (optionnel)
+    if (email && process.env.RESEND_API_KEY) {
       try {
         const { sendWelcomePrestataire } = await import("@/lib/emails/resend");
         await sendWelcomePrestataire({
-          email:    userEmail,
-          fullName: fullName || userEmail,
+          email,
+          fullName: fullName || email,
           userId,
         });
-        console.log("[register-prestataire] Email de bienvenue envoyé à", userEmail);
+        console.log("[register-prestataire] Email de bienvenue envoyé à", email);
       } catch (emailErr) {
         console.warn("[register-prestataire] Email de bienvenue échoué (non bloquant):", emailErr);
       }
