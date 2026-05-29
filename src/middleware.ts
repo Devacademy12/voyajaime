@@ -13,12 +13,18 @@ const PUBLIC_ROUTES = [
   "/completer-profil",
   "/modeAssister",
   "/modeLibre",
+  "/api/auth/callback",
+  "/api/auth/forgot-password",
+  "/api/auth/reset-password",
+  "/api/webhooks/stripe",
+  "/api/register-prestataire",
 ];
 
 const PUBLIC_PREFIXES = [
   "/excursions/",
   "/blog/",
-  "/api/",           // ← toutes les routes API sont publiques (auth gérée dans chaque route)
+  "/api/auth/",
+  "/api/webhooks/",
   "/_next/",
   "/favicon",
   "/images/",
@@ -26,7 +32,6 @@ const PUBLIC_PREFIXES = [
   "/brandmark",
   "/modeAssister/",
   "/modeLibre/",
-  "/auth/",
 ];
 
 function isPublic(pathname: string): boolean {
@@ -87,6 +92,8 @@ export async function middleware(request: NextRequest) {
 
   return response;
 }
+
+export const runtime = "nodejs";
 
 export const config = {
   matcher: [
