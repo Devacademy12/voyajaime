@@ -5,6 +5,7 @@ import { cookies } from "next/headers";
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get("code");
+  const type = searchParams.get("type"); // "recovery" pour reset password
   const redirect = searchParams.get("redirect") || "";
 
   if (!code) {
@@ -33,32 +34,32 @@ export async function GET(request: Request) {
     const { data, error } = await supabase.auth.exchangeCodeForSession(code);
 
     if (error || !data.user) {
-      console.error("[auth/callback] exchangeCodeForSession error:", error?.message);
+      console.error("[auth/callback] error:", error?.message);
       return NextResponse.redirect(`${origin}/auth?error=callback`);
     }
 
-    const user = data.user;
+    // ── Reset password → rediriger vers la page de reset ──
+    if (type === "recovery") {
+      return NextResponse.redirect(`${origin}/auth/reset-password`);
+    }
 
-    // Récupérer le profil existant
-    const { data: profile, error: profileError } = await supabase
+    // ── Connexion normale → récupérer le rôle et rediriger ──
+    const { data: profile } = await supabase
       .from("profiles")
       .select("role")
-      .eq("user_id", user.id)
+      .eq("user_id", data.user.id)
       .single();
 
-    // Créer le profil si inexistant (première connexion Google par ex.)
-    if (!profile || profileError) {
+    if (!profile) {
       await supabase.from("profiles").upsert(
         {
-          user_id:    user.id,
+          user_id:    data.user.id,
           role:       "touriste",
-          full_name:  user.user_metadata?.full_name || user.email,
-          avatar_url: user.user_metadata?.avatar_url || null,
+          full_name:  data.user.user_metadata?.full_name || data.user.email,
+          avatar_url: data.user.user_metadata?.avatar_url || null,
         },
         { onConflict: "user_id" }
       );
-
-      // Nouveau touriste → accueil ou redirect demandé
       const dest = redirect && redirect !== "/auth" ? redirect : "/";
       return NextResponse.redirect(`${origin}${dest}`);
     }
@@ -68,17 +69,15 @@ export async function GET(request: Request) {
     if (role === "prestataire") {
       return NextResponse.redirect(`${origin}/prestataire/dashboard`);
     }
-
     if (role === "admin") {
       return NextResponse.redirect(`${origin}/admin/dashboard`);
     }
 
-    // Touriste → accueil ou redirect demandé
     const dest = redirect && redirect !== "/auth" ? redirect : "/";
     return NextResponse.redirect(`${origin}${dest}`);
 
   } catch (err) {
-    console.error("[auth/callback] unexpected error:", err);
+    console.error("[auth/callback] unexpected:", err);
     return NextResponse.redirect(`${origin}/auth?error=callback`);
   }
 }
