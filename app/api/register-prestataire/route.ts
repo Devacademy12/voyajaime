@@ -20,7 +20,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Body JSON invalide" }, { status: 400 });
   }
 
-  const { userId, email, fullName, agencyName, city } = body;
+  const { userId, fullName, agencyName, city } = body;
 
   if (!userId) {
     return NextResponse.json({ error: "userId manquant" }, { status: 400 });
@@ -31,51 +31,40 @@ export async function POST(req: Request) {
       auth: { autoRefreshToken: false, persistSession: false },
     });
 
-    // 1. Upsert profil directement — userId vient du signUp, il est valide
+    // Délai initial pour laisser Supabase propager l'user
+    await new Promise(r => setTimeout(r, 1500));
+
+    const upsertData = {
+      user_id:      userId,
+      role:         "prestataire",
+      full_name:    fullName   || "",
+      agency_name:  agencyName || "",
+      city:         city       || "",
+      is_validated: false,
+    };
+
     const { data: profile, error: profileError } = await supabase
       .from("profiles")
-      .upsert(
-        {
-          user_id:      userId,
-          role:         "prestataire",
-          full_name:    fullName    || "",
-          agency_name:  agencyName  || "",
-          city:         city        || "",
-          email:        email       || "",
-          is_validated: false,
-        },
-        { onConflict: "user_id" }
-      )
+      .upsert(upsertData, { onConflict: "user_id" })
       .select()
       .single();
 
     if (profileError) {
-      console.error("[register-prestataire] profileError:", profileError.message);
+      console.error("[register-prestataire] profileError:", profileError.message, profileError.code);
 
-      // Si le profil échoue car l'user n'existe pas encore → attendre et réessayer
+      // FK violation → user pas encore propagé, retry après 3s
       if (profileError.code === "23503") {
-        console.log("[register-prestataire] FK violation, attente 3s...");
+        console.log("[register-prestataire] FK violation, retry dans 3s...");
         await new Promise(r => setTimeout(r, 3000));
 
         const { data: retryProfile, error: retryError } = await supabase
           .from("profiles")
-          .upsert(
-            {
-              user_id:      userId,
-              role:         "prestataire",
-              full_name:    fullName    || "",
-              agency_name:  agencyName  || "",
-              city:         city        || "",
-              email:        email       || "",
-              is_validated: false,
-            },
-            { onConflict: "user_id" }
-          )
+          .upsert(upsertData, { onConflict: "user_id" })
           .select()
           .single();
 
         if (retryError) {
-          console.error("[register-prestataire] retry profileError:", retryError.message);
+          console.error("[register-prestataire] retry error:", retryError.message);
           return NextResponse.json(
             { error: retryError.message, code: retryError.code },
             { status: 500 }
@@ -92,7 +81,7 @@ export async function POST(req: Request) {
       );
     }
 
-    // 2. Mettre à jour metadata (non bloquant)
+    // Mettre à jour metadata (non bloquant)
     supabase.auth.admin.updateUserById(userId, {
       user_metadata: {
         role:        "prestataire",
@@ -101,21 +90,6 @@ export async function POST(req: Request) {
         city,
       },
     }).catch(e => console.warn("[register-prestataire] updateUserById failed:", e));
-
-    // 3. Email de bienvenue (optionnel)
-    if (email && process.env.RESEND_API_KEY) {
-      try {
-        const { sendWelcomePrestataire } = await import("@/lib/emails/resend");
-        await sendWelcomePrestataire({
-          email,
-          fullName: fullName || email,
-          userId,
-        });
-        console.log("[register-prestataire] Email de bienvenue envoyé à", email);
-      } catch (emailErr) {
-        console.warn("[register-prestataire] Email de bienvenue échoué (non bloquant):", emailErr);
-      }
-    }
 
     console.log("[register-prestataire] Profil créé:", profile.user_id);
     return NextResponse.json({ success: true, profile });
