@@ -193,6 +193,8 @@ export default function AuthModal({ isOpen, onClose, defaultMode = "login" }: Au
     "Email not confirmed":                      "Confirmez votre email avant de vous connecter.",
     "User already registered":                  "Un compte existe déjà avec cet email.",
     "Password should be at least 6 characters": "Minimum 8 caractères requis.",
+    "over_email_send_rate_limit":               "Trop de tentatives. Patientez quelques minutes.",
+    "email rate limit exceeded":                "Limite atteinte. Réessayez dans 1 heure.",
   };
 
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -212,6 +214,7 @@ export default function AuthModal({ isOpen, onClose, defaultMode = "login" }: Au
 
     setLoading(true);
     try {
+
       // ── LOGIN ──
       if (mode === "login") {
         const { data, error } = await supabase.auth.signInWithPassword({
@@ -234,22 +237,47 @@ export default function AuthModal({ isOpen, onClose, defaultMode = "login" }: Au
         }
 
       // ── REGISTER TOURISTE ──
-      }  else if (mode === "register") {
-  const res = await fetch("/api/auth/register", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      email:    sanitizeText(email),
-      password,
-      fullName: sanitizeText(fullName),
-      role:     "touriste",
-    }),
-  });
+      } else if (mode === "register") {
+        const cleanEmail    = sanitizeText(email);
+        const cleanFullName = sanitizeText(fullName);
 
-  const json = await res.json();
-  if (!res.ok) throw new Error(json.error || "Erreur lors de l'inscription.");
+        const { data, error } = await supabase.auth.signUp({
+          email: cleanEmail,
+          password,
+          options: {
+            emailRedirectTo: REDIRECT_URL,
+            data: {
+              role:      "touriste",
+              full_name: cleanFullName || cleanEmail,
+            },
+          },
+        });
 
-  setSuccess("Vérifiez votre email pour confirmer votre inscription !");
+        if (error) {
+          const msg = error.message.toLowerCase();
+          if (
+            msg.includes("rate limit") ||
+            msg.includes("too many") ||
+            (error as unknown as { status?: number }).status === 429
+          ) {
+            throw new Error("Trop de tentatives. Veuillez patienter quelques minutes avant de réessayer.");
+          }
+          throw error;
+        }
+
+        if (!data.user) throw new Error("Cet email est déjà utilisé. Essayez de vous connecter.");
+
+        await supabase.from("profiles").upsert(
+          { user_id: data.user.id, role: "touriste", full_name: cleanFullName || cleanEmail },
+          { onConflict: "user_id" }
+        );
+
+        if (!data.user.email_confirmed_at) {
+          setSuccess("Vérifiez votre email pour confirmer votre inscription !");
+        } else {
+          onClose();
+          window.location.href = "/";
+        }
 
       // ── REGISTER PRESTATAIRE ──
       } else {
@@ -274,7 +302,6 @@ export default function AuthModal({ isOpen, onClose, defaultMode = "login" }: Au
         if (error) throw error;
         if (!data.user) throw new Error("Cet email est déjà utilisé. Essayez de vous connecter.");
 
-        
         const res = await fetch(REGISTER_PRESTA_URL, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
