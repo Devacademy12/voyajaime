@@ -274,7 +274,7 @@ export default function AuthModal({ isOpen, onClose, defaultMode = "login" }: Au
         if (error) throw error;
         if (!data.user) throw new Error("Cet email est déjà utilisé. Essayez de vous connecter.");
 
-        // ← URL absolue ici
+        
         const res = await fetch(REGISTER_PRESTA_URL, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
