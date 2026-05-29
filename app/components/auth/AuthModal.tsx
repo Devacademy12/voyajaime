@@ -234,35 +234,22 @@ export default function AuthModal({ isOpen, onClose, defaultMode = "login" }: Au
         }
 
       // ── REGISTER TOURISTE ──
-      } else if (mode === "register") {
-        const cleanEmail    = sanitizeText(email);
-        const cleanFullName = sanitizeText(fullName);
+      }  else if (mode === "register") {
+  const res = await fetch("/api/auth/register", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      email:    sanitizeText(email),
+      password,
+      fullName: sanitizeText(fullName),
+      role:     "touriste",
+    }),
+  });
 
-        const { data, error } = await supabase.auth.signUp({
-          email: cleanEmail,
-          password,
-          options: {
-            emailRedirectTo: REDIRECT_URL,
-            data: {
-              role:      "touriste",
-              full_name: cleanFullName || cleanEmail,
-            },
-          },
-        });
-        if (error) throw error;
-        if (!data.user) throw new Error("Cet email est déjà utilisé. Essayez de vous connecter.");
+  const json = await res.json();
+  if (!res.ok) throw new Error(json.error || "Erreur lors de l'inscription.");
 
-        await supabase.from("profiles").upsert(
-          { user_id: data.user.id, role: "touriste", full_name: cleanFullName || cleanEmail },
-          { onConflict: "user_id" }
-        );
-
-        if (!data.user.email_confirmed_at) {
-          setSuccess("Vérifiez votre email pour confirmer votre inscription !");
-        } else {
-          onClose();
-          window.location.href = "/";
-        }
+  setSuccess("Vérifiez votre email pour confirmer votre inscription !");
 
       // ── REGISTER PRESTATAIRE ──
       } else {
