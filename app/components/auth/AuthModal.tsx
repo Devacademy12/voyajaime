@@ -29,7 +29,8 @@ function pwdStrength(p: string) {
   return              { level: 4, label: "Excellent", color: "#059669" };
 }
 
-const REDIRECT_URL = "https://voyajaime.com/api/auth/callback";
+const REDIRECT_URL        = "https://voyajaime.com/api/auth/callback";
+const REGISTER_PRESTA_URL = "https://voyajaime.com/api/register-prestataire";
 
 const CSS = `
   @import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Instrument+Serif:ital@0;1&family=DM+Sans:wght@400;500;600;700&display=swap');
@@ -149,17 +150,17 @@ const CSS = `
 
 export default function AuthModal({ isOpen, onClose, defaultMode = "login" }: AuthModalProps) {
   const supabase = createClient();
-  const [mode, setMode]           = useState<Mode>(defaultMode);
-  const [email, setEmail]         = useState("");
-  const [password, setPassword]   = useState("");
-  const [fullName, setFullName]   = useState("");
+  const [mode, setMode]             = useState<Mode>(defaultMode);
+  const [email, setEmail]           = useState("");
+  const [password, setPassword]     = useState("");
+  const [fullName, setFullName]     = useState("");
   const [agencyName, setAgencyName] = useState("");
-  const [city, setCity]           = useState("");
-  const [showPwd, setShowPwd]     = useState(false);
-  const [loading, setLoading]     = useState(false);
+  const [city, setCity]             = useState("");
+  const [showPwd, setShowPwd]       = useState(false);
+  const [loading, setLoading]       = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
-  const [error, setError]         = useState<string | null>(null);
-  const [success, setSuccess]     = useState<string | null>(null);
+  const [error, setError]           = useState<string | null>(null);
+  const [success, setSuccess]       = useState<string | null>(null);
 
   const isPresta = mode === "prestataire";
 
@@ -286,7 +287,8 @@ export default function AuthModal({ isOpen, onClose, defaultMode = "login" }: Au
         if (error) throw error;
         if (!data.user) throw new Error("Cet email est déjà utilisé. Essayez de vous connecter.");
 
-        const res = await fetch("/api/register-prestataire", {
+        // ← URL absolue ici
+        const res = await fetch(REGISTER_PRESTA_URL, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -330,7 +332,7 @@ export default function AuthModal({ isOpen, onClose, defaultMode = "login" }: Au
   };
 
   const handleForgotPassword = async () => {
-    if (!email)                          { setError("Entrez votre email d'abord."); return; }
+    if (!email)                         { setError("Entrez votre email d'abord."); return; }
     if (!emailRegex.test(email.trim())) { setError("Adresse email invalide."); return; }
     setLoading(true); setError(null); setSuccess(null);
     try {
@@ -558,7 +560,6 @@ export default function AuthModal({ isOpen, onClose, defaultMode = "login" }: Au
                 )}
               </div>
 
-              {/* Forgot password */}
               {mode === "login" && (
                 <div className="am-forgot-row" style={{ marginTop: 8 }}>
                   <button type="button" className="am-forgot" onClick={handleForgotPassword}>
@@ -567,7 +568,6 @@ export default function AuthModal({ isOpen, onClose, defaultMode = "login" }: Au
                 </div>
               )}
 
-              {/* Submit */}
               <button type="submit" className="am-submit" disabled={loading}>
                 {loading
                   ? <><Loader2 size={15} className="am-spin-icon" /> Chargement…</>
@@ -579,7 +579,6 @@ export default function AuthModal({ isOpen, onClose, defaultMode = "login" }: Au
               </button>
             </form>
 
-            {/* ── Footer ── */}
             <div className="am-footer">
               {!isPresta ? (
                 <p>Vous êtes prestataire ?{" "}
