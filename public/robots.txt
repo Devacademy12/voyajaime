@@ -42,3 +42,4 @@ Disallow: /500
 
 # ── Sitemap ──
 Sitemap: https://voyajaime.tn/sitemap.xml
+Host: https://voyajaime.com
