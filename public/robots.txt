@@ -1,0 +1,44 @@
+# ================================================
+#  robots.txt — VoyajAime
+#  https://voyajaime.tn/robots.txt
+# ================================================
+
+User-agent: *
+
+# ── Autoriser tout le contenu public ──
+Allow: /
+Allow: /excursions
+Allow: /excursions/
+Allow: /blog
+Allow: /blog/
+Allow: /contact
+Allow: /a-propos
+Allow: /sitemap.xml
+
+# ── Bloquer les espaces privés ──
+Disallow: /admin
+Disallow: /admin/
+Disallow: /touriste
+Disallow: /touriste/
+Disallow: /prestataire
+Disallow: /prestataire/
+Disallow: /auth
+Disallow: /auth/
+
+# ── Bloquer les routes API ──
+Disallow: /api/
+Disallow: /api/auth/
+Disallow: /api/paiement/
+Disallow: /api/n8n-trigger
+
+# ── Bloquer les fichiers Next.js internes ──
+Disallow: /_next/
+Disallow: /_next/static/
+Disallow: /_next/image/
+
+# ── Bloquer les pages inutiles pour le SEO ──
+Disallow: /404
+Disallow: /500
+
+# ── Sitemap ──
+Sitemap: https://voyajaime.tn/sitemap.xml
