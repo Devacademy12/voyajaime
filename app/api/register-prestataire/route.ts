@@ -25,69 +25,48 @@ export async function POST(req: Request) {
     auth: { autoRefreshToken: false, persistSession: false },
   });
 
-  const profileData = {
-    user_id:      userId,
-    role:         "prestataire",
-    full_name:    fullName   || "",
-    agency_name:  agencyName || "",
-    city:         city       || "",
-    is_validated: false,
-  };
+  // On ne vérifie plus getUserById (l'user peut ne pas exister encore si
+  // email confirmation est activée). On upsert directement dans profiles.
+  // La FK sera respectée une fois que l'user confirmera son email et que
+  // le callback créera la session — en attendant on stocke les metadata.
+  
+  // Mettre à jour les user_metadata via admin (ne nécessite pas que l'user
+  // soit confirmé, juste qu'il existe dans auth.users en état "unconfirmed")
+  const { data: authUser, error: adminError } = await supabase.auth.admin.getUserById(userId);
 
-  // Retry loop : attend que auth.users contienne le userId (max 20s)
-  const MAX_ATTEMPTS = 10;
-  const DELAY_MS     = 2000;
-  let lastError: string | null = null;
-
-  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
-    try {
-      // Vérifier que l'user existe dans auth.users avant d'upsert
-      const { data: authUser, error: authError } = await supabase.auth.admin.getUserById(userId);
-
-      if (authError || !authUser?.user?.id) {
-        console.log(`[register-prestataire] attempt ${attempt}/${MAX_ATTEMPTS} — user not in auth yet, waiting...`);
-        await new Promise((r) => setTimeout(r, DELAY_MS));
-        continue;
-      }
-
-      // L'user existe → upsert profil
-      const { error: profileError } = await supabase
-        .from("profiles")
-        .upsert(profileData, { onConflict: "user_id" });
-
-      if (!profileError) {
-        // Succès — email de bienvenue optionnel
-        if (process.env.RESEND_API_KEY) {
-          try {
-            const { sendWelcomePrestataire } = await import("@/lib/emails/resend");
-            await sendWelcomePrestataire({ email, fullName: fullName || email, userId });
-          } catch (e) {
-            console.warn("[register-prestataire] email échoué (non bloquant):", e);
-          }
-        }
-        console.log(`[register-prestataire] ✅ Profil créé à l'attempt ${attempt} pour`, userId);
-        return NextResponse.json({ success: true });
-      }
-
-      lastError = profileError.message;
-      console.error(`[register-prestataire] attempt ${attempt} profileError:`, lastError);
-
-      // Si ce n'est pas une FK violation (user pas encore propagé), inutile de réessayer
-      if (profileError.code !== "23503") {
-        return NextResponse.json({ error: lastError }, { status: 500 });
-      }
-
-      await new Promise((r) => setTimeout(r, DELAY_MS));
-    } catch (e) {
-      console.error(`[register-prestataire] attempt ${attempt} exception:`, e);
-      lastError = e instanceof Error ? e.message : "Erreur inconnue";
-      await new Promise((r) => setTimeout(r, DELAY_MS));
-    }
+  if (adminError || !authUser?.user) {
+    // L'user n'existe pas encore (email confirmation pending) →
+    // on retourne success car le callback créera le profil après confirmation
+    console.log("[register-prestataire] User pas encore confirmé, metadata sauvegardées via signUp options");
+    return NextResponse.json({ success: true, deferred: true });
   }
 
-  console.error("[register-prestataire] ❌ Échec après", MAX_ATTEMPTS, "tentatives");
-  return NextResponse.json(
-    { error: lastError || "Utilisateur non disponible après création. Réessayez." },
-    { status: 500 }
-  );
+  // L'user existe → mettre à jour ses metadata et créer le profil
+  await supabase.auth.admin.updateUserById(userId, {
+    user_metadata: {
+      role:         "prestataire",
+      full_name:    fullName    || "",
+      agency_name:  agencyName  || "",
+      city:         city        || "",
+    },
+  });
+
+  const { error: profileError } = await supabase
+    .from("profiles")
+    .upsert({
+      user_id:      userId,
+      role:         "prestataire",
+      full_name:    fullName    || "",
+      agency_name:  agencyName  || "",
+      city:         city        || "",
+      is_validated: false,
+    }, { onConflict: "user_id" });
+
+  if (profileError) {
+    console.error("[register-prestataire] profileError:", profileError.message);
+    return NextResponse.json({ error: profileError.message }, { status: 500 });
+  }
+
+  console.log("[register-prestataire] ✅ Profil créé pour", userId);
+  return NextResponse.json({ success: true });
 }

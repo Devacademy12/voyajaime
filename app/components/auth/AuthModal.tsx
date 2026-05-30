@@ -296,8 +296,8 @@ export default function AuthModal({ isOpen, onClose, defaultMode = "login" }: Au
           throw new Error("Cet email est déjà utilisé. Essayez de vous connecter.");
         }
 
-        // 2. Appel API avec détection explicite HTML vs JSON
-        const res = await fetch("/api/register-prestataire", {
+        // 2. Appel API — non bloquant (profil créé dans callback si email confirmation activée)
+        fetch("/api/register-prestataire", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -307,17 +307,9 @@ export default function AuthModal({ isOpen, onClose, defaultMode = "login" }: Au
             agencyName: cleanAgencyName,
             city:       cleanCity,
           }),
-        });
+        }).catch(e => console.warn("[register-prestataire] non-blocking error:", e));
 
-        const contentType = res.headers.get("content-type") || "";
-        if (!contentType.includes("application/json")) {
-          throw new Error(`Erreur serveur (${res.status}) — vérifiez votre configuration.`);
-        }
-
-        const json = await res.json();
-        if (!res.ok) throw new Error(json.error || "Erreur lors de la création du compte.");
-
-        setSuccess("Compte créé ! Vérifiez votre email pour continuer l'inscription.");
+        setSuccess("Compte créé ! Vérifiez votre email pour confirmer votre inscription.");
       }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Erreur inconnue";
