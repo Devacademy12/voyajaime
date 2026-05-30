@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
+import { createClient } from "@supabase/supabase-js";
 import { cookies } from "next/headers";
 
 export async function GET(request: Request) {
@@ -16,7 +17,11 @@ export async function GET(request: Request) {
         cookies: {
           getAll() { return cookieStore.getAll(); },
           setAll(cookiesToSet) {
-            try { cookiesToSet.forEach(({ name, value, options }) => cookieStore.set(name, value, options)); } catch {}
+            try {
+              cookiesToSet.forEach(({ name, value, options }) =>
+                cookieStore.set(name, value, options)
+              );
+            } catch {}
           },
         },
       }
@@ -28,20 +33,31 @@ export async function GET(request: Request) {
         .from("profiles").select("role").eq("user_id", data.user.id).single();
 
       if (!profile) {
-        await supabase.from("profiles").upsert({
-          user_id: data.user.id,
-          role: "touriste",
-          full_name: data.user.user_metadata?.full_name || data.user.email,
-          avatar_url: data.user.user_metadata?.avatar_url || null,
+        // Utilise le service role pour créer le profil (évite les erreurs RLS)
+        const adminClient = createClient(
+          process.env.NEXT_PUBLIC_SUPABASE_URL!,
+          process.env.SUPABASE_SERVICE_ROLE_KEY!,
+          { auth: { autoRefreshToken: false, persistSession: false } }
+        );
+
+        const userRole = data.user.user_metadata?.role || "touriste";
+        await adminClient.from("profiles").upsert({
+          user_id:     data.user.id,
+          role:        userRole,
+          full_name:   data.user.user_metadata?.full_name || data.user.email,
+          avatar_url:  data.user.user_metadata?.avatar_url || null,
+          agency_name: data.user.user_metadata?.agency_name || null,
+          city:        data.user.user_metadata?.city || null,
         }, { onConflict: "user_id" });
-        // Touriste → retour à l'accueil (pas dashboard)
+
+        if (userRole === "prestataire") {
+          return NextResponse.redirect(`${origin}/prestataire/dashboard`);
+        }
         return NextResponse.redirect(`${origin}/${redirect || ""}`);
       }
 
       const role = profile.role;
-
       if (role === "touriste") {
-        // Touriste → accueil ou page demandée
         return NextResponse.redirect(`${origin}/${redirect || ""}`);
       } else if (role === "prestataire" || role === "admin") {
         return NextResponse.redirect(`${origin}/${role}/dashboard`);

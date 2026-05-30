@@ -34,49 +34,55 @@ export async function POST(req: Request) {
     is_validated: false,
   };
 
-  // Retry loop : attend que auth.users contienne le userId (max 15s)
+  // Retry loop : attend que auth.users contienne le userId (max 20s)
   const MAX_ATTEMPTS = 10;
-  const DELAY_MS     = 1500;
+  const DELAY_MS     = 2000;
   let lastError: string | null = null;
 
   for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
-    // Vérifier que l'user existe dans auth.users avant d'upsert
-    const { data: authUser } = await supabase.auth.admin.getUserById(userId);
+    try {
+      // Vérifier que l'user existe dans auth.users avant d'upsert
+      const { data: authUser, error: authError } = await supabase.auth.admin.getUserById(userId);
 
-    if (!authUser?.user?.id) {
-      console.log(`[register-prestataire] attempt ${attempt}/${MAX_ATTEMPTS} — user not in auth yet, waiting...`);
-      await new Promise((r) => setTimeout(r, DELAY_MS));
-      continue;
-    }
-
-    // L'user existe → upsert profil
-    const { error: profileError } = await supabase
-      .from("profiles")
-      .upsert(profileData, { onConflict: "user_id" });
-
-    if (!profileError) {
-      // Succès — email de bienvenue optionnel
-      if (process.env.RESEND_API_KEY) {
-        try {
-          const { sendWelcomePrestataire } = await import("@/lib/emails/resend");
-          await sendWelcomePrestataire({ email, fullName: fullName || email, userId });
-        } catch (e) {
-          console.warn("[register-prestataire] email échoué (non bloquant):", e);
-        }
+      if (authError || !authUser?.user?.id) {
+        console.log(`[register-prestataire] attempt ${attempt}/${MAX_ATTEMPTS} — user not in auth yet, waiting...`);
+        await new Promise((r) => setTimeout(r, DELAY_MS));
+        continue;
       }
-      console.log(`[register-prestataire] ✅ Profil créé à l'attempt ${attempt} pour`, userId);
-      return NextResponse.json({ success: true });
+
+      // L'user existe → upsert profil
+      const { error: profileError } = await supabase
+        .from("profiles")
+        .upsert(profileData, { onConflict: "user_id" });
+
+      if (!profileError) {
+        // Succès — email de bienvenue optionnel
+        if (process.env.RESEND_API_KEY) {
+          try {
+            const { sendWelcomePrestataire } = await import("@/lib/emails/resend");
+            await sendWelcomePrestataire({ email, fullName: fullName || email, userId });
+          } catch (e) {
+            console.warn("[register-prestataire] email échoué (non bloquant):", e);
+          }
+        }
+        console.log(`[register-prestataire] ✅ Profil créé à l'attempt ${attempt} pour`, userId);
+        return NextResponse.json({ success: true });
+      }
+
+      lastError = profileError.message;
+      console.error(`[register-prestataire] attempt ${attempt} profileError:`, lastError);
+
+      // Si ce n'est pas une FK violation (user pas encore propagé), inutile de réessayer
+      if (profileError.code !== "23503") {
+        return NextResponse.json({ error: lastError }, { status: 500 });
+      }
+
+      await new Promise((r) => setTimeout(r, DELAY_MS));
+    } catch (e) {
+      console.error(`[register-prestataire] attempt ${attempt} exception:`, e);
+      lastError = e instanceof Error ? e.message : "Erreur inconnue";
+      await new Promise((r) => setTimeout(r, DELAY_MS));
     }
-
-    lastError = profileError.message;
-    console.error(`[register-prestataire] attempt ${attempt} profileError:`, lastError);
-
-    // Si ce n'est pas une FK violation, inutile de réessayer
-    if (profileError.code !== "23503") {
-      return NextResponse.json({ error: lastError }, { status: 500 });
-    }
-
-    await new Promise((r) => setTimeout(r, DELAY_MS));
   }
 
   console.error("[register-prestataire] ❌ Échec après", MAX_ATTEMPTS, "tentatives");

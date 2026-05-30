@@ -255,11 +255,23 @@ export default function AuthModal({ isOpen, onClose, defaultMode = "login" }: Au
           },
         });
         if (error) throw error;
-        if (!data.user) return;
-        await supabase.from("profiles").upsert(
-          { user_id: data.user.id, role: "touriste", full_name: cleanFullName || cleanEmail },
-          { onConflict: "user_id" }
-        );
+        if (!data.user) throw new Error("Cet email est déjà utilisé. Essayez de vous connecter.");
+
+        // Création du profil via API route (service role) pour éviter les erreurs RLS 401
+        const profileRes = await fetch("/api/register-touriste", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            userId:   data.user.id,
+            email:    cleanEmail,
+            fullName: cleanFullName || cleanEmail,
+          }),
+        });
+        // Non bloquant : si le profil échoue, le callback le créera à la connexion
+        if (!profileRes.ok) {
+          console.warn("[register] profile creation failed, will be handled at login callback");
+        }
+
         if (!data.user.email_confirmed_at) setSuccess("Vérifiez votre email pour confirmer votre inscription !");
         else { onClose(); window.location.href = "/"; }
 

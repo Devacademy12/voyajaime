@@ -138,31 +138,33 @@ export async function POST(req: NextRequest) {
 
     if (paiement?.status === "paid" && refundAmount > 0) {
       try {
-        const sessions = await stripe.checkout.sessions.list({
-          limit: 100,
-        });
+        // Utilise le session_id stocké en base plutôt que de lister toutes les sessions
+        const storedSessionId = reservation.payment_intent_id || paiement?.stripe_session_id;
+        let paymentIntentId: string | null = null;
 
-        const session = sessions.data.find(
-          (s) => s.metadata?.reservation_id === reservation_id
-        );
+        if (storedSessionId) {
+          const session = await stripe.checkout.sessions.retrieve(storedSessionId, {
+            expand: ["payment_intent"],
+          });
+          paymentIntentId = typeof session.payment_intent === "string"
+            ? session.payment_intent
+            : (session.payment_intent as any)?.id || null;
+        } else if (paiement?.stripe_payment_intent_id) {
+          paymentIntentId = paiement.stripe_payment_intent_id;
+        }
 
-        if (session && session.payment_intent) {
-          const paymentIntentId = typeof session.payment_intent === 'string' 
-            ? session.payment_intent 
-            : (session.payment_intent as any)?.id;
-
-          if (paymentIntentId) {
-            const refund = await stripe.refunds.create({
-              payment_intent: paymentIntentId,
-              amount: Math.round(refundAmount * 100),
-              metadata: {
-                reservation_id,
-                refund_percentage: refundPercentage,
-              },
-            });
-
-            stripeRefundId = refund.id;
-          }
+        if (paymentIntentId) {
+          const refund = await stripe.refunds.create({
+            payment_intent: paymentIntentId,
+            amount: Math.round(refundAmount * 100),
+            metadata: {
+              reservation_id,
+              refund_percentage: String(refundPercentage),
+            },
+          });
+          stripeRefundId = refund.id;
+        } else {
+          console.warn("[cancel] Aucun payment_intent_id trouvé pour", reservation_id);
         }
       } catch (err) {
         console.error("Stripe refund error:", err);

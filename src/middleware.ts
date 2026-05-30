@@ -18,6 +18,7 @@ const PUBLIC_ROUTES = [
   "/api/auth/reset-password",
   "/api/webhooks/stripe",
   "/api/register-prestataire",
+  "/api/register-touriste", // ← AJOUT
 ];
 
 const PUBLIC_PREFIXES = [
@@ -44,23 +45,33 @@ export async function middleware(request: NextRequest) {
 
   if (isPublic(pathname)) return NextResponse.next();
 
-  const response = NextResponse.next();
+  // ── Fix : on passe la request dans la response pour que
+  //    Supabase SSR puisse écrire les cookies de session rafraîchis ──
+  let supabaseResponse = NextResponse.next({ request });
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
-        getAll() { return request.cookies.getAll(); },
+        getAll() {
+          return request.cookies.getAll();
+        },
         setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value, options }) => {
-            response.cookies.set(name, value, options);
-          });
+          // Écrire dans la request ET dans la response — requis par @supabase/ssr
+          cookiesToSet.forEach(({ name, value }) =>
+            request.cookies.set(name, value)
+          );
+          supabaseResponse = NextResponse.next({ request });
+          cookiesToSet.forEach(({ name, value, options }) =>
+            supabaseResponse.cookies.set(name, value, options)
+          );
         },
       },
     }
   );
 
+  // Rafraîchit la session expirée — ne jamais supprimer cette ligne
   const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) {
@@ -90,7 +101,7 @@ export async function middleware(request: NextRequest) {
       return NextResponse.redirect(new URL("/auth", request.url));
   }
 
-  return response;
+  return supabaseResponse; // ← retourner supabaseResponse et non response
 }
 
 export const runtime = "nodejs";
