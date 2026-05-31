@@ -4,7 +4,10 @@ import "../public/style/prestataires.css";
 import "../public/style/conversations.css";
 import '../public/style/excursion-client.css';
 import '../public/style/excursion-detail.css';
-import RouteTransition from "./components/ui/RouteTransition";
+// ✅ AJOUT : CSS transitions de page
+import '../public/style/page-transitions.css';
+
+import PageTransitionProvider from "@/app/components/PageTransitionProvider";
 
 export const metadata: Metadata = {
   title: "VoyajAime — Découvrez la Tunisie",
@@ -15,12 +18,27 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="fr">
       <head>
+        {/*
+         * ✅ OPTIMISATION FONTS :
+         * - dns-prefetch ajouté avant preconnect (évite un RTT supplémentaire)
+         * - display=swap déjà présent → bon
+         * - On supprime le double import dans page.tsx (voir commentaire ci-dessous)
+         */}
+        <link rel="dns-prefetch" href="https://fonts.googleapis.com" />
+        <link rel="dns-prefetch" href="https://fonts.gstatic.com" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Playfair+Display:wght@700;800&display=swap" rel="stylesheet" />
+        <link
+          href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Playfair+Display:wght@700;800&display=swap"
+          rel="stylesheet"
+        />
       </head>
       <body className="main-font">
-        <RouteTransition>{children}</RouteTransition>
+        {/* ✅ AJOUT : transitions fluides entre les pages */}
+        <PageTransitionProvider>
+          {children}
+        </PageTransitionProvider>
+
         <style>{`
           .touriste-container {
             width: 100%;
