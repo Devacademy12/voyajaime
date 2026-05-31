@@ -7,6 +7,8 @@ import {
 } from "lucide-react";
 import AdminCharts from "./AdminCharts";
 
+export const dynamic = "force-dynamic";
+
 export default async function AdminDashboard() {
   const supabase = supabaseAdmin;
 

@@ -3,6 +3,8 @@ import { redirect } from "next/navigation";
 import Sidebar from "../components/shared/Sidebar";
 import ValidationPending from "./ValidationPending";
 
+export const dynamic = "force-dynamic";
+
 export default async function PrestataireLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createServerSupabaseClient();
   const { data: { user } } = await supabase.auth.getUser();

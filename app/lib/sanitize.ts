@@ -17,7 +17,7 @@ export function sanitizeText(value: string): string {
   if (!value || typeof value !== "string") return "";
   const purify = getSanitizer();
   if (purify) {
-    return purify.sanitize(value, { ALLOWED_TAGS: [], ALLOWED_ATTR: [] });
+    return purify.sanitize(value, { ALLOWED_TAGS: [], ALLOWED_ATTR: [] }).trim();
   }
   // Côté serveur : on strip les balises HTML uniquement
   return value.replace(/<[^>]*>/g, "").trim();
@@ -30,7 +30,7 @@ export function sanitizeHtml(value: string): string {
     return purify.sanitize(value, {
       ALLOWED_TAGS: ["b", "i", "u", "strong", "em", "p", "br", "ul", "ol", "li"],
       ALLOWED_ATTR: [],
-    });
+    }).trim();
   }
   return value.replace(/<[^>]*>/g, "").trim();
 }

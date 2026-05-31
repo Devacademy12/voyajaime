@@ -1,19 +1,12 @@
-import { Poppins } from "next/font/google";
-
-const poppins = Poppins({
-  subsets: ["latin"],
-  weight: ["300", "400", "500", "600", "700", "800"],
-});
-
 export default async function TouristeLayout({ children }: { children: React.ReactNode }) {
   return (
     <div
-      className={poppins.className}
       style={{
         minHeight: "100vh",
         display: "flex",
         flexDirection: "column",
         background: "#FAFAF9",
+        fontFamily: "Poppins, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
       }}
     >
       <main style={{ flex: 1, display: "flex", flexDirection: "column" }}>
