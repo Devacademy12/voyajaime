@@ -121,16 +121,19 @@ export default async function BlogPage({
             style={{
               position: "absolute",
               bottom: 0,
-              left: 0,
-              right: 0,
+              left: "50%",
+              transform: "translateX(-50%)",
+              width: "100%",
+              maxWidth: 1280,
               paddingTop: 40,
               paddingBottom: 40,
-              paddingLeft: 24,
-              paddingRight: 24,
+              paddingLeft: 28,
+              paddingRight: 28,
               display: "flex",
               alignItems: "flex-end",
               justifyContent: "space-between",
               gap: 32,
+              boxSizing: "border-box",
             }}
           >
             {/* Left */}
