@@ -299,17 +299,25 @@ export default function HomeSlider() {
         .hero-content {
           position: absolute;
           top: 50%;
-          left: 0;
-          right: 0;
-          transform: translateY(-50%);
-          max-width: none;
+          left: 50%;
+          transform: translate(-50%, -50%);
+          max-width: 1280px;
           width: 100%;
           display: flex;
-          flex-direction: column;
-          align-items: flex-start;
+          flex-direction: row;
+          justify-content: space-between;
+          gap: 32px;
+          align-items: flex-end;
           z-index: 15;
-          padding-left: 24px;
-          padding-right: 24px;
+          padding-left: 28px;
+          padding-right: 28px;
+          box-sizing: border-box;
+        }
+
+        .hero-copy {
+          flex: 1;
+          min-width: 0;
+          max-width: 760px;
         }
 
         .hero-cta-group {
@@ -317,6 +325,8 @@ export default function HomeSlider() {
           gap: 18px;
           flex-wrap: wrap;
           align-items: center;
+          justify-content: flex-end;
+          flex-shrink: 0;
         }
 
         .btn-primary {
@@ -405,9 +415,18 @@ export default function HomeSlider() {
             top: auto;
             bottom: 96px;
             transform: none;
+            left: 0;
+            right: 0;
             align-items: stretch;
+            flex-direction: column;
+            justify-content: flex-start;
+            gap: 18px;
             padding-left: 24px;
             padding-right: 24px;
+          }
+
+          .hero-copy {
+            max-width: none;
           }
 
           .hero-cta-group {
@@ -569,112 +588,111 @@ export default function HomeSlider() {
               key={current}
               className="hero-content"
             >
-              {/* Badge avec icône */}
-              {slide.subtitle && (
-                <div className="hero-animate-1" style={{
-                  display: "inline-flex", 
-                  alignItems: "center", 
-                  gap: 10,
-                  padding: "8px 20px", 
-                  borderRadius: 100,
-                  background: `${slide.color}15`,
-                  backdropFilter: "blur(16px)",
-                  border: `1px solid ${slide.color}40`,
-                  marginBottom: 28,
-                }}>
-                  <MapPin size={14} style={{ color: slide.color }}/>
-                  <span style={{ 
-                    fontSize: 13, 
-                    fontWeight: 700, 
-                    color: "white", 
-                    letterSpacing: 1.8, 
-                    textTransform: "uppercase" 
+              <div className="hero-copy">
+                {slide.subtitle && (
+                  <div className="hero-animate-1" style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 10,
+                    padding: "8px 20px",
+                    borderRadius: 100,
+                    background: `${slide.color}15`,
+                    backdropFilter: "blur(16px)",
+                    border: `1px solid ${slide.color}40`,
+                    marginBottom: 28,
                   }}>
-                    {slide.subtitle}
-                  </span>
-                </div>
-              )}
-
-              {/* Titre principal */}
-              <h1 className="hero-animate-2" style={{
-                fontFamily: "'Playfair Display', serif",
-                fontSize: "clamp(40px, 5vw, 68px)",
-                fontWeight: 800,
-                color: "white",
-                lineHeight: 1.05,
-                letterSpacing: "-2.5px",
-                marginBottom: 24,
-                textShadow: "0 4px 40px rgba(0,0,0,0.3)",
-                maxWidth: "100%",
-              }}>
-                {slide.title}
-              </h1>
-
-              {/* Catégories avec design amélioré */}
-              <div className="hero-animate-3" style={{ marginBottom: 36 }}>
-                {slide.categories?.length > 0 ? (
-                  <div style={{ 
-                    display: "flex", 
-                    flexWrap: "wrap", 
-                    gap: 12,
-                    alignItems: "center"
-                  }}>
-                    {slide.categories.slice(0, 3).map((cat, idx) => (
-                      <div
-                        key={idx}
-                        style={{
-                          display: "inline-flex",
-                          alignItems: "center",
-                          gap: 6,
-                          padding: "6px 14px",
-                          borderRadius: 100,
-                          background: "rgba(255,255,255,0.1)",
-                          backdropFilter: "blur(10px)",
-                          border: "1px solid rgba(255,255,255,0.2)"
-                        }}
-                      >
-                        <Star size={12} style={{ color: slide.color }}/>
-                        <span style={{ 
-                          fontSize: 13, 
-                          color: "white", 
-                          fontWeight: 500,
-                          letterSpacing: 0.3,
-                        }}>
-                          {cat}
-                        </span>
-                      </div>
-                    ))}
+                    <MapPin size={14} style={{ color: slide.color }} />
+                    <span style={{
+                      fontSize: 13,
+                      fontWeight: 700,
+                      color: "white",
+                      letterSpacing: 1.8,
+                      textTransform: "uppercase"
+                    }}>
+                      {slide.subtitle}
+                    </span>
                   </div>
-                ) : (
-                  <p style={{ 
-                    fontSize: 17, 
-                    color: "rgba(255,255,255,0.9)", 
-                    lineHeight: 1.5,
-                    margin: 0,
-                    fontWeight: 500,
-                    maxWidth: "90%"
-                  }}>
-                    Vivez une expérience inoubliable au cœur de la Tunisie
-                  </p>
                 )}
+
+                <h1 className="hero-animate-2" style={{
+                  fontFamily: "'Playfair Display', serif",
+                  fontSize: "clamp(40px, 5vw, 68px)",
+                  fontWeight: 800,
+                  color: "white",
+                  lineHeight: 1.05,
+                  letterSpacing: "-2.5px",
+                  marginBottom: 24,
+                  textShadow: "0 4px 40px rgba(0,0,0,0.3)",
+                  maxWidth: "100%",
+                }}>
+                  {slide.title}
+                </h1>
+
+                <div className="hero-animate-3" style={{ marginBottom: 0 }}>
+                  {slide.categories?.length > 0 ? (
+                    <div style={{
+                      display: "flex",
+                      flexWrap: "wrap",
+                      gap: 12,
+                      alignItems: "center"
+                    }}>
+                      {slide.categories.slice(0, 3).map((cat, idx) => (
+                        <div
+                          key={idx}
+                          style={{
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: 6,
+                            padding: "6px 14px",
+                            borderRadius: 100,
+                            background: "rgba(255,255,255,0.1)",
+                            backdropFilter: "blur(10px)",
+                            border: "1px solid rgba(255,255,255,0.2)"
+                          }}
+                        >
+                          <Star size={12} style={{ color: slide.color }} />
+                          <span style={{
+                            fontSize: 13,
+                            color: "white",
+                            fontWeight: 500,
+                            letterSpacing: 0.3,
+                          }}>
+                            {cat}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p style={{
+                      fontSize: 17,
+                      color: "rgba(255,255,255,0.9)",
+                      lineHeight: 1.5,
+                      margin: 0,
+                      fontWeight: 500,
+                      maxWidth: "90%"
+                    }}>
+                      Vivez une expérience inoubliable au cœur de la Tunisie
+                    </p>
+                  )}
+                </div>
               </div>
 
-              {/* Boutons d'action */}
               <div className="hero-animate-4 hero-cta-group">
                 <a href="#chemins" className="btn-primary">
-                  <Compass size={18}/> 
+                  <Compass size={18} />
                   <span>Planifier mon voyage</span>
                 </a>
-                {slide.type === "excursion" && slide.excursionId
-                  ? <Link href={ROUTES.excursion(slide.excursionId)} className="btn-ghost" style={{ gap: 10 }}>
-                      <Map size={18}/> 
-                      <span>Découvrir l&apos;excursion</span>
-                    </Link>
-                  : <Link href={ROUTES.excursions} className="btn-ghost" style={{ gap: 10 }}>
-                      <ArrowRight size={18}/> 
-                      <span>Explorer le catalogue</span>
-                    </Link>
-                }
+                {slide.type === "excursion" && slide.excursionId ? (
+                  <Link href={ROUTES.excursion(slide.excursionId)} className="btn-ghost" style={{ gap: 10 }}>
+                    <Map size={18} />
+                    <span>Découvrir l&apos;excursion</span>
+                  </Link>
+                ) : (
+                  <Link href={ROUTES.excursions} className="btn-ghost" style={{ gap: 10 }}>
+                    <ArrowRight size={18} />
+                    <span>Explorer le catalogue</span>
+                  </Link>
+                )}
               </div>
             </div>
 
