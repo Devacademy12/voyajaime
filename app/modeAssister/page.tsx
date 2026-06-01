@@ -108,6 +108,23 @@ function getBlockedDates(cityDates: CityDateRange[], excludeCity: string) {
 }
 
 /* ══════════════════════════════════════════
+   HELPER — génère toutes les dates d'une plage
+   ex: start=2024-06-01, end=2024-06-03 → ["2024-06-01","2024-06-02","2024-06-03"]
+══════════════════════════════════════════ */
+function generateDateRange(start: Date, end: Date): string[] {
+  const dates: string[] = [];
+  const cur = new Date(start);
+  cur.setHours(0, 0, 0, 0);
+  const endNorm = new Date(end);
+  endNorm.setHours(0, 0, 0, 0);
+  while (cur <= endNorm) {
+    dates.push(cur.toISOString().split("T")[0]);
+    cur.setDate(cur.getDate() + 1);
+  }
+  return dates;
+}
+
+/* ══════════════════════════════════════════
    extractItinerary — parse N8N response
 ══════════════════════════════════════════ */
 function extractItinerary(raw: unknown, excursions: Excursion[]): Itinerary {
@@ -760,9 +777,7 @@ export default function ModeAssiste() {
   const [dateError,    setDateError]    = useState("");
   const [showCheckout, setShowCheckout] = useState(false);
   const [saving,       setSaving]       = useState(false);
-
-  // ── FIX: saveStatus inclut "saving" pour le toast ──
-  const [saveStatus, setSaveStatus] = useState<"idle"|"ok"|"error"|"login"|"saving">("idle");
+  const [saveStatus,   setSaveStatus]   = useState<"idle"|"ok"|"error"|"login"|"saving">("idle");
 
   /* ── Derived ── */
   const totalDays = cityDates.reduce(
@@ -773,18 +788,47 @@ export default function ModeAssiste() {
     (acc, d) => acc + d.activities.reduce((a, act) => a + (Number(act.price) || 0), 0), 0
   ) ?? 0;
 
-  // ── FIX: useMemo pour stabiliser itineraryAsExc ──
+  /* ══════════════════════════════════════════
+     FIX PRINCIPAL — itineraryAsExc
+     
+     Le Checkoutmodal vérifiait available_dates et
+     trouvait un tableau vide → "Aucun créneau disponible".
+     
+     On injecte maintenant :
+     1. available_dates  : toutes les dates du voyage (YYYY-MM-DD)
+     2. is_active        : true  (l'itinéraire IA est toujours actif)
+     3. is_itinerary     : true  (flag pour que le modal sache que c'est un itinéraire IA,
+                                  pas une excursion normale avec des créneaux fixes)
+     4. depart_time      : "09:00" valeur par défaut
+  ══════════════════════════════════════════ */
   const itineraryAsExc = useMemo(() => {
     if (!itinerary) return null;
+
+    // Collecter toutes les dates de toutes les villes du voyage
+    const allDates = cityDates
+      .filter(c => c.start && c.end)
+      .flatMap(c => generateDateRange(c.start!, c.end!));
+
+    // Supprimer les doublons (si chevauchement theorique)
+    const uniqueDates = [...new Set(allDates)].sort();
+
     return {
-      id:               `itinerary-${itinerary.title}`,
-      title:            itinerary.title,
+      id:               `itinerary-${Date.now()}`,
+      title:            itinerary.title || "Voyage personnalisé en Tunisie",
       city:             selectedCities.join(", "),
       duration_hours:   totalDays * 8,
       price_per_person: totalPrice,
       max_people:       20,
+      is_active:        true,
+      // ✅ FIX : fournir les vraies dates pour débloquer le modal
+      available_dates:  uniqueDates,
+      // ✅ FIX : créneau de départ par défaut
+      depart_time:      "09:00",
+      // ✅ FIX : flag pour que le modal puisse adapter son comportement
+      is_itinerary:     true,
+      description:      `Itinéraire personnalisé sur ${totalDays} jour${totalDays > 1 ? "s" : ""} — ${selectedCities.join(", ")}`,
     };
-  }, [itinerary, selectedCities, totalDays, totalPrice]);
+  }, [itinerary, selectedCities, totalDays, totalPrice, cityDates]);
 
   const canGenerate = selectedCities.length > 0 && allDatesSet && !dateError && !!N8N_WEBHOOK_URL;
 
@@ -917,19 +961,14 @@ export default function ModeAssiste() {
         days: prev.days.map((day, dIdx) =>
           dIdx !== dayIdx ? day : {
             ...day,
-            activities: day.activities.map((act, aIdx) => aIdx === actIdx ? alt : act),
+            activities: day.activities.map((act, aIdx) => aIdx !== actIdx ? act : alt),
           }
         ),
       };
     });
   };
 
-  /* ══════════════════════════════════════════
-     FIX: saveItinerary corrigé
-     — colonnes alignées avec le schéma réel
-     — logs pour débugger
-     — feedback via toast
-  ══════════════════════════════════════════ */
+  /* ── Save itinerary ── */
   const saveItinerary = async () => {
     if (!itinerary) return;
     setSaving(true);
@@ -955,12 +994,6 @@ export default function ModeAssiste() {
         categories_selectionnees: catNames,
         plan:                     itinerary,
       };
-
-      // Colonnes optionnelles — ajoutez-les seulement si elles existent dans votre table.
-      // Si vous avez exécuté : ALTER TABLE itineraires ADD COLUMN budget numeric, ADD COLUMN city_schedule jsonb
-      // décommentez les deux lignes suivantes :
-      // insertPayload.budget = budget ? Number(budget) : null;
-      // insertPayload.city_schedule = cityDates.map(c => ({ city: c.city, start: c.start?.toISOString(), end: c.end?.toISOString() }));
 
       console.log("Saving itinerary payload:", insertPayload);
 
@@ -1252,11 +1285,16 @@ export default function ModeAssiste() {
         </div>
       )}
 
-      {/* ── CHECKOUT MODAL ── */}
-      {showCheckout && itineraryAsExc && (
+      {/* ══════════════════════════════════════════
+          FIX CHECKOUT MODAL
+          — On passe itineraryAsExc uniquement s'il est prêt
+          — La condition showCheckout && itinerary (pas itineraryAsExc)
+            évite le flash si le memo n'est pas encore calculé
+      ══════════════════════════════════════════ */}
+      {showCheckout && itinerary && itineraryAsExc && (
         <Checkoutmodal
           excursions={[itineraryAsExc]}
-          itineraireTitle={itinerary?.title}
+          itineraireTitle={itinerary.title}
           onClose={() => setShowCheckout(false)}
         />
       )}
