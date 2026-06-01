@@ -38,7 +38,7 @@ type ItineraireDisplayProps = {
   }[];
   totalPrice: number;
   saving: boolean;
-  saveStatus: "idle" | "ok" | "error" | "login";
+  saveStatus: "idle" | "ok" | "error" | "login" | "saving";
   onBack: () => void;
   onReset: () => void;
   onCheckout: () => void;
