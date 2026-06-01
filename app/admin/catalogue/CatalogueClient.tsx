@@ -259,7 +259,7 @@ export default function CatalogueClient({
           ) : (
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(320px,1fr))", gap: 8 }}>
               {villes.map(v => (
-                <div key={v.id} className="ccard" style={{ borderLeft: `3px solid ${v.active ? "#02AFCF" : "#EEF2FF"}` }}>
+                <div key={v.id} className="ccard" >
                   {/* Icon */}
                   <div style={{
                     width: 40, height: 40, borderRadius: 10, flexShrink: 0,
@@ -337,7 +337,7 @@ export default function CatalogueClient({
           ) : (
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(280px,1fr))", gap: 8 }}>
               {categories.map(c => (
-                <div key={c.id} className="ccard" style={{ borderLeft: `3px solid ${c.couleur}` }}>
+                <div key={c.id} className="ccard" >
                   {/* Icon */}
                   <div style={{
                     width: 40, height: 40, borderRadius: 10, flexShrink: 0,

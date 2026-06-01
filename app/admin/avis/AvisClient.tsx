@@ -186,7 +186,7 @@ export default function AvisClient({ avis: initial }: { avis: Avis[] }) {
             <div
               key={a.id}
               className="avis-row"
-              style={{ borderLeft: `3px solid ${a.is_moderated ? "#02AFCF" : "#D97706"}` }}
+              
             >
               <div style={{ flex: 1, minWidth: 0 }}>
 
