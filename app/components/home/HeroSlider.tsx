@@ -296,6 +296,29 @@ export default function HomeSlider() {
           animation: slideUp 0.7s cubic-bezier(0.34, 1.2, 0.64, 1) 0.5s both; 
         }
 
+        .hero-content {
+          position: absolute;
+          top: 50%;
+          left: 0;
+          right: 0;
+          transform: translateY(-50%);
+          max-width: none;
+          width: 100%;
+          display: flex;
+          flex-direction: column;
+          align-items: flex-start;
+          z-index: 15;
+          padding-left: 24px;
+          padding-right: 24px;
+        }
+
+        .hero-cta-group {
+          display: flex;
+          gap: 18px;
+          flex-wrap: wrap;
+          align-items: center;
+        }
+
         .btn-primary {
           display: inline-flex; align-items: center; gap: 12px;
           padding: 16px 36px; border-radius: 12px;
@@ -378,13 +401,38 @@ export default function HomeSlider() {
         }
 
         @media (max-width: 768px) {
+          .hero-content {
+            top: auto;
+            bottom: 96px;
+            transform: none;
+            align-items: stretch;
+            padding-left: 24px;
+            padding-right: 24px;
+          }
+
+          .hero-cta-group {
+            width: 100%;
+            flex-direction: column;
+            align-items: stretch;
+            gap: 12px;
+          }
+
           .btn-primary, .btn-ghost {
             padding: 12px 24px;
             font-size: 14px;
+            width: 100%;
+            justify-content: center;
           }
+
           .btn-primary svg, .btn-ghost svg {
             width: 16px;
             height: 16px;
+          }
+
+          .mute-btn {
+            bottom: 20px;
+            right: 20px;
+            padding: 8px 14px;
           }
         }
       `}</style>
@@ -519,18 +567,7 @@ export default function HomeSlider() {
             {/* ─── Hero Content amélioré ─── */}
             <div
               key={current}
-              style={{
-                position: "absolute",
-                top: "50%",
-                left: "max(6%, 80px)",
-                transform: "translateY(-50%)",
-                maxWidth: "min(680px, 85%)",
-                width: "100%",
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "flex-start",
-                zIndex: 15,
-              }}
+              className="hero-content"
             >
               {/* Badge avec icône */}
               {slide.subtitle && (
@@ -623,12 +660,7 @@ export default function HomeSlider() {
               </div>
 
               {/* Boutons d'action */}
-              <div className="hero-animate-4" style={{ 
-                display: "flex", 
-                gap: 18, 
-                flexWrap: "wrap",
-                alignItems: "center",
-              }}>
+              <div className="hero-animate-4 hero-cta-group">
                 <a href="#chemins" className="btn-primary">
                   <Compass size={18}/> 
                   <span>Planifier mon voyage</span>

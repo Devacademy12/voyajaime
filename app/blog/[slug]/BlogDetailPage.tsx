@@ -28,9 +28,9 @@ function readTime(content: string | null) {
 }
 
 const CSS = `
-  @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=Instrument+Serif:ital@0;1&family=DM+Sans:wght@400;500;600;700&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap');
   *, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
-  body { font-family:'DM Sans',system-ui,sans-serif; background:#FAFAF9; color:#111827; }
+  body { font-family:'DM Sans',system-ui,sans-serif; background:#fff; color:#111827; }
 
   @keyframes slideUp  { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
   @keyframes slideRight{ from{opacity:0;transform:translateX(-14px)} to{opacity:1;transform:translateX(0)} }
@@ -39,27 +39,15 @@ const CSS = `
   @keyframes fadeIn   { from{opacity:0} to{opacity:1} }
 
  /* ── HERO ── */
-.hero{padding:70px 48px 56px;text-align:center;border-bottom:1px solid #E5E7EB;position:relative;background:#FAFAF9}
-.hero-label{display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:28px;animation:slideRight .5s ease both}
+.hero{padding:60px 24px 40px;text-align:center;border-bottom:1px solid #E5E7EB;position:relative;background:#fff}
+.hero-label{display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:18px;animation:slideRight .5s ease both}
 .hero-dot{width:8px;height:8px;border-radius:50%;background:#02AFCF;animation:pulse 2s ease infinite}
-.hero-count{font-size:11px;font-weight:700;letter-spacing:2px;color:#02AFCF;border:1px solid #02AFCF;border-radius:20px;padding:2px 10px}
-.hero-h1{font-size:clamp(28px,4vw,42px);font-weight:800;color:#053366;margin:0 0 32px;line-height:1.2;letter-spacing:-0.5px}
-.hero-h1 em{font-style:italic;color:#02AFCF}
-.hero-line{width:0;height:2px;background:#053366;margin:0 auto 28px;animation:expandW .6s cubic-bezier(.4,0,.2,1) .3s both}
-.hero-sub{font-size:16px;color:#02AFCF;max-width:440px;line-height:1.75;animation:slideUp .5s ease .2s both;margin:0 auto}
-  .detail-h1 {
-    font-family:'Instrument Serif',serif;
-    font-size:clamp(36px,5vw,64px);
-    font-weight:400;
-    color:#053366;
-    letter-spacing:-2px;
-    line-height:1.05;
-    margin-bottom:28px;
-    animation:slideUp .55s ease .1s both;
-    max-width:780px;
-  }
-  .hero-line { width:0; height:2px; background:#053366; margin-bottom:24px; animation:expandW .6s cubic-bezier(.4,0,.2,1) .3s both; }
-  .hero-meta  { display:flex; align-items:center; gap:18px; flex-wrap:wrap; animation:fadeIn .5s ease .3s both; opacity:0; animation-fill-mode:forwards; }
+.hero-count{font-size:11px;font-weight:700;letter-spacing:1.8px;color:#02AFCF;border:1px solid rgba(2,175,207,.35);border-radius:20px;padding:3px 11px;background:rgba(2,175,207,.08);text-transform:uppercase}
+.hero-h1{font-size:clamp(30px,4.2vw,48px);font-weight:800;color:#053366;margin:0 auto 18px;line-height:1.12;letter-spacing:-0.8px;max-width:820px}
+.hero-h1 em{font-style:normal;color:#02AFCF}
+.hero-line{width:0;height:2px;background:#053366;margin:0 auto 18px;animation:expandW .6s cubic-bezier(.4,0,.2,1) .3s both}
+.hero-sub{font-size:15px;color:#6B7280;max-width:560px;line-height:1.75;animation:slideUp .5s ease .2s both;margin:0 auto}
+  .hero-meta  { display:flex; align-items:center; gap:16px; flex-wrap:wrap; justify-content:center; animation:fadeIn .5s ease .3s both; opacity:0; animation-fill-mode:forwards; }
   .meta-item  { display:flex; align-items:center; gap:5px; font-size:13px; color:#6B7280; }
 
   /* ── TICKER ── */
@@ -101,8 +89,8 @@ const CSS = `
   .article-body hr     { border:none; border-top:1px solid #E5E7EB; margin:28px 0; }
 
   /* ── CARDS / WIDGETS ── */
-  .widget { background:white; border-radius:18px; border:1px solid #E5E7EB; padding:24px; margin-bottom:18px; }
-  .widget-title { font-family:'Syne',sans-serif; font-size:14px; font-weight:800; color:#053366; margin-bottom:16px; padding-bottom:12px; border-bottom:1px solid #E5E7EB; display:flex; align-items:center; gap:8px; }
+  .widget { background:white; border-radius:18px; border:1px solid #E5E7EB; padding:24px; margin-bottom:18px; box-shadow:0 1px 0 rgba(0,0,0,.02); }
+  .widget-title { font-size:14px; font-weight:800; color:#053366; margin-bottom:16px; padding-bottom:12px; border-bottom:1px solid #E5E7EB; display:flex; align-items:center; gap:8px; }
   .widget-title::before { content:''; display:block; width:24px; height:2px; background:#02AFCF; border-radius:2px; flex-shrink:0; }
 
   /* ── TAG CHIPS ── */
@@ -144,7 +132,7 @@ const CSS = `
     .post-nav     { grid-template-columns:1fr !important; }
   }
   @media(max-width:600px){
-    .detail-hero { padding:48px 20px 40px !important; }
+    .hero        { padding:48px 20px 32px !important; }
     .content-area { padding:0 20px 60px !important; }
     .article-wrap { padding:24px !important; }
   }
@@ -228,33 +216,36 @@ export default async function BlogDetailPage({
     <>
       <style>{CSS}</style>
       <TouristeNav />
-      <div style={{ paddingTop: 64 }} />
+      <div style={{ paddingTop: 60 }} />
 
       {/* ══ HERO ══ */}
       <header className="hero">
-  
-  <div className="hero-label">
-    <span className="hero-cat" > Article {post.category}</span>
-  </div>
+        <div className="hero-label">
+          <span className="hero-dot" />
+          <span className="hero-count">Article {post.category}</span>
+        </div>
 
-  <h1 className="hero-h1">{post.title}</h1>
+        <h1 className="hero-h1">{post.title}</h1>
 
-  <div className="hero-line" />
+        <div className="hero-line" />
 
-  {/* Meta centré */}
-  <div className="hero-meta" style={{ justifyContent: "center" }}>
-    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-      <div style={{ width: 32, height: 32, borderRadius: "50%", background: `${catColor}18`, display: "flex", alignItems: "center", justifyContent: "center" }}>
-        <User size={14} color={catColor} />
-      </div>
-      <span style={{ fontSize: 13, fontWeight: 600, color: "#374151" }}>{post.author_name || "VoyajAime"}</span>
-    </div>
-    <div className="meta-item"><Calendar size={12} />{fmtDate(post.published_at || post.created_at)}</div>
-    <div className="meta-item"><Clock size={12} />{readTime(post.content)} de lecture</div>
-    <div className="meta-item"><Eye size={12} />{post.views || 0} vues</div>
-    <div className="meta-item"><MessageSquare size={12} />{(comments || []).length} commentaire{(comments || []).length !== 1 ? "s" : ""}</div>
-  </div>
-</header>
+        <p className="hero-sub">
+          {post.excerpt || "Un article du blog VoyajAime avec le même langage visuel que la page liste."}
+        </p>
+
+        <div className="hero-meta" style={{ marginTop: 18 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <div style={{ width: 32, height: 32, borderRadius: "50%", background: `${catColor}18`, display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <User size={14} color={catColor} />
+            </div>
+            <span style={{ fontSize: 13, fontWeight: 700, color: "#374151" }}>{post.author_name || "VoyajAime"}</span>
+          </div>
+          <div className="meta-item"><Calendar size={12} />{fmtDate(post.published_at || post.created_at)}</div>
+          <div className="meta-item"><Clock size={12} />{readTime(post.content)} de lecture</div>
+          <div className="meta-item"><Eye size={12} />{post.views || 0} vues</div>
+          <div className="meta-item"><MessageSquare size={12} />{(comments || []).length} commentaire{(comments || []).length !== 1 ? "s" : ""}</div>
+        </div>
+      </header>
       {/* ══ TICKER ══ */}
       <div className="ticker-wrap">
         <div className="ticker-inner">
@@ -265,14 +256,14 @@ export default async function BlogDetailPage({
       </div>
 
       {/* ══ CONTENT + SIDEBAR ══ */}
-      <div className="content-area" style={{ maxWidth: 1140, margin: "0 auto", padding: "40px 48px 80px" }}>
+      <div className="content-area" style={{ maxWidth: 1140, margin: "0 auto", padding: "32px 24px 80px" }}>
         <div className="page-layout" style={{ display: "grid", gridTemplateColumns: "1fr 300px", gap: 32 }}>
 
           {/* ── LEFT — Article ── */}
           <div>
             {/* Cover */}
             {post.cover_url && (
-              <div style={{ borderRadius: 20, overflow: "hidden", marginBottom: 36, border: "1px solid #E5E7EB" }}>
+              <div style={{ borderRadius: 20, overflow: "hidden", marginBottom: 32, border: "1px solid #E5E7EB", boxShadow: "0 8px 24px rgba(5,19,50,.04)" }}>
                 <BlogImage
                   src={post.cover_url}
                   alt={post.title}
@@ -284,7 +275,7 @@ export default async function BlogDetailPage({
             {/* Article body */}
             <div
               className="article-wrap"
-              style={{ background: "white", borderRadius: 20, padding: "40px", border: "1px solid #E5E7EB", marginBottom: 28, animation: "slideUp .4s ease both" }}
+              style={{ background: "white", borderRadius: 20, padding: "40px", border: "1px solid #E5E7EB", marginBottom: 28, boxShadow: "0 8px 24px rgba(5,19,50,.04)", animation: "slideUp .4s ease both" }}
             >
               <div
                 className="article-body"
@@ -381,14 +372,14 @@ export default async function BlogDetailPage({
                   ))}
                 </div>
               ) : (
-                <div style={{ textAlign: "center", padding: "28px", background: "white", borderRadius: 16, border: "1px solid #E5E7EB", marginBottom: 28 }}>
+                <div style={{ textAlign: "center", padding: "28px", background: "white", borderRadius: 16, border: "1px solid #E5E7EB", marginBottom: 28, boxShadow: "0 8px 24px rgba(5,19,50,.03)" }}>
                   <MessageSquare size={28} color="#E5E7EB" style={{ marginBottom: 8 }} />
                   <p style={{ fontSize: 14, color: "#9CA3AF" }}>Soyez le premier à commenter !</p>
                 </div>
               )}
 
               {/* Comment form */}
-              <div style={{ background: "white", borderRadius: 20, padding: "32px", border: "1px solid #E5E7EB" }}>
+              <div style={{ background: "white", borderRadius: 20, padding: "32px", border: "1px solid #E5E7EB", boxShadow: "0 8px 24px rgba(5,19,50,.04)" }}>
                 <div className="section-label">
                   <div className="section-bar-cyan" />
                   <span className="section-text-cyan">Laisser un commentaire</span>
@@ -414,7 +405,7 @@ export default async function BlogDetailPage({
                     placeholder="Rechercher…"
                     style={{ flex: 1, padding: "9px 13px", border: "1.5px solid #E5E7EB", borderRadius: 10, fontSize: 13, fontFamily: "inherit", outline: "none", color: "#111827" }}
                   />
-                  <button type="submit" style={{ padding: "9px 13px", background: "#053366", color: "white", border: "none", borderRadius: 10, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <button type="submit" style={{ padding: "9px 13px", background: "#0D0F14", color: "white", border: "none", borderRadius: 10, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5"><circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" /></svg>
                   </button>
                 </div>
@@ -475,7 +466,7 @@ export default async function BlogDetailPage({
 
             {/* Newsletter */}
             <div className="widget" style={{ background: "#053366", border: "none" }}>
-              <p className="widget-title" style={{ color: "white", borderColor: "rgba(255,255,255,.12)", fontFamily: "'Syne',sans-serif" }}>
+              <p className="widget-title" style={{ color: "white", borderColor: "rgba(255,255,255,.12)" }}>
                 Newsletter
               </p>
               <p style={{ fontSize: 13, color: "rgba(255,255,255,.65)", marginBottom: 14, lineHeight: 1.65 }}>

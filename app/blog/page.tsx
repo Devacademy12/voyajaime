@@ -112,10 +112,7 @@ export default async function BlogPage({
           {/* Gradient overlay */}
           <div
             style={{
-              position: "absolute",
-              inset: 0,
-              background:
-                "linear-gradient(to top, rgba(5,19,50,.95) 0%, rgba(5,19,50,.45) 55%, transparent 100%)",
+              position: "absolute", 
             }}
           />
 
@@ -126,7 +123,10 @@ export default async function BlogPage({
               bottom: 0,
               left: 0,
               right: 0,
-              padding: "40px 48px",
+              paddingTop: 40,
+              paddingBottom: 40,
+              paddingLeft: 24,
+              paddingRight: 24,
               display: "flex",
               alignItems: "flex-end",
               justifyContent: "space-between",
