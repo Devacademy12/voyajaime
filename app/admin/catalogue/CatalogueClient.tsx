@@ -54,7 +54,7 @@ export default function CatalogueClient({
         });
       }
       setVilleModal(null);
-    } catch (e) { showToast(`Erreur : ${e instanceof Error ? e.message : "Erreur"}`, false); }
+    } catch (e) { showToast(`Erreur : ${e instanceof Error ? e.message : "Erreur"}`, "error"); }
   };
 
   const deleteVille = async (id: string, nom: string) => {
@@ -90,7 +90,7 @@ export default function CatalogueClient({
         });
       }
       setCatModal(null);
-    } catch (e) { showToast(`Erreur : ${e instanceof Error ? e.message : "Erreur"}`, false); }
+    } catch (e) { showToast(`Erreur : ${e instanceof Error ? e.message : "Erreur"}`, "error"); }
   };
 
   const deleteCat = async (id: string, nom: string) => {
