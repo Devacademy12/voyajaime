@@ -9,14 +9,13 @@ import {
   MapPin, Sparkles, Bot, Loader2, ChevronLeft, ChevronRight, CalendarDays,
   Heart, ArrowRight, ArrowLeft, CheckCircle, Euro, AlertTriangle,
 } from "lucide-react";
-import styles from "@/public/style/ModeAssiste.module.css";
 
 const N8N_WEBHOOK_URL = process.env.NEXT_PUBLIC_N8N_WEBHOOK_URL || "";
 
 /* ══════════════════════════════════════════
    TYPES
 ══════════════════════════════════════════ */
-type Ville     = { id: string; nom?: string; name?: string; city?: string; description?: string; [key: string]: unknown };
+type Ville = { id: string; nom?: string; name?: string; city?: string; description?: string; [key: string]: unknown };
 type Categorie = { id: string; nom?: string; name?: string; label?: string; [key: string]: unknown };
 
 type Excursion = {
@@ -77,9 +76,9 @@ const LOADING_MSGS = [
   "Organisation jour par jour de votre séjour...",
   "Sélection des activités les mieux notées...",
 ];
-const MONTHS_FULL  = ["Janvier","Février","Mars","Avril","Mai","Juin","Juillet","Août","Septembre","Octobre","Novembre","Décembre"];
-const MONTHS_SHORT = ["Jan","Fév","Mar","Avr","Mai","Juin","Juil","Aoû","Sep","Oct","Nov","Déc"];
-const DAYS_FR      = ["Lun","Mar","Mer","Jeu","Ven","Sam","Dim"];
+const MONTHS_FULL = ["Janvier", "Février", "Mars", "Avril", "Mai", "Juin", "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre"];
+const MONTHS_SHORT = ["Jan", "Fév", "Mar", "Avr", "Mai", "Juin", "Juil", "Aoû", "Sep", "Oct", "Nov", "Déc"];
+const DAYS_FR = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"];
 
 /* ══════════════════════════════════════════
    HELPERS
@@ -93,12 +92,12 @@ function fmtShort(d: Date) {
 function formatDateForN8N(date: Date): string {
   return date.toISOString().split("T")[0];
 }
-function datesOverlap(s1: Date|null, e1: Date|null, s2: Date|null, e2: Date|null): boolean {
-  if (!s1||!e1||!s2||!e2) return false;
-  const a = new Date(s1); a.setHours(0,0,0,0);
-  const b = new Date(e1); b.setHours(0,0,0,0);
-  const c = new Date(s2); c.setHours(0,0,0,0);
-  const d = new Date(e2); d.setHours(0,0,0,0);
+function datesOverlap(s1: Date | null, e1: Date | null, s2: Date | null, e2: Date | null): boolean {
+  if (!s1 || !e1 || !s2 || !e2) return false;
+  const a = new Date(s1); a.setHours(0, 0, 0, 0);
+  const b = new Date(e1); b.setHours(0, 0, 0, 0);
+  const c = new Date(s2); c.setHours(0, 0, 0, 0);
+  const d = new Date(e2); d.setHours(0, 0, 0, 0);
   return a <= d && c <= b;
 }
 function getBlockedDates(cityDates: CityDateRange[], excludeCity: string) {
@@ -107,10 +106,6 @@ function getBlockedDates(cityDates: CityDateRange[], excludeCity: string) {
     .map(c => ({ start: c.start!, end: c.end! }));
 }
 
-/* ══════════════════════════════════════════
-   HELPER — génère toutes les dates d'une plage
-   ex: start=2024-06-01, end=2024-06-03 → ["2024-06-01","2024-06-02","2024-06-03"]
-══════════════════════════════════════════ */
 function generateDateRange(start: Date, end: Date): string[] {
   const dates: string[] = [];
   const cur = new Date(start);
@@ -125,15 +120,15 @@ function generateDateRange(start: Date, end: Date): string[] {
 }
 
 /* ══════════════════════════════════════════
-   extractItinerary — parse N8N response
+   extractItinerary
 ══════════════════════════════════════════ */
 function extractItinerary(raw: unknown, excursions: Excursion[]): Itinerary {
   const findDaysObject = (obj: any): any => {
     if (!obj) return null;
     if (obj.days && Array.isArray(obj.days)) return obj;
     if (obj.itinerary?.days) return obj.itinerary;
-    if (obj.result?.days)    return obj.result;
-    if (obj.data?.days)      return obj.data;
+    if (obj.result?.days) return obj.result;
+    if (obj.data?.days) return obj.data;
     for (const key in obj) {
       if (typeof obj[key] === "object" && obj[key] !== null) {
         const found = findDaysObject(obj[key]);
@@ -147,7 +142,7 @@ function extractItinerary(raw: unknown, excursions: Excursion[]): Itinerary {
     let parsed: any = raw;
     if (typeof raw === "string") {
       const cleaned = raw.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
-      const match   = cleaned.match(/\{[\s\S]*\}/);
+      const match = cleaned.match(/\{[\s\S]*\}/);
       parsed = match ? JSON.parse(match[0]) : JSON.parse(cleaned);
     }
 
@@ -157,9 +152,9 @@ function extractItinerary(raw: unknown, excursions: Excursion[]): Itinerary {
     return {
       title: obj.title || "Mon voyage en Tunisie",
       days: obj.days.map((day: any, idx: number) => ({
-        day:   day.day  || idx + 1,
-        city:  day.city || "Ville inconnue",
-        date:  day.date || "",
+        day: day.day || idx + 1,
+        city: day.city || "Ville inconnue",
+        date: day.date || "",
         theme: day.theme || "Découverte",
         activities: (day.activities || []).map((act: any) => {
           const excursion =
@@ -178,36 +173,28 @@ function extractItinerary(raw: unknown, excursions: Excursion[]): Itinerary {
             : `${durationHours}h`;
 
           return {
-            id:             act.id || `act-${Date.now()}-${Math.random()}`,
-            name:           act.name        || act.title      || "Activité",
-            description:    act.description || "",
-            time:           act.depart_time || act.time || excursion?.depart_time || "",
-            duration:       durationStr,
+            id: act.id || `act-${Date.now()}-${Math.random()}`,
+            name: act.name || act.title || "Activité",
+            description: act.description || "",
+            time: act.depart_time || act.time || excursion?.depart_time || "",
+            duration: durationStr,
             duration_hours: durationHours,
-            price:
-              typeof act.price === "number"
-                ? act.price
-                : parseFloat(String(act.price)) || 0,
-            photos:    act.photos    || excursion?.photos    || [],
+            price: typeof act.price === "number" ? act.price : parseFloat(String(act.price)) || 0,
+            photos: act.photos || excursion?.photos || [],
             languages: act.languages || excursion?.languages || ["Français"],
             inclusion: act.inclusions || act.inclusion || excursion?.inclusions || [],
-            city:      act.city || day.city,
-            rating:    act.rating ?? excursion?.rating ?? null,
+            city: act.city || day.city,
+            rating: act.rating ?? excursion?.rating ?? null,
             is_free_day: act.is_free_day ?? false,
           };
         }),
       })),
     };
   } catch (err) {
-    throw new Error(
-      `Impossible de parser l'itinéraire: ${err instanceof Error ? err.message : "Format invalide"}`
-    );
+    throw new Error(`Impossible de parser l'itinéraire: ${err instanceof Error ? err.message : "Format invalide"}`);
   }
 }
 
-/* ══════════════════════════════════════════
-   removeTimeConflicts
-══════════════════════════════════════════ */
 function removeTimeConflicts(itinerary: Itinerary): Itinerary {
   return {
     ...itinerary,
@@ -227,9 +214,6 @@ function removeTimeConflicts(itinerary: Itinerary): Itinerary {
   };
 }
 
-/* ══════════════════════════════════════════
-   filterUnavailableActivities
-══════════════════════════════════════════ */
 function filterUnavailableActivities(itinerary: Itinerary, excursions: Excursion[]): Itinerary {
   return {
     ...itinerary,
@@ -248,18 +232,18 @@ function filterUnavailableActivities(itinerary: Itinerary, excursions: Excursion
         return {
           ...day,
           activities: [{
-            id:          `free-day-${day.date || day.day}-${day.city}`,
-            name:        "Journée libre",
+            id: `free-day-${day.date || day.day}-${day.city}`,
+            name: "Journée libre",
             description: `Profitez de ${day.city} librement : marchés locaux, cafés, plages ou balades.`,
-            time:        "",
-            duration:    "0h",
+            time: "",
+            duration: "0h",
             duration_hours: 0,
-            price:       0,
-            photos:      [],
-            languages:   [],
-            inclusion:   [],
-            city:        day.city,
-            rating:      undefined,
+            price: 0,
+            photos: [],
+            languages: [],
+            inclusion: [],
+            city: day.city,
+            rating: undefined,
             is_free_day: true,
           }],
         };
@@ -267,6 +251,178 @@ function filterUnavailableActivities(itinerary: Itinerary, excursions: Excursion
       return { ...day, activities: filtered };
     }),
   };
+}
+
+/* ══════════════════════════════════════════
+   ClientOnly Component
+══════════════════════════════════════════ */
+function ClientOnly({ children }: { children: React.ReactNode }) {
+  const [hasMounted, setHasMounted] = useState(false);
+
+  useEffect(() => {
+    const raf = requestAnimationFrame(() => {
+      setHasMounted(true);
+    });
+    return () => cancelAnimationFrame(raf);
+  }, []);
+
+  if (!hasMounted) return null;
+  return <>{children}</>;
+}
+
+/* ══════════════════════════════════════════
+   MiniCalPop
+══════════════════════════════════════════ */
+function MiniCalPop({ value, onChange, minDate, onClose, blockedRanges }: {
+  value: Date | null;
+  onChange: (d: Date) => void;
+  minDate?: Date | null;
+  onClose: () => void;
+  blockedRanges?: { start: Date; end: Date }[];
+}) {
+  const [mounted, setMounted] = useState(false);
+  const [cursor, setCursor] = useState<Date | null>(null);
+
+  useEffect(() => {
+    const raf = requestAnimationFrame(() => {
+      setMounted(true);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const ref = value || minDate || today;
+      setCursor(new Date(ref.getFullYear(), ref.getMonth(), 1));
+    });
+    return () => cancelAnimationFrame(raf);
+  }, [value, minDate]);
+
+  if (!mounted || !cursor) {
+    return <div style={{ width: 260, height: 280 }} />;
+  }
+
+  const year = cursor.getFullYear(), month = cursor.getMonth();
+  let firstDayIndex = new Date(year, month, 1).getDay();
+  firstDayIndex = firstDayIndex === 0 ? 6 : firstDayIndex - 1;
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const cells: (number | null)[] = [];
+  for (let i = 0; i < firstDayIndex; i++) cells.push(null);
+  for (let i = 1; i <= daysInMonth; i++) cells.push(i);
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const isBlocked = (day: number | null) => {
+    if (!day || !blockedRanges?.length) return false;
+    const date = new Date(year, month, day);
+    date.setHours(0, 0, 0, 0);
+    return blockedRanges.some(r => {
+      const s = new Date(r.start);
+      s.setHours(0, 0, 0, 0);
+      const e = new Date(r.end);
+      e.setHours(0, 0, 0, 0);
+      return date >= s && date <= e;
+    });
+  };
+
+  const isDisabled = (day: number | null) => {
+    if (!day) return true;
+    const date = new Date(year, month, day);
+    if (date < today) return true;
+    if (minDate) {
+      const m = new Date(minDate);
+      m.setHours(0, 0, 0, 0);
+      if (date < m) return true;
+    }
+    return isBlocked(day);
+  };
+
+  const isSelected = (day: number | null) =>
+    !!(day && value && value.getDate() === day && value.getMonth() === month && value.getFullYear() === year);
+
+  return (
+    <div className="ma2-cal-pop" onClick={e => e.stopPropagation()} style={{ width: 260 }}>
+      <div className="ma2-cal-pop-header">
+        <button className="ma2-cal-nav-btn" onClick={() => setCursor(new Date(year, month - 1, 1))}>
+          <ChevronLeft size={16} />
+        </button>
+        <span className="ma2-cal-month-label">{MONTHS_FULL[month]} {year}</span>
+        <button className="ma2-cal-nav-btn" onClick={() => setCursor(new Date(year, month + 1, 1))}>
+          <ChevronRight size={16} />
+        </button>
+      </div>
+      <div className="ma2-cal-days-header">
+        {DAYS_FR.map(d => <div key={d} className="ma2-cal-day-name">{d}</div>)}
+      </div>
+      <div className="ma2-cal-grid">
+        {cells.map((day, i) => (
+          <button key={i} disabled={isDisabled(day)}
+            onClick={() => { if (day && !isDisabled(day)) { onChange(new Date(year, month, day)); onClose(); } }}
+            className={["ma2-cal-day-btn", isSelected(day) ? "selected" : "", isBlocked(day) ? "blocked" : ""].join(" ")}
+          >{day || ""}</button>
+        ))}
+      </div>
+      {!!blockedRanges?.length && (
+        <div className="ma2-cal-legend">
+          <span className="ma2-cal-legend-dot" />
+          <span>Dates réservées pour une autre ville</span>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ══════════════════════════════════════════
+   CityDateRow
+══════════════════════════════════════════ */
+function CityDateRow({ cdr, onStart, onEnd, allCityDates }: {
+  cdr: CityDateRange; onStart: (d: Date) => void; onEnd: (d: Date) => void; allCityDates: CityDateRange[];
+}) {
+  const [openPop, setOpenPop] = useState<"start" | "end" | null>(null);
+  const minEnd = cdr.start ? new Date(cdr.start) : undefined;
+  const nights = cdr.start && cdr.end ? daysBetween(cdr.start, cdr.end) : 0;
+  const blocked = getBlockedDates(allCityDates, cdr.city);
+
+  const portal = openPop ? createPortal(
+    <>
+      <div style={{ position: "fixed", inset: 0, zIndex: 9998 }} onClick={() => setOpenPop(null)} />
+      <div style={{
+        position: "fixed", top: "80px", left: "50%",
+        transform: "translateX(-50%) scale(0.88)", transformOrigin: "top center",
+        zIndex: 9999, boxShadow: "0 4px 20px rgba(0,0,0,0.15)", borderRadius: 12, background: "#fff",
+      }} onWheel={e => e.stopPropagation()}>
+        <ClientOnly>
+          <MiniCalPop
+            value={openPop === "start" ? cdr.start : cdr.end}
+            onChange={d => { if (openPop === "start") onStart(d); else onEnd(d); setOpenPop(null); }}
+            minDate={openPop === "end" ? minEnd : undefined}
+            onClose={() => setOpenPop(null)}
+            blockedRanges={blocked}
+          />
+        </ClientOnly>
+      </div>
+    </>, document.body
+  ) : null;
+
+  return (
+    <>
+      <div className="ma2-city-date-row">
+        <div className="ma2-city-date-row-left">
+          <span className="ma2-city-name">{cdr.city}</span>
+          {nights > 0 && <span className="ma2-city-nights">• {nights} jour{nights > 1 ? "s" : ""}</span>}
+        </div>
+        <div className="ma2-city-date-btns">
+          <button onClick={() => setOpenPop(openPop === "start" ? null : "start")}
+            className={["ma2-date-btn", cdr.start ? "active" : ""].join(" ")}>
+            <CalendarDays size={12} />{cdr.start ? fmtShort(cdr.start) : "Arrivée"}
+          </button>
+          <ArrowRight size={14} color="#94a3b8" />
+          <button onClick={() => { if (cdr.start) setOpenPop(openPop === "end" ? null : "end"); }}
+            className={["ma2-date-btn", cdr.end ? "active" : "", !cdr.start ? "disabled" : ""].join(" ")}>
+            <CalendarDays size={12} />{cdr.end ? fmtShort(cdr.end) : "Départ"}
+          </button>
+        </div>
+      </div>
+      {portal}
+    </>
+  );
 }
 
 /* ══════════════════════════════════════════
@@ -553,7 +709,6 @@ const CSS = `
 .ma2-cal-legend { display: flex; align-items: center; gap: 6px; padding: 6px 10px 10px; font-size: 10px; color: var(--muted); }
 .ma2-cal-legend-dot { width: 8px; height: 8px; border-radius: 50%; background: #FCA5A5; }
 
-/* ── Toast ── */
 .ma2-toast {
   position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%);
   display: flex; align-items: center; gap: 10px;
@@ -587,137 +742,6 @@ const CSS = `
 `;
 
 /* ══════════════════════════════════════════
-   MiniCalPop
-══════════════════════════════════════════ */
-function MiniCalPop({ value, onChange, minDate, onClose, blockedRanges }: {
-  value: Date | null;
-  onChange: (d: Date) => void;
-  minDate?: Date | null;
-  onClose: () => void;
-  blockedRanges?: { start: Date; end: Date }[];
-}) {
-  const today = new Date(); today.setHours(0,0,0,0);
-  const [cursor, setCursor] = useState(() => {
-    const ref = value || minDate || today;
-    return new Date(ref.getFullYear(), ref.getMonth(), 1);
-  });
-  const year = cursor.getFullYear(), month = cursor.getMonth();
-  let firstDayIndex = new Date(year, month, 1).getDay();
-  firstDayIndex = firstDayIndex === 0 ? 6 : firstDayIndex - 1;
-  const daysInMonth = new Date(year, month + 1, 0).getDate();
-  const cells: (number | null)[] = [];
-  for (let i = 0; i < firstDayIndex; i++) cells.push(null);
-  for (let i = 1; i <= daysInMonth; i++) cells.push(i);
-
-  const isBlocked = (day: number | null) => {
-    if (!day || !blockedRanges?.length) return false;
-    const date = new Date(year, month, day); date.setHours(0,0,0,0);
-    return blockedRanges.some(r => {
-      const s = new Date(r.start); s.setHours(0,0,0,0);
-      const e = new Date(r.end);   e.setHours(0,0,0,0);
-      return date >= s && date <= e;
-    });
-  };
-  const isDisabled = (day: number | null) => {
-    if (!day) return true;
-    const date = new Date(year, month, day);
-    if (date < today) return true;
-    if (minDate) { const m = new Date(minDate); m.setHours(0,0,0,0); if (date < m) return true; }
-    return isBlocked(day);
-  };
-  const isSelected = (day: number | null) =>
-    !!(day && value && value.getDate() === day && value.getMonth() === month && value.getFullYear() === year);
-
-  return (
-    <div className="ma2-cal-pop" onClick={e => e.stopPropagation()} style={{ width: 260 }}>
-      <div className="ma2-cal-pop-header">
-        <button className="ma2-cal-nav-btn" onClick={() => setCursor(new Date(year, month - 1, 1))}><ChevronLeft size={16}/></button>
-        <span className="ma2-cal-month-label">{MONTHS_FULL[month]} {year}</span>
-        <button className="ma2-cal-nav-btn" onClick={() => setCursor(new Date(year, month + 1, 1))}><ChevronRight size={16}/></button>
-      </div>
-      <div className="ma2-cal-days-header">{DAYS_FR.map(d => <div key={d} className="ma2-cal-day-name">{d}</div>)}</div>
-      <div className="ma2-cal-grid">
-        {cells.map((day, i) => (
-          <button key={i} disabled={isDisabled(day)}
-            onClick={() => { if (day && !isDisabled(day)) { onChange(new Date(year, month, day)); onClose(); } }}
-            className={["ma2-cal-day-btn", isSelected(day) ? "selected" : "", isBlocked(day) ? "blocked" : ""].join(" ")}
-          >{day || ""}</button>
-        ))}
-      </div>
-      {!!blockedRanges?.length && (
-        <div className="ma2-cal-legend">
-          <span className="ma2-cal-legend-dot"/>
-          <span>Dates réservées pour une autre ville</span>
-        </div>
-      )}
-    </div>
-  );
-}
-
-/* ══════════════════════════════════════════
-   CityDateRow
-══════════════════════════════════════════ */
-function CityDateRow({ cdr, onStart, onEnd, allCityDates }: {
-  cdr: CityDateRange; onStart: (d: Date) => void; onEnd: (d: Date) => void; allCityDates: CityDateRange[];
-}) {
-  const [openPop, setOpenPop] = useState<"start"|"end"|null>(null);
-  const minEnd  = cdr.start ? new Date(cdr.start) : undefined;
-  const nights  = cdr.start && cdr.end ? daysBetween(cdr.start, cdr.end) : 0;
-  const blocked = getBlockedDates(allCityDates, cdr.city);
-
-  const portal = openPop ? createPortal(
-    <>
-      <div style={{ position:"fixed", inset:0, zIndex:9998 }} onClick={() => setOpenPop(null)}/>
-      <div style={{
-        position:"fixed", top:"80px", left:"50%",
-        transform:"translateX(-50%) scale(0.88)", transformOrigin:"top center",
-        zIndex:9999, boxShadow:"0 4px 20px rgba(0,0,0,0.15)", borderRadius:12, background:"#fff",
-      }} onWheel={e => e.stopPropagation()}>
-        <MiniCalPop
-          value={openPop === "start" ? cdr.start : cdr.end}
-          onChange={d => { if (openPop === "start") onStart(d); else onEnd(d); setOpenPop(null); }}
-          minDate={openPop === "end" ? minEnd : undefined}
-          onClose={() => setOpenPop(null)}
-          blockedRanges={blocked}
-        />
-      </div>
-    </>, document.body
-  ) : null;
-
-  return (
-    <>
-      <div className="ma2-city-date-row">
-        <div className="ma2-city-date-row-left">
-          <span className="ma2-city-name">{cdr.city}</span>
-          {nights > 0 && <span className="ma2-city-nights">• {nights} jour{nights > 1 ? "s" : ""}</span>}
-        </div>
-        <div className="ma2-city-date-btns">
-          <button onClick={() => setOpenPop(openPop === "start" ? null : "start")}
-            className={["ma2-date-btn", cdr.start ? "active" : ""].join(" ")}>
-            <CalendarDays size={12}/>{cdr.start ? fmtShort(cdr.start) : "Arrivée"}
-          </button>
-          <ArrowRight size={14} color="#94a3b8"/>
-          <button onClick={() => { if (cdr.start) setOpenPop(openPop === "end" ? null : "end"); }}
-            className={["ma2-date-btn", cdr.end ? "active" : "", !cdr.start ? "disabled" : ""].join(" ")}>
-            <CalendarDays size={12}/>{cdr.end ? fmtShort(cdr.end) : "Départ"}
-          </button>
-        </div>
-      </div>
-      {portal}
-    </>
-  );
-}
-
-/* ══════════════════════════════════════════
-   Steps config
-══════════════════════════════════════════ */
-const STEPS = [
-  { label: "Destinations", icon: <MapPin      size={15} color="#2B96A8"/> },
-  { label: "Calendrier",   icon: <CalendarDays size={15} color="#2B96A8"/> },
-  { label: "Intérêts",     icon: <Heart        size={15} color="#2B96A8"/> },
-];
-
-/* ══════════════════════════════════════════
    Toast component
 ══════════════════════════════════════════ */
 function Toast({ status, onDone }: { status: "idle"|"ok"|"error"|"login"|"saving"; onDone: () => void }) {
@@ -746,93 +770,82 @@ function Toast({ status, onDone }: { status: "idle"|"ok"|"error"|"login"|"saving
 }
 
 /* ══════════════════════════════════════════
+   Steps config
+══════════════════════════════════════════ */
+const STEPS = [
+  { label: "Destinations", icon: <MapPin size={15} color="#2B96A8"/> },
+  { label: "Calendrier",   icon: <CalendarDays size={15} color="#2B96A8"/> },
+  { label: "Intérêts",     icon: <Heart size={15} color="#2B96A8"/> },
+];
+
+/* ══════════════════════════════════════════
    MAIN COMPONENT
 ══════════════════════════════════════════ */
 export default function ModeAssiste() {
   const supabase = createClient();
 
-  const [appStep,   setAppStep]   = useState<"questions"|"generation"|"itineraire">("questions");
-  const [cardStep,  setCardStep]  = useState(0);
-  const [slideDir,  setSlideDir]  = useState<"left"|"right">("left");
-  const [animKey,   setAnimKey]   = useState(0);
+  const [appStep, setAppStep] = useState<"questions"|"generation"|"itineraire">("questions");
+  const [cardStep, setCardStep] = useState(0);
+  const [slideDir, setSlideDir] = useState<"left"|"right">("left");
+  const [animKey, setAnimKey] = useState(0);
 
   const [selectedCities, setSelectedCities] = useState<string[]>([]);
-  const [cityDates,      setCityDates]      = useState<CityDateRange[]>([]);
-  const [selectedCats,   setSelectedCats]   = useState<string[]>([]);
-  const [budget,         setBudget]         = useState<string>("");
+  const [cityDates, setCityDates] = useState<CityDateRange[]>([]);
+  const [selectedCats, setSelectedCats] = useState<string[]>([]);
+  const [budget, setBudget] = useState<string>("");
 
-  const [villes,     setVilles]     = useState<Ville[]>([]);
+  const [villes, setVilles] = useState<Ville[]>([]);
   const [categories, setCategories] = useState<Categorie[]>([]);
   const [excursions, setExcursions] = useState<Excursion[]>([]);
-  const [dbLoading,  setDbLoading]  = useState(true);
+  const [dbLoading, setDbLoading] = useState(true);
 
-  const [user,      setUser]      = useState<{ id: string } | null>(null);
+  const [user, setUser] = useState<{ id: string } | null>(null);
   const [favorites, setFavorites] = useState<Set<string>>(new Set());
 
-  const [itinerary,  setItinerary]  = useState<Itinerary | null>(null);
-  const [genError,   setGenError]   = useState("");
+  const [itinerary, setItinerary] = useState<Itinerary | null>(null);
+  const [genError, setGenError] = useState("");
   const [loadingMsg, setLoadingMsg] = useState("");
   const msgIdxRef = useRef(0);
 
-  const [dateError,    setDateError]    = useState("");
+  const [dateError, setDateError] = useState("");
   const [showCheckout, setShowCheckout] = useState(false);
-  const [saving,       setSaving]       = useState(false);
-  const [saveStatus,   setSaveStatus]   = useState<"idle"|"ok"|"error"|"login"|"saving">("idle");
+  const [saving, setSaving] = useState(false);
+  const [saveStatus, setSaveStatus] = useState<"idle"|"ok"|"error"|"login"|"saving">("idle");
 
-  /* ── Derived ── */
   const totalDays = cityDates.reduce(
     (acc, cdr) => acc + (cdr.start && cdr.end ? daysBetween(cdr.start, cdr.end) : 0), 0
   );
   const allDatesSet = cityDates.length > 0 && cityDates.every(c => c.start && c.end);
-  const totalPrice  = itinerary?.days.reduce(
+  const totalPrice = itinerary?.days.reduce(
     (acc, d) => acc + d.activities.reduce((a, act) => a + (Number(act.price) || 0), 0), 0
   ) ?? 0;
 
-  /* ══════════════════════════════════════════
-     FIX PRINCIPAL — itineraryAsExc
-     
-     Le Checkoutmodal vérifiait available_dates et
-     trouvait un tableau vide → "Aucun créneau disponible".
-     
-     On injecte maintenant :
-     1. available_dates  : toutes les dates du voyage (YYYY-MM-DD)
-     2. is_active        : true  (l'itinéraire IA est toujours actif)
-     3. is_itinerary     : true  (flag pour que le modal sache que c'est un itinéraire IA,
-                                  pas une excursion normale avec des créneaux fixes)
-     4. depart_time      : "09:00" valeur par défaut
-  ══════════════════════════════════════════ */
   const itineraryAsExc = useMemo(() => {
     if (!itinerary) return null;
 
-    // Collecter toutes les dates de toutes les villes du voyage
     const allDates = cityDates
       .filter(c => c.start && c.end)
       .flatMap(c => generateDateRange(c.start!, c.end!));
 
-    // Supprimer les doublons (si chevauchement theorique)
     const uniqueDates = [...new Set(allDates)].sort();
 
     return {
-      id:               `itinerary-${Date.now()}`,
-      title:            itinerary.title || "Voyage personnalisé en Tunisie",
-      city:             selectedCities.join(", "),
-      duration_hours:   totalDays * 8,
+      id: `itinerary-${crypto.randomUUID()}`,
+      title: itinerary.title || "Voyage personnalisé en Tunisie",
+      city: selectedCities.join(", "),
+      duration_hours: totalDays * 8,
       price_per_person: totalPrice,
-      max_people:       20,
-      is_active:        true,
-      // ✅ FIX : fournir les vraies dates pour débloquer le modal
-      available_dates:  uniqueDates,
-      // ✅ FIX : créneau de départ par défaut
-      depart_time:      "09:00",
-      // ✅ FIX : flag pour que le modal puisse adapter son comportement
-      is_itinerary:     true,
-      description:      `Itinéraire personnalisé sur ${totalDays} jour${totalDays > 1 ? "s" : ""} — ${selectedCities.join(", ")}`,
+      max_people: 20,
+      is_active: true,
+      available_dates: uniqueDates,
+      depart_time: "09:00",
+      is_itinerary: true,
+      description: `Itinéraire personnalisé sur ${totalDays} jour${totalDays > 1 ? "s" : ""} — ${selectedCities.join(", ")}`,
     };
   }, [itinerary, selectedCities, totalDays, totalPrice, cityDates]);
 
   const canGenerate = selectedCities.length > 0 && allDatesSet && !dateError && !!N8N_WEBHOOK_URL;
 
-  /* ── Load Supabase ── */
   useEffect(() => {
     (async () => {
       setDbLoading(true);
@@ -859,46 +872,49 @@ export default function ModeAssiste() {
         setDbLoading(false);
       }
     })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  /* ── Navigation ── */
   const goCard = (next: number) => {
     setSlideDir(next > cardStep ? "left" : "right");
     setAnimKey(k => k + 1);
     setCardStep(next);
   };
 
-  /* ── City toggle ── */
   const toggleCity = (nom: string) => {
     setSelectedCities(prev => {
       const next = prev.includes(nom) ? prev.filter(x => x !== nom) : [...prev, nom];
       setCityDates(next.map(c => cityDates.find(cd => cd.city === c) ?? { city: c, start: null, end: null }));
-      setDateError(""); return next;
+      setDateError("");
+      return next;
     });
   };
+
   const toggleCat = (id: string) =>
     setSelectedCats(p => p.includes(id) ? p.filter(x => x !== id) : [...p, id]);
 
   const updateCityStart = (city: string, d: Date) => {
-    const cur      = cityDates.find(c => c.city === city);
+    const cur = cityDates.find(c => c.city === city);
     const conflict = cityDates.find(c => c.city !== city && datesOverlap(d, cur?.end ?? null, c.start, c.end));
     if (conflict) { setDateError(`Conflit avec "${conflict.city}"`); return; }
     setDateError("");
     setCityDates(prev => prev.map(c => c.city !== city ? c : { ...c, start: d, end: c.end && c.end < d ? null : c.end }));
   };
+
   const updateCityEnd = (city: string, d: Date) => {
-    const cur      = cityDates.find(c => c.city === city);
+    const cur = cityDates.find(c => c.city === city);
     const conflict = cityDates.find(c => c.city !== city && datesOverlap(cur?.start ?? null, d, c.start, c.end));
     if (conflict) { setDateError(`Conflit avec "${conflict.city}"`); return; }
     setDateError("");
     setCityDates(prev => prev.map(c => c.city !== city ? c : { ...c, end: d }));
   };
 
-  /* ── Generate ── */
   const generate = async () => {
     if (!canGenerate) return;
-    setAppStep("generation"); setGenError("");
-    msgIdxRef.current = 0; setLoadingMsg(LOADING_MSGS[0]);
+    setAppStep("generation");
+    setGenError("");
+    msgIdxRef.current = 0;
+    setLoadingMsg(LOADING_MSGS[0]);
     const iv = setInterval(() => {
       msgIdxRef.current = Math.min(msgIdxRef.current + 1, LOADING_MSGS.length - 1);
       setLoadingMsg(LOADING_MSGS[msgIdxRef.current]);
@@ -910,37 +926,37 @@ export default function ModeAssiste() {
 
       const citySchedule = cityDates
         .map(cdr => ({
-          city:      cdr.city,
+          city: cdr.city,
           startDate: cdr.start ? formatDateForN8N(cdr.start) : null,
-          endDate:   cdr.end   ? formatDateForN8N(cdr.end)   : null,
+          endDate: cdr.end ? formatDateForN8N(cdr.end) : null,
           daysCount: cdr.start && cdr.end ? daysBetween(cdr.start, cdr.end) : 0,
         }))
         .filter(s => s.startDate && s.endDate);
 
       const payload = {
         destination: selectedCities.join(", "),
-        startDate:   citySchedule[0]?.startDate || "",
-        endDate:     citySchedule[citySchedule.length - 1]?.endDate || "",
-        budget:      budget ? Number(budget) : 0,
-        travelers:   1,
-        interests:   catNames,
-        cities:      selectedCities,
+        startDate: citySchedule[0]?.startDate || "",
+        endDate: citySchedule[citySchedule.length - 1]?.endDate || "",
+        budget: budget ? Number(budget) : 0,
+        travelers: 1,
+        interests: catNames,
+        cities: selectedCities,
         citySchedule,
         message: `Séjour en Tunisie du ${citySchedule[0]?.startDate} au ${citySchedule[citySchedule.length - 1]?.endDate}`,
       };
 
       const res = await fetch(N8N_WEBHOOK_URL, {
-        method:  "POST",
+        method: "POST",
         headers: { "Content-Type": "application/json" },
-        body:    JSON.stringify(payload),
+        body: JSON.stringify(payload),
       });
       clearInterval(iv);
       if (!res.ok) throw new Error(`n8n error ${res.status}`);
 
       const data = await res.json();
-      const parsed     = extractItinerary(data, excursions);
+      const parsed = extractItinerary(data, excursions);
       const noConflict = removeTimeConflicts(parsed);
-      const validated  = filterUnavailableActivities(noConflict, excursions);
+      const validated = filterUnavailableActivities(noConflict, excursions);
 
       setItinerary(validated);
       setAppStep("itineraire");
@@ -952,7 +968,6 @@ export default function ModeAssiste() {
     }
   };
 
-  /* ── Change activity ── */
   const handleChangeActivity = (dayIdx: number, actIdx: number, alt: Activity) => {
     setItinerary(prev => {
       if (!prev) return prev;
@@ -968,7 +983,6 @@ export default function ModeAssiste() {
     });
   };
 
-  /* ── Save itinerary ── */
   const saveItinerary = async () => {
     if (!itinerary) return;
     setSaving(true);
@@ -987,27 +1001,47 @@ export default function ModeAssiste() {
         .map(id => categories.find(c => c.id === id)?.nom)
         .filter(Boolean) as string[];
 
-      const insertPayload: Record<string, unknown> = {
-        user_id:                  authUser.id,
-        nb_jours:                 totalDays,
-        villes_selectionnees:     selectedCities,
-        categories_selectionnees: catNames,
-        plan:                     itinerary,
+      const cleanItinerary = {
+        title: itinerary.title,
+        days: itinerary.days.map(day => ({
+          day: day.day,
+          city: day.city,
+          date: day.date || "",
+          theme: day.theme || "",
+          activities: day.activities.map(act => ({
+            id: act.id,
+            name: act.name,
+            description: act.description || "",
+            time: act.time || "",
+            duration: act.duration || "",
+            duration_hours: act.duration_hours || 0,
+            price: act.price || 0,
+            city: act.city || day.city,
+            rating: act.rating || null,
+            is_free_day: act.is_free_day || false,
+          }))
+        }))
       };
 
-      console.log("Saving itinerary payload:", insertPayload);
+      const insertPayload = {
+        user_id: authUser.id,
+        nb_jours: totalDays,
+        villes_selectionnees: selectedCities,
+        categories_selectionnees: catNames,
+        plan: cleanItinerary,
+      };
 
       const { error } = await supabase.from("itineraires").insert(insertPayload);
 
       if (error) {
-        console.error("Supabase insert error:", error.message, error.details, error.hint);
+        console.error("Erreur Supabase:", error.message, error.details);
         setSaveStatus("error");
       } else {
-        console.log("Itinerary saved successfully");
+        console.log("Sauvegarde réussie !");
         setSaveStatus("ok");
       }
     } catch (err) {
-      console.error("saveItinerary exception:", err);
+      console.error("Exception:", err);
       setSaveStatus("error");
     } finally {
       setSaving(false);
@@ -1015,13 +1049,19 @@ export default function ModeAssiste() {
   };
 
   const resetAll = () => {
-    setAppStep("questions"); setCardStep(0); setItinerary(null);
-    setSelectedCities([]); setCityDates([]); setSelectedCats([]);
-    setBudget(""); setGenError(""); setDateError(""); setShowCheckout(false);
+    setAppStep("questions");
+    setCardStep(0);
+    setItinerary(null);
+    setSelectedCities([]);
+    setCityDates([]);
+    setSelectedCats([]);
+    setBudget("");
+    setGenError("");
+    setDateError("");
+    setShowCheckout(false);
     setSaveStatus("idle");
   };
 
-  /* ── Summary pill ── */
   const summaryParts: string[] = [];
   if (selectedCities.length)
     summaryParts.push(selectedCities.slice(0, 2).join(", ") + (selectedCities.length > 2 ? ` +${selectedCities.length - 2}` : ""));
@@ -1033,26 +1073,18 @@ export default function ModeAssiste() {
   const canStep0 = selectedCities.length > 0;
   const canStep1 = allDatesSet && !dateError;
 
-  /* ══════════════════════════════════════════
-     RENDER
-  ══════════════════════════════════════════ */
   return (
-    <div style={{ minHeight:"100vh", background:"#F6F9FB", fontFamily:"'DM Sans',system-ui,sans-serif" }}>
-      <style>{CSS}</style>
+    <div suppressHydrationWarning style={{ minHeight: "100vh", background: "#F6F9FB", fontFamily: "'DM Sans',system-ui,sans-serif" }}>
+      <style suppressHydrationWarning>{CSS}</style>
       <TouristeNav favCount={favorites.size} isLoggedIn={!!user} />
-      <div style={{ paddingTop: 64 }}/>
+      <div style={{ paddingTop: 64 }} />
 
-      {/* ── Toast global (sauvegarde) ── */}
-      <Toast
-        status={saving ? "saving" : saveStatus}
-        onDone={() => setSaveStatus("idle")}
-      />
+      <Toast status={saving ? "saving" : saveStatus} onDone={() => setSaveStatus("idle")} />
 
-      {/* ── QUESTIONS WIZARD ── */}
       {appStep === "questions" && (
         <div className="ma2-page">
           <div className="ma2-topbar">
-            <div className="badge"><Sparkles size={13}/> Mode Assisté</div>
+            <div className="badge"><Sparkles size={13} /> Mode Assisté</div>
             <h1>Composez votre itinéraire <span>sur mesure</span></h1>
           </div>
 
@@ -1061,13 +1093,13 @@ export default function ModeAssiste() {
               <React.Fragment key={i}>
                 <div className="ma2-step-pip">
                   <div className={`ma2-step-pip-circle${i < cardStep ? " done" : i === cardStep ? " active" : ""}`}>
-                    {i < cardStep ? <CheckCircle size={15} color="white"/> : i + 1}
+                    {i < cardStep ? <CheckCircle size={15} color="white" /> : i + 1}
                   </div>
                   <span className={`ma2-step-pip-label${i < cardStep ? " done" : i === cardStep ? " active" : ""}`}>
                     {s.label}
                   </span>
                 </div>
-                {i < STEPS.length - 1 && <div className={`ma2-step-connector${i < cardStep ? " done" : ""}`}/>}
+                {i < STEPS.length - 1 && <div className={`ma2-step-connector${i < cardStep ? " done" : ""}`} />}
               </React.Fragment>
             ))}
           </div>
@@ -1081,12 +1113,10 @@ export default function ModeAssiste() {
             )}
 
             <div className="ma2-card-viewport">
-
-              {/* Step 0 : Destinations */}
               {cardStep === 0 && (
                 <div key={`c-${animKey}`} className={`ma2-card dir-${slideDir}`}>
                   <div className="ma2-card-header">
-                    <div className="ma2-card-icon"><MapPin size={16} color="#2B96A8"/></div>
+                    <div className="ma2-card-icon"><MapPin size={16} color="#2B96A8" /></div>
                     <h2>Destinations</h2>
                     {selectedCities.length > 0 && (
                       <span className="count-badge">{selectedCities.length} sélectionnée{selectedCities.length > 1 ? "s" : ""}</span>
@@ -1095,7 +1125,7 @@ export default function ModeAssiste() {
                   </div>
                   <div className="ma2-card-body">
                     {dbLoading ? (
-                      <div className="ma2-loading-row"><Loader2 size={18} className={styles.spin}/><span>Chargement...</span></div>
+                      <div className="ma2-loading-row"><Loader2 size={18} className="spin" /><span>Chargement...</span></div>
                     ) : (
                       <div className="ma2-cities-grid">
                         {villes.map(v => {
@@ -1113,11 +1143,10 @@ export default function ModeAssiste() {
                 </div>
               )}
 
-              {/* Step 1 : Calendrier */}
               {cardStep === 1 && (
                 <div key={`c-${animKey}`} className={`ma2-card dir-${slideDir}`}>
                   <div className="ma2-card-header">
-                    <div className="ma2-card-icon"><CalendarDays size={16} color="#2B96A8"/></div>
+                    <div className="ma2-card-icon"><CalendarDays size={16} color="#2B96A8" /></div>
                     <h2>Calendrier</h2>
                     {totalDays > 0 && <span className="count-badge">🗓️ {totalDays}j</span>}
                     <span className="step-badge">Étape 2 / 3</span>
@@ -1128,8 +1157,8 @@ export default function ModeAssiste() {
                     </p>
                     {dateError && (
                       <div className="ma2-date-conflict-banner">
-                        <div style={{ display:"flex", alignItems:"flex-start", gap:8 }}>
-                          <AlertTriangle size={15} style={{ marginTop:1, flexShrink:0 }}/>
+                        <div style={{ display: "flex", alignItems: "flex-start", gap: 8 }}>
+                          <AlertTriangle size={15} style={{ marginTop: 1, flexShrink: 0 }} />
                           <span>{dateError}</span>
                         </div>
                         <button onClick={() => setDateError("")}>✕</button>
@@ -1138,15 +1167,15 @@ export default function ModeAssiste() {
                     {cityDates.map(cdr => (
                       <CityDateRow key={cdr.city} cdr={cdr} allCityDates={cityDates}
                         onStart={d => updateCityStart(cdr.city, d)}
-                        onEnd={d   => updateCityEnd(cdr.city, d)}/>
+                        onEnd={d => updateCityEnd(cdr.city, d)} />
                     ))}
                     {allDatesSet && !dateError && (
                       <div className="ma2-recap-box">
-                        <div className="ma2-recap-title"><CheckCircle size={14} color="#2B96A8"/> Récapitulatif</div>
+                        <div className="ma2-recap-title"><CheckCircle size={14} color="#2B96A8" /> Récapitulatif</div>
                         <div className="ma2-recap-pills">
                           {cityDates.map(cdr => cdr.start && cdr.end && (
                             <span key={cdr.city} className="ma2-recap-pill">
-                              <MapPin size={10}/>
+                              <MapPin size={10} />
                               {cdr.city} · {fmtShort(cdr.start)} → {fmtShort(cdr.end)}
                             </span>
                           ))}
@@ -1157,11 +1186,10 @@ export default function ModeAssiste() {
                 </div>
               )}
 
-              {/* Step 2 : Intérêts + Budget */}
               {cardStep === 2 && (
                 <div key={`c-${animKey}`} className={`ma2-card dir-${slideDir}`}>
                   <div className="ma2-card-header">
-                    <div className="ma2-card-icon"><Heart size={16} color="#2B96A8"/></div>
+                    <div className="ma2-card-icon"><Heart size={16} color="#2B96A8" /></div>
                     <h2>Centres d&apos;intérêt</h2>
                     {selectedCats.length > 0 && (
                       <span className="count-badge">{selectedCats.length} choisi{selectedCats.length > 1 ? "s" : ""}</span>
@@ -1169,11 +1197,11 @@ export default function ModeAssiste() {
                     <span className="step-badge">Étape 3 / 3</span>
                   </div>
                   <div className="ma2-card-body">
-                    <p style={{ fontSize:12, color:"#9CA3AF", marginBottom:14, fontStyle:"italic", textAlign:"center" }}>
+                    <p style={{ fontSize: 12, color: "#9CA3AF", marginBottom: 14, fontStyle: "italic", textAlign: "center" }}>
                       Optionnel — passez directement si vous voulez tout découvrir
                     </p>
                     {dbLoading ? (
-                      <div className="ma2-loading-row"><Loader2 size={18} className={styles.spin}/><span>Chargement...</span></div>
+                      <div className="ma2-loading-row"><Loader2 size={18} className="spin" /><span>Chargement...</span></div>
                     ) : (
                       <div className="ma2-cats-wrap">
                         {categories.map(cat => {
@@ -1181,19 +1209,19 @@ export default function ModeAssiste() {
                           return (
                             <button key={cat.id} onClick={() => toggleCat(cat.id)}
                               className={["ma2-cat-chip", selectedCats.includes(cat.id) ? "on" : ""].join(" ")}>
-                              <Sparkles size={12}/>{catName}
+                              <Sparkles size={12} />{catName}
                             </button>
                           );
                         })}
                       </div>
                     )}
                     <div className="ma2-budget-section">
-                      <p className="ma2-budget-label"><Euro size={14} color="#2B96A8"/> Budget total (optionnel)</p>
-                      <div style={{ position:"relative" }}>
+                      <p className="ma2-budget-label"><Euro size={14} color="#2B96A8" /> Budget total (optionnel)</p>
+                      <div style={{ position: "relative" }}>
                         <input type="number" min={0} placeholder="Ex: 500"
                           value={budget} onChange={e => setBudget(e.target.value)}
-                          className="ma2-budget-input"/>
-                        <span style={{ position:"absolute", right:14, top:"50%", transform:"translateY(-50%)", color:"#9CA3AF", fontSize:14, fontWeight:600, pointerEvents:"none" }}>€</span>
+                          className="ma2-budget-input" />
+                        <span style={{ position: "absolute", right: 14, top: "50%", transform: "translateY(-50%)", color: "#9CA3AF", fontSize: 14, fontWeight: 600, pointerEvents: "none" }}>€</span>
                       </div>
                       {budget && Number(budget) > 0 && (
                         <p className="ma2-budget-hint">Budget de <strong>{Number(budget).toLocaleString("fr-FR")} €</strong> pris en compte</p>
@@ -1218,28 +1246,28 @@ export default function ModeAssiste() {
             <div className="ma2-nav-footer">
               {cardStep > 0 && (
                 <button className="ma2-back-btn" onClick={() => goCard(cardStep - 1)}>
-                  <ArrowLeft size={16}/> Retour
+                  <ArrowLeft size={16} /> Retour
                 </button>
               )}
               {cardStep === 0 && (
                 <button className="ma2-next-btn" onClick={() => goCard(1)} disabled={!canStep0}>
-                  Définir les dates <ArrowRight size={17}/>
+                  Définir les dates <ArrowRight size={17} />
                 </button>
               )}
               {cardStep === 1 && (
                 <button className="ma2-next-btn" onClick={() => goCard(2)} disabled={!canStep1}>
-                  Choisir mes intérêts <ArrowRight size={17}/>
+                  Choisir mes intérêts <ArrowRight size={17} />
                 </button>
               )}
               {cardStep === 2 && (
                 <>
                   {dateError && (
-                    <p style={{ fontSize:12, color:"#c2410c", display:"flex", alignItems:"center", gap:5 }}>
-                      <AlertTriangle size={13}/> Corrigez les conflits de dates
+                    <p style={{ fontSize: 12, color: "#c2410c", display: "flex", alignItems: "center", gap: 5 }}>
+                      <AlertTriangle size={13} /> Corrigez les conflits de dates
                     </p>
                   )}
                   <button className="ma2-next-btn primary" onClick={generate} disabled={!canGenerate}>
-                    <Bot size={17}/> Générer mon itinéraire <ArrowRight size={17}/>
+                    <Bot size={17} /> Générer mon itinéraire <ArrowRight size={17} />
                   </button>
                 </>
               )}
@@ -1248,30 +1276,28 @@ export default function ModeAssiste() {
         </div>
       )}
 
-      {/* ── GENERATION SCREEN ── */}
       {appStep === "generation" && (
         <div className="ma2-page">
           <div className="ma2-gen-screen">
-            <div className="ma2-gen-orb"><Bot size={32} color="#ffffff" strokeWidth={1.5}/></div>
+            <div className="ma2-gen-orb"><Bot size={32} color="#ffffff" strokeWidth={1.5} /></div>
             <h2 className="ma2-gen-title">L&apos;agent IA prépare votre voyage…</h2>
             <p className="ma2-gen-msg">{loadingMsg}</p>
             <div className="ma2-gen-dots">
               {[0, 200, 400].map(delay => (
-                <div key={delay} className="ma2-gen-dot" style={{ animationDelay:`${delay}ms` }}/>
+                <div key={delay} className="ma2-gen-dot" style={{ animationDelay: `${delay}ms` }} />
               ))}
             </div>
           </div>
         </div>
       )}
 
-      {/* ── ITINERARY RESULT ── */}
       {appStep === "itineraire" && itinerary && (
-        <div style={{ flex:1, overflow:"auto" }}>
+        <div style={{ flex: 1, overflow: "auto" }}>
           <ItineraireDisplay
             itinerary={itinerary}
             selectedCities={selectedCities}
             selectedCats={selectedCats}
-            categories={categories as { id:string; nom?:string; name?:string }[]}
+            categories={categories as { id: string; nom?: string; name?: string }[]}
             excursions={excursions}
             totalPrice={totalPrice}
             saving={saving}
@@ -1285,12 +1311,6 @@ export default function ModeAssiste() {
         </div>
       )}
 
-      {/* ══════════════════════════════════════════
-          FIX CHECKOUT MODAL
-          — On passe itineraryAsExc uniquement s'il est prêt
-          — La condition showCheckout && itinerary (pas itineraryAsExc)
-            évite le flash si le memo n'est pas encore calculé
-      ══════════════════════════════════════════ */}
       {showCheckout && itinerary && itineraryAsExc && (
         <Checkoutmodal
           excursions={[itineraryAsExc]}
