@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { createClient } from "@/lib/supabaseClient";
+import { BlogImage as CoverImage } from "@/app/components/touriste/BlogImage";
 import {
   Plus, Save, Trash2, Eye, EyeOff, ChevronLeft, Check,
   Loader2, AlertCircle, Search, Star, Clock,
@@ -35,8 +36,9 @@ interface Post {
 const CATEGORIES = ["Voyage","Culture","Gastronomie","Nature","Aventure","Conseils","Hébergement","Transport"];
 
 const CSS = `
+  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@400;500;600;700;800&display=swap');
   *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-  body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:#F0F4F8}
+  body{font-family:'DM Sans',system-ui,sans-serif;background:#F8FAFC}
 
   @keyframes spin   {to{transform:rotate(360deg)}}
   @keyframes fadeUp {from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
@@ -44,8 +46,8 @@ const CSS = `
   @keyframes slideUp{from{opacity:0;transform:translateY(100%)}to{opacity:1;transform:translateY(0)}}
 
   /* ── Cards ── */
-  .post-card{background:white;border-radius:16px;border:1.5px solid #E5E7EB;overflow:hidden;transition:all .2s;animation:fadeUp .2s ease both;cursor:pointer}
-  .post-card:hover{box-shadow:0 8px 28px rgba(0,0,0,.09);transform:translateY(-2px)}
+  .post-card{background:white;border-radius:16px;border:1px solid #EEF2FF;overflow:hidden;transition:all .2s;animation:fadeUp .2s ease both;cursor:pointer;box-shadow:0 2px 10px rgba(5,51,102,.05)}
+  .post-card:hover{box-shadow:0 8px 24px rgba(5,51,102,.1);transform:translateY(-2px)}
   .post-card.selected{border-color:#02AFCF;box-shadow:0 0 0 3px rgba(2,175,207,.12)}
 
   /* ── Buttons ── */
@@ -55,8 +57,8 @@ const CSS = `
   .btn-primary.ok{background:linear-gradient(135deg,#059669,#047857)}
   .btn-danger{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;background:#FEF2F2;color:#DC2626;border:1.5px solid #FCA5A5;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;transition:all .15s}
   .btn-danger:hover{background:#DC2626;color:white}
-  .btn-ghost{display:inline-flex;align-items:center;gap:6px;padding:8px 14px;background:#F3F4F6;color:#374151;border:1.5px solid #E5E7EB;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .15s}
-  .btn-ghost:hover{border-color:#D1D5DB;background:#E5E7EB}
+  .btn-ghost{display:inline-flex;align-items:center;gap:6px;padding:8px 14px;background:white;color:#374151;border:1.5px solid #E5E7EB;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .15s}
+  .btn-ghost:hover{border-color:#D1D5DB;background:#F8FAFC}
 
   /* ── Fields ── */
   .field{width:100%;padding:10px 14px;border:1.5px solid #E5E7EB;border-radius:12px;font-size:14px;font-family:inherit;color:#111827;background:white;outline:none;transition:all .2s}
@@ -102,7 +104,7 @@ const CSS = `
   /* ══════════════════════════════════════════
      DESKTOP: side-by-side panel
   ══════════════════════════════════════════ */
-  .edit-panel-desktop{background:white;border-left:1.5px solid #E5E7EB;height:100vh;overflow-y:auto;position:sticky;top:0;animation:slideR .25s ease}
+  .edit-panel-desktop{background:white;border-left:1px solid #EEF2FF;height:100vh;overflow-y:auto;position:sticky;top:0;animation:slideR .25s ease;box-shadow:-8px 0 24px rgba(5,51,102,.04)}
 
   /* ══════════════════════════════════════════
      MOBILE: full-screen slide-up sheet
@@ -292,7 +294,7 @@ function ImageUploader({
             )}
             {value ? (
               <>
-                <img src={value} alt="" style={{ width: "100%", height: 150, objectFit: "cover", display: "block" }} />
+                <CoverImage src={value} alt="" style={{ width: "100%", height: 150, objectFit: "cover", objectPosition: "center", display: "block" }} />
                 <div className="img-hover">
                   <button
                     className="img-act"
@@ -361,7 +363,7 @@ function ImageUploader({
           </div>
           {value && (
             <div style={{ marginTop: 8, borderRadius: 10, overflow: "hidden", border: "1.5px solid #E5E7EB", height: 120, position: "relative" }}>
-              <img src={value} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+              <CoverImage src={value} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center", display: "block" }} />
               <button
                 onClick={() => { onChange(""); setUrlInput(""); }}
                 style={{ position: "absolute", top: 8, right: 8, width: 24, height: 24, borderRadius: "50%", background: "rgba(0,0,0,.5)", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "white" }}
@@ -821,9 +823,9 @@ export default function BlogAdminPage() {
       <style>{CSS}</style>
 
       {/* ── Topbar ── */}
-      <div className="topbar" style={{ background: "white", borderBottom: "1px solid #E5E7EB", padding: "16px 28px", display: "flex", justifyContent: "space-between", alignItems: "center", position: "sticky", top: 0, zIndex: 50, gap: 12 }}>
+      <div className="topbar" style={{ background: "white", borderBottom: "1px solid #EEF2FF", padding: "16px 28px", display: "flex", justifyContent: "space-between", alignItems: "center", position: "sticky", top: 0, zIndex: 50, gap: 12, boxShadow: "0 1px 0 rgba(15,23,42,.03)" }}>
         <div className="topbar-title">
-          <h1 style={{ fontFamily: "'Playfair Display',serif", fontSize: 21, fontWeight: 900, color: "#053366", margin: 0 }}>Blog</h1>
+          <h1 style={{ fontSize: 20, fontWeight: 800, color: "#053366", margin: 0, letterSpacing: "-0.4px" }}>Blog</h1>
           <p style={{ fontSize: 12, color: "#9CA3AF", margin: 0 }}>
             {posts.filter((p) => p.is_published).length} publié · {posts.filter((p) => !p.is_published).length} brouillon
           </p>
@@ -872,8 +874,8 @@ export default function BlogAdminPage() {
               { label: "Publiés", value: posts.filter((p) => p.is_published).length,                  icon: <Globe size={16} color="#059669" />,       bg: "rgba(5,150,105,.08)" },
               { label: "Vues",    value: posts.reduce((a, p) => a + p.views, 0).toLocaleString(),      icon: <BarChart2 size={16} color="#7C3AED" />,   bg: "rgba(124,58,237,.08)" },
             ].map((s, i) => (
-              <div key={i} style={{ background: "white", borderRadius: 14, padding: "14px 16px", border: "1.5px solid #E5E7EB", display: "flex", alignItems: "center", gap: 10 }}>
-                <div style={{ width: 36, height: 36, borderRadius: 10, background: s.bg, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>{s.icon}</div>
+              <div key={i} style={{ background: "white", borderRadius: 14, padding: "14px 16px", border: "1px solid #EEF2FF", display: "flex", alignItems: "center", gap: 10, boxShadow: "0 2px 10px rgba(5,51,102,.05)" }}>
+                <div style={{ width: 36, height: 36, borderRadius: 10, background: s.bg, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, border: "1px solid rgba(5,51,102,.06)" }}>{s.icon}</div>
                 <div style={{ minWidth: 0 }}>
                   <p style={{ fontSize: 18, fontWeight: 800, color: "#111827", lineHeight: 1 }}>{s.value}</p>
                   <p style={{ fontSize: 11, color: "#9CA3AF" }}>{s.label}</p>
@@ -903,9 +905,9 @@ export default function BlogAdminPage() {
                 >
                   <div style={{ display: "flex" }}>
                     {/* Cover */}
-                    <div className="post-card-cover" style={{ width: 100, height: 80, flexShrink: 0, overflow: "hidden", background: "linear-gradient(135deg,#053366,#02AFCF)" }}>
+                    <div className="post-card-cover" style={{ width: 100, height: 80, flexShrink: 0, overflow: "hidden", background: "linear-gradient(135deg,#053366,#02AFCF)", position: "relative" }}>
                       {p.cover_url
-                        ? <img src={p.cover_url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                        ? <CoverImage src={p.cover_url} alt={p.title} style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center", display: "block" }} />
                         : <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}><FileText size={20} color="rgba(255,255,255,.4)" /></div>
                       }
                     </div>

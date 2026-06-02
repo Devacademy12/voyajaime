@@ -165,7 +165,6 @@ export function PrestastaireCard({
     <div
       className="pcard"
       style={{
-        borderLeft: `3px solid ${p.is_validated ? "#2B96A8" : "#F59E0B"}`,
         cursor: "pointer",
       }}
       onClick={onViewEdit}
