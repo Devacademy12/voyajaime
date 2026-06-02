@@ -80,7 +80,7 @@ export default function AdminExcursionDetail({
       if (!res.ok) throw new Error((await res.json()).error);
       setAvis(prev => prev.map(a => a.id === id ? { ...a, is_moderated: true } : a));
       showToast("Avis approuvé");
-    } catch (e) { showToast(`Erreur : ${e instanceof Error ? e.message : "Erreur"}`, false); }
+    } catch (e) { showToast(`Erreur : ${e instanceof Error ? e.message : "Erreur"}`, "error"); }
     setLoadingId(null);
   };
 
