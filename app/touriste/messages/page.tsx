@@ -133,6 +133,11 @@ export default function TouristeMessagesPage() {
     if (data) {
       setMessages(prev => [...prev, data]);
       setNewMsg("");
+      void fetch("/api/notifications/message", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ conversationId: activeConv.id, messageId: data.id }),
+      });
       await loadConversations(userId);
       setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: "smooth" }), 50);
     }

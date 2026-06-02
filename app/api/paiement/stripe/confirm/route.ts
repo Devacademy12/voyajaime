@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import Stripe from "stripe";
+import { notifyReservationConfirmed } from "@/lib/notifications";
 
 function firstRow<T>(value: T | T[] | null | undefined): T | null {
   if (!value) return null;
@@ -41,7 +42,7 @@ export async function POST(req: NextRequest) {
     // ── 2. Récupérer la réservation ─────────────────────────────────
     const { data: reservationData, error: reservationFetchError } = await supabaseAdmin
       .from("reservations")
-      .select(`id, touriste_id, excursion_id, total_price, platform_fee, excursions(id, prestataire_id)`)
+      .select(`id, touriste_id, excursion_id, date, time, people_count, booking_code, total_price, platform_fee, excursions(id, title, city, prestataire_id)`)
       .eq("id", reservationId)
       .single();
 
@@ -95,6 +96,41 @@ export async function POST(req: NextRequest) {
     if (reservationUpdateError) {
       console.error("[confirm] update reservation:", reservationUpdateError.message);
       // Non bloquant
+    }
+
+    const [touristeProfile, prestataireProfile] = await Promise.all([
+      supabaseAdmin.from("profiles").select("user_id, full_name").eq("user_id", reservation.touriste_id).single(),
+      prestataireId
+        ? supabaseAdmin.from("profiles").select("user_id, full_name, agency_name").eq("user_id", prestataireId).single()
+        : Promise.resolve({ data: null }),
+    ]);
+
+    if (touristeProfile.data) {
+      await notifyReservationConfirmed({
+        reservation: {
+          id: reservationId,
+          date: reservation.date,
+          time: reservation.time,
+          people_count: reservation.people_count,
+          total_price: amount,
+          booking_code: reservation.booking_code,
+        },
+        excursion: {
+          title: excursion?.title || "Excursion",
+          city: excursion?.city || "Tunisie",
+        },
+        touriste: {
+          userId: reservation.touriste_id,
+          role: "touriste",
+          fullName: touristeProfile.data.full_name,
+        },
+        prestataire: {
+          userId: prestataireId || "",
+          role: "prestataire",
+          fullName: prestataireProfile?.data?.full_name || null,
+          agencyName: prestataireProfile?.data?.agency_name || null,
+        },
+      });
     }
 
     return NextResponse.json({ paid: true, reservation_id: reservationId });

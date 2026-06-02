@@ -9,6 +9,7 @@ import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 import { createAdminClient } from "@/lib/supabaseAdmin";
 import { createServerSupabaseClient } from "@/lib/supabaseServer";
+import { notifyReservationCancelled } from "@/lib/notifications";
 
 export async function POST(req: NextRequest) {
   try {
@@ -41,7 +42,7 @@ export async function POST(req: NextRequest) {
     // Récupération réservation
     const { data: reservation, error: fetchError } = await supabaseAdmin
       .from("reservations")
-      .select("*, paiements(*)")
+      .select("*, paiements(*), excursion:excursions(id, title, city, prestataire_id)")
       .eq("id", reservation_id)
       .single();
 
@@ -205,6 +206,14 @@ export async function POST(req: NextRequest) {
         .eq("id", paiement.id);
     }
 
+    const excursion = Array.isArray(reservation.excursion) ? reservation.excursion[0] : reservation.excursion;
+    const [touristeProfile, prestataireProfile] = await Promise.all([
+      supabaseAdmin.from("profiles").select("user_id, full_name").eq("user_id", reservation.touriste_id).single(),
+      excursion?.prestataire_id
+        ? supabaseAdmin.from("profiles").select("user_id, full_name, agency_name").eq("user_id", excursion.prestataire_id).single()
+        : Promise.resolve({ data: null }),
+    ]);
+
     // ─────────────────────────────
     // RESTORE SLOTS
     // ─────────────────────────────
@@ -214,6 +223,37 @@ export async function POST(req: NextRequest) {
       });
     } catch (e) {
       console.warn("restore slots error:", e);
+    }
+
+    if (touristeProfile.data && excursion) {
+      await notifyReservationCancelled({
+        reservation: {
+          id: reservation.id,
+          date: reservation.date,
+          time: reservation.time,
+          people_count: reservation.people_count,
+          total_price: reservation.total_price,
+          booking_code: reservation.booking_code,
+        },
+        excursion: {
+          title: excursion.title || "Excursion",
+          city: excursion.city || "Tunisie",
+        },
+        touriste: {
+          userId: reservation.touriste_id,
+          role: "touriste",
+          fullName: touristeProfile.data.full_name,
+        },
+        prestataire: {
+          userId: excursion.prestataire_id,
+          role: "prestataire",
+          fullName: prestataireProfile?.data?.full_name || null,
+          agencyName: prestataireProfile?.data?.agency_name || null,
+        },
+        refundPercentage,
+        refundAmount,
+        reason: reason || refundReason,
+      });
     }
 
     return NextResponse.json({

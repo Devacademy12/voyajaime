@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabaseClient";
 import { ROUTES } from "@/app/lib/routes";
+import NotificationBell from "../shared/NotificationBell";
 import { LogOut, Menu, X, MessageCircle, User, Plane, Clock, ChevronDown } from "lucide-react";
 
 const Logo = () => (
@@ -31,6 +32,7 @@ export default function TouristeNav({
   const [planOpen,       setPlanOpen]       = useState(false);
   const [scrolled,       setScrolled]       = useState(false);
   const [isUserLoggedIn, setIsUserLoggedIn] = useState(isLoggedIn);
+  const [userId,         setUserId]         = useState<string | null>(null);
 
   const pathname = usePathname();
   const router   = useRouter();
@@ -42,6 +44,7 @@ export default function TouristeNav({
       const { data: { session } } = await supabase.auth.getSession();
       setIsUserLoggedIn(!!session);
       if (session) {
+        setUserId(session.user.id);
         const { data: profile } = await supabase
           .from("profiles").select("full_name, avatar_url")
           .eq("user_id", session.user.id).single();
@@ -94,7 +97,6 @@ export default function TouristeNav({
 
   const publicLinks = [
     { href: ROUTES.excursions, icon: "ti-compass",     label: "Excursions",        anchor: false },
-    { href: "#chemins",        icon: "ti-map",         label: "Comment ça marche", anchor: true  },
     { href: ROUTES.about,      icon: "ti-help-circle", label: "À propos",          anchor: false },
     { href: ROUTES.blog,       icon: "ti-book",        label: "Blog",              anchor: false },
     { href: ROUTES.contact,    icon: "ti-phone",       label: "Contact",           anchor: false },
@@ -658,6 +660,8 @@ export default function TouristeNav({
 
             {isUserLoggedIn ? (
               <>
+                <NotificationBell userId={userId} compact />
+
                 {/* Favoris */}
                 <Link href={ROUTES.touriste.favoris} className="g-fav">
                   <i className="ti ti-heart" aria-hidden="true" />
