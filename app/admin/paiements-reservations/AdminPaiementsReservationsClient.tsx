@@ -536,10 +536,9 @@ export default function AdminPaiementsReservationsClient({ paiements, reservatio
 }
 
 const CSS = `
-  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800;900&display=swap');
   @keyframes fadeUp  { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:none; } }
   @keyframes slideUp { from { opacity:0; transform:translateY(30px); } to { opacity:1; transform:none; } }
-  .adm-root { max-width:1200px; margin:0 auto; padding:32px 24px; font-family:'DM Sans',system-ui,sans-serif; color:#0F172A; background:#F8FAFC; min-height:100vh; }
+  .adm-root { max-width:1200px; margin:0 auto; padding:32px 24px; font-family:'Plus Jakarta Sans',system-ui,sans-serif; color:#0F172A; background:#F8FAFC; min-height:100vh; }
   .adm-header { display:flex; align-items:center; justify-content:space-between; background:linear-gradient(135deg,#0F172A 0%,#1a3a5c 100%); border-radius:18px; padding:20px 24px; margin-bottom:18px; animation:fadeUp .3s ease both; box-shadow:0 4px 20px rgba(15,23,42,.3); }
   .adm-header-icon { width:46px; height:46px; border-radius:13px; flex-shrink:0; background:rgba(255,255,255,.15); border:1px solid rgba(255,255,255,.2); display:flex; align-items:center; justify-content:center; }
   .adm-title { font-size:20px; font-weight:800; color:white; margin:0; }

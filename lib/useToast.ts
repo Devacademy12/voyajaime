@@ -1,17 +1,37 @@
 import { useState } from 'react';
+import { MessageType } from '@/app/components/ui/design-system';
 
 export interface ToastState {
+  id?: string;
   msg: string;
-  ok: boolean;
+  type: MessageType;
+  duration?: number;
 }
 
 export function useToast() {
   const [toast, setToast] = useState<ToastState | null>(null);
 
-  const showToast = (msg: string, ok = true) => {
-    setToast({ msg, ok });
-    setTimeout(() => setToast(null), 3000);
+  const showToast = (msg: string, type: MessageType = 'info', duration?: number) => {
+    const id = Date.now().toString();
+    setToast({ id, msg, type, duration });
   };
 
-  return { toast, showToast };
+  const closeToast = () => {
+    setToast(null);
+  };
+
+  const showSuccess = (msg: string, duration?: number) => showToast(msg, 'success', duration);
+  const showError = (msg: string, duration?: number) => showToast(msg, 'error', duration);
+  const showWarning = (msg: string, duration?: number) => showToast(msg, 'warning', duration);
+  const showInfo = (msg: string, duration?: number) => showToast(msg, 'info', duration);
+
+  return {
+    toast,
+    showToast,
+    closeToast,
+    showSuccess,
+    showError,
+    showWarning,
+    showInfo,
+  };
 }

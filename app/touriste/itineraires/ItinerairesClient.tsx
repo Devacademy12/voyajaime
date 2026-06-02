@@ -134,8 +134,6 @@ function formatDate(dateStr: string) {
 // ─── CSS ─────────────────────────────────────────────────────────────────────
 
 const RESPONSIVE_CSS = `
-  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@400;500;600;700;800&display=swap');
-
   @keyframes fadeUp   { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
   @keyframes fadeIn   { from{opacity:0} to{opacity:1} }
   @keyframes spin     { to{transform:rotate(360deg)} }

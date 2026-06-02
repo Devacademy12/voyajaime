@@ -116,10 +116,8 @@ const topVilles = Object.entries(villeCount)
   };
 
   return (
-    <div style={{ fontFamily: "'DM Sans',system-ui,sans-serif", display: "flex", flexDirection: "column", gap: 14 }}>
+    <div style={{ fontFamily: "'Plus Jakarta Sans',system-ui,sans-serif", display: "flex", flexDirection: "column", gap: 14 }}>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap');
-
         .db-kpi    { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
         .db-rev    { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
         .db-middle { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }

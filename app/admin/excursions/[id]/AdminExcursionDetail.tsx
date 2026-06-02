@@ -96,7 +96,6 @@ export default function AdminExcursionDetail({
   return (
     <>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@400;500;600;700;800&display=swap');
         *{box-sizing:border-box}
         .thumb-a{width:72px;height:54px;border-radius:10px;overflow:hidden;cursor:pointer;border:2.5px solid transparent;transition:all .2s;flex-shrink:0}
         .thumb-a.on{border-color:#2B96A8}

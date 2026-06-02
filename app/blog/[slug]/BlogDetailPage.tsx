@@ -28,9 +28,8 @@ function readTime(content: string | null) {
 }
 
 const CSS = `
-  @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=Instrument+Serif:ital@0;1&family=DM+Sans:wght@400;500;600;700&display=swap');
   *, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
-  body { font-family:'DM Sans',system-ui,sans-serif; background:#FAFAF9; color:#111827; }
+  body { font-family:'Plus Jakarta Sans',system-ui,sans-serif; background:#FAFAF9; color:#111827; }
 
   @keyframes slideUp  { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
   @keyframes slideRight{ from{opacity:0;transform:translateX(-14px)} to{opacity:1;transform:translateX(0)} }

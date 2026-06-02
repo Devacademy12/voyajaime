@@ -128,8 +128,6 @@ function hasTimeOverlap(
 /* ─── CSS ────────────────────────────────────────────────────────────── */
 
 const CSS = `
-  @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=DM+Sans:wght@400;500;600;700;800&display=swap');
-
   .co2-overlay {
     position: fixed; inset: 0; z-index: 1000;
     display: flex; align-items: center; justify-content: center;

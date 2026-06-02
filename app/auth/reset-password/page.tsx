@@ -122,9 +122,8 @@ export default function ResetPasswordPage() {
   }
 
   return (
-    <div style={{ minHeight:"100vh", display:"flex", alignItems:"center", justifyContent:"center", background:"linear-gradient(135deg,#EFF9FB,#E0F2FE)", fontFamily:"'DM Sans',system-ui,sans-serif", padding:16 }}>
+    <div style={{ minHeight:"100vh", display:"flex", alignItems:"center", justifyContent:"center", background:"linear-gradient(135deg,#EFF9FB,#E0F2FE)", fontFamily:"'Plus Jakarta Sans',system-ui,sans-serif", padding:16 }}>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&display=swap');
         @keyframes spin{to{transform:rotate(360deg)}}
         .rp-input{width:100%;padding:12px 44px 12px 14px;border:1.5px solid #E5E7EB;border-radius:12px;font-size:14px;font-family:inherit;color:#111827;background:#F9FAFB;outline:none;box-sizing:border-box;transition:border-color .2s,box-shadow .2s}
         .rp-input:focus{border-color:#2B96A8;background:white;box-shadow:0 0 0 3px rgba(43,150,168,.1)}

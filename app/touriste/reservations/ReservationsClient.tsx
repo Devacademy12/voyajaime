@@ -12,13 +12,14 @@ import ReservationCard from "@/app/components/reservation/Reservationcard";
 import CheckoutModal from "@/app/components/paiement/checkoutmodal";
 
 const CSS = `
-  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap');
-
-  @keyframes fadeUp { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
-  @keyframes spin   { to{transform:rotate(360deg)} }
+  @keyframes fadeUp { 
+    from { opacity: 0; transform: translateY(12px); } 
+    to { opacity: 1; transform: translateY(0); } 
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
 
   .rc-wrap {
-    font-family: 'DM Sans', system-ui, sans-serif;
+    font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
     width: 100%;
     box-sizing: border-box;
   }
@@ -29,167 +30,206 @@ const CSS = `
     align-items: flex-start;
     justify-content: space-between;
     flex-wrap: wrap;
-    gap: 12px;
-    margin-bottom: 28px;
+    gap: 16px;
+    margin-bottom: 32px;
+    animation: fadeUp .35s ease both;
   }
   .rc-header-title {
-    font-size: clamp(20px, 3vw, 26px);
-    font-weight: 700;
-    color: #0F172A;
-    margin: 0 0 4px;
-    letter-spacing: -0.3px;
+    font-size: clamp(24px, 5vw, 32px);
+    font-weight: 800;
+    color: #053366;
+    margin: 0 0 6px;
+    letter-spacing: -0.5px;
+    line-height: 1.2;
   }
   .rc-header-sub {
-    font-size: 13px;
+    font-size: 14px;
     color: #94A3B8;
     margin: 0;
+    font-weight: 500;
   }
 
   /* ── Refresh btn ── */
   .rc-refresh {
     display: flex;
     align-items: center;
-    gap: 6px;
-    padding: 8px 14px;
+    gap: 8px;
+    padding: 10px 18px;
     border: 1.5px solid #E2E8F0;
-    border-radius: 10px;
+    border-radius: 12px;
     background: #fff;
     color: #475569;
     font-size: 13px;
     font-weight: 600;
     cursor: pointer;
-    font-family: 'DM Sans', sans-serif;
-    transition: border-color .15s, color .15s;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    transition: all .2s;
     white-space: nowrap;
+    box-shadow: 0 1px 2px rgba(0,0,0,.02);
   }
-  .rc-refresh:hover:not(:disabled) { border-color: #2B96A8; color: #2B96A8; }
-  .rc-refresh:disabled { opacity: .5; cursor: not-allowed; }
+  .rc-refresh:hover:not(:disabled) { 
+    border-color: #2B96A8; 
+    color: #2B96A8;
+    box-shadow: 0 4px 12px rgba(43,150,168,.12);
+    transform: translateY(-1px);
+  }
+  .rc-refresh:disabled { opacity: 0.5; cursor: not-allowed; }
 
   /* ── Stats ── */
   .rc-stats {
-    display: flex;
-    gap: 10px;
-    margin-bottom: 28px;
-    flex-wrap: wrap;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 14px;
+    margin-bottom: 32px;
   }
   .rc-stat {
     display: flex;
     align-items: center;
-    gap: 10px;
-    flex: 1;
-    min-width: 120px;
-    padding: 12px 16px;
+    gap: 12px;
+    padding: 16px 18px;
     border-radius: 14px;
     border: 1.5px solid;
+    animation: fadeUp .35s ease both;
+    transition: all .2s;
+  }
+  .rc-stat:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,.06);
   }
   .rc-stat-icon {
-    width: 32px;
-    height: 32px;
-    border-radius: 8px;
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
     background: #fff;
     display: flex;
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
-    box-shadow: 0 1px 3px rgba(0,0,0,.06);
+    box-shadow: 0 2px 4px rgba(0,0,0,.04);
   }
   .rc-stat-num {
-    font-size: 20px;
+    font-size: 22px;
     font-weight: 800;
     line-height: 1;
     margin: 0;
+    letter-spacing: -0.3px;
   }
   .rc-stat-lbl {
-    font-size: 11px;
+    font-size: 12px;
     font-weight: 600;
     color: #94A3B8;
-    margin: 3px 0 0;
+    margin: 4px 0 0;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
   }
 
   /* ── Grid ── */
   .rc-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
-    gap: 18px;
+    grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+    gap: 20px;
   }
   .rc-grid > * { animation: fadeUp .35s ease both; }
 
   /* ── Empty ── */
   .rc-empty {
-    padding: 72px 24px;
+    padding: 80px 32px;
     text-align: center;
-    background: #fff;
+    background: linear-gradient(135deg, #fff 0%, #F8FBFF 100%);
     border-radius: 20px;
     border: 1.5px solid #E2E8F0;
   }
   .rc-empty-icon {
-    width: 64px;
-    height: 64px;
+    width: 72px;
+    height: 72px;
     border-radius: 50%;
-    background: #F1F5F9;
+    background: linear-gradient(135deg, #053366 0%, #2B96A8 100%);
     display: flex;
     align-items: center;
     justify-content: center;
-    margin: 0 auto 18px;
+    margin: 0 auto 20px;
+  }
+  .rc-empty-icon svg {
+    color: #fff;
   }
   .rc-empty h3 {
-    font-size: 18px;
-    font-weight: 700;
-    color: #0F172A;
-    margin: 0 0 8px;
+    font-size: 20px;
+    font-weight: 800;
+    color: #053366;
+    margin: 0 0 10px;
   }
   .rc-empty p {
     font-size: 14px;
     color: #94A3B8;
-    margin: 0 0 24px;
+    margin: 0 0 28px;
     line-height: 1.6;
+    max-width: 400px;
+    margin-left: auto;
+    margin-right: auto;
   }
   .rc-empty-actions {
     display: flex;
-    gap: 10px;
+    gap: 12px;
     justify-content: center;
     flex-wrap: wrap;
   }
   .rc-btn-primary {
     display: inline-flex;
     align-items: center;
-    gap: 7px;
-    padding: 11px 20px;
-    background: #0F172A;
+    gap: 8px;
+    padding: 12px 24px;
+    background: linear-gradient(135deg, #053366 0%, #0F5E8F 100%);
     color: #fff;
-    border-radius: 10px;
+    border-radius: 12px;
     text-decoration: none;
-    font-size: 13px;
+    font-size: 14px;
     font-weight: 700;
-    font-family: 'DM Sans', sans-serif;
-    transition: background .15s;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    transition: all .2s;
+    border: none;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(5,51,102,.2);
   }
-  .rc-btn-primary:hover { background: #1E293B; }
+  .rc-btn-primary:hover { 
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(5,51,102,.3);
+  }
   .rc-btn-secondary {
     display: inline-flex;
     align-items: center;
-    gap: 7px;
-    padding: 11px 18px;
+    gap: 8px;
+    padding: 12px 22px;
     background: #fff;
     color: #475569;
     border: 1.5px solid #E2E8F0;
-    border-radius: 10px;
+    border-radius: 12px;
     text-decoration: none;
-    font-size: 13px;
+    font-size: 14px;
     font-weight: 600;
-    font-family: 'DM Sans', sans-serif;
-    transition: border-color .15s;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    transition: all .2s;
+    cursor: pointer;
   }
-  .rc-btn-secondary:hover { border-color: #CBD5E1; }
+  .rc-btn-secondary:hover { 
+    border-color: #2B96A8;
+    color: #2B96A8;
+    box-shadow: 0 4px 12px rgba(43,150,168,.15);
+  }
 
-  @media (max-width: 640px) {
-    .rc-stats { gap: 8px; }
-    .rc-stat  { min-width: calc(50% - 4px); padding: 10px 12px; }
-    .rc-grid  { grid-template-columns: 1fr; gap: 12px; }
-    .rc-empty { padding: 48px 16px; border-radius: 16px; }
+  @media (max-width: 900px) {
+    .rc-stats { grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; }
+    .rc-grid { grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px; }
   }
-  @media (max-width: 380px) {
-    .rc-stat { min-width: 100%; }
+  @media (max-width: 640px) {
+    .rc-header { gap: 12px; margin-bottom: 24px; }
+    .rc-header-title { font-size: 22px; }
+    .rc-stats { grid-template-columns: 1fr; gap: 10px; }
+    .rc-stat { padding: 14px 16px; }
+    .rc-grid { grid-template-columns: 1fr; gap: 14px; }
+    .rc-empty { padding: 56px 20px; }
+    .rc-empty h3 { font-size: 18px; }
+    .rc-empty-actions { gap: 8px; }
+    .rc-btn-primary, .rc-btn-secondary { padding: 10px 18px; font-size: 13px; }
   }
 `;
 
@@ -294,7 +334,7 @@ export default function ReservationsClient({ reservations: init, autoOpenId }: P
         .eq("touriste_id", user.id)
         .neq("status", "cancelled")
         .gte("date", today)
-        .order("date", { ascending: true });
+        .order("created_at", { ascending: false }); // ⭐ LIFO
       if (error) throw error;
       const fresh = data || [];
       await moveExpiredToHistory(fresh);

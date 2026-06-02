@@ -30,8 +30,6 @@ function pwdStrength(p: string) {
 }
 
 const CSS = `
-  @import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Instrument+Serif:ital@0;1&family=DM+Sans:wght@400;500;600;700&display=swap');
-
   @keyframes am-backdropIn { from{opacity:0} to{opacity:1} }
   @keyframes am-modalIn    { from{opacity:0;transform:translateY(18px) scale(.97)} to{opacity:1;transform:translateY(0) scale(1)} }
   @keyframes am-spin        { to{transform:rotate(360deg)} }
