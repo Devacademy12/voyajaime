@@ -35,10 +35,10 @@ export default function AdminExcursionsClient({ excursions: initial }: { excursi
         body: JSON.stringify({ action: "toggle", id, value: { is_active: !currentIsActive } }),
       });
       if (!res.ok) throw new Error((await res.json().catch(() => ({}))).message || `Erreur ${res.status}`);
-      showToast(!currentIsActive ? "Excursion publiée ✓" : "Excursion dépubliée ✓", true);
+      showToast(!currentIsActive ? "Excursion publiée ✓" : "Excursion dépubliée ✓", "success");
     } catch (e) {
       setExcursions(prev => prev.map(ex => ex.id === id ? { ...ex, is_active: currentIsActive } : ex));
-      showToast(`Erreur : ${e instanceof Error ? e.message : "Erreur inconnue"}`, false);
+      showToast(`Erreur : ${e instanceof Error ? e.message : "Erreur inconnue"}`, "error");
     } finally { setLoading(null); }
   };
 
@@ -52,9 +52,9 @@ export default function AdminExcursionsClient({ excursions: initial }: { excursi
       });
       if (!res.ok) throw new Error((await res.json().catch(() => ({}))).message || `Erreur ${res.status}`);
       setExcursions(prev => prev.filter(e => e.id !== id));
-      showToast("Excursion supprimée ✓", true);
+      showToast("Excursion supprimée ✓", "success");
     } catch (e) {
-      showToast(`Erreur : ${e instanceof Error ? e.message : "Erreur inconnue"}`, false);
+      showToast(`Erreur : ${e instanceof Error ? e.message : "Erreur inconnue"}`, "error");
     } finally { setLoading(null); }
   };
 
