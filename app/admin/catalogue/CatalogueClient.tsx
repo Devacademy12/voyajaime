@@ -76,7 +76,7 @@ export default function CatalogueClient({
     useCrudOperation(initC, async (payload) => apiPost("/api/admin/categories", payload));
 
   const saveCat = async () => {
-    if (!catModal?.nom?.trim()) { showToast("Le nom est requis", false); return; }
+    if (!catModal?.nom?.trim()) { showToast("Le nom est requis", "error"); return; }
     try {
       if (catModal.id) {
         await executeCat(catModal.id, { action: "update", id: catModal.id, value: { nom: catModal.nom, couleur: catModal.couleur } }, {
