@@ -36,7 +36,6 @@ function toLocalDateStr(d: Date): string {
   return `${y}-${m}-${day}`;
 }
 
-// ─── Calendrier compact ──────────────────────────────────────────────────────
 function ReservationCalendar({ reservations }: { reservations: Record<string, unknown>[] }) {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
@@ -44,7 +43,7 @@ function ReservationCalendar({ reservations }: { reservations: Record<string, un
   const year  = currentDate.getFullYear();
   const month = currentDate.getMonth();
 
-  const firstDayOfMonth   = new Date(year, month, 1);
+  const firstDayOfMonth  = new Date(year, month, 1);
   const startingDayOfWeek = firstDayOfMonth.getDay();
   const daysInMonth       = new Date(year, month + 1, 0).getDate();
 
@@ -54,20 +53,23 @@ function ReservationCalendar({ reservations }: { reservations: Record<string, un
 
   const getReservationsForDate = (date: Date) => {
     const dateStr = toLocalDateStr(date);
-    return reservations.filter(r => String(r.date).split("T")[0] === dateStr);
+    return reservations.filter(r => {
+      const rDateStr = String(r.date).split("T")[0];
+      return rDateStr === dateStr;
+    });
   };
 
   const getDayStatus = (date: Date) => {
-    const dr = getReservationsForDate(date);
-    if (!dr.length) return null;
-    if (dr.some(r => r.status === "pending"))   return "pending";
-    if (dr.some(r => r.status === "confirmed")) return "confirmed";
-    if (dr.some(r => r.status === "completed")) return "completed";
+    const dayReservations = getReservationsForDate(date);
+    if (dayReservations.length === 0) return null;
+    if (dayReservations.some(r => r.status === "pending"))   return "pending";
+    if (dayReservations.some(r => r.status === "confirmed")) return "confirmed";
+    if (dayReservations.some(r => r.status === "completed")) return "completed";
     return "default";
   };
 
-  const monthNames = ["Jan","Fév","Mar","Avr","Mai","Jun","Jul","Aoû","Sep","Oct","Nov","Déc"];
-  const dayNames   = ["D","L","M","M","J","V","S"];
+  const monthNames = ["Janvier","Février","Mars","Avril","Mai","Juin","Juillet","Août","Septembre","Octobre","Novembre","Décembre"];
+  const dayNames   = ["Dim","Lun","Mar","Mer","Jeu","Ven","Sam"];
 
   const statusColors = {
     pending:   { bg: "#FEF3C7", color: "#D97706" },
@@ -77,99 +79,104 @@ function ReservationCalendar({ reservations }: { reservations: Record<string, un
   };
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", height: "100%", gap: 10 }}>
-      {/* Nav mois */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <span style={{ fontSize: 13, fontWeight: 700, color: "#053366" }}>
-          {monthNames[month]} {year}
-        </span>
-        <div style={{ display: "flex", gap: 4 }}>
+    <div style={{ background: "white", borderRadius: 20, border: "1px solid #EBEBEB", padding: 24 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
+        <h2 style={{ fontSize: 18, fontWeight: 700, color: "#053366", margin: 0, display: "flex", alignItems: "center", gap: 8 }}>
+          <CalendarDays size={20} color="#02AFCF" />
+          Calendrier des réservations
+        </h2>
+        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
           <button onClick={() => setCurrentDate(new Date(year, month - 1, 1))}
-            style={{ padding: "4px 6px", borderRadius: 6, border: "1px solid #E5E7EB", background: "white", cursor: "pointer" }}>
-            <ChevronLeft size={13} />
+            style={{ padding: 8, borderRadius: 8, border: "1px solid #E5E7EB", background: "white", cursor: "pointer" }}>
+            <ChevronLeft size={16} />
           </button>
+          <span style={{ fontSize: 14, fontWeight: 600, color: "#053366", padding: "0 12px" }}>
+            {monthNames[month]} {year}
+          </span>
           <button onClick={() => setCurrentDate(new Date(year, month + 1, 1))}
-            style={{ padding: "4px 6px", borderRadius: 6, border: "1px solid #E5E7EB", background: "white", cursor: "pointer" }}>
-            <ChevronRight size={13} />
+            style={{ padding: 8, borderRadius: 8, border: "1px solid #E5E7EB", background: "white", cursor: "pointer" }}>
+            <ChevronRight size={16} />
           </button>
         </div>
       </div>
 
-      {/* Jours noms */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(7,1fr)", gap: 2 }}>
-        {dayNames.map((d, i) => (
-          <div key={i} style={{ textAlign: "center", fontSize: 10, fontWeight: 600, color: "#9CA3AF" }}>{d}</div>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 8, marginBottom: 8 }}>
+        {dayNames.map(day => (
+          <div key={day} style={{ textAlign: "center", fontSize: 12, fontWeight: 600, color: "#9CA3AF", padding: "8px 0" }}>
+            {day}
+          </div>
         ))}
       </div>
 
-      {/* Grille jours */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(7,1fr)", gap: 2, flex: 1 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 8 }}>
         {days.map((date, idx) => {
-          if (!date) return <div key={`e-${idx}`} style={{ background: "#F9FAFB", borderRadius: 6 }} />;
-          const status    = getDayStatus(date);
+          if (!date) {
+            return <div key={`empty-${idx}`} style={{ aspectRatio: "1", background: "#F9FAFB", borderRadius: 12 }} />;
+          }
+          const dayReservations = getReservationsForDate(date);
+          const status          = getDayStatus(date);
           const localStr  = toLocalDateStr(date);
           const isSelected = selectedDate === localStr;
-          const sc = status ? statusColors[status as keyof typeof statusColors] : null;
+
           return (
-            <div key={localStr}
-              onClick={() => setSelectedDate(isSelected ? null : localStr)}
+            <div key={localStr} onClick={() => setSelectedDate(isSelected ? null : localStr)}
               style={{
                 aspectRatio: "1",
-                background: isSelected ? "rgba(2,175,207,.12)" : sc?.bg || "white",
-                borderRadius: 6,
-                border: isSelected ? "1.5px solid #02AFCF" : `1px solid ${sc?.color || "#E5E7EB"}`,
-                display: "flex", alignItems: "center", justifyContent: "center",
-                cursor: "pointer", transition: "all .12s", position: "relative",
+                background: isSelected ? "rgba(2,175,207,.1)" : status ? statusColors[status as keyof typeof statusColors].bg : "white",
+                borderRadius: 12,
+                border: isSelected ? "2px solid #02AFCF" : `1px solid ${status ? statusColors[status as keyof typeof statusColors].color : "#E5E7EB"}`,
+                padding: 8, cursor: "pointer", transition: "all .15s", position: "relative",
               }}>
-              <span style={{ fontSize: 11, fontWeight: 600, color: sc?.color || "#374151" }}>
+              <div style={{ fontSize: 14, fontWeight: 600, color: status ? statusColors[status as keyof typeof statusColors].color : "#374151" }}>
                 {date.getDate()}
-              </span>
-              {sc && (
-                <span style={{ position: "absolute", bottom: 2, right: 2,
-                  width: 4, height: 4, borderRadius: "50%", background: sc.color }} />
+              </div>
+              {dayReservations.length > 0 && (
+                <div style={{ position: "absolute", bottom: 6, right: 6, width: 6, height: 6, borderRadius: "50%", background: statusColors[status as keyof typeof statusColors].color }} />
               )}
             </div>
           );
         })}
       </div>
 
-      {/* Légende */}
-      <div style={{ display: "flex", justifyContent: "center", gap: 10, paddingTop: 8, borderTop: "1px solid #F3F4F6", flexWrap: "wrap" }}>
+      <div style={{ display: "flex", justifyContent: "center", gap: 16, marginTop: 20, paddingTop: 16, borderTop: "1px solid #F3F4F6" }}>
         {[
           { bg: "#DCFCE7", border: "#15803D", label: "Confirmé" },
-          { bg: "#FEF3C7", border: "#D97706", label: "Attente" },
+          { bg: "#FEF3C7", border: "#D97706", label: "En attente" },
           { bg: "#DCE5FF", border: "#259FFC", label: "Terminé" },
         ].map(item => (
-          <div key={item.label} style={{ display: "flex", alignItems: "center", gap: 4 }}>
-            <div style={{ width: 8, height: 8, borderRadius: 2, background: item.bg, border: `1px solid ${item.border}` }} />
-            <span style={{ fontSize: 10, color: "#6B7280" }}>{item.label}</span>
+          <div key={item.label} style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <div style={{ width: 10, height: 10, borderRadius: 2, background: item.bg, border: `1px solid ${item.border}` }} />
+            <span style={{ fontSize: 11, color: "#6B7280" }}>{item.label}</span>
           </div>
         ))}
       </div>
 
-      {/* Détail sélection */}
       {selectedDate && (() => {
         const detailDate = new Date(selectedDate + "T12:00:00");
-        const detailRes  = getReservationsForDate(detailDate);
+        const detailReservations = getReservationsForDate(detailDate);
         return (
-          <div style={{ padding: 10, background: "#F8FAFF", borderRadius: 10, maxHeight: 120, overflowY: "auto" }}>
-            <p style={{ fontSize: 11, fontWeight: 700, color: "#053366", marginBottom: 6 }}>
-              {detailDate.toLocaleDateString("fr-FR")}
+          <div style={{ marginTop: 20, padding: 16, background: "#F8FAFF", borderRadius: 16 }}>
+            <p style={{ fontSize: 13, fontWeight: 700, color: "#053366", marginBottom: 12 }}>
+              Réservations du {detailDate.toLocaleDateString("fr-FR")}
             </p>
-            {!detailRes.length && <p style={{ fontSize: 11, color: "#9CA3AF", margin: 0 }}>Aucune réservation.</p>}
-            {detailRes.map(r => {
-              const exc = r.excursion as Record<string, unknown> | null;
-              const ss  = STATUS_STYLE[String(r.status)] || { bg: "#F3F4F6", color: "#6B7280" };
+            {detailReservations.length === 0 && (
+              <p style={{ fontSize: 13, color: "#9CA3AF", margin: 0 }}>Aucune réservation ce jour.</p>
+            )}
+            {detailReservations.map(r => {
+              const exc    = r.excursion as Record<string, unknown> | null;
+              const status = String(r.status);
+              const ss     = STATUS_STYLE[status] || { bg: "#F3F4F6", color: "#6B7280", dot: "#9CA3AF" };
               return (
-                <div key={String(r.id)} style={{ display: "flex", justifyContent: "space-between", alignItems: "center",
-                  padding: "6px 8px", background: "white", borderRadius: 8, marginBottom: 4 }}>
-                  <div>
-                    <p style={{ fontSize: 11, fontWeight: 700, color: "#053366", margin: 0 }}>{exc?.title as string || "Excursion"}</p>
-                    <p style={{ fontSize: 10, color: "#9CA3AF", margin: 0 }}>#{String(r.booking_code)} · {Number(r.people_count)} pers.</p>
+                <div key={String(r.id)} style={{ padding: "10px 12px", background: "white", borderRadius: 12, marginBottom: 8 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <div>
+                      <p style={{ fontSize: 13, fontWeight: 700, color: "#053366", margin: 0 }}>{exc?.title as string || "Excursion"}</p>
+                      <p style={{ fontSize: 11, color: "#9CA3AF", margin: "2px 0 0" }}>#{String(r.booking_code)} • {Number(r.people_count)} pers.</p>
+                    </div>
+                    <span style={{ fontSize: 11, fontWeight: 700, color: ss.color, background: ss.bg, padding: "2px 8px", borderRadius: 12 }}>
+                      {STATUS_LABEL[status] || status}
+                    </span>
                   </div>
-                  <span style={{ fontSize: 10, fontWeight: 700, color: ss.color, background: ss.bg, padding: "2px 6px", borderRadius: 8 }}>
-                    {STATUS_LABEL[String(r.status)] || String(r.status)}
-                  </span>
                 </div>
               );
             })}
@@ -180,65 +187,101 @@ function ReservationCalendar({ reservations }: { reservations: Record<string, un
   );
 }
 
-// ─── Graphique notes compact ─────────────────────────────────────────────────
 function ExcursionRatingsChart({ excursions }: { excursions: Record<string, unknown>[] }) {
-  const sorted = [...excursions].sort((a, b) => Number(b.rating) - Number(a.rating)).slice(0, 5);
-
-  const globalAvg  = excursions.length
+  const sorted = [...excursions].sort((a, b) => Number(b.rating) - Number(a.rating));
+  const globalAvg = excursions.length
     ? (excursions.reduce((s, e) => s + (Number(e.rating) || 0), 0) / excursions.length).toFixed(1)
     : "—";
   const totalReviews = excursions.reduce((s, e) => s + (Number(e.reviews_count) || 0), 0);
   const activeCount  = excursions.filter(e => e.is_active).length;
+  const maxReviews   = Math.max(...excursions.map(e => Number(e.reviews_count) || 0), 1);
+
+  const ROW_H    = 44;
+  const LABEL_W  = 180;
+  const BAR_AREA = 340;
+  const PAD_TOP  = 32;
+  const PAD_BOT  = 24;
+  const svgH     = PAD_TOP + sorted.length * ROW_H + PAD_BOT;
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", height: "100%", gap: 10 }}>
-      {/* Métriques */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 6 }}>
+    <div style={{ background: "white", borderRadius: 20, border: "1px solid #EBEBEB", padding: 24 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+        <h2 style={{ fontSize: 16, fontWeight: 800, color: "#053366", margin: 0, display: "flex", alignItems: "center", gap: 8 }}>
+          <div style={{ width: 28, height: 28, borderRadius: 8, background: "rgba(139,92,246,.12)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <Star size={14} color="#7F77DD" />
+          </div>
+          Notes par excursion
+        </h2>
+      </div>
+
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 10, marginBottom: 20 }}>
         {[
-          { label: "Note", value: `${globalAvg} ★`, color: "#7F77DD" },
-          { label: "Avis",  value: String(totalReviews),  color: "#053366" },
-          { label: "Actives", value: `${activeCount}/${excursions.length}`, color: "#053366" },
+          { label: "Note globale",  value: `${globalAvg} ★`, color: "#7F77DD" },
+          { label: "Total avis",    value: String(totalReviews),   color: "#053366" },
+          { label: "Actives",       value: `${activeCount} / ${excursions.length}`, color: "#053366" },
         ].map(s => (
-          <div key={s.label} style={{ background: "#F8FAFF", borderRadius: 8, padding: "8px 10px" }}>
-            <p style={{ fontSize: 10, color: "#9CA3AF", margin: "0 0 2px" }}>{s.label}</p>
-            <p style={{ fontSize: 16, fontWeight: 900, color: s.color, margin: 0 }}>{s.value}</p>
+          <div key={s.label} style={{ background: "#F8FAFF", borderRadius: 10, padding: "10px 14px" }}>
+            <p style={{ fontSize: 11, color: "#9CA3AF", margin: "0 0 2px" }}>{s.label}</p>
+            <p style={{ fontSize: 20, fontWeight: 900, color: s.color, margin: 0 }}>{s.value}</p>
           </div>
         ))}
       </div>
 
-      {/* Barres */}
-      <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 6, overflow: "hidden" }}>
-        {sorted.length === 0
-          ? <p style={{ textAlign: "center", color: "#9CA3AF", fontSize: 12 }}>Aucune excursion.</p>
-          : sorted.map((exc) => {
-              const rating   = Number(exc.rating) || 0;
-              const isActive = Boolean(exc.is_active);
-              const color    = isActive ? "#7F77DD" : "#AFA9EC";
-              const title    = String(exc.title);
-              return (
-                <div key={String(exc.id)} style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <span style={{ fontSize: 11, color: isActive ? "#053366" : "#9CA3AF",
-                    fontWeight: isActive ? 600 : 400, width: 100, flexShrink: 0,
-                    whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                    {title}
-                  </span>
-                  <div style={{ flex: 1, height: 10, background: "#F3F4F6", borderRadius: 4, overflow: "hidden" }}>
-                    <div style={{ width: `${(rating / 5) * 100}%`, height: "100%", background: color, borderRadius: 4, transition: "width .4s" }} />
-                  </div>
-                  <span style={{ fontSize: 11, fontWeight: 700, color, width: 32, textAlign: "right", flexShrink: 0 }}>
-                    {rating.toFixed(1)}★
-                  </span>
-                </div>
-              );
-            })
-        }
-      </div>
+      {sorted.length === 0 ? (
+        <p style={{ textAlign: "center", color: "#9CA3AF", fontSize: 13 }}>Aucune excursion.</p>
+      ) : (
+        <svg width="100%" viewBox={`0 0 ${LABEL_W + BAR_AREA + 80} ${svgH}`} style={{ overflow: "visible" }}>
+          {[1, 2, 3, 4, 5].map(n => {
+            const x = LABEL_W + (n / 5) * BAR_AREA;
+            return (
+              <g key={n}>
+                <line x1={x} y1={PAD_TOP - 12} x2={x} y2={svgH - PAD_BOT} stroke="#F3F4F6" strokeWidth={1} />
+                <text x={x} y={PAD_TOP - 16} textAnchor="middle" fontSize={10} fill="#D1D5DB">{"★".repeat(n)}</text>
+              </g>
+            );
+          })}
+          <line x1={LABEL_W} y1={PAD_TOP - 12} x2={LABEL_W} y2={svgH - PAD_BOT} stroke="#E5E7EB" strokeWidth={1} />
+          {sorted.map((exc, i) => {
+            const rating   = Number(exc.rating) || 0;
+            const reviews  = Number(exc.reviews_count) || 0;
+            const isActive = Boolean(exc.is_active);
+            const barColor = isActive ? "#7F77DD" : "#AFA9EC";
+            const barW     = (rating / 5) * BAR_AREA;
+            const reviewW  = (reviews / maxReviews) * BAR_AREA;
+            const y        = PAD_TOP + i * ROW_H;
+            const barY     = y + 6; const barH = 14;
+            const reviewY  = y + 24; const reviewH = 8;
+            const title    = String(exc.title);
+            return (
+              <g key={String(exc.id || i)}>
+                <text x={LABEL_W - 10} y={barY + barH / 2} textAnchor="end" dominantBaseline="central"
+                  fontSize={12} fontWeight={isActive ? 600 : 400} fill={isActive ? "#053366" : "#9CA3AF"}>
+                  {title.length > 22 ? title.slice(0, 21) + "…" : title}
+                </text>
+                <rect x={LABEL_W} y={barY} width={BAR_AREA} height={barH} rx={4} fill="#F3F4F6" />
+                <rect x={LABEL_W} y={barY} width={barW} height={barH} rx={4} fill={barColor} />
+                <rect x={LABEL_W} y={reviewY} width={BAR_AREA} height={reviewH} rx={3} fill="#F3F4F6" />
+                <rect x={LABEL_W} y={reviewY} width={reviewW} height={reviewH} rx={3} fill={isActive ? "#D4B8FD" : "#E5E7EB"} />
+                <text x={LABEL_W + barW + 7} y={barY + barH / 2} dominantBaseline="central" fontSize={12} fontWeight={700} fill={barColor}>
+                  {rating.toFixed(1)} ★
+                </text>
+                <text x={LABEL_W + reviewW + 7} y={reviewY + reviewH / 2} dominantBaseline="central" fontSize={10} fill="#9CA3AF">
+                  {reviews} avis
+                </text>
+              </g>
+            );
+          })}
+        </svg>
+      )}
 
-      {/* Légende */}
-      <div style={{ display: "flex", gap: 12, paddingTop: 8, borderTop: "1px solid #F3F4F6" }}>
-        {[{ color: "#7F77DD", label: "Active" }, { color: "#AFA9EC", label: "Inactive" }].map(l => (
-          <span key={l.label} style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 10, color: "#6B7280" }}>
-            <span style={{ width: 8, height: 8, borderRadius: 2, background: l.color, display: "inline-block" }} />
+      <div style={{ display: "flex", gap: 16, marginTop: 16, paddingTop: 12, borderTop: "1px solid #F3F4F6", flexWrap: "wrap" }}>
+        {[
+          { color: "#7F77DD", label: "Note — excursion active"   },
+          { color: "#AFA9EC", label: "Note — excursion inactive" },
+          { color: "#D4B8FD", label: "Volume d'avis"             },
+        ].map(l => (
+          <span key={l.label} style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 11, color: "#6B7280" }}>
+            <span style={{ width: 10, height: 10, borderRadius: 2, background: l.color, display: "inline-block" }} />
             {l.label}
           </span>
         ))}
@@ -247,157 +290,176 @@ function ExcursionRatingsChart({ excursions }: { excursions: Record<string, unkn
   );
 }
 
-/* ─── CSS ─────────────────────────────────────────────────────────────────── */
+/* ─── CSS ───────────────────────────────────────────────────── */
 const CSS = `
   @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
 
   @keyframes fadeUp {
-    from { opacity: 0; transform: translateY(8px); }
+    from { opacity: 0; transform: translateY(12px); }
     to   { opacity: 1; transform: translateY(0); }
   }
 
-  /* Reset box-sizing */
-  .pw *, .pw *::before, .pw *::after { box-sizing: border-box; }
+  /* ─────────────────────────────────────────────────────────
+     SEULS CHANGEMENTS PAR RAPPORT À L'ORIGINAL :
+     1. .pw  → height:100dvh + overflow:hidden + display:flex flex-direction:column
+     2. .pw-grid → flex:1 + min-height:0  (remplace margin-bottom)
+     3. .pw-card → overflow:auto  (scroll interne si le contenu dépasse)
+     4. .pw-header / .pw-btn-group / .pw-metrics → margin-bottom → padding-bottom
+        + flex-shrink:0  (ils ne se compriment pas)
+     5. Media queries : ≤1024px repasse en scroll normal (cards empilées)
+  ───────────────────────────────────────────────────────── */
 
-  /* ── Layout racine : pleine hauteur, pas de scroll ── */
   .pw {
     font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
     background: #F5F7FA;
-    /* Prend toute la hauteur disponible dans la page */
+    /* ↓ CHANGÉ : height fixe + colonne flex + pas de scroll externe */
     height: 100dvh;
+    overflow: hidden;
     display: flex;
     flex-direction: column;
-    overflow: hidden;
-    padding: 16px 20px;
-    gap: 12px;
+    /* Padding légèrement réduit pour que tout rentre */
+    padding: 20px 28px 20px;
     width: 100%;
+    box-sizing: border-box;
   }
 
   /* ── Header ── */
   .pw-header {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     justify-content: space-between;
+    gap: 16px;
+    /* ↓ CHANGÉ : margin → padding, flex-shrink:0 */
+    padding-bottom: 16px;
     flex-shrink: 0;
-    gap: 12px;
-    animation: fadeUp .3s ease both;
+    animation: fadeUp .35s ease both;
     flex-wrap: wrap;
+  }
+  .pw-header-eyebrow {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: #EFF9FB; border: 1px solid rgba(43,150,168,.22);
+    border-radius: 20px; padding: 4px 12px;
+    font-size: 11px; font-weight: 700; color: #2B96A8;
+    text-transform: uppercase; letter-spacing: .08em;
+    margin-bottom: 10px;
   }
   .pw-header-title {
-    font-size: clamp(18px, 3vw, 24px);
-    font-weight: 800;
-    color: #053366;
-    line-height: 1;
-    letter-spacing: -.02em;
-    margin: 0;
+    font-size: clamp(22px, 4vw, 30px); font-weight: 800;
+    color: #053366; line-height: 1.1; letter-spacing: -.02em;
   }
+  .pw-header-sub {
+    font-size: 13px; color: #94A3B8; margin-top: 5px; font-weight: 500;
+  }
+  .pw-header-badge {
+    display: flex; align-items: center; gap: 8px;
+    background: #fff; border: 1.5px solid #E2E8F0; border-radius: 12px;
+    padding: 10px 16px; flex-shrink: 0; align-self: flex-start;
+  }
+  .pw-header-badge-avatar {
+    width: 32px; height: 32px; border-radius: 8px;
+    background: linear-gradient(135deg, #053366, #2B96A8);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 800; color: #fff;
+  }
+  .pw-header-badge-name { font-size: 13px; font-weight: 700; color: #053366; }
+  .pw-header-badge-role { font-size: 11px; color: #94A3B8; font-weight: 500; }
 
-  /* ── Quick Actions ── */
-  .pw-btn-group {
-    display: flex;
-    gap: 8px;
-    flex-shrink: 0;
-    flex-wrap: wrap;
-    animation: fadeUp .35s ease both;
-  }
-  .pw-btn {
-    display: inline-flex; align-items: center; gap: 6px;
-    padding: 8px 14px; border-radius: 10px;
-    font-size: 12px; font-weight: 700;
-    cursor: pointer; transition: all .2s; border: none;
-    font-family: inherit; text-decoration: none; white-space: nowrap;
-  }
-  .pw-btn-primary  { background: #053366; color: #fff; }
-  .pw-btn-primary:hover  { background: #042952; }
-  .pw-btn-secondary { background: #fff; color: #053366; border: 1.5px solid #E2E8F0; }
-  .pw-btn-secondary:hover { background: #F8FAFC; }
-
-  /* ── Stats row ── */
+  /* ── Metrics grid ── */
   .pw-metrics {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 8px;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 10px;
+    /* ↓ CHANGÉ : margin → padding, flex-shrink:0 */
+    padding-bottom: 14px;
     flex-shrink: 0;
     animation: fadeUp .4s ease both;
   }
   .pw-metric {
-    background: #fff; border-radius: 12px; border: 1.5px solid #E2E8F0;
-    padding: 12px 14px;
-    transition: box-shadow .2s, transform .2s;
+    background: #fff; border-radius: 16px; border: 1.5px solid #E2E8F0;
+    /* ↓ CHANGÉ : padding légèrement réduit pour gagner de la hauteur */
+    padding: 14px 18px;
+    transition: box-shadow .2s, transform .2s; cursor: default;
   }
-  .pw-metric:hover { box-shadow: 0 4px 12px rgba(5,51,102,.07); transform: translateY(-1px); }
-  .pw-metric-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+  .pw-metric:hover { box-shadow: 0 6px 20px rgba(5,51,102,.07); transform: translateY(-2px); }
+  .pw-metric-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
   .pw-metric-icon {
-    width: 30px; height: 30px; border-radius: 8px;
+    width: 38px; height: 38px; border-radius: 10px;
     display: flex; align-items: center; justify-content: center;
   }
-  .pw-metric-trend { font-size: 9px; font-weight: 700; color: #2B96A8; background: #EFF9FB; border-radius: 5px; padding: 2px 5px; }
-  .pw-metric-num { font-size: clamp(18px, 2.5vw, 22px); font-weight: 800; color: #053366; line-height: 1; letter-spacing: -.02em; }
-  .pw-metric-lbl { font-size: 9px; color: #94A3B8; margin-top: 3px; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; }
+  .pw-metric-trend {
+    font-size: 10px; font-weight: 700; color: #2B96A8;
+    background: #EFF9FB; border-radius: 6px; padding: 2px 6px;
+  }
+  .pw-metric-num { font-size: 24px; font-weight: 800; color: #053366; line-height: 1; letter-spacing: -.02em; }
+  .pw-metric-lbl { font-size: 11px; color: #94A3B8; margin-top: 4px; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; }
 
-  /* ── Main grid (charts + calendrier) ── */
-  .pw-main {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 12px;
-    flex: 1;
-    min-height: 0;          /* crucial : permet au flex child de rétrécir */
+  /* ── Cards ── */
+  .pw-card {
+    background: #fff; border-radius: 16px; border: 1.5px solid #E2E8F0;
+    padding: 20px;
+    /* ↓ CHANGÉ : overflow:auto = scroll interne si le contenu déborde */
+    overflow: auto;
     animation: fadeUp .45s ease both;
   }
-  .pw-panel {
-    background: #fff;
-    border-radius: 14px;
-    border: 1.5px solid #E2E8F0;
-    padding: 16px;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;       /* contenu débordant caché, pas de scroll */
+
+  /* ── Grille charts/calendrier ── */
+  .pw-grid {
+    display: grid;
+    grid-template-columns: 1fr 1.2fr;
+    gap: 20px;
+    /* ↓ CHANGÉ : prend tout l'espace restant + min-height:0 (crucial pour flex child) */
+    flex: 1;
     min-height: 0;
-  }
-  .pw-panel-title {
-    font-size: 13px; font-weight: 800; color: #053366;
-    display: flex; align-items: center; gap: 6px;
-    margin: 0 0 12px; flex-shrink: 0;
-  }
-  .pw-panel-icon {
-    width: 24px; height: 24px; border-radius: 6px;
-    display: flex; align-items: center; justify-content: center;
-  }
-  .pw-panel-body { flex: 1; min-height: 0; overflow: hidden; }
-
-  /* ── Empty state ── */
-  .pw-empty {
-    display: flex; flex-direction: column; align-items: center; justify-content: center;
-    height: 100%; text-align: center; gap: 12px;
+    animation: fadeUp .45s ease both;
   }
 
-  /* ─── RESPONSIVE ───────────────────────────────────────────────────────── */
+  /* ── Boutons ── */
+  .pw-btn-group {
+    display: flex; gap: 10px;
+    /* ↓ CHANGÉ : margin → padding, flex-shrink:0 */
+    padding-bottom: 14px;
+    flex-shrink: 0;
+    flex-wrap: wrap;
+    animation: fadeUp .5s ease both;
+  }
+  .pw-btn {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 10px 20px; border-radius: 12px; font-size: 13.5px; font-weight: 700;
+    cursor: pointer; transition: all .2s; border: none; font-family: inherit;
+    text-decoration: none;
+  }
+  .pw-btn-primary {
+    background: #053366; color: #fff;
+    box-shadow: 0 4px 12px rgba(5,51,102,0.15);
+  }
+  .pw-btn-primary:hover { background: #042952; transform: translateY(-1px); }
+  .pw-btn-secondary { background: #fff; color: #053366; border: 1.5px solid #E2E8F0; }
+  .pw-btn-secondary:hover { background: #F8FAFC; border-color: #CBD5E1; }
 
-  /* Tablette : 2 stats par ligne */
-  @media (max-width: 900px) {
+  /* ─── RESPONSIVE ─────────────────────────────────────────
+     Sur tablette/mobile les cards s'empilent → elles dépassent
+     forcément 100dvh → on repasse en scroll normal
+  ───────────────────────────────────────────────────────── */
+  @media (max-width: 1024px) {
+    .pw {
+      height: auto;
+      min-height: 100dvh;
+      overflow-y: auto;
+    }
+    .pw-grid {
+      grid-template-columns: 1fr;
+      flex: none;
+      /* On remet un margin-bottom pour l'espace en bas */
+      padding-bottom: 32px;
+    }
+    .pw-card { overflow: visible; }
+  }
+  @media (max-width: 768px) {
+    .pw { padding: 16px 14px; }
     .pw-metrics { grid-template-columns: repeat(2, 1fr); }
-    .pw-main    { grid-template-columns: 1fr; }
-    /* Sur mobile, on autorise un léger scroll UNIQUEMENT dans la zone main */
-    .pw         { overflow-y: auto; height: auto; min-height: 100dvh; }
-    .pw-main    { flex: none; }
-    .pw-panel   { min-height: 320px; }
-  }
-
-  /* Mobile : header compact */
-  @media (max-width: 600px) {
-    .pw { padding: 12px 12px; gap: 10px; }
-    .pw-btn-group { gap: 6px; }
-    .pw-btn { padding: 7px 10px; font-size: 11px; }
-    /* Masquer le label des boutons secondaires sur très petit écran */
-    .pw-btn-label-hide { display: none; }
-    .pw-metrics { gap: 6px; }
-    .pw-metric  { padding: 10px 10px; }
-    .pw-main    { gap: 10px; }
-    .pw-panel   { padding: 12px; min-height: 280px; }
   }
 `;
 
-// ─── Composant principal ─────────────────────────────────────────────────────
 export default function DashboardClient({ profile, excursions, reservations, paiements }: Props) {
   const pending    = reservations?.filter(r => r.status === "pending").length || 0;
   const avgRating  = excursions.length
@@ -408,43 +470,48 @@ export default function DashboardClient({ profile, excursions, reservations, pai
     ? Math.round((reservations.filter(r => r.status === "completed").length / totalReservations) * 100)
     : 0;
 
+  const name = String(profile?.agency_name || profile?.full_name || "Prestataire");
+  const initials = name.split(" ").map((n: string) => n[0]).join("").toUpperCase().slice(0, 2);
+
   const stats = [
-    { label: "Réservations", value: totalReservations, trend: "+12%", icon: <BookOpen size={15}/>, color: "#053366", bg: "#EFF6FF" },
-    { label: "Complétion",   value: `${completionRate}%`, trend: "+5%", icon: <CheckCircle2 size={15}/>, color: "#059669", bg: "#ECFDF5" },
-    { label: "En attente",   value: pending, trend: pending > 0 ? "Action" : "OK", icon: <Clock size={15}/>, color: "#D97706", bg: "#FFFBEB" },
-    { label: "Note moy.",    value: avgRating, trend: "★", icon: <Star size={15}/>, color: "#7C3AED", bg: "#F5F3FF" },
+    { label: "Réservations", value: totalReservations, trend: "+12%", icon: <BookOpen size={18}/>, color: "#053366", bg: "#EFF6FF" },
+    { label: "Taux complétion", value: `${completionRate}%`, trend: "+5%", icon: <CheckCircle2 size={18}/>, color: "#059669", bg: "#ECFDF5" },
+    { label: "En attente", value: pending, trend: pending > 0 ? "Action" : "OK", icon: <Clock size={18}/>, color: "#D97706", bg: "#FFFBEB" },
+    { label: "Note moyenne", value: avgRating, trend: "★", icon: <Star size={18}/>, color: "#7C3AED", bg: "#F5F3FF" },
   ];
 
   return (
     <div className="pw">
       <style>{CSS}</style>
 
-      {/* ── Header ── */}
+      {/* Header */}
       <header className="pw-header">
-        <h1 className="pw-header-title">Tableau de bord</h1>
-        <div className="pw-btn-group">
-          <a href="/prestataire/excursions/nouveau" className="pw-btn pw-btn-primary">
-            <Plus size={13} />
-            <span className="pw-btn-label-hide">Nouvelle excursion</span>
-            <span className="pw-btn-label-show" style={{ display: "none" }}>Nouveau</span>
-          </a>
-          <a href="/prestataire/paiements-reservations" className="pw-btn pw-btn-secondary">
-            <CalendarDays size={13} />
-            <span className="pw-btn-label-hide">Calendrier</span>
-          </a>
-          <a href="/prestataire/messages" className="pw-btn pw-btn-secondary">
-            <Eye size={13} />
-            <span className="pw-btn-label-hide">Messages</span>
-          </a>
+        <div className="pw-header-left">
+          <h1 className="pw-header-title">Tableau de bord</h1>
         </div>
       </header>
 
-      {/* ── Stats ── */}
+      {/* Quick Actions */}
+      <div className="pw-btn-group">
+        <a href="/prestataire/excursions/nouveau" className="pw-btn pw-btn-primary">
+          <Plus size={16} /> Nouvelle excursion
+        </a>
+        <a href="/prestataire/paiements-reservations" className="pw-btn pw-btn-secondary">
+          <CalendarDays size={16} /> Calendrier
+        </a>
+        <a href="/prestataire/messages" className="pw-btn pw-btn-secondary">
+          <Eye size={16} /> Mes messages
+        </a>
+      </div>
+
+      {/* Stats */}
       <div className="pw-metrics">
         {stats.map((s) => (
           <div key={s.label} className="pw-metric">
             <div className="pw-metric-top">
-              <div className="pw-metric-icon" style={{ background: s.bg, color: s.color }}>{s.icon}</div>
+              <div className="pw-metric-icon" style={{ background: s.bg, color: s.color }}>
+                {s.icon}
+              </div>
               <div className="pw-metric-trend">{s.trend}</div>
             </div>
             <div className="pw-metric-num">{s.value}</div>
@@ -453,54 +520,29 @@ export default function DashboardClient({ profile, excursions, reservations, pai
         ))}
       </div>
 
-      {/* ── Panneaux principaux ── */}
-      {reservations.length === 0 ? (
-        <div className="pw-panel" style={{ flex: 1 }}>
-          <div className="pw-empty">
-            <div style={{ width: 48, height: 48, borderRadius: 14, background: "#EFF9FB",
-              display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <CalendarClock size={24} color="#2B96A8" />
-            </div>
-            <div>
-              <h3 style={{ fontSize: 16, fontWeight: 800, color: "#053366", margin: "0 0 6px" }}>
-                C'est bien calme ici...
-              </h3>
-              <p style={{ fontSize: 13, color: "#94A3B8", margin: "0 0 16px", maxWidth: 340 }}>
-                Dès que vous recevrez vos premières réservations, elles apparaîtront ici.
-              </p>
-              <a href="/prestataire/excursions/nouveau" className="pw-btn pw-btn-primary">
-                Publier une excursion
-              </a>
-            </div>
-          </div>
+      {/* Charts & Calendar */}
+      <div className="pw-grid">
+        <div className="pw-card">
+          <ExcursionRatingsChart excursions={excursions} />
         </div>
-      ) : (
-        <div className="pw-main">
-          {/* Panneau graphique */}
-          <div className="pw-panel">
-            <p className="pw-panel-title">
-              <span className="pw-panel-icon" style={{ background: "rgba(139,92,246,.12)" }}>
-                <Star size={13} color="#7F77DD" />
-              </span>
-              Notes par excursion
-            </p>
-            <div className="pw-panel-body">
-              <ExcursionRatingsChart excursions={excursions} />
-            </div>
-          </div>
+        <div className="pw-card">
+          <ReservationCalendar reservations={reservations} />
+        </div>
+      </div>
 
-          {/* Panneau calendrier */}
-          <div className="pw-panel">
-            <p className="pw-panel-title">
-              <span className="pw-panel-icon" style={{ background: "#EFF9FB" }}>
-                <CalendarDays size={13} color="#02AFCF" />
-              </span>
-              Calendrier des réservations
-            </p>
-            <div className="pw-panel-body">
-              <ReservationCalendar reservations={reservations} />
-            </div>
+      {/* Empty State */}
+      {reservations.length === 0 && (
+        <div className="pw-card" style={{ textAlign: "center", padding: "64px 20px" }}>
+          <div style={{ width: 56, height: 56, borderRadius: 16, background: "#EFF9FB", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 20px" }}>
+            <CalendarClock size={28} color="#2B96A8" />
           </div>
+          <h3 style={{ fontSize: 18, fontWeight: 800, color: "#053366", marginBottom: 8 }}>C'est bien calme ici...</h3>
+          <p style={{ fontSize: 14, color: "#94A3B8", marginBottom: 24, maxWidth: 380, marginInline: "auto" }}>
+            Dès que vous recevrez vos premières réservations, elles apparaîtront ici. Assurez-vous que vos excursions sont bien publiées.
+          </p>
+          <a href="/prestataire/excursions/nouveau" className="pw-btn pw-btn-primary">
+            Publier une excursion
+          </a>
         </div>
       )}
     </div>
