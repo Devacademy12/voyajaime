@@ -40,7 +40,7 @@ export default function CatalogueClient({
     useCrudOperation(initV, async (payload) => apiPost("/api/admin/villes", payload));
 
   const saveVille = async () => {
-    if (!villeModal?.nom?.trim()) { showToast("Le nom est requis", false); return; }
+    if (!villeModal?.nom?.trim()) { showToast("Le nom est requis", "error"); return; }
     try {
       if (villeModal.id) {
         await executeVille(villeModal.id, { action: "update", id: villeModal.id, value: { nom: villeModal.nom, region: villeModal.region, description: villeModal.description, active: villeModal.active } }, {
@@ -54,7 +54,7 @@ export default function CatalogueClient({
         });
       }
       setVilleModal(null);
-    } catch (e) { showToast(`Erreur : ${e instanceof Error ? e.message : "Erreur"}`, false); }
+    } catch (e) { showToast(`Erreur : ${e instanceof Error ? e.message : "Erreur"}`, "error"); }
   };
 
   const deleteVille = async (id: string, nom: string) => {
@@ -76,7 +76,7 @@ export default function CatalogueClient({
     useCrudOperation(initC, async (payload) => apiPost("/api/admin/categories", payload));
 
   const saveCat = async () => {
-    if (!catModal?.nom?.trim()) { showToast("Le nom est requis", false); return; }
+    if (!catModal?.nom?.trim()) { showToast("Le nom est requis", "error"); return; }
     try {
       if (catModal.id) {
         await executeCat(catModal.id, { action: "update", id: catModal.id, value: { nom: catModal.nom, couleur: catModal.couleur } }, {
@@ -90,7 +90,7 @@ export default function CatalogueClient({
         });
       }
       setCatModal(null);
-    } catch (e) { showToast(`Erreur : ${e instanceof Error ? e.message : "Erreur"}`, false); }
+    } catch (e) { showToast(`Erreur : ${e instanceof Error ? e.message : "Erreur"}`, "error"); }
   };
 
   const deleteCat = async (id: string, nom: string) => {

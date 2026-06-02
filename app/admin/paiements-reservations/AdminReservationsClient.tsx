@@ -44,12 +44,10 @@ interface Props {
 
 /* ─── CSS ───────────────────────────────────────────────────── */
 const CSS = `
-  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap');
-
   @keyframes fadeUp { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
 
   .admin-wrap {
-    font-family: inherit'DM Sans', system-ui, sans-serif;
+    font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
     width: 100%; box-sizing: border-box;
     background: #F8FAFC; min-height: 100vh;
     padding: 32px 48px 64px;

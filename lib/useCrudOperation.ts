@@ -47,13 +47,13 @@ export function useCrudOperation<T extends { id: string }>(
           setData((prev) => prev.filter((item) => item.id !== itemId));
         }
 
-        showToast(handlers.successMessage);
+        showToast(handlers.successMessage, "success");
       } catch (error) {
         const err = error instanceof Error ? error : new Error('Erreur inconnue');
         handlers.onError?.(err);
         showToast(
           `${handlers.errorPrefix || 'Erreur'}: ${err.message}`,
-          false
+          "error"  // ✅ Corrigé : false → "error"
         );
       } finally {
         setLoading(null);

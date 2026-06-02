@@ -123,11 +123,11 @@ export default function ExcursionDetailPrestataire({
     ));
     if (liked) {
       const { error } = await supabase.from("avis_likes").delete().eq("avis_id", avisId).eq("user_id", prestataireId);
-      if (error) { setAvis(prev => prev.map(a => a.id === avisId ? { ...a, liked_by_me: liked, likes_count: currentCount } : a)); showToast("Erreur", false); }
+      if (error) { setAvis(prev => prev.map(a => a.id === avisId ? { ...a, liked_by_me: liked, likes_count: currentCount } : a)); showToast("Erreur", "error"); }
       else await supabase.from("avis").update({ likes_count: currentCount - 1 }).eq("id", avisId);
     } else {
       const { error } = await supabase.from("avis_likes").insert({ avis_id: avisId, user_id: prestataireId });
-      if (error) { setAvis(prev => prev.map(a => a.id === avisId ? { ...a, liked_by_me: liked, likes_count: currentCount } : a)); showToast("Erreur", false); }
+      if (error) { setAvis(prev => prev.map(a => a.id === avisId ? { ...a, liked_by_me: liked, likes_count: currentCount } : a)); showToast("Erreur", "error"); }
       else await supabase.from("avis").update({ likes_count: currentCount + 1 }).eq("id", avisId);
     }
   };
@@ -138,7 +138,7 @@ export default function ExcursionDetailPrestataire({
     setReplyLoading(true);
     const { error } = await supabase.from("avis").update({ prestataire_response: replyText.trim() }).eq("id", avisId);
     if (!error) { setAvis(prev => prev.map(a => a.id === avisId ? { ...a, prestataire_response: replyText.trim() } : a)); setReplyingTo(null); setReplyText(""); showToast("Réponse publiée !"); }
-    else showToast("Erreur : " + error.message, false);
+    else showToast("Erreur : " + error.message, "error");
     setReplyLoading(false);
   };
 
@@ -147,7 +147,7 @@ export default function ExcursionDetailPrestataire({
     setReplyLoading(true);
     const { error } = await supabase.from("avis").update({ prestataire_response: editText.trim() }).eq("id", avisId);
     if (!error) { setAvis(prev => prev.map(a => a.id === avisId ? { ...a, prestataire_response: editText.trim() } : a)); setEditingId(null); setEditText(""); showToast("Réponse modifiée !"); }
-    else showToast("Erreur", false);
+    else showToast("Erreur", "error");
     setReplyLoading(false);
   };
 

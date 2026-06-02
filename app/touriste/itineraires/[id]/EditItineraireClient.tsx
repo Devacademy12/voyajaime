@@ -224,9 +224,8 @@ export default function EditItineraireClient({ itineraireId }: { itineraireId: s
 
   /* ── CSS ── */
   const CSS = `
-    @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@400;500;600;700;800&display=swap');
     *{box-sizing:border-box;margin:0;padding:0}
-    body{font-family:'DM Sans',system-ui,sans-serif;background:#F8FAFF;color:#111827}
+    body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:#F8FAFF;color:#111827}
     @keyframes spin{to{transform:rotate(360deg)}}
     @keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
     @keyframes slideIn{from{opacity:0;transform:translateX(20px)}to{opacity:1;transform:translateX(0)}}

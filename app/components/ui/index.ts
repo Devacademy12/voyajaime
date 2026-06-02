@@ -6,3 +6,14 @@ export { default as StatCard } from "./StatCard";
 export { default as StatusBadge } from "./StatusBadge";
 export { Toast } from "./Toast";
 export { Button } from "./button";             // ✅ Export nommé (fichier Button.tsx avec B majuscule)
+
+// ═══ Design System & New Components ═══
+export { Alert } from "./Alert";
+export { ConfirmModal } from "./ConfirmModal";
+export { default as RouteTransition } from "./RouteTransition";
+
+// Design System
+export * from "./design-system";
+
+// CSS
+import "./design-system.css";

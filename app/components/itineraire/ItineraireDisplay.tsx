@@ -71,7 +71,7 @@ const SLOTS = [
 ];
 
 /* ════════════════════════════════════════════
-   CSS — tout en JS, plus aucun fichier .css
+   CSS — tout en JS
 ════════════════════════════════════════════ */
 const CSS = `
 @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@400;500;600;700;800&display=swap');
@@ -585,7 +585,7 @@ function AlternativePicker({ alternatives, currentName, onPick, onClose }: {
 }
 
 /* ════════════════════════════════════════════
-   SAVE BUTTON — label + style selon statut
+   SAVE BUTTON
 ════════════════════════════════════════════ */
 function SaveButton({ saving, saveStatus, onClick }: {
   saving: boolean;
@@ -624,10 +624,6 @@ export default function ItineraireDisplay({
   const [activeDay, setActiveDay] = useState(0);
   const [editing,   setEditing]   = useState<{ dayIdx: number; actIdx: number } | null>(null);
 
-  // FIX: suppression de l'import CSS et du useEffect qui chargeaient
-  // "@/public/style/itineraire.css" et "/styles/itineraire.css" (404)
-  // → tout le CSS est maintenant inline via la balise <style> ci-dessous
-
   const currentDay       = itinerary.days[activeDay];
   const totalActivities  = itinerary.days.reduce((s, d) => s + d.activities.length, 0);
   const dayPrice         = currentDay.activities.reduce((a, act) => a + (Number(act.price) || 0), 0);
@@ -651,19 +647,15 @@ export default function ItineraireDisplay({
     return excursions.filter(e => e.city === day.city && e.id !== cur.id).slice(0, 8);
   };
 
-  // Statut toast visible
   const toastStatus: "idle"|"ok"|"error"|"login"|"saving" =
     saving ? "saving" : saveStatus;
 
   return (
-    <div className="v2-root">
-      {/* CSS inline — aucun fichier externe requis */}
-      <style>{CSS}</style>
+    <div suppressHydrationWarning className="v2-root">
+      <style suppressHydrationWarning>{CSS}</style>
 
-      {/* Toast global */}
       <Toast status={toastStatus} />
 
-      {/* ── NAV ── */}
       <nav className="v2-nav">
         <div className="v2-logo" />
         <div className="v2-nav-actions">
@@ -673,18 +665,13 @@ export default function ItineraireDisplay({
           <button className="v2-btn-ghost" onClick={onBack}>
             <ChevronLeft size={13} /> Modifier
           </button>
-
-          {/* FIX: bouton Sauvegarder avec feedback visuel complet */}
           <SaveButton saving={saving} saveStatus={saveStatus} onClick={onSave} />
-
-          {/* FIX: bouton Réserver clairement séparé */}
           <button className="v2-btn-teal" onClick={onCheckout}>
             <Heart size={13} /> Réserver
           </button>
         </div>
       </nav>
 
-      {/* ── HERO ── */}
       <div className="v2-hero">
         <div>
           <div className="v2-hero-pill"><Sparkles size={10} /> Généré par IA</div>
@@ -699,10 +686,7 @@ export default function ItineraireDisplay({
         </div>
       </div>
 
-      {/* ── MAIN ── */}
       <div className="v2-main">
-
-        {/* SIDEBAR */}
         <aside className="v2-sidebar">
           <div>
             <div className="v2-section-label">Jours du voyage</div>
@@ -737,7 +721,6 @@ export default function ItineraireDisplay({
           </div>
         </aside>
 
-        {/* CONTENT */}
         <div className="v2-content">
           <div className="v2-day-hdr">
             <div className="v2-day-icon"><Navigation size={20} color="#2B96A8" /></div>
@@ -812,7 +795,6 @@ export default function ItineraireDisplay({
         </div>
       </div>
 
-      {/* ── BOTTOM BAR ── */}
       <div className="v2-bottom">
         <div>
           <div className="v2-total-lbl">Budget total estimé</div>
@@ -822,7 +804,6 @@ export default function ItineraireDisplay({
           </div>
         </div>
         <div className="v2-bottom-right">
-          {/* FIX: feedback statut sauvegarde inline dans la barre */}
           {saveStatus === "ok"    && <span className="v2-save-ok">✓ Sauvegardé</span>}
           {saveStatus === "error" && <span className="v2-save-err">Erreur de sauvegarde</span>}
           {saveStatus === "login" && <span className="v2-save-login">Connectez-vous d'abord</span>}
@@ -834,7 +815,6 @@ export default function ItineraireDisplay({
             <Share2 size={13} /> Partager
           </button>
 
-          {/* FIX: SaveButton aussi dans la barre du bas */}
           <SaveButton saving={saving} saveStatus={saveStatus} onClick={onSave} />
 
           <button className="v2-btn-teal" onClick={onCheckout}>
@@ -843,7 +823,6 @@ export default function ItineraireDisplay({
         </div>
       </div>
 
-      {/* ALT PICKER */}
       {editing && (
         <AlternativePicker
           alternatives={getAlternatives()}

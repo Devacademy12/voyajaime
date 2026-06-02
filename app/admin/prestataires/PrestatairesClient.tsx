@@ -151,7 +151,7 @@ export default function PrestatairesClient({ prestataires: initial }: { prestata
       setSelected(updated);
       setMode("view");
     } catch (e) {
-      showToast(`Erreur : ${e instanceof Error ? e.message : "Erreur"}`, false);
+      showToast(`Erreur : ${e instanceof Error ? e.message : "Erreur"}`, "error");
     }
     setEditLoading(false);
   };
