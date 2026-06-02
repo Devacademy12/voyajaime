@@ -191,7 +191,7 @@ export default function ProfilClient({ profile, email }: Props) {
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (file.size > 2 * 1024 * 1024) { showToast("Image trop lourde (max 2 MB)", false); return; }
+    if (file.size > 2 * 1024 * 1024) { showToast("Image trop lourde (max 2 MB)", "error"); return; }
     setAvatarFile(file);
     setAvatarPreview(URL.createObjectURL(file));
   };
@@ -215,7 +215,7 @@ export default function ProfilClient({ profile, email }: Props) {
     const { error } = await supabase.from("profiles").update({
       full_name: fullName, agency_name: agencyName, city, phone, description, avatar_url: finalUrl || null,
     }).eq("user_id", userId);
-    if (!error) showToast("Profil mis à jour !"); else showToast("Erreur", false);
+    if (!error) showToast("Profil mis à jour !"); else showToast("Erreur", "error");
     setLoading(false);
   };
 

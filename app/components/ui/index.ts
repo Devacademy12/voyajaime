@@ -10,7 +10,7 @@ export { Button } from "./button";             // ✅ Export nommé (fichier But
 // ═══ Design System & New Components ═══
 export { Alert } from "./Alert";
 export { ConfirmModal } from "./ConfirmModal";
-export { RouteTransition } from "./RouteTransition";
+export { default as RouteTransition } from "./RouteTransition";
 
 // Design System
 export * from "./design-system";
