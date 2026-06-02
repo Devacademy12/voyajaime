@@ -40,7 +40,7 @@ export default function CatalogueClient({
     useCrudOperation(initV, async (payload) => apiPost("/api/admin/villes", payload));
 
   const saveVille = async () => {
-    if (!villeModal?.nom?.trim()) { showToast("Le nom est requis", false); return; }
+    if (!villeModal?.nom?.trim()) { showToast("Le nom est requis", "error"); return; }
     try {
       if (villeModal.id) {
         await executeVille(villeModal.id, { action: "update", id: villeModal.id, value: { nom: villeModal.nom, region: villeModal.region, description: villeModal.description, active: villeModal.active } }, {
