@@ -39,8 +39,8 @@ export default async function TouristeReservations({
   const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) return (
-    <div style={{ textAlign: "center", padding: "64px 24px" }}>
-      <p style={{ color: "#6B7A8D", fontSize: 14 }}>
+    <div style={{ textAlign: "center", padding: "80px 24px", background: "white", borderRadius: 24, border: "1px solid #EBEBEB", marginTop: 32 }}>
+      <p style={{ color: "#9CA3AF", fontSize: 14, fontFamily: "'DM Sans', system-ui, sans-serif" }}>
         Veuillez vous connecter pour voir vos réservations
       </p>
     </div>
@@ -48,7 +48,6 @@ export default async function TouristeReservations({
 
   const today = new Date().toISOString().split("T")[0];
 
-  // ✅ LIFO: order by created_at DESC (plus récent d'abord)
   const { data: reservations, error } = await supabase
     .from("reservations")
     .select(`
@@ -60,11 +59,13 @@ export default async function TouristeReservations({
     .eq("touriste_id", user.id)
     .neq("status", "cancelled")
     .gte("date", today)
-    .order("created_at", { ascending: false }); // ⭐ LIFO
+    .order("created_at", { ascending: false });
 
   if (error) return (
-    <div style={{ textAlign: "center", padding: "64px 24px" }}>
-      <p style={{ color: "#EF4444", fontSize: 14 }}>Erreur : {error.message}</p>
+    <div style={{ textAlign: "center", padding: "64px 24px", background: "white", borderRadius: 24, border: "1px solid #EBEBEB", marginTop: 32 }}>
+      <p style={{ color: "#EF4444", fontSize: 14, fontFamily: "'DM Sans', system-ui, sans-serif" }}>
+        Erreur : {error.message}
+      </p>
     </div>
   );
 
@@ -100,41 +101,15 @@ export default async function TouristeReservations({
 
   return (
     <>
-      <style>{`
-        .resa-page {
-          width: 100%;
-          min-height: 100vh;
-          background: linear-gradient(135deg, #F8FAFC 0%, #F0F4F8 100%);
-          box-sizing: border-box;
-        }
-        .resa-page-inner {
-          max-width: 1600px;
-          margin: 0 auto;
-          padding: 48px 40px 80px;
-          box-sizing: border-box;
-        }
-        @media (max-width: 1200px) {
-          .resa-page-inner { padding: 36px 32px 64px; }
-        }
-        @media (max-width: 900px) {
-          .resa-page-inner { padding: 28px 24px 48px; }
-        }
-        @media (max-width: 640px) {
-          .resa-page-inner { padding: 20px 16px 40px; }
-        }
-      `}</style>
+      <Suspense fallback={null}>
+        <StripeReturnHandler />
+      </Suspense>
 
-      <div className="resa-page">
-        <Suspense fallback={null}>
-          <StripeReturnHandler />
-        </Suspense>
-
-        <div className="resa-page-inner">
-          <ReservationsClient
-            reservations={formattedReservations}
-            autoOpenId={autoOpenId}
-          />
-        </div>
+      <div style={{ padding: "28px 0 80px" }}>
+        <ReservationsClient
+          reservations={formattedReservations}
+          autoOpenId={autoOpenId}
+        />
       </div>
     </>
   );

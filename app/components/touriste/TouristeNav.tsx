@@ -97,6 +97,7 @@ export default function TouristeNav({
 
   const publicLinks = [
     { href: ROUTES.excursions, icon: "ti-compass",     label: "Excursions",        anchor: false },
+    { href: "#chemins",        icon: "ti-map",          label: "Comment ça marche", anchor: true  },
     { href: ROUTES.about,      icon: "ti-help-circle", label: "À propos",          anchor: false },
     { href: ROUTES.blog,       icon: "ti-book",        label: "Blog",              anchor: false },
     { href: ROUTES.contact,    icon: "ti-phone",       label: "Contact",           anchor: false },
