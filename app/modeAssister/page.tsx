@@ -37,6 +37,21 @@ type Excursion = {
   depart_time?: string;
 };
 
+// Type aligné avec ce qu'attend CheckoutModalItineraire
+type ExcursionForCheckout = {
+  id: string;
+  title: string;
+  city: string;
+  duration_hours: number;
+  price_per_person: number;
+  max_people: number;
+  available_dates?: unknown[] | null;
+  plan_date?: string;
+  plan_time?: "matin" | "aprem" | "soir";
+  plan_day?: number;
+  note?: string;
+};
+
 type Activity = {
   id: string;
   name: string;
@@ -104,19 +119,6 @@ function getBlockedDates(cityDates: CityDateRange[], excludeCity: string) {
   return cityDates
     .filter(c => c.city !== excludeCity && c.start && c.end)
     .map(c => ({ start: c.start!, end: c.end! }));
-}
-
-function generateDateRange(start: Date, end: Date): string[] {
-  const dates: string[] = [];
-  const cur = new Date(start);
-  cur.setHours(0, 0, 0, 0);
-  const endNorm = new Date(end);
-  endNorm.setHours(0, 0, 0, 0);
-  while (cur <= endNorm) {
-    dates.push(cur.toISOString().split("T")[0]);
-    cur.setDate(cur.getDate() + 1);
-  }
-  return dates;
 }
 
 /* ══════════════════════════════════════════
@@ -779,6 +781,49 @@ const STEPS = [
 ];
 
 /* ══════════════════════════════════════════
+   HELPER: Convertir heure → plan_time
+══════════════════════════════════════════ */
+function timeToPlanTime(time?: string): "matin" | "aprem" | "soir" | undefined {
+  if (!time) return undefined;
+  const h = parseInt(time.split(":")[0], 10);
+  if (isNaN(h)) return undefined;
+  if (h < 13) return "matin";
+  if (h < 18) return "aprem";
+  return "soir";
+}
+
+/* ══════════════════════════════════════════
+   HELPER: Calculer la date d'un jour donné
+   dans une ville en fonction des cityDates
+══════════════════════════════════════════ */
+function computePlanDate(
+  dayDate: string | undefined,
+  dayIndex: number,
+  city: string,
+  allDays: DayPlan[],
+  cityDates: CityDateRange[]
+): string | undefined {
+  // Si l'IA a fourni une date directement, on l'utilise
+  if (dayDate && dayDate.match(/^\d{4}-\d{2}-\d{2}$/)) return dayDate;
+
+  // Sinon, calculer à partir de cityDates
+  const cityDateRange = cityDates.find(c => c.city === city);
+  if (!cityDateRange?.start) return undefined;
+
+  // Trouver l'index de ce jour parmi les jours de la même ville
+  const daysOfThisCity = allDays.filter(d => d.city === city);
+  const indexInCity = daysOfThisCity.findIndex((_, i) => {
+    // Recalculer l'index global
+    return allDays.filter((d, gi) => d.city === city && gi <= dayIndex).length - 1 === i;
+  });
+
+  const offset = Math.max(0, indexInCity);
+  const computed = new Date(cityDateRange.start);
+  computed.setDate(computed.getDate() + offset);
+  return computed.toISOString().split("T")[0];
+}
+
+/* ══════════════════════════════════════════
    MAIN COMPONENT
 ══════════════════════════════════════════ */
 export default function ModeAssiste() {
@@ -820,29 +865,72 @@ export default function ModeAssiste() {
     (acc, d) => acc + d.activities.reduce((a, act) => a + (Number(act.price) || 0), 0), 0
   ) ?? 0;
 
-  const itineraryAsExc = useMemo(() => {
-    if (!itinerary) return null;
+  /* ══════════════════════════════════════════
+     ✅ CORRECTION PRINCIPALE :
+     Construire la liste des vraies excursions
+     Supabase à passer à CheckoutModalItineraire
+  ══════════════════════════════════════════ */
+  const checkoutExcursions = useMemo((): ExcursionForCheckout[] => {
+    if (!itinerary) return [];
 
-    const allDates = cityDates
-      .filter(c => c.start && c.end)
-      .flatMap(c => generateDateRange(c.start!, c.end!));
+    const result: ExcursionForCheckout[] = [];
+    const seenIds = new Set<string>();
 
-    const uniqueDates = [...new Set(allDates)].sort();
+    itinerary.days.forEach((day, dayIdx) => {
+      day.activities.forEach((act) => {
+        // Ignorer les journées libres et activités sans ID réel
+        if (
+          act.is_free_day ||
+          act.name === "Journée libre" ||
+          String(act.id).startsWith("free-day-") ||
+          String(act.id).startsWith("act-")
+        ) return;
 
-    return {
-      id: `itinerary-${crypto.randomUUID()}`,
-      title: itinerary.title || "Voyage personnalisé en Tunisie",
-      city: selectedCities.join(", "),
-      duration_hours: totalDays * 8,
-      price_per_person: totalPrice,
-      max_people: 20,
-      is_active: true,
-      available_dates: uniqueDates,
-      depart_time: "09:00",
-      is_itinerary: true,
-      description: `Itinéraire personnalisé sur ${totalDays} jour${totalDays > 1 ? "s" : ""} — ${selectedCities.join(", ")}`,
-    };
-  }, [itinerary, selectedCities, totalDays, totalPrice, cityDates]);
+        // Éviter les doublons
+        if (seenIds.has(String(act.id))) return;
+
+        // Chercher la vraie excursion dans les données Supabase
+        const realExc =
+          excursions.find(e => String(e.id) === String(act.id)) ||
+          excursions.find(e => e.title?.toLowerCase() === act.name?.toLowerCase());
+
+        // Si pas trouvée dans Supabase, on skip (pas de vraies available_dates)
+        if (!realExc) return;
+
+        seenIds.add(String(realExc.id));
+
+        // Calculer la date planifiée pour ce jour
+        const planDate = computePlanDate(
+          day.date,
+          dayIdx,
+          day.city,
+          itinerary.days,
+          cityDates
+        );
+
+        // Convertir l'heure en plan_time (matin/aprem/soir)
+        const planTime = timeToPlanTime(act.time || realExc.depart_time);
+
+        result.push({
+          id:               realExc.id,
+          title:            realExc.title,
+          city:             realExc.city,
+          duration_hours:   realExc.duration_hours || act.duration_hours || 2,
+          price_per_person: realExc.price_per_person || act.price || 0,
+          max_people:       realExc.max_people || 20,
+          // ✅ available_dates vient de la vraie excursion Supabase
+          available_dates:  Array.isArray(realExc.available_dates)
+            ? realExc.available_dates as unknown[]
+            : null,
+          plan_date:        planDate,
+          plan_time:        planTime,
+          plan_day:         day.day,
+        });
+      });
+    });
+
+    return result;
+  }, [itinerary, excursions, cityDates]);
 
   const canGenerate = selectedCities.length > 0 && allDatesSet && !dateError && !!N8N_WEBHOOK_URL;
 
@@ -853,6 +941,7 @@ export default function ModeAssiste() {
         const [{ data: v }, { data: c }, { data: e }] = await Promise.all([
           supabase.from("villes").select("*").order("nom"),
           supabase.from("categories").select("*").order("nom"),
+          // ✅ S'assurer que available_dates est bien chargé
           supabase.from("excursions").select("*").eq("is_active", true),
         ]);
         setVilles((v || []) as Ville[]);
@@ -1072,6 +1161,9 @@ export default function ModeAssiste() {
 
   const canStep0 = selectedCities.length > 0;
   const canStep1 = allDatesSet && !dateError;
+
+  // ✅ Le bouton Réserver est actif seulement si on a des excursions réelles
+  const canCheckout = checkoutExcursions.length > 0;
 
   return (
     <div suppressHydrationWarning style={{ minHeight: "100vh", background: "#F6F9FB", fontFamily: "'DM Sans',system-ui,sans-serif" }}>
@@ -1304,16 +1396,26 @@ export default function ModeAssiste() {
             saveStatus={saveStatus}
             onBack={() => setAppStep("questions")}
             onReset={resetAll}
-            onCheckout={() => setShowCheckout(true)}
+            // ✅ Ouvre le checkout seulement si on a des excursions réelles
+            onCheckout={() => {
+              if (canCheckout) {
+                setShowCheckout(true);
+              } else {
+                // Afficher un message si aucune excursion Supabase matchée
+                alert("Aucune excursion disponible à la réservation pour cet itinéraire.");
+              }
+            }}
             onSave={saveItinerary}
             onChangeActivity={handleChangeActivity}
           />
         </div>
       )}
 
-      {showCheckout && itinerary && itineraryAsExc && (
+      {/* ✅ CORRECTION : passer checkoutExcursions (vraies excursions Supabase)
+          et non plus itineraryAsExc (objet fictif) */}
+      {showCheckout && itinerary && checkoutExcursions.length > 0 && (
         <Checkoutmodal
-          excursions={[itineraryAsExc]}
+          excursions={checkoutExcursions}
           itineraireTitle={itinerary.title}
           onClose={() => setShowCheckout(false)}
         />

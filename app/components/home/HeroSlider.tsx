@@ -229,8 +229,7 @@ export default function HomeSlider() {
 
   return (
     <>
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;0,800;0,900;1,700&family=Inter:wght@300;400;500;600;700;800&display=swap');
+      <style>{` @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;0,800;0,900;1,700&family=Inter:wght@300;400;500;600;700;800&display=swap');
 
         @keyframes spin { 
           to { transform: rotate(360deg) } 
@@ -412,8 +411,8 @@ export default function HomeSlider() {
 
         @media (max-width: 768px) {
           .hero-content {
-            top: auto;
-            bottom: 96px;
+            top:80px;
+            bottom: auto;
             transform: none;
             left: 0;
             right: 0;
@@ -439,7 +438,7 @@ export default function HomeSlider() {
           .btn-primary, .btn-ghost {
             padding: 12px 24px;
             font-size: 14px;
-            width: 100%;
+            width: 80%;
             justify-content: center;
           }
 
@@ -450,7 +449,7 @@ export default function HomeSlider() {
 
           .mute-btn {
             bottom: 20px;
-            right: 20px;
+            right: 2px;
             padding: 8px 14px;
           }
         }
