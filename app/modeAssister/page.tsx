@@ -1397,14 +1397,7 @@ export default function ModeAssiste() {
             onBack={() => setAppStep("questions")}
             onReset={resetAll}
             // ✅ Ouvre le checkout seulement si on a des excursions réelles
-            onCheckout={() => {
-              if (canCheckout) {
-                setShowCheckout(true);
-              } else {
-                // Afficher un message si aucune excursion Supabase matchée
-                alert("Aucune excursion disponible à la réservation pour cet itinéraire.");
-              }
-            }}
+           
             onSave={saveItinerary}
             onChangeActivity={handleChangeActivity}
           />
