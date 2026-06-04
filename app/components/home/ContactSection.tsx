@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { Mail, Phone, MapPin, Clock, ArrowRight } from "lucide-react";
+import { Mail, Phone, MapPin, Clock, ArrowRight, Send, MessageCircle } from "lucide-react";
 import ContactFormInline from "../contact/ContactFormInline";
 import { createClient } from "@/lib/supabaseClient";
 
@@ -14,321 +14,6 @@ interface ContactSectionProps {
   ctaLabel?:   string;
   successMsg?: string;
 }
-
-const CSS = `
-  @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800;900&family=Open+Sans:wght@400;500;600&display=swap');
-
-  :root {
-    --brand-dark:    #053366;
-    --brand-primary: #02AFCF;
-    --brand-lavender:#DCE5FF;
-    --teal:          #2b96a8;
-    --white:         #ffffff;
-  }
-
-  /* ── Section wrapper ── */
-  .hcs-section {
-    position: relative;
-    overflow: hidden;
-    padding: 88px 40px;
-    background: var(--brand-dark);
-  }
-
-  /* Background image as subtle texture */
-  .hcs-bg {
-    position: absolute;
-    inset: 0;
-    background-size: cover;
-    background-position: center;
-    opacity: 0.10;
-    pointer-events: none;
-  }
-
-  /* Gradient overlay for depth */
-  .hcs-overlay {
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(
-      135deg,
-      rgba(5,51,102,0.7) 0%,
-      rgba(5,51,102,0.4) 100%
-    );
-    pointer-events: none;
-  }
-
-  /* Top accent line */
-  .hcs-section::before {
-    content: '';
-    position: absolute;
-    top: 0; left: 0; right: 0;
-    height: 3px;
-    background: var(--brand-primary);
-    z-index: 1;
-  }
-
-  .hcs-inner {
-    position: relative;
-    z-index: 2;
-    max-width: 1160px;
-    margin: 0 auto;
-    display: grid;
-    grid-template-columns: 1fr 1.45fr;
-    gap: 32px;
-    align-items: start;
-  }
-
-  /* ════════════════
-     LEFT — info panel
-  ════════════════ */
-  .hcs-info-panel {
-    background: var(--white);
-    border-radius: 8px;
-    overflow: hidden;
-    box-shadow: 0 16px 48px rgba(0,0,0,0.25);
-  }
-
-  .hcs-info-header {
-    background: var(--brand-dark);
-    padding: 26px 28px 22px;
-    border-bottom: 3px solid var(--brand-primary);
-  }
-
-  .hcs-eyebrow {
-    font-family: 'Montserrat', sans-serif;
-    font-size: 10px;
-    font-weight: 700;
-    color: var(--brand-primary);
-    text-transform: uppercase;
-    letter-spacing: 2.2px;
-    display: block;
-    margin-bottom: 8px;
-  }
-
-  .hcs-title {
-    font-family: 'Montserrat', sans-serif;
-    font-size: clamp(18px, 2vw, 22px);
-    font-weight: 800;
-    color: var(--white);
-    letter-spacing: -0.3px;
-    line-height: 1.2;
-  }
-
-  .hcs-items { padding: 4px 0; }
-
-  .hcs-item {
-    display: flex;
-    align-items: flex-start;
-    gap: 14px;
-    padding: 18px 28px;
-    border-bottom: 1px solid #f0f4f8;
-    transition: background 0.15s;
-  }
-  .hcs-item:last-child { border-bottom: none; }
-  .hcs-item:hover { background: #f8fafc; }
-
-  .hcs-icon {
-    width: 42px;
-    height: 42px;
-    border-radius: 8px;
-    background: var(--brand-lavender);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-    color: var(--brand-dark);
-  }
-
-  .hcs-ilabel {
-    font-family: 'Montserrat', sans-serif;
-    font-size: 10px;
-    font-weight: 700;
-    color: #94a3b8;
-    text-transform: uppercase;
-    letter-spacing: 1.4px;
-    margin-bottom: 4px;
-  }
-
-  .hcs-ivalue {
-    font-size: 14px;
-    font-weight: 600;
-    color: var(--brand-dark);
-    text-decoration: none;
-    line-height: 1.4;
-    display: block;
-    transition: color .15s;
-  }
-  a.hcs-ivalue:hover { color: var(--brand-primary); }
-
-  /* Status badge */
-  .hcs-status {
-    margin: 0 28px 22px;
-    padding: 12px 16px;
-    background: #f0fdf4;
-    border: 1px solid rgba(34,197,94,0.2);
-    border-left: 3px solid #22c55e;
-    border-radius: 6px;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-  }
-  .hcs-status-dot {
-    width: 8px; height: 8px;
-    border-radius: 50%;
-    background: #22c55e;
-    flex-shrink: 0;
-    box-shadow: 0 0 0 3px rgba(34,197,94,0.18);
-  }
-  .hcs-status-text {
-    font-size: 12px;
-    font-weight: 600;
-    color: #166534;
-    line-height: 1.3;
-  }
-  .hcs-status-text span {
-    display: block;
-    font-size: 11px;
-    font-weight: 400;
-    color: #4ade80;
-    color: #15803d;
-  }
-
-  /* Full page link */
-  .hcs-more {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 7px;
-    margin: 0 28px 24px;
-    padding: 11px 0;
-    border: 1.5px solid rgba(2,175,207,0.3);
-    border-radius: 6px;
-    font-family: 'Montserrat', sans-serif;
-    font-size: 12px;
-    font-weight: 700;
-    color: var(--brand-primary);
-    text-decoration: none;
-    letter-spacing: 0.5px;
-    text-transform: uppercase;
-    transition: background 0.15s, border-color 0.15s;
-  }
-  .hcs-more:hover {
-    background: rgba(2,175,207,0.06);
-    border-color: var(--brand-primary);
-  }
-  .hcs-more svg { transition: transform 0.15s; }
-  .hcs-more:hover svg { transform: translateX(3px); }
-
-  /* ════════════════
-     RIGHT — form panel
-  ════════════════ */
-  .hcs-form-panel {
-    background: var(--white);
-    border-radius: 8px;
-    overflow: hidden;
-    box-shadow: 0 16px 48px rgba(0,0,0,0.25);
-  }
-
-  .hcs-form-header {
-    background: var(--brand-dark);
-    padding: 26px 32px 22px;
-    border-bottom: 3px solid var(--brand-primary);
-  }
-
-  .hcs-form-eyebrow {
-    font-family: 'Montserrat', sans-serif;
-    font-size: 10px;
-    font-weight: 700;
-    color: var(--brand-primary);
-    text-transform: uppercase;
-    letter-spacing: 2.2px;
-    display: block;
-    margin-bottom: 8px;
-  }
-
-  .hcs-form-title {
-    font-family: 'Montserrat', sans-serif;
-    font-size: 20px;
-    font-weight: 800;
-    color: var(--white);
-    letter-spacing: -0.3px;
-  }
-
-  .hcs-form-body {
-    padding: 28px 32px 32px;
-    background: var(--white);
-  }
-
-  /* Override child form styles for light bg */
-  .hcs-form-body input,
-  .hcs-form-body textarea,
-  .hcs-form-body select {
-    background: #f8fafc !important;
-    border: 1.5px solid #e2e8f0 !important;
-    border-radius: 6px !important;
-    padding: 11px 14px !important;
-    color: var(--brand-dark) !important;
-    font-size: 14px !important;
-    width: 100% !important;
-    transition: border-color .15s, background .15s !important;
-    font-family: 'Open Sans', sans-serif !important;
-  }
-  .hcs-form-body input:focus,
-  .hcs-form-body textarea:focus,
-  .hcs-form-body select:focus {
-    outline: none !important;
-    border-color: var(--brand-primary) !important;
-    background: var(--white) !important;
-    box-shadow: 0 0 0 3px rgba(2,175,207,0.1) !important;
-  }
-  .hcs-form-body input::placeholder,
-  .hcs-form-body textarea::placeholder {
-    color: #94a3b8 !important;
-  }
-  .hcs-form-body label {
-    color: var(--brand-dark) !important;
-    font-size: 13px !important;
-    font-weight: 600 !important;
-    margin-bottom: 6px !important;
-    display: block !important;
-    font-family: 'Montserrat', sans-serif !important;
-  }
-  .hcs-form-body button[type="submit"],
-  .hcs-form-body button:not([type="button"]) {
-    background: var(--brand-primary) !important;
-    border: none !important;
-    border-radius: 6px !important;
-    padding: 13px 28px !important;
-    color: var(--white) !important;
-    font-weight: 700 !important;
-    font-size: 13px !important;
-    letter-spacing: 0.5px !important;
-    text-transform: uppercase !important;
-    cursor: pointer !important;
-    font-family: 'Montserrat', sans-serif !important;
-    transition: background .15s, transform .12s !important;
-    box-shadow: 0 4px 14px rgba(2,175,207,0.3) !important;
-    width: 100% !important;
-  }
-  .hcs-form-body button[type="submit"]:hover,
-  .hcs-form-body button:not([type="button"]):hover {
-    background: var(--teal) !important;
-    transform: translateY(-1px) !important;
-  }
-
-  /* ════════════════
-     RESPONSIVE
-  ════════════════ */
-  @media (max-width: 900px) {
-    .hcs-inner   { grid-template-columns: 1fr; gap: 24px; }
-    .hcs-section { padding: 64px 20px; }
-  }
-  @media (max-width: 480px) {
-    .hcs-form-body { padding: 20px; }
-    .hcs-item      { padding: 14px 20px; }
-    .hcs-info-header, .hcs-form-header { padding: 20px; }
-    .hcs-status, .hcs-more { margin-left: 20px; margin-right: 20px; }
-  }
-`;
 
 export default function ContactSection({
   email:      emailProp,
@@ -368,71 +53,286 @@ export default function ContactSection({
   ];
 
   return (
-    <section aria-labelledby="contact-section-heading">
-      <style>{CSS}</style>
+    <section id="contact" style={{ position: "relative", overflow: "hidden" }}>
+      {/* Blurred background */}
+      {bgImage && (
+        <div style={{
+          position: "absolute", inset: 0,
+          backgroundImage: `url(${bgImage})`,
+          backgroundSize: "cover", backgroundPosition: "center",
+          filter: "blur(3px) brightness(0.35)", transform: "scale(1.05)",
+        }} />
+      )}
+      <div style={{ position: "absolute", inset: 0, background: "rgba(4,12,22,0.75)" }} />
 
-      <div className="hcs-section">
-        {/* Muted background image */}
-        {bgImage && (
-          <div
-            className="hcs-bg"
-            style={{ backgroundImage: `url(${bgImage})` }}
-          />
-        )}
-        <div className="hcs-overlay" />
+      <div
+        style={{ position: "relative", zIndex: 1, padding: "96px 72px 108px", maxWidth: 1200, margin: "0 auto" }}
+        className="section-pad"
+      >
+        {/* Header */}
+        <div style={{ textAlign: "center", marginBottom: 72 }}>
+          <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: 40, fontWeight: 900, color: "white", letterSpacing: "-1px", margin: 0 }}>
+            Prenons contact
+          </h2>
+          <p style={{ fontSize: 17, color: "rgba(255,255,255,0.58)", marginTop: 18, maxWidth: 520, margin: "18px auto 0", lineHeight: 1.7 }}>
+            Une question ? Un projet sur mesure ? Écrivez-nous, nous vous répondons sous 24h.
+          </p>
+        </div>
 
-        <div className="hcs-inner">
-
-          {/* ── Left: coordonnées ── */}
-          <aside className="hcs-info-panel">
-            <div className="hcs-info-header">
-              <span className="hcs-eyebrow">Nos coordonnées</span>
-              <p className="hcs-title">Comment nous joindre</p>
+        {/* 2 columns: info + form */}
+        <div style={{ display: "flex", gap: 32, flexWrap: "wrap" }}>
+          
+          {/* ── LEFT: Contact Info Card ── */}
+          <div style={{
+            flex: 1.2,
+            background: "rgba(255,255,255,0.06)",
+            backdropFilter: "blur(12px)",
+            borderRadius: 32,
+            border: "1px solid rgba(255,255,255,0.12)",
+            overflow: "hidden",
+          }}>
+            <div style={{ padding: "28px 28px 20px", borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
+              <div style={{
+                display: "inline-flex", alignItems: "center", gap: 6,
+                padding: "5px 12px", borderRadius: 20,
+                background: "rgba(43,150,168,0.3)", border: "1px solid rgba(43,150,168,0.5)",
+                alignSelf: "flex-start", marginBottom: 20,
+              }}>
+                <MessageCircle size={11} color="#A5F3FC" />
+                <span style={{ fontSize: 10, fontWeight: 800, color: "#A5F3FC", letterSpacing: 1 }}>COORDONNÉES</span>
+              </div>
+              <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: 28, fontWeight: 900, color: "white", marginBottom: 8, letterSpacing: "-0.5px" }}>
+                Comment nous joindre
+              </h3>
+              <p style={{ fontSize: 14, color: "rgba(255,255,255,0.55)", lineHeight: 1.6 }}>
+                Que ce soit par téléphone, email ou en personne, notre équipe est là pour vous guider.
+              </p>
             </div>
 
-            <div className="hcs-items">
+            <div style={{ padding: "8px 0" }}>
               {INFO.map((item, i) => (
-                <div key={i} className="hcs-item">
-                  <div className="hcs-icon">{item.icon}</div>
-                  <div>
-                    <p className="hcs-ilabel">{item.label}</p>
+                <div key={i} style={{
+                  display: "flex", alignItems: "center", gap: 16,
+                  padding: "18px 28px",
+                  borderBottom: i < INFO.length - 1 ? "1px solid rgba(255,255,255,0.06)" : "none",
+                  transition: "background 0.15s",
+                }}>
+                  <div style={{
+                    width: 44, height: 44, borderRadius: 14,
+                    background: "rgba(43,150,168,0.2)",
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    flexShrink: 0, color: "#A5F3FC",
+                  }}>
+                    {item.icon}
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <p style={{ fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.45)", textTransform: "uppercase", letterSpacing: 1.2, marginBottom: 4 }}>
+                      {item.label}
+                    </p>
                     {item.href
-                      ? <a href={item.href} className="hcs-ivalue">{item.value}</a>
-                      : <span className="hcs-ivalue">{item.value}</span>
+                      ? <a href={item.href} style={{ fontSize: 15, fontWeight: 600, color: "white", textDecoration: "none", transition: "color 0.15s" }} onMouseEnter={(e) => e.currentTarget.style.color = "#A5F3FC"} onMouseLeave={(e) => e.currentTarget.style.color = "white"}>{item.value}</a>
+                      : <span style={{ fontSize: 15, fontWeight: 500, color: "rgba(255,255,255,0.85)" }}>{item.value}</span>
                     }
                   </div>
                 </div>
               ))}
             </div>
 
-            <div className="hcs-status">
-              <span className="hcs-status-dot" />
-              <div className="hcs-status-text">
-                Équipe disponible
-                <span>Réponse garantie sous 24h</span>
+            {/* Status badge */}
+            <div style={{
+              margin: "8px 28px 20px",
+              padding: "14px 18px",
+              background: "rgba(34,197,94,0.12)",
+              border: "1px solid rgba(34,197,94,0.25)",
+              borderRadius: 16,
+              display: "flex", alignItems: "center", gap: 12,
+            }}>
+              <div style={{
+                width: 10, height: 10, borderRadius: "50%",
+                background: "#22c55e", flexShrink: 0,
+                boxShadow: "0 0 0 3px rgba(34,197,94,0.2)",
+              }} />
+              <div>
+                <p style={{ fontSize: 13, fontWeight: 700, color: "#4ade80", marginBottom: 2 }}>Équipe disponible</p>
+                <p style={{ fontSize: 11, fontWeight: 500, color: "rgba(255,255,255,0.55)" }}>Réponse garantie sous 24h</p>
               </div>
             </div>
 
-            <Link href="/contact" className="hcs-more">
-              Page contact complète <ArrowRight size={13} />
+            <Link
+              href="/contact"
+              style={{
+                display: "flex", alignItems: "center", justifyContent: "space-between",
+                margin: "0 28px 28px",
+                padding: "14px 20px",
+                background: "rgba(255,255,255,0.05)",
+                border: "1px solid rgba(255,255,255,0.12)",
+                borderRadius: 20,
+                textDecoration: "none",
+                transition: "all 0.15s",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = "rgba(255,255,255,0.1)";
+                e.currentTarget.style.borderColor = "rgba(255,255,255,0.25)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = "rgba(255,255,255,0.05)";
+                e.currentTarget.style.borderColor = "rgba(255,255,255,0.12)";
+              }}
+            >
+              <span style={{ fontSize: 13, fontWeight: 700, color: "rgba(255,255,255,0.75)", letterSpacing: 0.5 }}>Page contact complète</span>
+              <ArrowRight size={15} color="rgba(255,255,255,0.6)" />
             </Link>
-          </aside>
-
-          {/* ── Right: formulaire ── */}
-          <div className="hcs-form-panel">
-            <div className="hcs-form-header">
-              <span className="hcs-form-eyebrow">Formulaire de contact</span>
-              <p id="contact-section-heading" className="hcs-form-title">
-                Envoyez-nous un message
-              </p>
-            </div>
-            <div className="hcs-form-body">
-              <ContactFormInline ctaLabel={ctaLabel} successMsg={successMsg} />
-            </div>
           </div>
 
+          {/* ── RIGHT: Form Card ── */}
+          <div style={{
+            flex: 1.8,
+            background: "rgba(255,255,255,0.06)",
+            backdropFilter: "blur(12px)",
+            borderRadius: 32,
+            border: "1px solid rgba(255,255,255,0.12)",
+            overflow: "hidden",
+          }}>
+            <div style={{ padding: "28px 32px 20px", borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
+              <div style={{
+                display: "inline-flex", alignItems: "center", gap: 6,
+                padding: "5px 12px", borderRadius: 20,
+                background: "rgba(43,150,168,0.3)", border: "1px solid rgba(43,150,168,0.5)",
+                alignSelf: "flex-start", marginBottom: 20,
+              }}>
+                <Send size={11} color="#A5F3FC" />
+                <span style={{ fontSize: 10, fontWeight: 800, color: "#A5F3FC", letterSpacing: 1 }}>FORMULAIRE RAPIDE</span>
+              </div>
+              <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: 28, fontWeight: 900, color: "white", marginBottom: 8, letterSpacing: "-0.5px" }}>
+                Envoyez-nous un message
+              </h3>
+              <p style={{ fontSize: 14, color: "rgba(255,255,255,0.55)", lineHeight: 1.6 }}>
+                Remplissez le formulaire ci-dessous, nous vous recontacterons dans les plus brefs délais.
+              </p>
+            </div>
+
+            <div style={{ padding: "28px 32px 32px" }}>
+              {/* Form wrapper with custom styles */}
+              <div className="contact-form-dark">
+                <ContactFormInline ctaLabel={ctaLabel} successMsg={successMsg} />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Additional CTA banner */}
+        <div style={{
+          marginTop: 48,
+          display: "flex", alignItems: "center", justifyContent: "space-between",
+          flexWrap: "wrap", gap: 20,
+          padding: "20px 28px",
+          background: "rgba(43,150,168,0.12)",
+          borderRadius: 24,
+          border: "1px solid rgba(43,150,168,0.25)",
+        }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+            <div style={{
+              width: 48, height: 48, borderRadius: 16,
+              background: "rgba(43,150,168,0.25)",
+              display: "flex", alignItems: "center", justifyContent: "center",
+            }}>
+              <Phone size={22} color="#A5F3FC" />
+            </div>
+            <div>
+              <p style={{ fontSize: 15, fontWeight: 700, color: "white", marginBottom: 4 }}>Besoin d&apos;une réponse immédiate ?</p>
+              <p style={{ fontSize: 13, color: "rgba(255,255,255,0.55)" }}>Appelez-nous directement au <strong style={{ color: "#A5F3FC" }}>{phone}</strong></p>
+            </div>
+          </div>
+          <a
+            href={`tel:${phone.replace(/\s/g, "")}`}
+            style={{
+              display: "inline-flex", alignItems: "center", gap: 10,
+              padding: "12px 28px", borderRadius: 40,
+              background: "rgba(255,255,255,0.1)",
+              border: "1px solid rgba(255,255,255,0.2)",
+              color: "white", fontSize: 13, fontWeight: 700,
+              textDecoration: "none", whiteSpace: "nowrap",
+            }}
+          >
+            Appeler maintenant <ArrowRight size={14} />
+          </a>
         </div>
       </div>
+
+      <style jsx>{`
+        .section-title-light {
+          font-size: 40px;
+          font-weight: 900;
+          color: white;
+          letter-spacing: -1px;
+        }
+        
+        /* Dark mode styles for ContactFormInline */
+        .contact-form-dark input,
+        .contact-form-dark textarea,
+        .contact-form-dark select {
+          background: rgba(255,255,255,0.08) !important;
+          border: 1px solid rgba(255,255,255,0.15) !important;
+          border-radius: 16px !important;
+          padding: 12px 16px !important;
+          color: white !important;
+          font-size: 14px !important;
+          width: 100% !important;
+          font-family: inherit !important;
+        }
+        
+        .contact-form-dark input:focus,
+        .contact-form-dark textarea:focus,
+        .contact-form-dark select:focus {
+          outline: none !important;
+          border-color: #2B96A8 !important;
+          background: rgba(255,255,255,0.12) !important;
+        }
+        
+        .contact-form-dark input::placeholder,
+        .contact-form-dark textarea::placeholder {
+          color: rgba(255,255,255,0.4) !important;
+        }
+        
+        .contact-form-dark label {
+          color: rgba(255,255,255,0.7) !important;
+          font-size: 13px !important;
+          font-weight: 600 !important;
+          margin-bottom: 6px !important;
+          display: block !important;
+        }
+        
+        .contact-form-dark button[type="submit"],
+        .contact-form-dark button:not([type="button"]) {
+          background: #2B96A8 !important;
+          border: none !important;
+          border-radius: 40px !important;
+          padding: 14px 28px !important;
+          color: white !important;
+          font-weight: 700 !important;
+          font-size: 13px !important;
+          letter-spacing: 0.5px !important;
+          cursor: pointer !important;
+          width: 100% !important;
+          transition: all 0.15s !important;
+        }
+        
+        .contact-form-dark button[type="submit"]:hover,
+        .contact-form-dark button:not([type="button"]):hover {
+          background: #1e6f7e !important;
+          transform: translateY(-1px) !important;
+        }
+        
+        @media (max-width: 900px) {
+          .section-title-light { font-size: 32px; }
+          div[style*="padding: 96px 72px"] { padding: 64px 24px !important; }
+          div[style*="display: flex; gap: 32px"] { flex-direction: column; }
+        }
+        
+        @media (max-width: 640px) {
+          .section-title-light { font-size: 28px; }
+        }
+      `}</style>
     </section>
   );
 }
