@@ -17,21 +17,30 @@ import TouristeNav from "@/app/components/touriste/TouristeNav";
 /* ─── Types ─────────────────────────────────────────────── */
 export type SummaryActivity = {
   id: string;
+  excursion_id?: string;        // ← UUID Supabase de l'excursion
   time: string;
   customTime?: string;
   note?: string;
   excursion?: {
-    title: string; city: string;
-    price_per_person: number; duration_hours: number;
-    rating?: number; photos?: string[];
+    id?: string;                // ← UUID Supabase si disponible
+    excursion_id?: string;      // ← alias possible
+    title: string;
+    city: string;
+    price_per_person: number;
+    duration_hours: number;
+    rating?: number;
+    photos?: string[];
     categories?: string[];
     available_dates?: any[] | null;
     description?: string;
   };
-  name?: string; description?: string;
-  price?: number; duration?: string;
+  name?: string;
+  description?: string;
+  price?: number;
+  duration?: string;
   photos?: string | string[];
-  city?: string; rating?: number;
+  city?: string;
+  rating?: number;
   available_dates?: any[] | null;
 };
 
@@ -55,6 +64,27 @@ export type ItinerarySummaryProps = {
   onEdit: () => void;
   onSave: () => void;
 };
+
+/* ─── UUID helper ─── */
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const isValidUUID = (s?: string | null): s is string => !!s && UUID_RE.test(s);
+
+/**
+ * Résout le vrai UUID Supabase d'une activité.
+ * Ordre de priorité :
+ *   1. act.excursion_id   (champ dédié le plus fiable)
+ *   2. act.excursion.id   (UUID stocké dans l'objet excursion)
+ *   3. act.excursion.excursion_id
+ *   4. act.id             (seulement si c'est un UUID valide)
+ * Retourne null si aucun UUID valide trouvé.
+ */
+function resolveActivityUUID(act: SummaryActivity): string | null {
+  if (isValidUUID(act.excursion_id))           return act.excursion_id!;
+  if (isValidUUID(act.excursion?.id))          return act.excursion!.id!;
+  if (isValidUUID(act.excursion?.excursion_id)) return act.excursion!.excursion_id!;
+  if (isValidUUID(act.id))                     return act.id;
+  return null;
+}
 
 /* ─── Helpers ─── */
 const SLOT_COLORS: Record<string, string> = { matin:"#F59E0B", aprem:"#2B96A8", soir:"#8B5CF6" };
@@ -351,55 +381,65 @@ export default function ItinerarySummary({
     action();
   };
 
-  const totAct    = days.reduce((s,d) => s + d.activities.length, 0);
-  const totBudget = days.reduce((s,d) => s + d.activities.reduce((ss,a) => ss + getPrice(a), 0), 0);
+  const totAct    = days.reduce((s, d) => s + d.activities.length, 0);
+  const totBudget = days.reduce((s, d) => s + d.activities.reduce((ss, a) => ss + getPrice(a), 0), 0);
 
+  /* ─────────────────────────────────────────────────────────────
+     Construction des excursions pour le checkout.
+     CORRECTION : on résout le vrai UUID Supabase via resolveActivityUUID()
+     et on filtre strictement les entrées sans UUID valide pour éviter
+     l'erreur « invalid input syntax for type uuid ».
+  ───────────────────────────────────────────────────────────── */
   const checkoutExcursions = days.flatMap((day, di) =>
-    day.activities.map((act, ai) => ({
-      id: act.id ?? `${di}-${ai}`,
-      title: getTitle(act),
-      city: getCity(act),
-      duration_hours: act.excursion?.duration_hours ?? (parseFloat(getDuration(act)) || 0),
-      price_per_person: getPrice(act),
-      max_people: 20,
-      available_dates: act.available_dates ?? act.excursion?.available_dates ?? null,
-      plan_date: day.date,
-      plan_time: (act.time as "matin"|"aprem"|"soir") || undefined,
-      plan_day: day.day ?? di + 1,
-      note: act.note,
-    }))
-  ).filter(e => Boolean(e.id));
+    day.activities.map((act, ai) => {
+      const resolvedId = resolveActivityUUID(act);
+      return {
+        // Si aucun UUID valide, on marque avec un préfixe __invalid__
+        // pour que le filtre suivant l'élimine proprement.
+        id: resolvedId ?? `__invalid__${di}-${ai}`,
+        title: getTitle(act),
+        city: getCity(act),
+        duration_hours: act.excursion?.duration_hours ?? (parseFloat(getDuration(act)) || 0),
+        price_per_person: getPrice(act),
+        max_people: 20,
+        available_dates: act.available_dates ?? act.excursion?.available_dates ?? null,
+        plan_date: day.date,
+        plan_time: (act.time as "matin" | "aprem" | "soir") || undefined,
+        plan_day: day.day ?? di + 1,
+        note: act.note,
+      };
+    })
+  // Ne conserver que les entrées dont l'id est un UUID Supabase valide
+  ).filter(e => isValidUUID(e.id));
 
   const saveBtnLabel = saving ? "Enregistrement…" : saveOk ? "Enregistré !" : "Sauvegarder";
 
   const kpis = [
-    { icon:<Layers size={14}/>,  label:"Activités",   val:`${totAct}`,          color:"#2B96A8", bg:"rgba(43,150,168,.12)" },
-    { icon:<Euro size={14}/>,    label:"Budget total", val:`${totBudget} €`,     color:"#059669", bg:"rgba(5,150,105,.12)" },
-    { icon:<Calendar size={14}/>,label:"Durée",        val:`${nbJours} jours`,   color:"#8B5CF6", bg:"rgba(139,92,246,.12)" },
-    { icon:<MapPin size={14}/>,  label:"Villes",       val:selCities.length.toString(), color:"#F59E0B", bg:"rgba(245,158,11,.12)" },
+    { icon:<Layers size={14}/>,  label:"Activités",    val:`${totAct}`,               color:"#2B96A8", bg:"rgba(43,150,168,.12)" },
+    { icon:<Euro size={14}/>,    label:"Budget total",  val:`${totBudget} €`,          color:"#059669", bg:"rgba(5,150,105,.12)" },
+    { icon:<Calendar size={14}/>,label:"Durée",         val:`${nbJours} jours`,        color:"#8B5CF6", bg:"rgba(139,92,246,.12)" },
+    { icon:<MapPin size={14}/>,  label:"Villes",        val:selCities.length.toString(),color:"#F59E0B", bg:"rgba(245,158,11,.12)" },
   ];
-  
 
   return (
     <>
       <style suppressHydrationWarning>{CSS}</style>
-       <TouristeNav />
-             <div style={{ paddingTop: 64 }}/>
-      
+      <TouristeNav />
+      <div style={{ paddingTop: 64 }}/>
+
       <div className="sum-root">
 
         {/* NAV */}
         <nav className="sum-nav">
-          
           <div className="sum-nav-pill"><Sparkles size={10}/> Mode Libre</div>
           <div style={{display:"flex",alignItems:"center",gap:7,marginLeft:"auto"}}>
             <button className="btn btn-ghost" onClick={onBack}><ArrowLeft size={13}/> <span>Retour</span></button>
             <button className="btn btn-ghost" onClick={onEdit}><Edit3 size={13}/> <span>Modifier</span></button>
-            <button className={`btn ${saveOk?"btn-green":"btn-primary"}`}
-              onClick={()=>handleAction(onSave)} disabled={saving||saveOk}>
+            <button className={`btn ${saveOk ? "btn-green" : "btn-primary"}`}
+              onClick={() => handleAction(onSave)} disabled={saving || saveOk}>
               <Send size={13}/> <span>{saveBtnLabel}</span>
             </button>
-            <button className="btn btn-teal" onClick={()=>handleAction(()=>setCheckoutOpen(true))}>
+            <button className="btn btn-teal" onClick={() => handleAction(() => setCheckoutOpen(true))}>
               <CreditCard size={13}/> <span>Payer</span>
             </button>
           </div>
@@ -411,9 +451,9 @@ export default function ItinerarySummary({
             <div className="sum-hero-pill"><Sparkles size={9}/> Itinéraire personnalisé</div>
             <div className="sum-hero-title">{title ?? `${nbJours} jours en Tunisie`}</div>
             <div className="sum-hero-cities">
-              {selCities.map((c,i)=>(
+              {selCities.map((c, i) => (
                 <React.Fragment key={c}>
-                  {i>0&&<ChevronRight size={11} style={{opacity:.6}}/>}
+                  {i > 0 && <ChevronRight size={11} style={{opacity:.6}}/>}
                   <span>{c}</span>
                 </React.Fragment>
               ))}
@@ -421,11 +461,11 @@ export default function ItinerarySummary({
           </div>
           <div className="sum-hero-stats">
             {[
-              {val:nbJours,lbl:"Jours"},
-              {val:selCities.length,lbl:"Villes"},
-              {val:totAct,lbl:"Activités"},
-              {val:`${totBudget} €`,lbl:"Budget"},
-            ].map(s=>(
+              { val: nbJours,              lbl: "Jours" },
+              { val: selCities.length,     lbl: "Villes" },
+              { val: totAct,               lbl: "Activités" },
+              { val: `${totBudget} €`,     lbl: "Budget" },
+            ].map(s => (
               <div key={s.lbl} className="sum-stat">
                 <span className="sum-stat-val">{s.val}</span>
                 <span className="sum-stat-lbl">{s.lbl}</span>
@@ -439,9 +479,9 @@ export default function ItinerarySummary({
           <aside className="sum-sidebar">
             <div>
               <div className="sum-sidebar-label">Vue d'ensemble</div>
-              {kpis.map(k=>(
+              {kpis.map(k => (
                 <div key={k.label} className="sum-kpi">
-                  <div className="sum-kpi-icon" style={{background:k.bg,color:k.color}}>{k.icon}</div>
+                  <div className="sum-kpi-icon" style={{background:k.bg, color:k.color}}>{k.icon}</div>
                   <div>
                     <div className="sum-kpi-lbl">{k.label}</div>
                     <div className="sum-kpi-val" style={{color:k.color}}>{k.val}</div>
@@ -455,13 +495,13 @@ export default function ItinerarySummary({
               <button className="btn btn-ghost" style={{width:"100%",justifyContent:"center"}} onClick={onEdit}>
                 <Edit3 size={13}/> Modifier l'itinéraire
               </button>
-              <button className={`btn ${saveOk?"btn-green":"btn-primary"}`}
+              <button className={`btn ${saveOk ? "btn-green" : "btn-primary"}`}
                 style={{width:"100%",justifyContent:"center"}}
-                onClick={()=>handleAction(onSave)} disabled={saving||saveOk}>
+                onClick={() => handleAction(onSave)} disabled={saving || saveOk}>
                 <Send size={13}/> {saveBtnLabel}
               </button>
               <button className="btn btn-teal" style={{width:"100%",justifyContent:"center"}}
-                onClick={()=>handleAction(()=>setCheckoutOpen(true))}>
+                onClick={() => handleAction(() => setCheckoutOpen(true))}>
                 <CreditCard size={13}/> Payer ce voyage
               </button>
             </div>
@@ -470,22 +510,22 @@ export default function ItinerarySummary({
           {/* SCROLL */}
           <div className="sum-scroll">
             {days.map((day, i) => {
-              const dayPrice = day.activities.reduce((s,a) => s + getPrice(a), 0);
-              const dayHours = day.activities.reduce((s,a) => {
+              const dayPrice = day.activities.reduce((s, a) => s + getPrice(a), 0);
+              const dayHours = day.activities.reduce((s, a) => {
                 const d = getDuration(a);
                 return s + (parseFloat(d) || 0);
               }, 0);
-              const sorted = [...day.activities].sort((a,b) =>
+              const sorted = [...day.activities].sort((a, b) =>
                 (a.customTime || SLOT_TIMES[a.time] || "").localeCompare(b.customTime || SLOT_TIMES[b.time] || "")
               );
               return (
                 <div key={i} className="sum-day-card">
                   <div className="sum-day-hdr">
                     <div className="sum-day-left">
-                      <div className="sum-day-num">{day.day ?? i+1}</div>
+                      <div className="sum-day-num">{day.day ?? i + 1}</div>
                       <div>
                         <div className="sum-day-title">
-                          Jour {day.day ?? i+1}
+                          Jour {day.day ?? i + 1}
                           {day.theme && <span style={{fontWeight:500,color:"#64748B",marginLeft:6}}>{day.theme}</span>}
                         </div>
                         <div className="sum-day-city">
@@ -493,7 +533,7 @@ export default function ItinerarySummary({
                           {day.city}
                           {day.date && (
                             <span style={{color:"#94A3B8",marginLeft:4}}>
-                              · {new Date(day.date).toLocaleDateString("fr-FR",{day:"numeric",month:"long"})}
+                              · {new Date(day.date).toLocaleDateString("fr-FR", {day:"numeric", month:"long"})}
                             </span>
                           )}
                         </div>
@@ -520,18 +560,22 @@ export default function ItinerarySummary({
                         const rating      = getRating(act);
                         const description = getDescription(act);
                         const slotColor   = SLOT_COLORS[act.time] ?? "#2B96A8";
-                        const slotBg      = SLOT_BG[act.time]    ?? "rgba(43,150,168,.10)";
-                        const slotIcon    = SLOT_ICONS[act.time] ?? <Sun size={12}/>;
+                        const slotBg      = SLOT_BG[act.time]     ?? "rgba(43,150,168,.10)";
+                        const slotIcon    = SLOT_ICONS[act.time]  ?? <Sun size={12}/>;
                         const displayTime = act.customTime || SLOT_TIMES[act.time] || "—";
+
+                        // Indique si cette activité sera incluse dans le checkout
+                        const hasValidUUID = isValidUUID(resolveActivityUUID(act));
+
                         return (
                           <div key={act.id ?? ai} className="sum-act-row">
                             <div className="sum-act-slot">
                               <span className="sum-act-slot-time" style={{color:slotColor}}>{displayTime}</span>
-                              <div className="sum-act-slot-icon" style={{background:slotBg,color:slotColor}}>
-                                {React.cloneElement(slotIcon as React.ReactElement, {size:12,color:slotColor})}
+                              <div className="sum-act-slot-icon" style={{background:slotBg, color:slotColor}}>
+                                {React.cloneElement(slotIcon as React.ReactElement, {size:12, color:slotColor})}
                               </div>
                             </div>
-                            <div className="sum-act-card">
+                            <div className="sum-act-card" style={!hasValidUUID ? {opacity:.7} : undefined}>
                               {photos[0] && <img src={photos[0]} alt="" className="sum-act-img"/>}
                               <div className="sum-act-body">
                                 <div className="sum-act-toprow">
@@ -541,6 +585,17 @@ export default function ItinerarySummary({
                                 <div className="sum-act-meta">
                                   {getDuration(act) && <span><Clock size={9}/> {getDuration(act)}</span>}
                                   {getCity(act)     && <span><MapPin size={9}/> {getCity(act)}</span>}
+                                  {/* Avertissement si UUID manquant */}
+                                  {!hasValidUUID && (
+                                    <span style={{
+                                      color:"#DC2626",
+                                      background:"#FEF2F2",
+                                      borderColor:"#FCA5A5",
+                                      fontSize:9,
+                                    }}>
+                                      ⚠ non réservable
+                                    </span>
+                                  )}
                                 </div>
                                 {description && <div className="sum-act-desc">{description}</div>}
                                 <div className="sum-act-btmrow">
@@ -582,11 +637,11 @@ export default function ItinerarySummary({
             <button className="btn btn-ghost"><Download size={12}/> PDF</button>
             <button className="btn btn-ghost"><Share2 size={12}/> Partager</button>
             <button className="btn btn-ghost" onClick={onEdit}><Edit3 size={12}/> Modifier</button>
-            <button className={`btn ${saveOk?"btn-green":"btn-primary"}`}
-              onClick={()=>handleAction(onSave)} disabled={saving||saveOk}>
+            <button className={`btn ${saveOk ? "btn-green" : "btn-primary"}`}
+              onClick={() => handleAction(onSave)} disabled={saving || saveOk}>
               <Bookmark size={12}/> {saveBtnLabel}
             </button>
-            <button className="btn btn-teal" onClick={()=>handleAction(()=>setCheckoutOpen(true))}>
+            <button className="btn btn-teal" onClick={() => handleAction(() => setCheckoutOpen(true))}>
               <CreditCard size={12}/> Payer
             </button>
           </div>
@@ -597,7 +652,8 @@ export default function ItinerarySummary({
         <CheckoutModalItineraire
           excursions={checkoutExcursions}
           itineraireId={savedItId ?? undefined}
-          onClose={()=>setCheckoutOpen(false)}/>
+          onClose={() => setCheckoutOpen(false)}
+        />
       )}
     </>
   );
