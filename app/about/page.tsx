@@ -107,7 +107,7 @@ const CSS = `
     position:relative; height:580px; overflow:hidden; margin-top:60px;
   }
   .hero-img {
-    position:absolute; inset:0; width:100%; height:100%;
+    position:absolute; ; width:100%; height:100%;
     object-fit:cover; display:block; filter:brightness(0.52);
   }
   .hero-overlay-l {

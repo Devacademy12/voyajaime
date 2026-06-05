@@ -15,6 +15,129 @@ interface ContactSectionProps {
   successMsg?: string;
 }
 
+const CONTACT_CSS = `
+  @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+
+  .contact-section-v2 {
+    background: linear-gradient(160deg, #EEF6F8 0%, #F7F9FC 50%, #EEF3FB 100%);
+    padding: 88px 64px 100px;
+    position: relative;
+    overflow: hidden;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+  }
+  .contact-section-v2::before {
+    content: '';
+    position: absolute; top: -80px; right: -80px;
+    width: 400px; height: 400px;
+    background: radial-gradient(circle, rgba(11,122,138,0.07) 0%, transparent 70%);
+    border-radius: 50%; pointer-events: none;
+  }
+
+  .contact-info-card {
+    flex: 1.2;
+    background: white;
+    border-radius: 24px;
+    border: 1px solid #E5E7EB;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.04);
+    overflow: hidden;
+  }
+
+  .contact-form-card {
+    flex: 1.8;
+    background: white;
+    border-radius: 24px;
+    border: 1px solid #E5E7EB;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.04);
+    overflow: hidden;
+  }
+
+  .contact-info-row {
+    display: flex; align-items: center; gap: 14px;
+    padding: 16px 24px;
+    border-bottom: 1px solid #F3F4F6;
+    transition: background 0.15s;
+  }
+  .contact-info-row:last-of-type { border-bottom: none; }
+  .contact-info-row:hover { background: #F7F9FC; }
+
+  .contact-status-badge {
+    margin: 8px 24px 16px;
+    padding: 12px 16px;
+    background: #F0FDF4;
+    border: 1px solid #BBF7D0;
+    border-radius: 12px;
+    display: flex; align-items: center; gap: 10px;
+  }
+
+  .contact-cta-bar {
+    margin-top: 40px;
+    display: flex; align-items: center; justify-content: space-between;
+    flex-wrap: wrap; gap: 20px;
+    padding: 20px 24px;
+    background: white;
+    border-radius: 18px;
+    border: 1px solid #E5E7EB;
+    box-shadow: 0 1px 6px rgba(0,0,0,0.03);
+  }
+
+  /* Override ContactFormInline for light context */
+  .contact-form-light input,
+  .contact-form-light textarea,
+  .contact-form-light select {
+    background: #F7F9FC !important;
+    border: 1.5px solid #E5E7EB !important;
+    border-radius: 12px !important;
+    padding: 11px 14px !important;
+    color: #111827 !important;
+    font-size: 14px !important;
+    width: 100% !important;
+    font-family: 'Plus Jakarta Sans', inherit !important;
+    transition: border-color 0.2s !important;
+  }
+  .contact-form-light input:focus,
+  .contact-form-light textarea:focus {
+    outline: none !important;
+    border-color: #0B7A8A !important;
+    background: white !important;
+  }
+  .contact-form-light input::placeholder,
+  .contact-form-light textarea::placeholder {
+    color: #9CA3AF !important;
+  }
+  .contact-form-light label {
+    color: #374151 !important;
+    font-size: 13px !important;
+    font-weight: 600 !important;
+    margin-bottom: 6px !important;
+    display: block !important;
+  }
+  .contact-form-light button[type="submit"],
+  .contact-form-light button:not([type="button"]) {
+    background: #0B7A8A !important;
+    border: none !important;
+    border-radius: 40px !important;
+    padding: 13px 28px !important;
+    color: white !important;
+    font-weight: 700 !important;
+    font-size: 14px !important;
+    cursor: pointer !important;
+    width: 100% !important;
+    transition: all 0.2s !important;
+    box-shadow: 0 4px 14px rgba(11,122,138,0.22) !important;
+    font-family: inherit !important;
+  }
+  .contact-form-light button[type="submit"]:hover,
+  .contact-form-light button:not([type="button"]):hover {
+    background: #095f6c !important;
+    transform: translateY(-1px) !important;
+  }
+
+  @media(max-width: 900px) {
+    .contact-section-v2 { padding: 56px 20px 72px; }
+    .contact-cols { flex-direction: column !important; }
+  }
+`;
+
 export default function ContactSection({
   email:      emailProp,
   phone:      phoneProp,
@@ -43,296 +166,174 @@ export default function ContactSection({
   const hours      = hoursProp      ?? c.hours       ?? "Lun–Ven : 9h–18h";
   const ctaLabel   = ctaLabelProp   ?? c.cta_label   ?? "Envoyer le message";
   const successMsg = successMsgProp ?? c.success_msg ?? "Message envoyé ! Nous vous répondrons sous 24h.";
-  const bgImage    = c.bg_image     ?? "";
 
   const INFO = [
-    { icon: <Mail   size={19} strokeWidth={1.8} />, label: "Email",     value: email,   href: `mailto:${email}` },
-    { icon: <Phone  size={19} strokeWidth={1.8} />, label: "Téléphone", value: phone,   href: `tel:${phone.replace(/\s/g, "")}` },
-    { icon: <MapPin size={19} strokeWidth={1.8} />, label: "Adresse",   value: address, href: undefined },
-    { icon: <Clock  size={19} strokeWidth={1.8} />, label: "Horaires",  value: hours,   href: undefined },
+    { icon: <Mail   size={18} strokeWidth={1.8} />, label: "Email",     value: email,   href: `mailto:${email}` },
+    { icon: <Phone  size={18} strokeWidth={1.8} />, label: "Téléphone", value: phone,   href: `tel:${phone.replace(/\s/g, "")}` },
+    { icon: <MapPin size={18} strokeWidth={1.8} />, label: "Adresse",   value: address, href: undefined },
+    { icon: <Clock  size={18} strokeWidth={1.8} />, label: "Horaires",  value: hours,   href: undefined },
   ];
 
   return (
-    <section id="contact" style={{ position: "relative", overflow: "hidden" }}>
-      {/* Blurred background */}
-      {bgImage && (
-        <div style={{
-          position: "absolute", inset: 0,
-          backgroundImage: `url(${bgImage})`,
-          backgroundSize: "cover", backgroundPosition: "center",
-          filter: "blur(3px) brightness(0.35)", transform: "scale(1.05)",
-        }} />
-      )}
-      <div style={{ position: "absolute", inset: 0, background: "rgba(4,12,22,0.75)" }} />
+    <section id="contact" className="contact-section-v2">
+      <style>{CONTACT_CSS}</style>
 
-      <div
-        style={{ position: "relative", zIndex: 1, padding: "96px 72px 108px", maxWidth: 1200, margin: "0 auto" }}
-        className="section-pad"
-      >
+      <div style={{ maxWidth: 1200, margin: "0 auto", position: "relative", zIndex: 1 }}>
+
         {/* Header */}
-        <div style={{ textAlign: "center", marginBottom: 72 }}>
-          <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: 40, fontWeight: 900, color: "white", letterSpacing: "-1px", margin: 0 }}>
+        <div style={{ textAlign: "center", marginBottom: 56 }}>
+          <p className="section-eyebrow">Contactez-nous</p>
+          <h2 style={{
+            fontFamily: "'Cormorant Garamond', serif",
+            fontSize: "clamp(28px, 4vw, 42px)",
+            fontWeight: 700, color: "#053366",
+            letterSpacing: "-0.5px", margin: 0,
+          }}>
             Prenons contact
           </h2>
-          <p style={{ fontSize: 17, color: "rgba(255,255,255,0.58)", marginTop: 18, maxWidth: 520, margin: "18px auto 0", lineHeight: 1.7 }}>
+          <p style={{ fontSize: 15, color: "#6B7280", marginTop: 14, maxWidth: 480, margin: "14px auto 0", lineHeight: 1.7 }}>
             Une question ? Un projet sur mesure ? Écrivez-nous, nous vous répondons sous 24h.
           </p>
         </div>
 
         {/* 2 columns: info + form */}
-        <div style={{ display: "flex", gap: 32, flexWrap: "wrap" }}>
-          
-          {/* ── LEFT: Contact Info Card ── */}
-          <div style={{
-            flex: 1.2,
-            background: "rgba(255,255,255,0.06)",
-            backdropFilter: "blur(12px)",
-            borderRadius: 32,
-            border: "1px solid rgba(255,255,255,0.12)",
-            overflow: "hidden",
-          }}>
-            <div style={{ padding: "28px 28px 20px", borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
+        <div className="contact-cols" style={{ display: "flex", gap: 28 }}>
+
+          {/* LEFT: Contact Info Card */}
+          <div className="contact-info-card">
+            <div style={{ padding: "24px 24px 16px", borderBottom: "1px solid #F3F4F6" }}>
               <div style={{
                 display: "inline-flex", alignItems: "center", gap: 6,
-                padding: "5px 12px", borderRadius: 20,
-                background: "rgba(43,150,168,0.3)", border: "1px solid rgba(43,150,168,0.5)",
-                alignSelf: "flex-start", marginBottom: 20,
+                padding: "4px 12px", borderRadius: 20,
+                background: "#E6F4F6", border: "1px solid rgba(11,122,138,0.2)",
+                alignSelf: "flex-start", marginBottom: 16,
               }}>
-                <MessageCircle size={11} color="#A5F3FC" />
-                <span style={{ fontSize: 10, fontWeight: 800, color: "#A5F3FC", letterSpacing: 1 }}>COORDONNÉES</span>
+                <MessageCircle size={11} color="#0B7A8A" />
+                <span style={{ fontSize: 10, fontWeight: 800, color: "#0B7A8A", letterSpacing: 1 }}>COORDONNÉES</span>
               </div>
-              <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: 28, fontWeight: 900, color: "white", marginBottom: 8, letterSpacing: "-0.5px" }}>
+              <h3 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 24, fontWeight: 700, color: "#053366", marginBottom: 6, letterSpacing: "-0.3px" }}>
                 Comment nous joindre
               </h3>
-              <p style={{ fontSize: 14, color: "rgba(255,255,255,0.55)", lineHeight: 1.6 }}>
+              <p style={{ fontSize: 13, color: "#6B7280", lineHeight: 1.6 }}>
                 Que ce soit par téléphone, email ou en personne, notre équipe est là pour vous guider.
               </p>
             </div>
 
             <div style={{ padding: "8px 0" }}>
               {INFO.map((item, i) => (
-                <div key={i} style={{
-                  display: "flex", alignItems: "center", gap: 16,
-                  padding: "18px 28px",
-                  borderBottom: i < INFO.length - 1 ? "1px solid rgba(255,255,255,0.06)" : "none",
-                  transition: "background 0.15s",
-                }}>
+                <div key={i} className="contact-info-row">
                   <div style={{
-                    width: 44, height: 44, borderRadius: 14,
-                    background: "rgba(43,150,168,0.2)",
+                    width: 40, height: 40, borderRadius: 12,
+                    background: "#E6F4F6",
                     display: "flex", alignItems: "center", justifyContent: "center",
-                    flexShrink: 0, color: "#A5F3FC",
+                    flexShrink: 0, color: "#0B7A8A",
                   }}>
                     {item.icon}
                   </div>
                   <div style={{ flex: 1 }}>
-                    <p style={{ fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.45)", textTransform: "uppercase", letterSpacing: 1.2, marginBottom: 4 }}>
+                    <p style={{ fontSize: 11, fontWeight: 700, color: "#9CA3AF", textTransform: "uppercase", letterSpacing: 1, marginBottom: 3 }}>
                       {item.label}
                     </p>
                     {item.href
-                      ? <a href={item.href} style={{ fontSize: 15, fontWeight: 600, color: "white", textDecoration: "none", transition: "color 0.15s" }} onMouseEnter={(e) => e.currentTarget.style.color = "#A5F3FC"} onMouseLeave={(e) => e.currentTarget.style.color = "white"}>{item.value}</a>
-                      : <span style={{ fontSize: 15, fontWeight: 500, color: "rgba(255,255,255,0.85)" }}>{item.value}</span>
+                      ? <a href={item.href} style={{ fontSize: 14, fontWeight: 600, color: "#053366", textDecoration: "none" }}
+                          onMouseEnter={(e) => e.currentTarget.style.color = "#0B7A8A"}
+                          onMouseLeave={(e) => e.currentTarget.style.color = "#053366"}
+                        >{item.value}</a>
+                      : <span style={{ fontSize: 14, fontWeight: 500, color: "#374151" }}>{item.value}</span>
                     }
                   </div>
                 </div>
               ))}
             </div>
 
-            {/* Status badge */}
-            <div style={{
-              margin: "8px 28px 20px",
-              padding: "14px 18px",
-              background: "rgba(34,197,94,0.12)",
-              border: "1px solid rgba(34,197,94,0.25)",
-              borderRadius: 16,
-              display: "flex", alignItems: "center", gap: 12,
-            }}>
-              <div style={{
-                width: 10, height: 10, borderRadius: "50%",
-                background: "#22c55e", flexShrink: 0,
-                boxShadow: "0 0 0 3px rgba(34,197,94,0.2)",
-              }} />
-              <div>
-                <p style={{ fontSize: 13, fontWeight: 700, color: "#4ade80", marginBottom: 2 }}>Équipe disponible</p>
-                <p style={{ fontSize: 11, fontWeight: 500, color: "rgba(255,255,255,0.55)" }}>Réponse garantie sous 24h</p>
-              </div>
-            </div>
+           
 
             <Link
               href="/contact"
               style={{
                 display: "flex", alignItems: "center", justifyContent: "space-between",
-                margin: "0 28px 28px",
-                padding: "14px 20px",
-                background: "rgba(255,255,255,0.05)",
-                border: "1px solid rgba(255,255,255,0.12)",
-                borderRadius: 20,
+                margin: "0 24px 24px",
+                padding: "12px 18px",
+                background: "#F7F9FC",
+                border: "1px solid #E5E7EB",
+                borderRadius: 14,
                 textDecoration: "none",
                 transition: "all 0.15s",
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.background = "rgba(255,255,255,0.1)";
-                e.currentTarget.style.borderColor = "rgba(255,255,255,0.25)";
+                e.currentTarget.style.background = "#E6F4F6";
+                e.currentTarget.style.borderColor = "rgba(11,122,138,0.25)";
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.background = "rgba(255,255,255,0.05)";
-                e.currentTarget.style.borderColor = "rgba(255,255,255,0.12)";
+                e.currentTarget.style.background = "#F7F9FC";
+                e.currentTarget.style.borderColor = "#E5E7EB";
               }}
             >
-              <span style={{ fontSize: 13, fontWeight: 700, color: "rgba(255,255,255,0.75)", letterSpacing: 0.5 }}>Page contact complète</span>
-              <ArrowRight size={15} color="rgba(255,255,255,0.6)" />
+              <span style={{ fontSize: 13, fontWeight: 700, color: "#374151" }}>Page contact complète</span>
+              <ArrowRight size={14} color="#6B7280" />
             </Link>
           </div>
 
-          {/* ── RIGHT: Form Card ── */}
-          <div style={{
-            flex: 1.8,
-            background: "rgba(255,255,255,0.06)",
-            backdropFilter: "blur(12px)",
-            borderRadius: 32,
-            border: "1px solid rgba(255,255,255,0.12)",
-            overflow: "hidden",
-          }}>
-            <div style={{ padding: "28px 32px 20px", borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
+          {/* RIGHT: Form Card */}
+          <div className="contact-form-card">
+            <div style={{ padding: "24px 28px 16px", borderBottom: "1px solid #F3F4F6" }}>
               <div style={{
                 display: "inline-flex", alignItems: "center", gap: 6,
-                padding: "5px 12px", borderRadius: 20,
-                background: "rgba(43,150,168,0.3)", border: "1px solid rgba(43,150,168,0.5)",
-                alignSelf: "flex-start", marginBottom: 20,
+                padding: "4px 12px", borderRadius: 20,
+                background: "#E6F4F6", border: "1px solid rgba(11,122,138,0.2)",
+                alignSelf: "flex-start", marginBottom: 16,
               }}>
-                <Send size={11} color="#A5F3FC" />
-                <span style={{ fontSize: 10, fontWeight: 800, color: "#A5F3FC", letterSpacing: 1 }}>FORMULAIRE RAPIDE</span>
+                <Send size={11} color="#0B7A8A" />
+                <span style={{ fontSize: 10, fontWeight: 800, color: "#0B7A8A", letterSpacing: 1 }}>FORMULAIRE RAPIDE</span>
               </div>
-              <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: 28, fontWeight: 900, color: "white", marginBottom: 8, letterSpacing: "-0.5px" }}>
+              <h3 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 24, fontWeight: 700, color: "#053366", marginBottom: 6, letterSpacing: "-0.3px" }}>
                 Envoyez-nous un message
               </h3>
-              <p style={{ fontSize: 14, color: "rgba(255,255,255,0.55)", lineHeight: 1.6 }}>
+              <p style={{ fontSize: 13, color: "#6B7280", lineHeight: 1.6 }}>
                 Remplissez le formulaire ci-dessous, nous vous recontacterons dans les plus brefs délais.
               </p>
             </div>
 
-            <div style={{ padding: "28px 32px 32px" }}>
-              {/* Form wrapper with custom styles */}
-              <div className="contact-form-dark">
+            <div style={{ padding: "24px 28px 28px" }}>
+              <div className="contact-form-light">
                 <ContactFormInline ctaLabel={ctaLabel} successMsg={successMsg} />
               </div>
             </div>
           </div>
         </div>
 
-        {/* Additional CTA banner */}
-        <div style={{
-          marginTop: 48,
-          display: "flex", alignItems: "center", justifyContent: "space-between",
-          flexWrap: "wrap", gap: 20,
-          padding: "20px 28px",
-          background: "rgba(43,150,168,0.12)",
-          borderRadius: 24,
-          border: "1px solid rgba(43,150,168,0.25)",
-        }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+        {/* CTA bar */}
+        <div className="contact-cta-bar">
+          <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
             <div style={{
-              width: 48, height: 48, borderRadius: 16,
-              background: "rgba(43,150,168,0.25)",
+              width: 44, height: 44, borderRadius: 14,
+              background: "#E6F4F6",
               display: "flex", alignItems: "center", justifyContent: "center",
             }}>
-              <Phone size={22} color="#A5F3FC" />
+              <Phone size={20} color="#0B7A8A" />
             </div>
             <div>
-              <p style={{ fontSize: 15, fontWeight: 700, color: "white", marginBottom: 4 }}>Besoin d&apos;une réponse immédiate ?</p>
-              <p style={{ fontSize: 13, color: "rgba(255,255,255,0.55)" }}>Appelez-nous directement au <strong style={{ color: "#A5F3FC" }}>{phone}</strong></p>
+              <p style={{ fontSize: 14, fontWeight: 700, color: "#053366", marginBottom: 3 }}>Besoin d&apos;une réponse immédiate ?</p>
+              <p style={{ fontSize: 13, color: "#6B7280" }}>Appelez-nous directement au <strong style={{ color: "#0B7A8A" }}>{phone}</strong></p>
             </div>
           </div>
           <a
             href={`tel:${phone.replace(/\s/g, "")}`}
             style={{
-              display: "inline-flex", alignItems: "center", gap: 10,
-              padding: "12px 28px", borderRadius: 40,
-              background: "rgba(255,255,255,0.1)",
-              border: "1px solid rgba(255,255,255,0.2)",
-              color: "white", fontSize: 13, fontWeight: 700,
+              display: "inline-flex", alignItems: "center", gap: 8,
+              padding: "11px 24px", borderRadius: 40,
+              background: "#E6F4F6", border: "1px solid rgba(11,122,138,0.2)",
+              color: "#0B7A8A", fontSize: 13, fontWeight: 700,
               textDecoration: "none", whiteSpace: "nowrap",
+              transition: "all 0.2s",
             }}
+            onMouseEnter={(e) => { e.currentTarget.style.background = "#0B7A8A"; e.currentTarget.style.color = "white"; }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = "#E6F4F6"; e.currentTarget.style.color = "#0B7A8A"; }}
           >
-            Appeler maintenant <ArrowRight size={14} />
+            Appeler maintenant <ArrowRight size={13} />
           </a>
         </div>
       </div>
-
-      <style jsx>{`
-        .section-title-light {
-          font-size: 40px;
-          font-weight: 900;
-          color: white;
-          letter-spacing: -1px;
-        }
-        
-        /* Dark mode styles for ContactFormInline */
-        .contact-form-dark input,
-        .contact-form-dark textarea,
-        .contact-form-dark select {
-          background: rgba(255,255,255,0.08) !important;
-          border: 1px solid rgba(255,255,255,0.15) !important;
-          border-radius: 16px !important;
-          padding: 12px 16px !important;
-          color: white !important;
-          font-size: 14px !important;
-          width: 100% !important;
-          font-family: inherit !important;
-        }
-        
-        .contact-form-dark input:focus,
-        .contact-form-dark textarea:focus,
-        .contact-form-dark select:focus {
-          outline: none !important;
-          border-color: #2B96A8 !important;
-          background: rgba(255,255,255,0.12) !important;
-        }
-        
-        .contact-form-dark input::placeholder,
-        .contact-form-dark textarea::placeholder {
-          color: rgba(255,255,255,0.4) !important;
-        }
-        
-        .contact-form-dark label {
-          color: rgba(255,255,255,0.7) !important;
-          font-size: 13px !important;
-          font-weight: 600 !important;
-          margin-bottom: 6px !important;
-          display: block !important;
-        }
-        
-        .contact-form-dark button[type="submit"],
-        .contact-form-dark button:not([type="button"]) {
-          background: #2B96A8 !important;
-          border: none !important;
-          border-radius: 40px !important;
-          padding: 14px 28px !important;
-          color: white !important;
-          font-weight: 700 !important;
-          font-size: 13px !important;
-          letter-spacing: 0.5px !important;
-          cursor: pointer !important;
-          width: 100% !important;
-          transition: all 0.15s !important;
-        }
-        
-        .contact-form-dark button[type="submit"]:hover,
-        .contact-form-dark button:not([type="button"]):hover {
-          background: #1e6f7e !important;
-          transform: translateY(-1px) !important;
-        }
-        
-        @media (max-width: 900px) {
-          .section-title-light { font-size: 32px; }
-          div[style*="padding: 96px 72px"] { padding: 64px 24px !important; }
-          div[style*="display: flex; gap: 32px"] { flex-direction: column; }
-        }
-        
-        @media (max-width: 640px) {
-          .section-title-light { font-size: 28px; }
-        }
-      `}</style>
     </section>
   );
 }
