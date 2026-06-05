@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabaseClient";
 import { ROUTES } from "@/app/lib/routes";
+import NotificationBell from "./NotificationBell";
 import {
   LayoutDashboard, Map, CalendarDays, Heart, MessageCircle,
   Mountain, Wallet, Star, UserCircle, Users, Shield,
@@ -77,6 +78,7 @@ export default function Sidebar({ role, userName, userEmail }: SidebarProps) {
   const [drawerOpen,      setDrawerOpen]      = useState(false);
   const [isMobile,        setIsMobile]        = useState(false);
   const [avatarUrl,       setAvatarUrl]       = useState<string | null>(null);
+  const [userId,          setUserId]          = useState<string | null>(null);
   const [expandedGroups,  setExpandedGroups]  = useState<Record<string, boolean>>({});
 
   useEffect(() => {
@@ -93,6 +95,7 @@ export default function Sidebar({ role, userName, userEmail }: SidebarProps) {
   useEffect(() => {
     supabase.auth.getUser().then(async ({ data: { user } }) => {
       if (!user) return;
+      setUserId(user.id);
       const { data } = await supabase
         .from("profiles")
         .select("avatar_url")
@@ -145,6 +148,18 @@ export default function Sidebar({ role, userName, userEmail }: SidebarProps) {
                 {ROLE_LABEL[role]}
               </span>
             </div>
+          </div>
+
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, padding: "0 4px 14px" }}>
+            <div>
+              <p style={{ margin: 0, fontSize: 11, fontWeight: 700, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "0.08em" }}>
+                Notifications
+              </p>
+              <p style={{ margin: "3px 0 0", fontSize: 12, color: "#64748B" }}>
+                Suivi en temps réel
+              </p>
+            </div>
+            <NotificationBell userId={userId} compact />
           </div>
         </div>
 

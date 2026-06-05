@@ -19,32 +19,37 @@ const CSS = `
   @keyframes spin { to { transform: rotate(360deg); } }
 
   .rc-wrap {
-    font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+    font-family: 'DM Sans', system-ui, sans-serif;
     width: 100%;
     box-sizing: border-box;
   }
 
   /* ── Header ── */
   .rc-header {
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    flex-wrap: wrap;
-    gap: 16px;
+    border-bottom: 1px solid #EBEBEB;
+    padding: 28px 0 24px;
     margin-bottom: 32px;
     animation: fadeUp .35s ease both;
   }
+  .rc-header-inner {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    flex-wrap: wrap;
+    gap: 16px;
+  }
   .rc-header-title {
-    font-size: clamp(24px, 5vw, 32px);
-    font-weight: 800;
+    font-family: 'Playfair Display', serif;
+    font-size: 28px;
+    font-weight: 900;
     color: #053366;
-    margin: 0 0 6px;
-    letter-spacing: -0.5px;
+    margin: 0 0 4px;
+    letter-spacing: -0.3px;
     line-height: 1.2;
   }
   .rc-header-sub {
-    font-size: 14px;
-    color: #94A3B8;
+    font-size: 13px;
+    color: #9CA3AF;
     margin: 0;
     font-weight: 500;
   }
@@ -55,22 +60,22 @@ const CSS = `
     align-items: center;
     gap: 8px;
     padding: 10px 18px;
-    border: 1.5px solid #E2E8F0;
+    border: 1.5px solid #E5E7EB;
     border-radius: 12px;
     background: #fff;
-    color: #475569;
+    color: #6B7280;
     font-size: 13px;
     font-weight: 600;
     cursor: pointer;
-    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-family: inherit;
     transition: all .2s;
     white-space: nowrap;
     box-shadow: 0 1px 2px rgba(0,0,0,.02);
   }
   .rc-refresh:hover:not(:disabled) { 
-    border-color: #2B96A8; 
-    color: #2B96A8;
-    box-shadow: 0 4px 12px rgba(43,150,168,.12);
+    border-color: #02AFCF; 
+    color: #02AFCF;
+    box-shadow: 0 4px 12px rgba(2,175,207,.12);
     transform: translateY(-1px);
   }
   .rc-refresh:disabled { opacity: 0.5; cursor: not-allowed; }
@@ -83,29 +88,29 @@ const CSS = `
     margin-bottom: 32px;
   }
   .rc-stat {
+    background: white;
+    border-radius: 18px;
+    border: 1px solid #EBEBEB;
+    padding: 20px 22px;
     display: flex;
     align-items: center;
-    gap: 12px;
-    padding: 16px 18px;
-    border-radius: 14px;
-    border: 1.5px solid;
+    gap: 14px;
+    box-shadow: 0 2px 8px rgba(0,0,0,.04);
     animation: fadeUp .35s ease both;
-    transition: all .2s;
+    transition: all .22s;
   }
   .rc-stat:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0,0,0,.06);
+    box-shadow: 0 10px 32px rgba(0,0,0,.1);
+    transform: translateY(-3px);
   }
   .rc-stat-icon {
-    width: 40px;
-    height: 40px;
-    border-radius: 10px;
-    background: #fff;
+    width: 42px;
+    height: 42px;
+    border-radius: 12px;
     display: flex;
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
-    box-shadow: 0 2px 4px rgba(0,0,0,.04);
   }
   .rc-stat-num {
     font-size: 22px;
@@ -113,11 +118,12 @@ const CSS = `
     line-height: 1;
     margin: 0;
     letter-spacing: -0.3px;
+    color: #111827;
   }
   .rc-stat-lbl {
     font-size: 12px;
     font-weight: 600;
-    color: #94A3B8;
+    color: #9CA3AF;
     margin: 4px 0 0;
     text-transform: uppercase;
     letter-spacing: 0.05em;
@@ -135,35 +141,34 @@ const CSS = `
   .rc-empty {
     padding: 80px 32px;
     text-align: center;
-    background: linear-gradient(135deg, #fff 0%, #F8FBFF 100%);
-    border-radius: 20px;
-    border: 1.5px solid #E2E8F0;
+    background: white;
+    border-radius: 24px;
+    border: 1px solid #EBEBEB;
+    box-shadow: 0 2px 8px rgba(0,0,0,.04);
   }
   .rc-empty-icon {
     width: 72px;
     height: 72px;
     border-radius: 50%;
-    background: linear-gradient(135deg, #053366 0%, #2B96A8 100%);
+    background: rgba(2,175,207,.08);
     display: flex;
     align-items: center;
     justify-content: center;
     margin: 0 auto 20px;
   }
-  .rc-empty-icon svg {
-    color: #fff;
-  }
   .rc-empty h3 {
-    font-size: 20px;
-    font-weight: 800;
+    font-family: 'Playfair Display', serif;
+    font-size: 22px;
+    font-weight: 900;
     color: #053366;
     margin: 0 0 10px;
   }
   .rc-empty p {
     font-size: 14px;
-    color: #94A3B8;
+    color: #9CA3AF;
     margin: 0 0 28px;
     line-height: 1.6;
-    max-width: 400px;
+    max-width: 380px;
     margin-left: auto;
     margin-right: auto;
   }
@@ -176,57 +181,58 @@ const CSS = `
   .rc-btn-primary {
     display: inline-flex;
     align-items: center;
-    gap: 8px;
+    gap: 7px;
     padding: 12px 24px;
-    background: linear-gradient(135deg, #053366 0%, #0F5E8F 100%);
+    background: linear-gradient(135deg, #02AFCF 0%, #053366 100%);
     color: #fff;
-    border-radius: 12px;
+    border-radius: 14px;
     text-decoration: none;
     font-size: 14px;
     font-weight: 700;
-    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-family: inherit;
     transition: all .2s;
     border: none;
     cursor: pointer;
-    box-shadow: 0 4px 12px rgba(5,51,102,.2);
+    box-shadow: 0 4px 12px rgba(2,175,207,.25);
   }
   .rc-btn-primary:hover { 
     transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(5,51,102,.3);
+    box-shadow: 0 8px 20px rgba(2,175,207,.35);
   }
   .rc-btn-secondary {
     display: inline-flex;
     align-items: center;
-    gap: 8px;
+    gap: 7px;
     padding: 12px 22px;
-    background: #fff;
-    color: #475569;
-    border: 1.5px solid #E2E8F0;
-    border-radius: 12px;
+    background: white;
+    color: #374151;
+    border: 1.5px solid #E5E7EB;
+    border-radius: 14px;
     text-decoration: none;
     font-size: 14px;
     font-weight: 600;
-    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-family: inherit;
     transition: all .2s;
     cursor: pointer;
   }
   .rc-btn-secondary:hover { 
-    border-color: #2B96A8;
-    color: #2B96A8;
-    box-shadow: 0 4px 12px rgba(43,150,168,.15);
+    border-color: #02AFCF;
+    color: #02AFCF;
+    box-shadow: 0 4px 12px rgba(2,175,207,.12);
   }
 
   @media (max-width: 900px) {
-    .rc-stats { grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; }
+    .rc-stats { grid-template-columns: repeat(3, 1fr); gap: 12px; }
     .rc-grid { grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px; }
   }
   @media (max-width: 640px) {
-    .rc-header { gap: 12px; margin-bottom: 24px; }
+    .rc-header { padding: 20px 0 18px; margin-bottom: 20px; }
     .rc-header-title { font-size: 22px; }
+    .rc-header-inner { flex-direction: column; align-items: flex-start; gap: 12px; }
     .rc-stats { grid-template-columns: 1fr; gap: 10px; }
-    .rc-stat { padding: 14px 16px; }
+    .rc-stat { padding: 14px 16px; border-radius: 14px; }
     .rc-grid { grid-template-columns: 1fr; gap: 14px; }
-    .rc-empty { padding: 56px 20px; }
+    .rc-empty { padding: 56px 20px; border-radius: 20px; }
     .rc-empty h3 { font-size: 18px; }
     .rc-empty-actions { gap: 8px; }
     .rc-btn-primary, .rc-btn-secondary { padding: 10px 18px; font-size: 13px; }
@@ -301,7 +307,7 @@ export default function ReservationsClient({ reservations: init, autoOpenId }: P
         .from("reservations")
         .update({ status: "cancelled", payment_status: "expired" })
         .eq("id", id)
-        .eq("status", "pending"); // ✅ ne touche que si encore pending
+        .eq("status", "pending");
       await supabase.from("historique_reservations").insert({
         original_reservation_id: r.id,
         booking_code:    r.booking_code,
@@ -334,7 +340,7 @@ export default function ReservationsClient({ reservations: init, autoOpenId }: P
         .eq("touriste_id", user.id)
         .neq("status", "cancelled")
         .gte("date", today)
-        .order("created_at", { ascending: false }); // ⭐ LIFO
+        .order("created_at", { ascending: false });
       if (error) throw error;
       const fresh = data || [];
       await moveExpiredToHistory(fresh);
@@ -374,9 +380,21 @@ export default function ReservationsClient({ reservations: init, autoOpenId }: P
 
   /* ── Stats config ── */
   const stats = [
-    { icon: <CalendarDays size={14} color="#2B96A8"/>, num: total,     lbl: "Total",      bg: "#F8FAFC",  border: "#E2E8F0",            color: "#0F172A" },
-    { icon: <AlertCircle  size={14} color="#D97706"/>, num: pending,   lbl: "En attente", bg: "#FFFBEB",  border: "#FDE68A",            color: "#D97706" },
-    { icon: <CheckCircle2 size={14} color="#0D9488"/>, num: confirmed, lbl: "Confirmées", bg: "#F0FDFA",  border: "rgba(13,148,136,.2)", color: "#0D9488" },
+    {
+      icon: <CalendarDays size={18} color="#2B96A8"/>,
+      num: total, lbl: "Total",
+      iconBg: "rgba(43,150,168,.1)",
+    },
+    {
+      icon: <AlertCircle size={18} color="#D97706"/>,
+      num: pending, lbl: "En attente",
+      iconBg: "rgba(217,119,6,.1)",
+    },
+    {
+      icon: <CheckCircle2 size={18} color="#10B981"/>,
+      num: confirmed, lbl: "Confirmées",
+      iconBg: "rgba(16,185,129,.1)",
+    },
   ];
 
   return (
@@ -386,31 +404,35 @@ export default function ReservationsClient({ reservations: init, autoOpenId }: P
 
         {/* ── Header ── */}
         <div className="rc-header">
-          <div>
-            <h1 className="rc-header-title">Mes réservations</h1>
-            <p className="rc-header-sub">Gérez vos excursions en Tunisie</p>
+          <div className="rc-header-inner">
+            <div>
+              <h1 className="rc-header-title">Mes réservations</h1>
+              <p className="rc-header-sub">Gérez vos excursions en Tunisie</p>
+            </div>
+            <button
+              className="rc-refresh"
+              onClick={refreshReservations}
+              disabled={loading}
+            >
+              <RefreshCcw
+                size={13}
+                style={loading ? { animation: "spin 1s linear infinite" } : {}}
+              />
+              {loading ? "Chargement…" : "Actualiser"}
+            </button>
           </div>
-          <button
-            className="rc-refresh"
-            onClick={refreshReservations}
-            disabled={loading}
-          >
-            <RefreshCcw
-              size={13}
-              style={loading ? { animation: "spin 1s linear infinite" } : {}}
-            />
-            {loading ? "Chargement…" : "Actualiser"}
-          </button>
         </div>
 
         {/* ── Stats ── */}
         {total > 0 && (
           <div className="rc-stats">
-            {stats.map(({ icon, num, lbl, bg, border, color }) => (
-              <div key={lbl} className="rc-stat" style={{ background: bg, borderColor: border }}>
-                <div className="rc-stat-icon">{icon}</div>
+            {stats.map(({ icon, num, lbl, iconBg }, i) => (
+              <div key={lbl} className="rc-stat" style={{ animationDelay: `${i * 0.07}s` }}>
+                <div className="rc-stat-icon" style={{ background: iconBg }}>
+                  {icon}
+                </div>
                 <div>
-                  <p className="rc-stat-num" style={{ color }}>{num}</p>
+                  <p className="rc-stat-num">{num}</p>
                   <p className="rc-stat-lbl">{lbl}</p>
                 </div>
               </div>
@@ -422,10 +444,10 @@ export default function ReservationsClient({ reservations: init, autoOpenId }: P
         {total === 0 ? (
           <div className="rc-empty">
             <div className="rc-empty-icon">
-              <Compass size={26} color="#94A3B8" strokeWidth={1.5}/>
+              <Compass size={28} color="#02AFCF" strokeWidth={1.5}/>
             </div>
             <h3>Aucune réservation active</h3>
-            <p>Explorez les excursions disponibles et planifiez votre prochain voyage.</p>
+            <p>Explorez les excursions disponibles et planifiez votre prochain voyage en Tunisie.</p>
             <div className="rc-empty-actions">
               <Link href="/excursions" className="rc-btn-primary">
                 <Sparkles size={13}/> Explorer <ArrowRight size={13}/>

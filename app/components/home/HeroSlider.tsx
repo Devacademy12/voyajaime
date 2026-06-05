@@ -2,9 +2,10 @@
 
 import { useEffect, useRef, useState, useCallback } from "react";
 import Link from "next/link";
-import { MapPin, ChevronDown, Sparkles, Map, Play, Volume2, VolumeX, Star, Calendar, Users, Compass, ArrowRight } from "lucide-react";
+import { MapPin, ChevronDown, Map, Volume2, VolumeX, Star, Compass, ArrowRight } from "lucide-react";
 import { createClient } from "@/lib/supabaseClient";
 import { ROUTES } from "@/app/lib/routes";
+import styles from "./HeroSlider.module.css";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -228,572 +229,184 @@ export default function HomeSlider() {
   const slide = slides[current];
 
   return (
-    <>
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;0,800;0,900;1,700&family=Inter:wght@300;400;500;600;700;800&display=swap');
-
-        @keyframes spin { 
-          to { transform: rotate(360deg) } 
-        }
-        
-        @keyframes float {
-          0%, 100% { transform: translateY(0) translateX(-50%); }
-          50% { transform: translateY(12px) translateX(-50%); }
-        }
-        
-        @keyframes slideUp {
-          0% { 
-            opacity: 0; 
-            transform: translateY(40px);
-            filter: blur(8px);
-          }
-          100% { 
-            opacity: 1; 
-            transform: translateY(0);
-            filter: blur(0);
-          }
-        }
-        
-        @keyframes fadeInScale {
-          0% { 
-            opacity: 0; 
-            transform: scale(0.95);
-          }
-          100% { 
-            opacity: 1; 
-            transform: scale(1);
-          }
-        }
-        
-        @keyframes shimmer {
-          0%   { background-position: 200% 0 }
-          100% { background-position: -200% 0 }
-        }
-
-        @keyframes gradientShift {
-          0% { background-position: 0% 50%; }
-          50% { background-position: 100% 50%; }
-          100% { background-position: 0% 50%; }
-        }
-
-        .slide-bg {
-          position: absolute; inset: 0;
-          background-size: cover; background-position: center;
-          transition: opacity ${FADE_DURATION}ms cubic-bezier(0.4, 0, 0.2, 1), transform ${FADE_DURATION}ms cubic-bezier(0.4, 0, 0.2, 1);
-          will-change: opacity, transform;
-        }
-
-        .hero-animate-1 { 
-          animation: slideUp 0.7s cubic-bezier(0.34, 1.2, 0.64, 1) 0.1s both; 
-        }
-        .hero-animate-2 { 
-          animation: slideUp 0.7s cubic-bezier(0.34, 1.2, 0.64, 1) 0.2s both; 
-        }
-        .hero-animate-3 { 
-          animation: slideUp 0.7s cubic-bezier(0.34, 1.2, 0.64, 1) 0.35s both; 
-        }
-        .hero-animate-4 { 
-          animation: slideUp 0.7s cubic-bezier(0.34, 1.2, 0.64, 1) 0.5s both; 
-        }
-
-        .hero-content {
-          position: absolute;
-          top: 50%;
-          left: 50%;
-          transform: translate(-50%, -50%);
-          max-width: 1280px;
-          width: 100%;
-          display: flex;
-          flex-direction: row;
-          justify-content: space-between;
-          gap: 32px;
-          align-items: flex-end;
-          z-index: 15;
-          padding-left: 28px;
-          padding-right: 28px;
-          box-sizing: border-box;
-        }
-
-        .hero-copy {
-          flex: 1;
-          min-width: 0;
-          max-width: 760px;
-        }
-
-        .hero-cta-group {
-          display: flex;
-          gap: 18px;
-          flex-wrap: wrap;
-          align-items: center;
-          justify-content: flex-end;
-          flex-shrink: 0;
-        }
-
-        .btn-primary {
-          display: inline-flex; align-items: center; gap: 12px;
-          padding: 16px 36px; border-radius: 12px;
-          background: #2B96A8;
-          color: white; font-size: 16px; font-weight: 700;
-          text-decoration: none; font-family: 'DM Sans', sans-serif;
-          transition: all 0.4s cubic-bezier(0.34, 1.2, 0.64, 1);
-          box-shadow: 0 8px 24px rgba(43, 150, 168, 0.3);
-          white-space: nowrap;
-          letter-spacing: 0.3px;
-          border: 2px solid #2B96A8;
-          cursor: pointer;
-          position: relative;
-          overflow: hidden;
-        }
-        
-        .btn-primary:hover { 
-          transform: translateY(-4px); 
-          background: transparent;
-          color: #2B96A8;
-          box-shadow: 0 16px 40px rgba(43, 150, 168, 0.2);
-          gap: 14px;
-        }
-        
-        .btn-primary:active { transform: translateY(-2px); }
-
-        .btn-ghost {
-          display: inline-flex; align-items: center; gap: 12px;
-          padding: 16px 36px; border-radius: 12px;
-          background: rgba(255, 255, 255, 0.1);
-          backdrop-filter: blur(12px);
-          border: 2px solid rgba(255, 255, 255, 0.8);
-          color: white; font-size: 16px; font-weight: 700;
-          text-decoration: none; font-family: 'DM Sans', sans-serif;
-          transition: all 0.4s cubic-bezier(0.34, 1.2, 0.64, 1);
-          white-space: nowrap;
-          letter-spacing: 0.3px;
-          cursor: pointer;
-        }
-        
-        .btn-ghost:hover { 
-          background: white;
-          color: #053366;
-          border-color: white;
-          transform: translateY(-4px);
-          gap: 14px;
-        }
-
-        .mute-btn {
-          position: absolute; 
-          bottom: 32px; 
-          right: 32px;
-          background: rgba(0, 0, 0, 0.5); 
-          backdrop-filter: blur(12px);
-          border: 1px solid rgba(255, 255, 255, 0.15);
-          color: white; 
-          border-radius: 50px; 
-          padding: 10px 20px;
-          cursor: pointer; 
-          display: flex; 
-          align-items: center; 
-          gap: 10px;
-          font-size: 13px; 
-          font-weight: 500; 
-          font-family: 'DM Sans', sans-serif;
-          transition: all 0.3s ease;
-          z-index: 20;
-        }
-        
-        .mute-btn:hover { 
-          background: rgba(0, 0, 0, 0.8);
-          border-color: rgba(255, 255, 255, 0.4);
-          transform: scale(1.05);
-        }
-
-        .skeleton-shimmer {
-          background: linear-gradient(90deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
-          background-size: 200% 100%;
-          animation: shimmer 1.8s infinite;
-        }
-
-        @media (max-width: 768px) {
-          .hero-content {
-            top: auto;
-            bottom: 96px;
-            transform: none;
-            left: 0;
-            right: 0;
-            align-items: stretch;
-            flex-direction: column;
-            justify-content: flex-start;
-            gap: 18px;
-            padding-left: 24px;
-            padding-right: 24px;
-          }
-
-          .hero-copy {
-            max-width: none;
-          }
-
-          .hero-cta-group {
-            width: 100%;
-            flex-direction: column;
-            align-items: stretch;
-            gap: 12px;
-          }
-
-          .btn-primary, .btn-ghost {
-            padding: 12px 24px;
-            font-size: 14px;
-            width: 100%;
-            justify-content: center;
-          }
-
-          .btn-primary svg, .btn-ghost svg {
-            width: 16px;
-            height: 16px;
-          }
-
-          .mute-btn {
-            bottom: 20px;
-            right: 20px;
-            padding: 8px 14px;
-          }
-        }
-      `}</style>
-
-      <section
-        style={{ 
-          position: "relative", 
-          height: "100vh", 
-          overflow: "hidden", 
-          fontFamily: "'DM Sans', system-ui, sans-serif" 
-        }}
-        aria-label="Slider principal"
-      >
-
-        {/* ── Loading ── */}
-        {loading && (
-          <div className="skeleton-shimmer" style={{ position: "absolute", inset: 0, zIndex: 50 }}>
-            <div style={{ 
-              position:"absolute", inset:0, display:"flex", 
-              alignItems:"center", justifyContent:"center", 
-              flexDirection:"column", gap:24 
-            }}>
-              <div style={{ 
-                width: 60, height: 60, 
-                border: "3px solid rgba(43,150,168,0.2)", 
-                borderTop: "3px solid #2B96A8", 
-                borderRadius: "50%", 
-                animation: "spin .9s linear infinite" 
-              }}/>
-              <p style={{ 
-                color:"rgba(255,255,255,0.6)", 
-                fontSize: 14, 
-                fontWeight: 500,
-                letterSpacing: 1
-              }}>
-                Chargement...
-              </p>
-            </div>
+    <section className={styles.sliderSection} aria-label="Slider principal">
+      {/* ── Loading ── */}
+      {loading && (
+        <div className={styles.skeletonShimmer} style={{ position: "absolute", inset: 0, zIndex: 50 }}>
+          <div className={styles.loadingContainer}>
+            <div className={styles.spinner} />
+            <p className={styles.loadingText}>Chargement...</p>
           </div>
-        )}
+        </div>
+      )}
 
-        {/* ── Fallback ── */}
-        {!loading && !slides.length && (
-          <div style={{ 
-            position:"absolute", inset:0, 
-            backgroundImage:`url(${FALLBACK_IMG})`, 
-            backgroundSize:"cover", backgroundPosition:"center" 
-          }}>
-            <div style={{ 
-              position:"absolute", inset:0, 
-              background: "linear-gradient(135deg, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0.5) 100%)" 
-            }}/>
-            <div style={{ 
-              position:"absolute", 
-              top:"50%", left:"50%", 
-              transform:"translate(-50%, -50%)", 
-              textAlign:"center", 
-              width:"100%",
-              maxWidth: 700,
-              padding: "0 24px"
-            }}>
-              <h1 style={{ 
-                fontFamily:"'Playfair Display', serif", 
-                fontSize:"clamp(42px, 6vw, 72px)", 
-                fontWeight: 900, 
-                color:"white", 
-                marginBottom: 24,
-                lineHeight: 1.1,
-                letterSpacing: "-2px"
-              }}>
-                Découvrez la Tunisie
-              </h1>
-              <p style={{
-                fontSize: "clamp(16px, 2vw, 18px)",
-                color: "rgba(255,255,255,0.9)",
-                marginBottom: 32,
-                lineHeight: 1.6
-              }}>
-                Des expériences uniques au cœur de la Méditerranée
-              </p>
-              <Link href={ROUTES.excursions} className="btn-primary" style={{ display: "inline-flex" }}>
-                <Compass size={18}/> Explorer maintenant
-              </Link>
-            </div>
+      {/* ── Fallback ── */}
+      {!loading && !slides.length && (
+        <div className={styles.fallbackContainer} style={{ backgroundImage: `url(${FALLBACK_IMG})` }}>
+          <div className={styles.fallbackOverlay} />
+          <div className={styles.fallbackContent}>
+            <h1 className={styles.fallbackTitle}>Découvrez la Tunisie</h1>
+            <p className={styles.fallbackSubtitle}>
+              Des expériences uniques au cœur de la Méditerranée
+            </p>
+            <Link href={ROUTES.excursions} className={styles.btnPrimary}>
+              <Compass size={18} /> Explorer maintenant
+            </Link>
           </div>
-        )}
+        </div>
+      )}
 
-        {/* ── Slides ── */}
-        {!loading && slide && (
-          <>
-            {/* Background */}
-            {slide.type === "video" && slide.videoUrl ? (
-              <VideoBackground url={slide.videoUrl} muted={muted}/>
-            ) : (
-              <div
-                className="slide-bg"
-                style={{
-                  backgroundImage: `url(${slide.imageUrl})`,
-                  opacity: fading ? 0 : 1,
-                  transform: fading ? "scale(1.05)" : "scale(1)",
-                }}
-              />
-            )}
-
-            {/* Overlays modernes */}
-            <div style={{ 
-              position:"absolute", 
-              background: "linear-gradient(100deg, rgba(0,0,0,.85) 0%, rgba(0,0,0,.45) 45%, rgba(0,0,0,.15) 100%)" 
-            }}/>
-            <div style={{ 
-              position:"absolute", inset:0,
-              background: "linear-gradient(to top, rgba(0,0,0,.7) 0%, transparent 60%)" 
-            }}/>
-            
-            {/* Subtle pattern overlay */}
-            <div style={{
-              position: "absolute",
-              inset: 0,
-              backgroundImage: `radial-gradient(circle at 20% 40%, rgba(255,255,255,0.05) 1px, transparent 1px)`,
-              backgroundSize: "40px 40px",
-              pointerEvents: "none"
-            }}/>
-            
-            {/* Mute button */}
-            {slide.type === "video" && slide.videoUrl && !isYouTube(slide.videoUrl) && (
-              <button className="mute-btn" onClick={() => setMuted(m => !m)}>
-                {muted ? <VolumeX size={14}/> : <Volume2 size={14}/>}
-                <span>{muted ? "Activer le son" : "Couper le son"}</span>
-              </button>
-            )}
-
-            {/* ─── Hero Content amélioré ─── */}
+      {/* ── Slides ── */}
+      {!loading && slide && (
+        <>
+          {/* Background */}
+          {slide.type === "video" && slide.videoUrl ? (
+            <VideoBackground url={slide.videoUrl} muted={muted}/>
+          ) : (
             <div
-              key={current}
-              className="hero-content"
-            >
-              <div className="hero-copy">
-                {slide.subtitle && (
-                  <div className="hero-animate-1" style={{
-                    display: "inline-flex",
-                    alignItems: "center",
-                    gap: 10,
-                    padding: "8px 20px",
-                    borderRadius: 100,
-                    background: `${slide.color}15`,
-                    backdropFilter: "blur(16px)",
-                    border: `1px solid ${slide.color}40`,
-                    marginBottom: 28,
-                  }}>
-                    <MapPin size={14} style={{ color: slide.color }} />
-                    <span style={{
-                      fontSize: 13,
-                      fontWeight: 700,
-                      color: "white",
-                      letterSpacing: 1.8,
-                      textTransform: "uppercase"
-                    }}>
-                      {slide.subtitle}
-                    </span>
-                  </div>
-                )}
+              className={styles.slideBg}
+              style={{
+                backgroundImage: `url(${slide.imageUrl})`,
+                opacity: fading ? 0 : 1,
+                transform: fading ? "scale(1.05)" : "scale(1)",
+              }}
+            />
+          )}
 
-                <h1 className="hero-animate-2" style={{
-                  fontFamily: "'Playfair Display', serif",
-                  fontSize: "clamp(40px, 5vw, 68px)",
-                  fontWeight: 800,
-                  color: "white",
-                  lineHeight: 1.05,
-                  letterSpacing: "-2.5px",
-                  marginBottom: 24,
-                  textShadow: "0 4px 40px rgba(0,0,0,0.3)",
-                  maxWidth: "100%",
+          {/* Overlays modernes */}
+          <div className={styles.gradientOverlay} />
+          <div className={styles.gradientTopOverlay} />
+          <div className={styles.patternOverlay} />
+          
+          {/* Mute button */}
+          {slide.type === "video" && slide.videoUrl && !isYouTube(slide.videoUrl) && (
+            <button className={styles.muteBtn} onClick={() => setMuted(m => !m)}>
+              {muted ? <VolumeX size={14}/> : <Volume2 size={14}/>}
+              <span>{muted ? "Activer le son" : "Couper le son"}</span>
+            </button>
+          )}
+
+          {/* Hero Content */}
+          <div className={styles.heroContent}>
+            <div className={styles.heroCopy}>
+              {slide.subtitle && (
+                <div className={styles.heroAnimate1} style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 10,
+                  padding: "8px 20px",
+                  borderRadius: 100,
+                  background: `${slide.color}15`,
+                  backdropFilter: "blur(16px)",
+                  border: `1px solid ${slide.color}40`,
+                  marginBottom: 28,
                 }}>
-                  {slide.title}
-                </h1>
-
-                <div className="hero-animate-3" style={{ marginBottom: 0 }}>
-                  {slide.categories?.length > 0 ? (
-                    <div style={{
-                      display: "flex",
-                      flexWrap: "wrap",
-                      gap: 12,
-                      alignItems: "center"
-                    }}>
-                      {slide.categories.slice(0, 3).map((cat, idx) => (
-                        <div
-                          key={idx}
-                          style={{
-                            display: "inline-flex",
-                            alignItems: "center",
-                            gap: 6,
-                            padding: "6px 14px",
-                            borderRadius: 100,
-                            background: "rgba(255,255,255,0.1)",
-                            backdropFilter: "blur(10px)",
-                            border: "1px solid rgba(255,255,255,0.2)"
-                          }}
-                        >
-                          <Star size={12} style={{ color: slide.color }} />
-                          <span style={{
-                            fontSize: 13,
-                            color: "white",
-                            fontWeight: 500,
-                            letterSpacing: 0.3,
-                          }}>
-                            {cat}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <p style={{
-                      fontSize: 17,
-                      color: "rgba(255,255,255,0.9)",
-                      lineHeight: 1.5,
-                      margin: 0,
-                      fontWeight: 500,
-                      maxWidth: "90%"
-                    }}>
-                      Vivez une expérience inoubliable au cœur de la Tunisie
-                    </p>
-                  )}
+                  <MapPin size={14} style={{ color: slide.color }} />
+                  <span style={{
+                    fontSize: 13,
+                    fontWeight: 700,
+                    color: "white",
+                    letterSpacing: 1.8,
+                    textTransform: "uppercase"
+                  }}>
+                    {slide.subtitle}
+                  </span>
                 </div>
-              </div>
+              )}
 
-              <div className="hero-animate-4 hero-cta-group">
-                <a href="#chemins" className="btn-primary">
-                  <Compass size={18} />
-                  <span>Planifier mon voyage</span>
-                </a>
-                {slide.type === "excursion" && slide.excursionId ? (
-                  <Link href={ROUTES.excursion(slide.excursionId)} className="btn-ghost" style={{ gap: 10 }}>
-                    <Map size={18} />
-                    <span>Découvrir l&apos;excursion</span>
-                  </Link>
+              <h1 className={styles.heroAnimate2} style={{
+                fontFamily: "'Playfair Display', serif",
+                fontSize: "clamp(40px, 5vw, 68px)",
+                fontWeight: 800,
+                color: "white",
+                lineHeight: 1.05,
+                letterSpacing: "-2.5px",
+                marginBottom: 24,
+                textShadow: "0 4px 40px rgba(0,0,0,0.3)",
+                maxWidth: "100%",
+              }}>
+                {slide.title}
+              </h1>
+
+              <div className={styles.heroAnimate3} style={{ marginBottom: 0 }}>
+                {slide.categories?.length > 0 ? (
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 12, alignItems: "center" }}>
+                    {slide.categories.slice(0, 3).map((cat, idx) => (
+                      <div key={idx} className={styles.categoryBadge}>
+                        <Star size={12} style={{ color: slide.color }} />
+                        <span className={styles.categoryText}>{cat}</span>
+                      </div>
+                    ))}
+                  </div>
                 ) : (
-                  <Link href={ROUTES.excursions} className="btn-ghost" style={{ gap: 10 }}>
-                    <ArrowRight size={18} />
-                    <span>Explorer le catalogue</span>
-                  </Link>
+                  <p style={{
+                    fontSize: 17,
+                    color: "rgba(255,255,255,0.9)",
+                    lineHeight: 1.5,
+                    margin: 0,
+                    fontWeight: 500,
+                    maxWidth: "90%"
+                  }}>
+                    Vivez une expérience inoubliable au cœur de la Tunisie
+                  </p>
                 )}
               </div>
             </div>
 
-            {/* ─── Navigation Dots avec animation de progression ─── */}
-            <div style={{ 
-              position:"absolute", 
-              bottom: 48, 
-              left: "50%",
-              transform: "translateX(-50%)",
-              display:"flex", 
-              gap: 16, 
-              alignItems:"center",
-              zIndex: 15,
-              background: "rgba(0,0,0,0.3)",
-              backdropFilter: "blur(8px)",
-              padding: "8px 20px",
-              borderRadius: 100,
-              border: "1px solid rgba(255,255,255,0.15)"
-            }}>
-              {slides.map((_, i) => (
-                <button key={i} className="dot-btn"
-                  onClick={() => { 
-                    if (timerRef.current) clearInterval(timerRef.current); 
-                    goTo(i); 
-                  }}
-                  aria-label={`Slide ${i + 1}`}
-                >
-                  {i === current ? (
-                    <div style={{ 
-                      width: 48, 
-                      height: 4, 
-                      borderRadius: 4, 
-                      background: `linear-gradient(90deg, ${slide.color}, ${slide.color}80)`,
-                      overflow: "hidden",
-                      position: "relative"
-                    }}>
-                      <div style={{ 
-                        position: "absolute",
-                        left: 0,
-                        top: 0,
-                        height:"100%", 
-                        width:`${progress}%`, 
-                        background:"white",
-                        transition:"width .06s linear",
-                        borderRadius: 4
-                      }}/>
-                    </div>
-                  ) : (
-                    <div className="dot-inactive" style={{ 
-                      width: 10, 
-                      height: 10, 
-                      borderRadius: "50%", 
-                      background: "rgba(255,255,255,0.4)",
-                      transition: "all 0.3s ease",
-                    }}/>
-                  )}
-                </button>
-              ))}
+            <div className={`${styles.heroAnimate4} ${styles.heroCtaGroup}`}>
+              <a href="#chemins" className={styles.btnPrimary}>
+                <Compass size={18} />
+                <span>Planifier mon voyage</span>
+              </a>
+              {slide.type === "excursion" && slide.excursionId ? (
+                <Link href={ROUTES.excursion(slide.excursionId)} className={styles.btnGhost} style={{ gap: 10 }}>
+                  <Map size={18} />
+                  <span>Découvrir l&apos;excursion</span>
+                </Link>
+              ) : (
+                <Link href={ROUTES.excursions} className={styles.btnGhost} style={{ gap: 10 }}>
+                  <ArrowRight size={18} />
+                  <span>Explorer le catalogue</span>
+                </Link>
+              )}
             </div>
+          </div>
 
-            {/* ─── Compteur élégant ─── */}
-            <div style={{ 
-              position:"absolute", 
-              bottom: 54, 
-              right: "max(5%, 48px)", 
-              fontSize: 14, 
-              color: "rgba(255,255,255,0.6)", 
-              fontWeight: 600, 
-              letterSpacing: 3,
-              fontFamily: "'Inter', monospace",
-              zIndex: 15,
-              background: "rgba(0,0,0,0.3)",
-              backdropFilter: "blur(8px)",
-              padding: "6px 14px",
-              borderRadius: 100,
-              border: "1px solid rgba(255,255,255,0.15)"
-            }}>
-              {String(current + 1).padStart(2,"0")} / {String(slides.length).padStart(2,"0")}
-            </div>
+          {/* Navigation Dots */}
+          <div className={styles.navContainer}>
+            {slides.map((_, i) => (
+              <button key={i} className={styles.dotBtn}
+                onClick={() => { 
+                  if (timerRef.current) clearInterval(timerRef.current); 
+                  goTo(i); 
+                }}
+                aria-label={`Slide ${i + 1}`}
+              >
+                {i === current ? (
+                  <div className={styles.progressBar} style={{ background: `linear-gradient(90deg, ${slide.color}, ${slide.color}80)` }}>
+                    <div className={styles.progressFill} style={{ width: `${progress}%`, background: "white" }} />
+                  </div>
+                ) : (
+                  <div className={styles.dotInactive} />
+                )}
+              </button>
+            ))}
+          </div>
 
-            {/* ─── Scroll Indicator animé ─── */}
-            <div style={{ 
-              position:"absolute", 
-              bottom: 28, 
-              left:"50%", 
-              transform: "translateX(-50%)",
-              animation:"float 2.5s ease-in-out infinite",
-              opacity: 0.7,
-              zIndex: 15,
-              cursor: "pointer",
-              transition: "opacity 0.3s"
-            }}
+          {/* Counter */}
+          <div className={styles.counter}>
+            {String(current + 1).padStart(2,"0")} / {String(slides.length).padStart(2,"0")}
+          </div>
+
+          {/* Scroll Indicator */}
+          <div 
+            className={styles.scrollIndicator}
             onClick={() => window.scrollTo({ top: window.innerHeight, behavior: "smooth" })}
-            onMouseEnter={(e) => e.currentTarget.style.opacity = "1"}
-            onMouseLeave={(e) => e.currentTarget.style.opacity = "0.7"}
-            >
-              <ChevronDown size={28} color="white" strokeWidth={1.5}/>
-            </div>
-          </>
-        )}
-      </section>
-    </>
+          >
+            <ChevronDown size={28} color="white" strokeWidth={1.5}/>
+          </div>
+        </>
+      )}
+    </section>
   );
 }

@@ -15,6 +15,10 @@ const API_KEY = process.env.RESEND_API_KEY      || "";
 // ─── Envoi HTTP direct (pas besoin du SDK) ─────────
 // Évite les problèmes d'import dynamique en production
 
+function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 async function sendEmail({ to, subject, html }: {
   to: string;
   subject: string;
@@ -25,22 +29,45 @@ async function sendEmail({ to, subject, html }: {
     return { error: "RESEND_API_KEY manquante" };
   }
 
-  const res = await fetch("https://api.resend.com/emails", {
-    method: "POST",
-    headers: {
-      "Authorization": `Bearer ${API_KEY}`,
-      "Content-Type":  "application/json",
-    },
-    body: JSON.stringify({ from: FROM, to, subject, html }),
-  });
+  let lastError: unknown = null;
 
-  const data = await res.json();
-  if (!res.ok) {
-    console.error("[resend] Erreur envoi email:", data);
-    return { error: data };
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    try {
+      const res = await fetch("https://api.resend.com/emails", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${API_KEY}`,
+          "Content-Type":  "application/json",
+        },
+        body: JSON.stringify({ from: FROM, to, subject, html }),
+      });
+
+      const data = await res.json();
+      if (res.ok) {
+        return { id: data.id };
+      }
+
+      lastError = data;
+      console.error(`[resend] Erreur envoi email (tentative ${attempt})`, data);
+
+      if (res.status < 500 && res.status !== 429) {
+        break;
+      }
+    } catch (error) {
+      lastError = error;
+      console.error(`[resend] Erreur réseau envoi email (tentative ${attempt})`, error);
+    }
+
+    if (attempt < 3) {
+      await sleep(attempt * 700);
+    }
   }
 
-  return { id: data.id };
+  return { error: lastError ?? "Erreur inconnue" };
+}
+
+export async function sendTransactionalEmail(params: { to: string; subject: string; html: string; }) {
+  return sendEmail(params);
 }
 
 // ─── Layout HTML commun ────────────────────────────
@@ -346,6 +373,237 @@ export async function sendReservationConfirmation({
   return sendEmail({
     to: email,
     subject: `✅ Réservation confirmée — ${excursionTitle}`,
+    html,
+  });
+}
+
+export async function sendReservationPrestataireNotification({
+  email,
+  prestataireName,
+  touristeName,
+  excursionTitle,
+  excursionCity,
+  date,
+  time,
+  peopleCount,
+  totalPrice,
+  bookingCode,
+}: {
+  email: string;
+  prestataireName: string;
+  touristeName: string;
+  excursionTitle: string;
+  excursionCity: string;
+  date: string;
+  time: string;
+  peopleCount: number;
+  totalPrice: number;
+  bookingCode: string;
+}) {
+  const formattedDate = new Date(date).toLocaleDateString("fr-FR", {
+    weekday: "long",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+
+  const html = layout(`
+    <h1 style="margin:0 0 8px;font-size:24px;font-weight:800;color:#0F172A;">Nouvelle réservation reçue</h1>
+    <p style="margin:0 0 20px;font-size:14px;color:#6B7280;line-height:1.7;">
+      Bonjour <strong>${prestataireName}</strong>, <strong>${touristeName}</strong> vient de réserver <strong>${excursionTitle}</strong>.
+    </p>
+    <div style="background:#F8FAFC;border:1px solid #E5E7EB;border-radius:12px;padding:18px 20px;margin-bottom:24px;">
+      <p style="margin:0 0 6px;font-size:16px;font-weight:800;color:#0F172A;">${excursionTitle}</p>
+      <p style="margin:0 0 12px;font-size:13px;color:#6B7280;">${excursionCity}</p>
+      <p style="margin:0;font-size:13px;color:#374151;line-height:1.8;">
+        <strong>Date :</strong> ${formattedDate}<br/>
+        <strong>Heure :</strong> ${time}<br/>
+        <strong>Voyageurs :</strong> ${peopleCount}<br/>
+        <strong>Montant :</strong> ${totalPrice.toLocaleString("fr-FR")} EUR<br/>
+        <strong>Référence :</strong> ${bookingCode}
+      </p>
+    </div>
+    <p style="margin:0;font-size:13px;color:#6B7280;">Connectez-vous à votre espace pour préparer l’accueil du client.</p>
+  `);
+
+  return sendEmail({
+    to: email,
+    subject: `Nouvelle réservation — ${excursionTitle}`,
+    html,
+  });
+}
+
+export async function sendReservationCancellationTouriste({
+  email,
+  touristeName,
+  excursionTitle,
+  excursionCity,
+  date,
+  time,
+  bookingCode,
+  refundAmount,
+  refundPercentage,
+  reason,
+}: {
+  email: string;
+  touristeName: string;
+  excursionTitle: string;
+  excursionCity: string;
+  date: string;
+  time: string;
+  bookingCode: string;
+  refundAmount: number;
+  refundPercentage: number;
+  reason: string;
+}) {
+  const formattedDate = new Date(date).toLocaleDateString("fr-FR", {
+    weekday: "long",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+
+  const html = layout(`
+    <h1 style="margin:0 0 8px;font-size:24px;font-weight:800;color:#0F172A;">Annulation confirmée</h1>
+    <p style="margin:0 0 20px;font-size:14px;color:#6B7280;line-height:1.7;">
+      Bonjour <strong>${touristeName}</strong>, votre réservation a bien été annulée.
+    </p>
+    <div style="background:#FFF7ED;border:1px solid #FDBA74;border-radius:12px;padding:18px 20px;margin-bottom:24px;">
+      <p style="margin:0 0 6px;font-size:16px;font-weight:800;color:#0F172A;">${excursionTitle}</p>
+      <p style="margin:0 0 12px;font-size:13px;color:#6B7280;">${excursionCity}</p>
+      <p style="margin:0;font-size:13px;color:#374151;line-height:1.8;">
+        <strong>Date :</strong> ${formattedDate}<br/>
+        <strong>Heure :</strong> ${time}<br/>
+        <strong>Code :</strong> ${bookingCode}<br/>
+        <strong>Remboursement :</strong> ${refundPercentage}% (${refundAmount.toLocaleString("fr-FR")} EUR)
+      </p>
+    </div>
+    <p style="margin:0;font-size:13px;color:#6B7280;">Motif : ${reason}</p>
+  `);
+
+  return sendEmail({
+    to: email,
+    subject: `Confirmation d'annulation — ${excursionTitle}`,
+    html,
+  });
+}
+
+export async function sendReservationCancellationPrestataire({
+  email,
+  prestataireName,
+  touristeName,
+  excursionTitle,
+  excursionCity,
+  date,
+  time,
+  bookingCode,
+  reason,
+}: {
+  email: string;
+  prestataireName: string;
+  touristeName: string;
+  excursionTitle: string;
+  excursionCity: string;
+  date: string;
+  time: string;
+  bookingCode: string;
+  reason: string;
+}) {
+  const formattedDate = new Date(date).toLocaleDateString("fr-FR", {
+    weekday: "long",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+
+  const html = layout(`
+    <h1 style="margin:0 0 8px;font-size:24px;font-weight:800;color:#0F172A;">Réservation annulée</h1>
+    <p style="margin:0 0 20px;font-size:14px;color:#6B7280;line-height:1.7;">
+      Bonjour <strong>${prestataireName}</strong>, <strong>${touristeName}</strong> a annulé sa réservation.
+    </p>
+    <div style="background:#FFF7ED;border:1px solid #FDBA74;border-radius:12px;padding:18px 20px;margin-bottom:24px;">
+      <p style="margin:0 0 6px;font-size:16px;font-weight:800;color:#0F172A;">${excursionTitle}</p>
+      <p style="margin:0 0 12px;font-size:13px;color:#6B7280;">${excursionCity}</p>
+      <p style="margin:0;font-size:13px;color:#374151;line-height:1.8;">
+        <strong>Date :</strong> ${formattedDate}<br/>
+        <strong>Heure :</strong> ${time}<br/>
+        <strong>Code :</strong> ${bookingCode}
+      </p>
+    </div>
+    <p style="margin:0;font-size:13px;color:#6B7280;">Motif : ${reason}</p>
+  `);
+
+  return sendEmail({
+    to: email,
+    subject: `Réservation annulée — ${excursionTitle}`,
+    html,
+  });
+}
+
+export async function sendPrestataireApplicationNotification({
+  email,
+  adminName,
+  prestataireName,
+  agencyName,
+  city,
+  dashboardLink,
+}: {
+  email: string;
+  adminName: string;
+  prestataireName: string;
+  agencyName: string;
+  city: string;
+  dashboardLink: string;
+}) {
+  const html = layout(`
+    <h1 style="margin:0 0 8px;font-size:24px;font-weight:800;color:#0F172A;">Nouvelle demande prestataire</h1>
+    <p style="margin:0 0 20px;font-size:14px;color:#6B7280;line-height:1.7;">
+      Bonjour <strong>${adminName}</strong>, <strong>${prestataireName}</strong> a soumis une demande d&apos;inscription.
+    </p>
+    <div style="background:#F8FAFC;border:1px solid #E5E7EB;border-radius:12px;padding:18px 20px;margin-bottom:24px;">
+      <p style="margin:0 0 6px;font-size:16px;font-weight:800;color:#0F172A;">${agencyName}</p>
+      <p style="margin:0;font-size:13px;color:#6B7280;">${city}</p>
+    </div>
+    <p style="margin:0;font-size:13px;color:#6B7280;">Une notification a également été créée dans le tableau de bord administrateur.</p>
+  `);
+
+  return sendEmail({
+    to: email,
+    subject: `Nouvelle demande prestataire — ${agencyName}`,
+    html,
+  });
+}
+
+export async function sendConversationMessageNotification({
+  email,
+  recipientName,
+  senderName,
+  conversationLabel,
+  preview,
+  dashboardLink,
+}: {
+  email: string;
+  recipientName: string;
+  senderName: string;
+  conversationLabel: string;
+  preview: string;
+  dashboardLink: string;
+}) {
+  const html = layout(`
+    <h1 style="margin:0 0 8px;font-size:24px;font-weight:800;color:#0F172A;">Nouveau message reçu</h1>
+    <p style="margin:0 0 20px;font-size:14px;color:#6B7280;line-height:1.7;">
+      Bonjour <strong>${recipientName}</strong>, <strong>${senderName}</strong> vous a envoyé un message dans ${conversationLabel}.
+    </p>
+    <div style="background:#F8FAFC;border:1px solid #E5E7EB;border-radius:12px;padding:18px 20px;margin-bottom:24px;">
+      <p style="margin:0 0 6px;font-size:12px;font-weight:700;color:#374151;text-transform:uppercase;letter-spacing:1px;">Aperçu</p>
+      <p style="margin:0;font-size:14px;color:#0F172A;line-height:1.7;">${preview}</p>
+    </div>
+    <p style="margin:0;font-size:13px;color:#6B7280;">Accédez à la conversation dans votre espace pour répondre.</p>
+  `);
+
+  return sendEmail({
+    to: email,
+    subject: `Nouveau message — ${senderName}`,
     html,
   });
 }

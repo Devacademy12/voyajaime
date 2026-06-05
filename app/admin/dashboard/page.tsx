@@ -1,5 +1,6 @@
 // app/admin/dashboard/page.tsx
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
+import { createServerSupabaseClient } from "@/lib/supabaseServer";
 import {
   Luggage, Building2, Mountain, CalendarDays,
   TrendingUp, Coins, Clock, ChevronRight,
@@ -11,6 +12,8 @@ export const dynamic = "force-dynamic";
 
 export default async function AdminDashboard() {
   const supabase = supabaseAdmin;
+  const serverSupabase = await createServerSupabaseClient();
+  const { data: { user } } = await serverSupabase.auth.getUser();
 
   // ── Compteurs KPI ──────────────────────────────────────────────────────────
   const { count: totalTouristes }    = await supabase.from("profiles").select("*", { count: "exact", head: true }).eq("role", "touriste");
@@ -32,6 +35,16 @@ export default async function AdminDashboard() {
     .eq("is_moderated", false)
     .order("created_at", { ascending: false })
     .limit(4);
+
+  const { data: notifications } = user
+    ? await supabase
+        .from("notifications")
+        .select("id, title, message, is_read, created_at, metadata")
+        .eq("recipient_user_id", user.id)
+        .order("created_at", { ascending: false })
+        .limit(5)
+    : { data: [] };
+  const unreadNotifications = (notifications || []).filter((n: any) => !n.is_read).length;
 
   // ✅ Fix — totalRevenue et totalFees filtrés sur status = "paid" uniquement
   const totalRevenue = paiements
@@ -165,6 +178,47 @@ const topVilles = Object.entries(villeCount)
             {pendingPrestataires.length} en attente
             <ChevronRight size={13} />
           </a>
+        )}
+      </div>
+
+      {/* ─────────────── Notifications ─────────────── */}
+      <div className="fa fa1" style={card}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+          <h2 style={{ fontSize: 13, fontWeight: 800, color: "#053366", margin: 0 }}>
+            Notifications récentes
+          </h2>
+          <span style={{ fontSize: 11, fontWeight: 700, color: unreadNotifications > 0 ? "#DC2626" : "#94A3B8" }}>
+            {unreadNotifications > 0 ? `${unreadNotifications} non lue(s)` : "Aucune non-lue"}
+          </span>
+        </div>
+        {!notifications?.length ? (
+          <p style={{ margin: 0, fontSize: 13, color: "#94A3B8" }}>Aucune notification pour le moment.</p>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {notifications.map((item: any) => {
+              const link = item?.metadata?.dashboard_link || item?.metadata?.conversation_link;
+              return (
+                <div key={item.id} style={{
+                  padding: "10px 12px",
+                  borderRadius: 12,
+                  border: item.is_read ? "1px solid #E5E7EB" : "1px solid rgba(2,175,207,.22)",
+                  background: item.is_read ? "#F8FAFC" : "rgba(2,175,207,.06)",
+                }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "flex-start" }}>
+                    <div style={{ minWidth: 0 }}>
+                      <p style={{ margin: 0, fontSize: 13, fontWeight: 800, color: "#0F172A" }}>{item.title}</p>
+                      <p style={{ margin: "4px 0 0", fontSize: 12, color: "#64748B", lineHeight: 1.5 }}>{item.message}</p>
+                    </div>
+                    {link ? (
+                      <a href={link} style={{ fontSize: 11, fontWeight: 700, color: "#2B96A8", textDecoration: "none", whiteSpace: "nowrap" }}>
+                        Ouvrir
+                      </a>
+                    ) : null}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         )}
       </div>
 

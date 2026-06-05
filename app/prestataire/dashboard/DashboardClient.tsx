@@ -1,4 +1,3 @@
-// app/prestataire/dashboard/page.tsx
 "use client";
 
 import { useState } from "react";
@@ -30,9 +29,6 @@ const STATUS_STYLE: Record<string, { bg: string; color: string; dot: string }> =
   cancelled: { bg: "#FEE2E2", color: "#DC2626",  dot: "#EF4444" },
 };
 
-// ─── FIX 1 : helper qui évite tout décalage de fuseau horaire ────────────────
-// new Date("2025-06-10").toISOString() renvoie "2025-06-09T22:00:00Z" en UTC+2
-// On extrait la partie date directement depuis la chaîne pour éviter ce bug.
 function toLocalDateStr(d: Date): string {
   const y = d.getFullYear();
   const m = String(d.getMonth() + 1).padStart(2, "0");
@@ -40,9 +36,6 @@ function toLocalDateStr(d: Date): string {
   return `${y}-${m}-${day}`;
 }
 
-
-
-// ─── Composant Calendrier ────────────────────────────────────────────────────
 function ReservationCalendar({ reservations }: { reservations: Record<string, unknown>[] }) {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
@@ -51,18 +44,17 @@ function ReservationCalendar({ reservations }: { reservations: Record<string, un
   const month = currentDate.getMonth();
 
   const firstDayOfMonth  = new Date(year, month, 1);
-  const startingDayOfWeek = firstDayOfMonth.getDay();   // 0=dim, 1=lun, …
+  const startingDayOfWeek = firstDayOfMonth.getDay();
   const daysInMonth       = new Date(year, month + 1, 0).getDate();
 
   const days: (Date | null)[] = [];
   for (let i = 0; i < startingDayOfWeek; i++) days.push(null);
   for (let i = 1; i <= daysInMonth; i++)       days.push(new Date(year, month, i));
 
-  // FIX : comparaison purement locale, sans passer par UTC
   const getReservationsForDate = (date: Date) => {
     const dateStr = toLocalDateStr(date);
     return reservations.filter(r => {
-      const rDateStr = String(r.date).split("T")[0];   // "2025-06-10" direct
+      const rDateStr = String(r.date).split("T")[0];
       return rDateStr === dateStr;
     });
   };
@@ -88,32 +80,26 @@ function ReservationCalendar({ reservations }: { reservations: Record<string, un
 
   return (
     <div style={{ background: "white", borderRadius: 20, border: "1px solid #EBEBEB", padding: 24 }}>
-      {/* Entête navigation */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
         <h2 style={{ fontSize: 18, fontWeight: 700, color: "#053366", margin: 0, display: "flex", alignItems: "center", gap: 8 }}>
           <CalendarDays size={20} color="#02AFCF" />
           Calendrier des réservations
         </h2>
         <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-          <button
-            onClick={() => setCurrentDate(new Date(year, month - 1, 1))}
-            style={{ padding: 8, borderRadius: 8, border: "1px solid #E5E7EB", background: "white", cursor: "pointer" }}
-          >
+          <button onClick={() => setCurrentDate(new Date(year, month - 1, 1))}
+            style={{ padding: 8, borderRadius: 8, border: "1px solid #E5E7EB", background: "white", cursor: "pointer" }}>
             <ChevronLeft size={16} />
           </button>
           <span style={{ fontSize: 14, fontWeight: 600, color: "#053366", padding: "0 12px" }}>
             {monthNames[month]} {year}
           </span>
-          <button
-            onClick={() => setCurrentDate(new Date(year, month + 1, 1))}
-            style={{ padding: 8, borderRadius: 8, border: "1px solid #E5E7EB", background: "white", cursor: "pointer" }}
-          >
+          <button onClick={() => setCurrentDate(new Date(year, month + 1, 1))}
+            style={{ padding: 8, borderRadius: 8, border: "1px solid #E5E7EB", background: "white", cursor: "pointer" }}>
             <ChevronRight size={16} />
           </button>
         </div>
       </div>
 
-      {/* Noms des jours */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 8, marginBottom: 8 }}>
         {dayNames.map(day => (
           <div key={day} style={{ textAlign: "center", fontSize: 12, fontWeight: 600, color: "#9CA3AF", padding: "8px 0" }}>
@@ -122,58 +108,36 @@ function ReservationCalendar({ reservations }: { reservations: Record<string, un
         ))}
       </div>
 
-      {/* Grille des jours */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 8 }}>
         {days.map((date, idx) => {
           if (!date) {
             return <div key={`empty-${idx}`} style={{ aspectRatio: "1", background: "#F9FAFB", borderRadius: 12 }} />;
           }
-
           const dayReservations = getReservationsForDate(date);
           const status          = getDayStatus(date);
-          // FIX : on utilise toLocalDateStr pour éviter le décalage UTC
           const localStr  = toLocalDateStr(date);
           const isSelected = selectedDate === localStr;
 
           return (
-            <div
-              key={localStr}
-              onClick={() => setSelectedDate(isSelected ? null : localStr)}
+            <div key={localStr} onClick={() => setSelectedDate(isSelected ? null : localStr)}
               style={{
                 aspectRatio: "1",
-                background: isSelected
-                  ? "rgba(2,175,207,.1)"
-                  : status ? statusColors[status as keyof typeof statusColors].bg : "white",
+                background: isSelected ? "rgba(2,175,207,.1)" : status ? statusColors[status as keyof typeof statusColors].bg : "white",
                 borderRadius: 12,
-                border: isSelected
-                  ? "2px solid #02AFCF"
-                  : `1px solid ${status ? statusColors[status as keyof typeof statusColors].color : "#E5E7EB"}`,
-                padding: 8,
-                cursor: "pointer",
-                transition: "all .15s",
-                position: "relative",
-              }}
-            >
+                border: isSelected ? "2px solid #02AFCF" : `1px solid ${status ? statusColors[status as keyof typeof statusColors].color : "#E5E7EB"}`,
+                padding: 8, cursor: "pointer", transition: "all .15s", position: "relative",
+              }}>
               <div style={{ fontSize: 14, fontWeight: 600, color: status ? statusColors[status as keyof typeof statusColors].color : "#374151" }}>
                 {date.getDate()}
               </div>
               {dayReservations.length > 0 && (
-                <div style={{
-                  position: "absolute",
-                  bottom: 6,
-                  right: 6,
-                  width: 6,
-                  height: 6,
-                  borderRadius: "50%",
-                  background: statusColors[status as keyof typeof statusColors].color,
-                }} />
+                <div style={{ position: "absolute", bottom: 6, right: 6, width: 6, height: 6, borderRadius: "50%", background: statusColors[status as keyof typeof statusColors].color }} />
               )}
             </div>
           );
         })}
       </div>
 
-      {/* Légende */}
       <div style={{ display: "flex", justifyContent: "center", gap: 16, marginTop: 20, paddingTop: 16, borderTop: "1px solid #F3F4F6" }}>
         {[
           { bg: "#DCFCE7", border: "#15803D", label: "Confirmé" },
@@ -187,9 +151,7 @@ function ReservationCalendar({ reservations }: { reservations: Record<string, un
         ))}
       </div>
 
-      {/* Détail du jour sélectionné */}
       {selectedDate && (() => {
-        // FIX : on crée la date en midi local pour éviter tout décalage
         const detailDate = new Date(selectedDate + "T12:00:00");
         const detailReservations = getReservationsForDate(detailDate);
         return (
@@ -208,12 +170,8 @@ function ReservationCalendar({ reservations }: { reservations: Record<string, un
                 <div key={String(r.id)} style={{ padding: "10px 12px", background: "white", borderRadius: 12, marginBottom: 8 }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                     <div>
-                      <p style={{ fontSize: 13, fontWeight: 700, color: "#053366", margin: 0 }}>
-                        {exc?.title as string || "Excursion"}
-                      </p>
-                      <p style={{ fontSize: 11, color: "#9CA3AF", margin: "2px 0 0" }}>
-                        #{String(r.booking_code)} • {Number(r.people_count)} pers.
-                      </p>
+                      <p style={{ fontSize: 13, fontWeight: 700, color: "#053366", margin: 0 }}>{exc?.title as string || "Excursion"}</p>
+                      <p style={{ fontSize: 11, color: "#9CA3AF", margin: "2px 0 0" }}>#{String(r.booking_code)} • {Number(r.people_count)} pers.</p>
                     </div>
                     <span style={{ fontSize: 11, fontWeight: 700, color: ss.color, background: ss.bg, padding: "2px 8px", borderRadius: 12 }}>
                       {STATUS_LABEL[status] || status}
@@ -228,10 +186,9 @@ function ReservationCalendar({ reservations }: { reservations: Record<string, un
     </div>
   );
 }
-// ─── Composant graphique notes excursions (SVG pur, sans dépendance) ─────────
+
 function ExcursionRatingsChart({ excursions }: { excursions: Record<string, unknown>[] }) {
   const sorted = [...excursions].sort((a, b) => Number(b.rating) - Number(a.rating));
-
   const globalAvg = excursions.length
     ? (excursions.reduce((s, e) => s + (Number(e.rating) || 0), 0) / excursions.length).toFixed(1)
     : "—";
@@ -248,7 +205,6 @@ function ExcursionRatingsChart({ excursions }: { excursions: Record<string, unkn
 
   return (
     <div style={{ background: "white", borderRadius: 20, border: "1px solid #EBEBEB", padding: 24 }}>
-      {/* En-tête */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
         <h2 style={{ fontSize: 16, fontWeight: 800, color: "#053366", margin: 0, display: "flex", alignItems: "center", gap: 8 }}>
           <div style={{ width: 28, height: 28, borderRadius: 8, background: "rgba(139,92,246,.12)", display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -258,7 +214,6 @@ function ExcursionRatingsChart({ excursions }: { excursions: Record<string, unkn
         </h2>
       </div>
 
-      {/* Métriques */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 10, marginBottom: 20 }}>
         {[
           { label: "Note globale",  value: `${globalAvg} ★`, color: "#7F77DD" },
@@ -272,117 +227,45 @@ function ExcursionRatingsChart({ excursions }: { excursions: Record<string, unkn
         ))}
       </div>
 
-      {/* Graphique SVG */}
       {sorted.length === 0 ? (
         <p style={{ textAlign: "center", color: "#9CA3AF", fontSize: 13 }}>Aucune excursion.</p>
       ) : (
-        <svg
-          width="100%"
-          viewBox={`0 0 ${LABEL_W + BAR_AREA + 80} ${svgH}`}
-          style={{ overflow: "visible" }}
-        >
-          {/* Lignes de grille verticales pour 1★ à 5★ */}
+        <svg width="100%" viewBox={`0 0 ${LABEL_W + BAR_AREA + 80} ${svgH}`} style={{ overflow: "visible" }}>
           {[1, 2, 3, 4, 5].map(n => {
             const x = LABEL_W + (n / 5) * BAR_AREA;
             return (
               <g key={n}>
-                <line
-                  x1={x} y1={PAD_TOP - 12}
-                  x2={x} y2={svgH - PAD_BOT}
-                  stroke="#F3F4F6" strokeWidth={1}
-                />
-                <text x={x} y={PAD_TOP - 16} textAnchor="middle" fontSize={10} fill="#D1D5DB">
-                  {"★".repeat(n)}
-                </text>
+                <line x1={x} y1={PAD_TOP - 12} x2={x} y2={svgH - PAD_BOT} stroke="#F3F4F6" strokeWidth={1} />
+                <text x={x} y={PAD_TOP - 16} textAnchor="middle" fontSize={10} fill="#D1D5DB">{"★".repeat(n)}</text>
               </g>
             );
           })}
-
-          {/* Ligne de base */}
-          <line
-            x1={LABEL_W} y1={PAD_TOP - 12}
-            x2={LABEL_W} y2={svgH - PAD_BOT}
-            stroke="#E5E7EB" strokeWidth={1}
-          />
-
-          {/* Lignes des excursions */}
+          <line x1={LABEL_W} y1={PAD_TOP - 12} x2={LABEL_W} y2={svgH - PAD_BOT} stroke="#E5E7EB" strokeWidth={1} />
           {sorted.map((exc, i) => {
-            const rating    = Number(exc.rating) || 0;
-            const reviews   = Number(exc.reviews_count) || 0;
-            const isActive  = Boolean(exc.is_active);
-            const barColor  = isActive ? "#7F77DD" : "#AFA9EC";
-            const barW      = (rating / 5) * BAR_AREA;
-            const reviewW   = (reviews / maxReviews) * BAR_AREA;
-            const y         = PAD_TOP + i * ROW_H;
-            const barY      = y + 6;
-            const barH      = 14;
-            const reviewY   = y + 24;
-            const reviewH   = 8;
-            const title     = String(exc.title);
-
+            const rating   = Number(exc.rating) || 0;
+            const reviews  = Number(exc.reviews_count) || 0;
+            const isActive = Boolean(exc.is_active);
+            const barColor = isActive ? "#7F77DD" : "#AFA9EC";
+            const barW     = (rating / 5) * BAR_AREA;
+            const reviewW  = (reviews / maxReviews) * BAR_AREA;
+            const y        = PAD_TOP + i * ROW_H;
+            const barY     = y + 6; const barH = 14;
+            const reviewY  = y + 24; const reviewH = 8;
+            const title    = String(exc.title);
             return (
               <g key={String(exc.id || i)}>
-                {/* Nom de l'excursion */}
-                <text
-                  x={LABEL_W - 10}
-                  y={barY + barH / 2}
-                  textAnchor="end"
-                  dominantBaseline="central"
-                  fontSize={12}
-                  fontWeight={isActive ? 600 : 400}
-                  fill={isActive ? "#053366" : "#9CA3AF"}
-                >
+                <text x={LABEL_W - 10} y={barY + barH / 2} textAnchor="end" dominantBaseline="central"
+                  fontSize={12} fontWeight={isActive ? 600 : 400} fill={isActive ? "#053366" : "#9CA3AF"}>
                   {title.length > 22 ? title.slice(0, 21) + "…" : title}
                 </text>
-
-                {/* Barre de fond (max) */}
-                <rect
-                  x={LABEL_W} y={barY}
-                  width={BAR_AREA} height={barH}
-                  rx={4} fill="#F3F4F6"
-                />
-
-                {/* Barre de note */}
-                <rect
-                  x={LABEL_W} y={barY}
-                  width={barW} height={barH}
-                  rx={4} fill={barColor}
-                />
-
-                {/* Barre avis (fond) */}
-                <rect
-                  x={LABEL_W} y={reviewY}
-                  width={BAR_AREA} height={reviewH}
-                  rx={3} fill="#F3F4F6"
-                />
-
-                {/* Barre avis (valeur) */}
-                <rect
-                  x={LABEL_W} y={reviewY}
-                  width={reviewW} height={reviewH}
-                  rx={3} fill={isActive ? "#D4B8FD" : "#E5E7EB"}
-                />
-
-                {/* Note à droite */}
-                <text
-                  x={LABEL_W + barW + 7}
-                  y={barY + barH / 2}
-                  dominantBaseline="central"
-                  fontSize={12}
-                  fontWeight={700}
-                  fill={barColor}
-                >
+                <rect x={LABEL_W} y={barY} width={BAR_AREA} height={barH} rx={4} fill="#F3F4F6" />
+                <rect x={LABEL_W} y={barY} width={barW} height={barH} rx={4} fill={barColor} />
+                <rect x={LABEL_W} y={reviewY} width={BAR_AREA} height={reviewH} rx={3} fill="#F3F4F6" />
+                <rect x={LABEL_W} y={reviewY} width={reviewW} height={reviewH} rx={3} fill={isActive ? "#D4B8FD" : "#E5E7EB"} />
+                <text x={LABEL_W + barW + 7} y={barY + barH / 2} dominantBaseline="central" fontSize={12} fontWeight={700} fill={barColor}>
                   {rating.toFixed(1)} ★
                 </text>
-
-                {/* Nb avis à droite */}
-                <text
-                  x={LABEL_W + reviewW + 7}
-                  y={reviewY + reviewH / 2}
-                  dominantBaseline="central"
-                  fontSize={10}
-                  fill="#9CA3AF"
-                >
+                <text x={LABEL_W + reviewW + 7} y={reviewY + reviewH / 2} dominantBaseline="central" fontSize={10} fill="#9CA3AF">
                   {reviews} avis
                 </text>
               </g>
@@ -391,7 +274,6 @@ function ExcursionRatingsChart({ excursions }: { excursions: Record<string, unkn
         </svg>
       )}
 
-      {/* Légende */}
       <div style={{ display: "flex", gap: 16, marginTop: 16, paddingTop: 12, borderTop: "1px solid #F3F4F6", flexWrap: "wrap" }}>
         {[
           { color: "#7F77DD", label: "Note — excursion active"   },
@@ -407,6 +289,7 @@ function ExcursionRatingsChart({ excursions }: { excursions: Record<string, unkn
     </div>
   );
 }
+
 /* ─── CSS ───────────────────────────────────────────────────── */
 const CSS = `
   @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
@@ -416,12 +299,28 @@ const CSS = `
     to   { opacity: 1; transform: translateY(0); }
   }
 
+  /* ─────────────────────────────────────────────────────────
+     SEULS CHANGEMENTS PAR RAPPORT À L'ORIGINAL :
+     1. .pw  → height:100dvh + overflow:hidden + display:flex flex-direction:column
+     2. .pw-grid → flex:1 + min-height:0  (remplace margin-bottom)
+     3. .pw-card → overflow:auto  (scroll interne si le contenu dépasse)
+     4. .pw-header / .pw-btn-group / .pw-metrics → margin-bottom → padding-bottom
+        + flex-shrink:0  (ils ne se compriment pas)
+     5. Media queries : ≤1024px repasse en scroll normal (cards empilées)
+  ───────────────────────────────────────────────────────── */
+
   .pw {
     font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
     background: #F5F7FA;
-    min-height: 100vh;
-    padding: 28px 36px 64px;
+    /* ↓ CHANGÉ : height fixe + colonne flex + pas de scroll externe */
+    height: 100dvh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    /* Padding légèrement réduit pour que tout rentre */
+    padding: 20px 28px 20px;
     width: 100%;
+    box-sizing: border-box;
   }
 
   /* ── Header ── */
@@ -430,7 +329,9 @@ const CSS = `
     align-items: flex-start;
     justify-content: space-between;
     gap: 16px;
-    margin-bottom: 28px;
+    /* ↓ CHANGÉ : margin → padding, flex-shrink:0 */
+    padding-bottom: 16px;
+    flex-shrink: 0;
     animation: fadeUp .35s ease both;
     flex-wrap: wrap;
   }
@@ -460,27 +361,27 @@ const CSS = `
     display: flex; align-items: center; justify-content: center;
     font-size: 12px; font-weight: 800; color: #fff;
   }
-  .pw-header-badge-name {
-    font-size: 13px; font-weight: 700; color: #053366;
-  }
-  .pw-header-badge-role {
-    font-size: 11px; color: #94A3B8; font-weight: 500;
-  }
+  .pw-header-badge-name { font-size: 13px; font-weight: 700; color: #053366; }
+  .pw-header-badge-role { font-size: 11px; color: #94A3B8; font-weight: 500; }
 
   /* ── Metrics grid ── */
   .pw-metrics {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-    gap: 12px; margin-bottom: 24px;
+    gap: 10px;
+    /* ↓ CHANGÉ : margin → padding, flex-shrink:0 */
+    padding-bottom: 14px;
+    flex-shrink: 0;
     animation: fadeUp .4s ease both;
   }
   .pw-metric {
     background: #fff; border-radius: 16px; border: 1.5px solid #E2E8F0;
-    padding: 18px 20px;
+    /* ↓ CHANGÉ : padding légèrement réduit pour gagner de la hauteur */
+    padding: 14px 18px;
     transition: box-shadow .2s, transform .2s; cursor: default;
   }
   .pw-metric:hover { box-shadow: 0 6px 20px rgba(5,51,102,.07); transform: translateY(-2px); }
-  .pw-metric-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+  .pw-metric-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
   .pw-metric-icon {
     width: 38px; height: 38px; border-radius: 10px;
     display: flex; align-items: center; justify-content: center;
@@ -495,14 +396,30 @@ const CSS = `
   /* ── Cards ── */
   .pw-card {
     background: #fff; border-radius: 16px; border: 1.5px solid #E2E8F0;
-    padding: 24px; animation: fadeUp .45s ease both;
-  }
-  .pw-grid {
-    display: grid; grid-template-columns: 1fr 1.2fr; gap: 24px; margin-bottom: 24px;
+    padding: 20px;
+    /* ↓ CHANGÉ : overflow:auto = scroll interne si le contenu déborde */
+    overflow: auto;
+    animation: fadeUp .45s ease both;
   }
 
+  /* ── Grille charts/calendrier ── */
+  .pw-grid {
+    display: grid;
+    grid-template-columns: 1fr 1.2fr;
+    gap: 20px;
+    /* ↓ CHANGÉ : prend tout l'espace restant + min-height:0 (crucial pour flex child) */
+    flex: 1;
+    min-height: 0;
+    animation: fadeUp .45s ease both;
+  }
+
+  /* ── Boutons ── */
   .pw-btn-group {
-    display: flex; gap: 10px; margin-bottom: 24px; flex-wrap: wrap;
+    display: flex; gap: 10px;
+    /* ↓ CHANGÉ : margin → padding, flex-shrink:0 */
+    padding-bottom: 14px;
+    flex-shrink: 0;
+    flex-wrap: wrap;
     animation: fadeUp .5s ease both;
   }
   .pw-btn {
@@ -516,21 +433,33 @@ const CSS = `
     box-shadow: 0 4px 12px rgba(5,51,102,0.15);
   }
   .pw-btn-primary:hover { background: #042952; transform: translateY(-1px); }
-  .pw-btn-secondary {
-    background: #fff; color: #053366; border: 1.5px solid #E2E8F0;
-  }
+  .pw-btn-secondary { background: #fff; color: #053366; border: 1.5px solid #E2E8F0; }
   .pw-btn-secondary:hover { background: #F8FAFC; border-color: #CBD5E1; }
 
+  /* ─── RESPONSIVE ─────────────────────────────────────────
+     Sur tablette/mobile les cards s'empilent → elles dépassent
+     forcément 100dvh → on repasse en scroll normal
+  ───────────────────────────────────────────────────────── */
   @media (max-width: 1024px) {
-    .pw-grid { grid-template-columns: 1fr; }
+    .pw {
+      height: auto;
+      min-height: 100dvh;
+      overflow-y: auto;
+    }
+    .pw-grid {
+      grid-template-columns: 1fr;
+      flex: none;
+      /* On remet un margin-bottom pour l'espace en bas */
+      padding-bottom: 32px;
+    }
+    .pw-card { overflow: visible; }
   }
   @media (max-width: 768px) {
-    .pw { padding: 20px 16px; }
+    .pw { padding: 16px 14px; }
     .pw-metrics { grid-template-columns: repeat(2, 1fr); }
   }
 `;
 
-// ─── Composant principal ─────────────────────────────────────────────────────
 export default function DashboardClient({ profile, excursions, reservations, paiements }: Props) {
   const pending    = reservations?.filter(r => r.status === "pending").length || 0;
   const avgRating  = excursions.length

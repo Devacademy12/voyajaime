@@ -7,7 +7,7 @@ import TouristeNav from "@/app/components/touriste/TouristeNav";
 import ItineraireDisplay from "@/app/components/itineraire/ItineraireDisplay";
 import {
   MapPin, Sparkles, Bot, Loader2, ChevronLeft, ChevronRight, CalendarDays,
-  Heart, ArrowRight, ArrowLeft, CheckCircle, Euro, AlertTriangle, Plus, X,
+  Heart, ArrowRight, ArrowLeft, CheckCircle, Euro, AlertTriangle,
 } from "lucide-react";
 
 const N8N_WEBHOOK_URL = process.env.NEXT_PUBLIC_N8N_WEBHOOK_URL || "";
@@ -35,6 +35,21 @@ type Excursion = {
   available_dates?: unknown;
   is_active?: boolean;
   depart_time?: string;
+};
+
+// Type aligné avec ce qu'attend CheckoutModalItineraire
+type ExcursionForCheckout = {
+  id: string;
+  title: string;
+  city: string;
+  duration_hours: number;
+  price_per_person: number;
+  max_people: number;
+  available_dates?: unknown[] | null;
+  plan_date?: string;
+  plan_time?: "matin" | "aprem" | "soir";
+  plan_day?: number;
+  note?: string;
 };
 
 type Activity = {
@@ -104,19 +119,6 @@ function getBlockedDates(cityDates: CityDateRange[], excludeCity: string) {
   return cityDates
     .filter(c => c.city !== excludeCity && c.start && c.end)
     .map(c => ({ start: c.start!, end: c.end! }));
-}
-
-function generateDateRange(start: Date, end: Date): string[] {
-  const dates: string[] = [];
-  const cur = new Date(start);
-  cur.setHours(0, 0, 0, 0);
-  const endNorm = new Date(end);
-  endNorm.setHours(0, 0, 0, 0);
-  while (cur <= endNorm) {
-    dates.push(cur.toISOString().split("T")[0]);
-    cur.setDate(cur.getDate() + 1);
-  }
-  return dates;
 }
 
 /* ══════════════════════════════════════════
@@ -422,224 +424,6 @@ function CityDateRow({ cdr, onStart, onEnd, allCityDates }: {
       </div>
       {portal}
     </>
-  );
-}
-
-/* ══════════════════════════════════════════
-   AddExcursionPanel - NOUVEAU COMPOSANT
-══════════════════════════════════════════ */
-function AddExcursionPanel({
-  itinerary,
-  excursions,
-  selectedCities,
-  selectedCats,
-  categories,
-  onAddActivity,
-  onClose,
-}: {
-  itinerary: Itinerary;
-  excursions: Excursion[];
-  selectedCities: string[];
-  selectedCats: string[];
-  categories: Categorie[];
-  onAddActivity: (dayIdx: number, activity: Activity) => void;
-  onClose: () => void;
-}) {
-  const [selectedDay, setSelectedDay] = useState(0);
-  const [searchText, setSearchText] = useState("");
-
-  // Filtrer les excursions disponibles pour la ville du jour sélectionné
-  const currentCity = itinerary.days[selectedDay]?.city;
-  
-  const availableExcursions = excursions.filter(exc => {
-    const isCityMatch = exc.city === currentCity || selectedCities.includes(exc.city);
-    const isActive = exc.is_active === true;
-    const isNotAlreadyAdded = !itinerary.days[selectedDay]?.activities.some(a => a.id === exc.id);
-    const matchesSearch = exc.title.toLowerCase().includes(searchText.toLowerCase());
-    
-    let isCatMatch = true;
-    if (selectedCats.length > 0) {
-      isCatMatch = exc.categories?.some(cat => selectedCats.includes(cat)) ?? false;
-    }
-
-    return isCityMatch && isActive && isNotAlreadyAdded && matchesSearch && isCatMatch;
-  });
-
-  const handleAddExcursion = (exc: Excursion) => {
-    const activity: Activity = {
-      id: exc.id,
-      name: exc.title,
-      description: exc.description || "",
-      time: exc.depart_time || "09:00",
-      duration: `${exc.duration_hours || 2}h`,
-      duration_hours: exc.duration_hours || 2,
-      price: exc.price_per_person || 0,
-      photos: exc.photos || [],
-      languages: exc.languages || ["Français"],
-      inclusion: exc.inclusions || [],
-      city: exc.city,
-      rating: exc.rating,
-      is_free_day: false,
-    };
-    onAddActivity(selectedDay, activity);
-  };
-
-  return (
-    <div style={{
-      position: "fixed",
-      inset: 0,
-      background: "rgba(0,0,0,0.5)",
-      zIndex: 10000,
-      display: "flex",
-      alignItems: "flex-end",
-    }}>
-      <div style={{
-        width: "100%",
-        maxWidth: 600,
-        background: "white",
-        borderRadius: "24px 24px 0 0",
-        padding: "24px",
-        maxHeight: "80vh",
-        overflow: "auto",
-        animation: "slideUp 0.3s ease-out",
-      }}>
-        <style>{`@keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }`}</style>
-        
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
-          <h2 style={{ margin: 0, fontSize: "18px", fontWeight: 700, color: "#053366" }}>
-            Ajouter une excursion
-          </h2>
-          <button
-            onClick={onClose}
-            style={{
-              background: "none",
-              border: "none",
-              fontSize: "24px",
-              cursor: "pointer",
-              color: "#9CA3AF",
-              padding: 0,
-            }}
-          >
-            ✕
-          </button>
-        </div>
-
-        {/* Sélection du jour */}
-        <div style={{ marginBottom: "20px" }}>
-          <label style={{ display: "block", fontSize: "12px", fontWeight: 600, color: "#9CA3AF", marginBottom: "8px" }}>
-            Jour de l&apos;itinéraire
-          </label>
-          <select
-            value={selectedDay}
-            onChange={(e) => setSelectedDay(Number(e.target.value))}
-            style={{
-              width: "100%",
-              padding: "10px 14px",
-              border: "1.5px solid #E8EDF2",
-              borderRadius: "12px",
-              fontSize: "14px",
-              fontFamily: "inherit",
-              cursor: "pointer",
-            }}
-          >
-            {itinerary.days.map((day, idx) => (
-              <option key={idx} value={idx}>
-                Jour {day.day} — {day.city}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        {/* Recherche */}
-        <div style={{ marginBottom: "20px" }}>
-          <input
-            type="text"
-            placeholder="Rechercher une excursion..."
-            value={searchText}
-            onChange={(e) => setSearchText(e.target.value)}
-            style={{
-              width: "100%",
-              padding: "10px 14px",
-              border: "1.5px solid #E8EDF2",
-              borderRadius: "12px",
-              fontSize: "14px",
-              fontFamily: "inherit",
-              outline: "none",
-            }}
-            onFocus={(e) => (e.target.style.borderColor = "#2B96A8")}
-            onBlur={(e) => (e.target.style.borderColor = "#E8EDF2")}
-          />
-        </div>
-
-        {/* Liste des excursions disponibles */}
-        <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-          {availableExcursions.length === 0 ? (
-            <div style={{
-              padding: "30px 20px",
-              textAlign: "center",
-              color: "#9CA3AF",
-              fontSize: "14px",
-            }}>
-              Aucune excursion disponible pour ce jour
-            </div>
-          ) : (
-            availableExcursions.map((exc) => (
-              <div
-                key={exc.id}
-                style={{
-                  padding: "14px 16px",
-                  border: "1.5px solid #E8EDF2",
-                  borderRadius: "14px",
-                  background: "#FAFBFC",
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  gap: "12px",
-                }}
-              >
-                <div style={{ flex: 1 }}>
-                  <h3 style={{ margin: "0 0 4px", fontSize: "14px", fontWeight: 700, color: "#053366" }}>
-                    {exc.title}
-                  </h3>
-                  <div style={{ display: "flex", gap: "12px", fontSize: "12px", color: "#9CA3AF" }}>
-                    <span>⏱️ {exc.duration_hours || 2}h</span>
-                    <span>💰 {exc.price_per_person || 0}€</span>
-                    {exc.rating && <span>⭐ {exc.rating}/5</span>}
-                  </div>
-                </div>
-                <button
-                  onClick={() => handleAddExcursion(exc)}
-                  style={{
-                    padding: "8px 14px",
-                    background: "#2B96A8",
-                    color: "white",
-                    border: "none",
-                    borderRadius: "10px",
-                    cursor: "pointer",
-                    fontWeight: 600,
-                    fontSize: "13px",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "6px",
-                    transition: "all 0.2s",
-                  }}
-                  onMouseOver={(e) => {
-                    (e.target as HTMLElement).style.background = "#053366";
-                    (e.target as HTMLElement).style.transform = "translateY(-2px)";
-                  }}
-                  onMouseOut={(e) => {
-                    (e.target as HTMLElement).style.background = "#2B96A8";
-                    (e.target as HTMLElement).style.transform = "translateY(0)";
-                  }}
-                >
-                  <Plus size={16} /> Ajouter
-                </button>
-              </div>
-            ))
-          )}
-        </div>
-      </div>
-    </div>
   );
 }
 
@@ -997,6 +781,49 @@ const STEPS = [
 ];
 
 /* ══════════════════════════════════════════
+   HELPER: Convertir heure → plan_time
+══════════════════════════════════════════ */
+function timeToPlanTime(time?: string): "matin" | "aprem" | "soir" | undefined {
+  if (!time) return undefined;
+  const h = parseInt(time.split(":")[0], 10);
+  if (isNaN(h)) return undefined;
+  if (h < 13) return "matin";
+  if (h < 18) return "aprem";
+  return "soir";
+}
+
+/* ══════════════════════════════════════════
+   HELPER: Calculer la date d'un jour donné
+   dans une ville en fonction des cityDates
+══════════════════════════════════════════ */
+function computePlanDate(
+  dayDate: string | undefined,
+  dayIndex: number,
+  city: string,
+  allDays: DayPlan[],
+  cityDates: CityDateRange[]
+): string | undefined {
+  // Si l'IA a fourni une date directement, on l'utilise
+  if (dayDate && dayDate.match(/^\d{4}-\d{2}-\d{2}$/)) return dayDate;
+
+  // Sinon, calculer à partir de cityDates
+  const cityDateRange = cityDates.find(c => c.city === city);
+  if (!cityDateRange?.start) return undefined;
+
+  // Trouver l'index de ce jour parmi les jours de la même ville
+  const daysOfThisCity = allDays.filter(d => d.city === city);
+  const indexInCity = daysOfThisCity.findIndex((_, i) => {
+    // Recalculer l'index global
+    return allDays.filter((d, gi) => d.city === city && gi <= dayIndex).length - 1 === i;
+  });
+
+  const offset = Math.max(0, indexInCity);
+  const computed = new Date(cityDateRange.start);
+  computed.setDate(computed.getDate() + offset);
+  return computed.toISOString().split("T")[0];
+}
+
+/* ══════════════════════════════════════════
    MAIN COMPONENT
 ══════════════════════════════════════════ */
 export default function ModeAssiste() {
@@ -1026,7 +853,6 @@ export default function ModeAssiste() {
   const msgIdxRef = useRef(0);
 
   const [dateError, setDateError] = useState("");
-  const [showAddExcursion, setShowAddExcursion] = useState(false);
   const [showCheckout, setShowCheckout] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saveStatus, setSaveStatus] = useState<"idle"|"ok"|"error"|"login"|"saving">("idle");
@@ -1039,29 +865,72 @@ export default function ModeAssiste() {
     (acc, d) => acc + d.activities.reduce((a, act) => a + (Number(act.price) || 0), 0), 0
   ) ?? 0;
 
-  const itineraryAsExc = useMemo(() => {
-    if (!itinerary) return null;
+  /* ══════════════════════════════════════════
+     ✅ CORRECTION PRINCIPALE :
+     Construire la liste des vraies excursions
+     Supabase à passer à CheckoutModalItineraire
+  ══════════════════════════════════════════ */
+  const checkoutExcursions = useMemo((): ExcursionForCheckout[] => {
+    if (!itinerary) return [];
 
-    const allDates = cityDates
-      .filter(c => c.start && c.end)
-      .flatMap(c => generateDateRange(c.start!, c.end!));
+    const result: ExcursionForCheckout[] = [];
+    const seenIds = new Set<string>();
 
-    const uniqueDates = [...new Set(allDates)].sort();
+    itinerary.days.forEach((day, dayIdx) => {
+      day.activities.forEach((act) => {
+        // Ignorer les journées libres et activités sans ID réel
+        if (
+          act.is_free_day ||
+          act.name === "Journée libre" ||
+          String(act.id).startsWith("free-day-") ||
+          String(act.id).startsWith("act-")
+        ) return;
 
-    return {
-      id: `itinerary-${crypto.randomUUID()}`,
-      title: itinerary.title || "Voyage personnalisé en Tunisie",
-      city: selectedCities.join(", "),
-      duration_hours: totalDays * 8,
-      price_per_person: totalPrice,
-      max_people: 20,
-      is_active: true,
-      available_dates: uniqueDates,
-      depart_time: "09:00",
-      is_itinerary: true,
-      description: `Itinéraire personnalisé sur ${totalDays} jour${totalDays > 1 ? "s" : ""} — ${selectedCities.join(", ")}`,
-    };
-  }, [itinerary, selectedCities, totalDays, totalPrice, cityDates]);
+        // Éviter les doublons
+        if (seenIds.has(String(act.id))) return;
+
+        // Chercher la vraie excursion dans les données Supabase
+        const realExc =
+          excursions.find(e => String(e.id) === String(act.id)) ||
+          excursions.find(e => e.title?.toLowerCase() === act.name?.toLowerCase());
+
+        // Si pas trouvée dans Supabase, on skip (pas de vraies available_dates)
+        if (!realExc) return;
+
+        seenIds.add(String(realExc.id));
+
+        // Calculer la date planifiée pour ce jour
+        const planDate = computePlanDate(
+          day.date,
+          dayIdx,
+          day.city,
+          itinerary.days,
+          cityDates
+        );
+
+        // Convertir l'heure en plan_time (matin/aprem/soir)
+        const planTime = timeToPlanTime(act.time || realExc.depart_time);
+
+        result.push({
+          id:               realExc.id,
+          title:            realExc.title,
+          city:             realExc.city,
+          duration_hours:   realExc.duration_hours || act.duration_hours || 2,
+          price_per_person: realExc.price_per_person || act.price || 0,
+          max_people:       realExc.max_people || 20,
+          // ✅ available_dates vient de la vraie excursion Supabase
+          available_dates:  Array.isArray(realExc.available_dates)
+            ? realExc.available_dates as unknown[]
+            : null,
+          plan_date:        planDate,
+          plan_time:        planTime,
+          plan_day:         day.day,
+        });
+      });
+    });
+
+    return result;
+  }, [itinerary, excursions, cityDates]);
 
   const canGenerate = selectedCities.length > 0 && allDatesSet && !dateError && !!N8N_WEBHOOK_URL;
 
@@ -1072,6 +941,7 @@ export default function ModeAssiste() {
         const [{ data: v }, { data: c }, { data: e }] = await Promise.all([
           supabase.from("villes").select("*").order("nom"),
           supabase.from("categories").select("*").order("nom"),
+          // ✅ S'assurer que available_dates est bien chargé
           supabase.from("excursions").select("*").eq("is_active", true),
         ]);
         setVilles((v || []) as Ville[]);
@@ -1187,22 +1057,6 @@ export default function ModeAssiste() {
     }
   };
 
-  const handleAddActivityToDay = (dayIdx: number, activity: Activity) => {
-    setItinerary(prev => {
-      if (!prev) return prev;
-      return {
-        ...prev,
-        days: prev.days.map((day, dIdx) =>
-          dIdx !== dayIdx ? day : {
-            ...day,
-            activities: [...day.activities, activity],
-          }
-        ),
-      };
-    });
-    setShowAddExcursion(false);
-  };
-
   const handleChangeActivity = (dayIdx: number, actIdx: number, alt: Activity) => {
     setItinerary(prev => {
       if (!prev) return prev;
@@ -1293,7 +1147,6 @@ export default function ModeAssiste() {
     setBudget("");
     setGenError("");
     setDateError("");
-    setShowAddExcursion(false);
     setShowCheckout(false);
     setSaveStatus("idle");
   };
@@ -1308,6 +1161,9 @@ export default function ModeAssiste() {
 
   const canStep0 = selectedCities.length > 0;
   const canStep1 = allDatesSet && !dateError;
+
+  // ✅ Le bouton Réserver est actif seulement si on a des excursions réelles
+  const canCheckout = checkoutExcursions.length > 0;
 
   return (
     <div suppressHydrationWarning style={{ minHeight: "100vh", background: "#F6F9FB", fontFamily: "'DM Sans',system-ui,sans-serif" }}>
@@ -1540,29 +1396,19 @@ export default function ModeAssiste() {
             saveStatus={saveStatus}
             onBack={() => setAppStep("questions")}
             onReset={resetAll}
-            onAddExcursion={() => setShowAddExcursion(true)}
-            onCheckout={() => setShowCheckout(true)}
+            // ✅ Ouvre le checkout seulement si on a des excursions réelles
+           
             onSave={saveItinerary}
             onChangeActivity={handleChangeActivity}
           />
         </div>
       )}
 
-      {showAddExcursion && itinerary && (
-        <AddExcursionPanel
-          itinerary={itinerary}
-          excursions={excursions}
-          selectedCities={selectedCities}
-          selectedCats={selectedCats}
-          categories={categories}
-          onAddActivity={handleAddActivityToDay}
-          onClose={() => setShowAddExcursion(false)}
-        />
-      )}
-
-      {showCheckout && itinerary && itineraryAsExc && (
+      {/* ✅ CORRECTION : passer checkoutExcursions (vraies excursions Supabase)
+          et non plus itineraryAsExc (objet fictif) */}
+      {showCheckout && itinerary && checkoutExcursions.length > 0 && (
         <Checkoutmodal
-          excursions={[itineraryAsExc]}
+          excursions={checkoutExcursions}
           itineraireTitle={itinerary.title}
           onClose={() => setShowCheckout(false)}
         />

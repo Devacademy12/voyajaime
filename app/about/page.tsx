@@ -41,681 +41,415 @@ const ICON_MAP: Record<string, React.ReactNode> = {
   users:  <Users  size={22} strokeWidth={1.8} />,
 };
 
+/* ══ CSS — tokens identiques à BlogPage + HomeSlider ══ */
 const CSS = `
-  @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&family=Open+Sans:wght@300;400;500;600&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,800;0,900;1,700&family=DM+Sans:wght@300;400;500;600;700;800&display=swap');
 
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-  :root {
-    --brand-dark:    #053366;
-    --brand-primary: #02AFCF;
-    --brand-blue:    #259FFC;
-    --brand-lavender:#DCE5FF;
-    --teal:          #2b96a8;
-    --teal-light:    #4aabb8;
-    --teal-dark:     #1e7a8a;
-    --sand:          #f5f3f0;
-
-    /* Derived */
-    --white:         #ffffff;
-    --gray-50:       #f8fafc;
-    --gray-100:      #f1f5f9;
-    --gray-200:      #e2e8f0;
-    --gray-400:      #94a3b8;
-    --gray-600:      #475569;
-    --gray-700:      #334155;
-    --dark-navy:     #021d3d;
-
-    --shadow-sm:  0 1px 3px rgba(5,51,102,0.08), 0 1px 2px rgba(5,51,102,0.06);
-    --shadow-md:  0 4px 16px rgba(5,51,102,0.10), 0 2px 6px rgba(5,51,102,0.06);
-    --shadow-lg:  0 12px 40px rgba(5,51,102,0.14), 0 4px 12px rgba(5,51,102,0.08);
-  }
-
   body {
-    font-family: 'Open Sans', system-ui, sans-serif;
-    background: var(--white);
-    color: var(--gray-700);
+    font-family: 'DM Sans', system-ui, sans-serif;
+    background: #F7F8FA;
+    color: #374151;
     -webkit-font-smoothing: antialiased;
   }
 
-  /* ── RICH CONTENT dark ── */
-  .rich-dark p          { margin-bottom: 14px; line-height: 1.85; font-size: 15px; color: rgba(255,255,255,0.75); font-weight: 400; }
-  .rich-dark h2         { font-size: 20px; font-weight: 700; color: var(--white); margin-bottom: 10px; font-family: 'Montserrat', sans-serif; }
-  .rich-dark ul         { padding-left: 20px; margin-bottom: 14px; }
-  .rich-dark ul li      { margin-bottom: 6px; line-height: 1.75; color: rgba(255,255,255,0.75); font-size: 14px; }
-  .rich-dark blockquote { border-left: 3px solid var(--brand-primary); padding: 12px 20px; background: rgba(2,175,207,0.12); border-radius: 0 6px 6px 0; margin: 16px 0; color: rgba(255,255,255,0.7); font-style: italic; }
-  .rich-dark a          { color: var(--brand-primary); text-decoration: underline; text-underline-offset: 3px; }
-  .rich-dark strong     { font-weight: 700; color: var(--white); }
+  @keyframes slideUp   { from { opacity:0; transform:translateY(28px); filter:blur(5px); } to { opacity:1; transform:translateY(0); filter:blur(0); } }
+  @keyframes fadeIn    { from { opacity:0; } to { opacity:1; } }
+  @keyframes float     { 0%,100%{transform:translateX(-50%) translateY(0)} 50%{transform:translateX(-50%) translateY(10px)} }
 
-  /* ── RICH CONTENT light ── */
-  .rich-light p         { margin-bottom: 14px; line-height: 1.85; font-size: 15px; color: var(--gray-600); font-weight: 400; }
-  .rich-light ul        { padding-left: 20px; margin-bottom: 14px; }
-  .rich-light ul li     { margin-bottom: 6px; line-height: 1.75; color: var(--gray-600); font-size: 14px; }
-  .rich-light strong    { font-weight: 700; color: var(--brand-dark); }
-  .rich-light a         { color: var(--teal); }
+  /* ── RICH content dark ── */
+  .rich-dark p         { margin-bottom:14px; line-height:1.85; font-size:15px; color:rgba(255,255,255,0.7); }
+  .rich-dark h2        { font-family:'Playfair Display',serif; font-size:20px; font-weight:900; color:#fff; margin-bottom:10px; }
+  .rich-dark ul        { padding-left:20px; margin-bottom:14px; }
+  .rich-dark ul li     { margin-bottom:6px; line-height:1.75; color:rgba(255,255,255,0.7); font-size:14px; }
+  .rich-dark blockquote{ border-left:3px solid #02AFCF; padding:12px 20px; background:rgba(2,175,207,0.12); border-radius:0 12px 12px 0; margin:16px 0; color:rgba(255,255,255,0.7); font-style:italic; }
+  .rich-dark strong    { font-weight:700; color:#fff; }
 
-  /* ── EYEBROW TAG ── */
-  .eyebrow {
-    display: inline-flex;
-    align-items: center;
-    gap: 7px;
-    padding: 5px 14px;
-    border-radius: 3px;
-    background: var(--brand-lavender);
-    color: var(--brand-dark);
-    font-size: 11px;
-    font-weight: 700;
-    letter-spacing: 1.8px;
-    text-transform: uppercase;
-    margin-bottom: 18px;
-    font-family: 'Montserrat', sans-serif;
-  }
-  .eyebrow::before {
-    content: '';
-    display: block;
-    width: 16px;
-    height: 2px;
-    background: var(--brand-primary);
-    border-radius: 2px;
-  }
+  /* ── RICH content light ── */
+  .rich-light p        { margin-bottom:14px; line-height:1.85; font-size:15px; color:#6B7280; }
+  .rich-light ul       { padding-left:20px; margin-bottom:14px; }
+  .rich-light ul li    { margin-bottom:6px; line-height:1.75; color:#6B7280; font-size:14px; }
+  .rich-light strong   { font-weight:700; color:#053366; }
+  .rich-light a        { color:#02AFCF; }
 
-  .eyebrow-light {
-    display: inline-flex;
-    align-items: center;
-    gap: 7px;
-    padding: 5px 14px;
-    border-radius: 3px;
-    background: rgba(2,175,207,0.15);
-    color: var(--brand-primary);
-    font-size: 11px;
-    font-weight: 700;
-    letter-spacing: 1.8px;
-    text-transform: uppercase;
-    margin-bottom: 18px;
-    font-family: 'Montserrat', sans-serif;
-  }
-  .eyebrow-light::before {
-    content: '';
-    display: block;
-    width: 16px;
-    height: 2px;
-    background: var(--brand-primary);
-    border-radius: 2px;
-  }
+  /* ── section label (identique BlogPage) ── */
+  .section-label { display:flex; align-items:center; gap:10px; margin-bottom:12px; }
+  .label-bar     { width:28px; height:2px; border-radius:2px; }
+  .label-bar-cyan{ background:#02AFCF; }
+  .label-bar-navy{ background:#053366; }
+  .label-text    { font-size:10px; font-weight:800; letter-spacing:3px; text-transform:uppercase; }
+  .label-text-cyan{ color:#02AFCF; }
+  .label-text-navy{ color:#053366; }
 
-  /* ══════════════════════════
-     HERO — full-bleed dark navy
-     with diagonal bottom cut
-  ══════════════════════════ */
-  .hero-section {
-    position: relative;
-    background: var(--brand-dark);
-    padding: 100px 48px 130px;
-    overflow: hidden;
+  /* ── pill badge (identique aux filter pills de BlogPage) ── */
+  .pill-badge {
+    display:inline-flex; align-items:center; gap:7px;
+    padding:5px 16px; border-radius:100px;
+    font-size:10px; font-weight:800; letter-spacing:1.8px; text-transform:uppercase;
+    margin-bottom:20px;
   }
-  .hero-section::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background:
-      radial-gradient(ellipse 60% 70% at 70% 50%, rgba(2,175,207,0.12) 0%, transparent 70%),
-      radial-gradient(ellipse 40% 60% at 20% 80%, rgba(37,159,252,0.08) 0%, transparent 60%);
-    pointer-events: none;
+  .pill-badge-cyan {
+    background:rgba(2,175,207,0.14); border:1px solid rgba(2,175,207,0.4); color:#02AFCF;
   }
-  /* Diagonal clip at bottom */
-  .hero-section::after {
-    content: '';
-    position: absolute;
-    bottom: 0; left: 0; right: 0;
-    height: 60px;
-    background: var(--white);
-    clip-path: polygon(0 100%, 100% 0, 100% 100%);
+  .pill-badge-light {
+    background:rgba(255,255,255,0.12); border:1px solid rgba(255,255,255,0.25); color:rgba(255,255,255,0.85);
   }
-  .hero-inner {
-    position: relative;
-    max-width: 1120px;
-    margin: 0 auto;
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 72px;
-    align-items: center;
-    z-index: 1;
+  .pill-badge-navy {
+    background:rgba(5,51,102,0.08); border:1px solid rgba(5,51,102,0.18); color:#053366;
   }
-  .hero-inner.full { grid-template-columns: 1fr; max-width: 680px; }
+  .pill-dot { width:6px; height:6px; border-radius:50%; background:currentColor; }
+
+  /* ══════════════════════════════════════
+     HERO — image plein écran (= BlogPage)
+  ══════════════════════════════════════ */
+  .hero-wrap {
+    position:relative; height:580px; overflow:hidden; margin-top:60px;
+  }
+  .hero-img {
+    position:absolute; ; width:100%; height:100%;
+    object-fit:cover; display:block; filter:brightness(0.52);
+  }
+  .hero-overlay-l {
+    position:absolute; inset:0;
+    background:linear-gradient(to right, rgba(0,0,0,.82) 0%, rgba(0,0,0,.42) 52%, rgba(0,0,0,.12) 100%);
+  }
+  .hero-overlay-b {
+    position:absolute; inset:0;
+    background:linear-gradient(to top, rgba(5,51,102,.75) 0%, transparent 52%);
+  }
+  .hero-grid-overlay {
+    position:absolute; inset:0;
+    background-image:linear-gradient(rgba(255,255,255,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.025) 1px,transparent 1px);
+    background-size:48px 48px;
+    pointer-events:none;
+  }
+  .hero-content {
+    position:absolute; bottom:0; left:10%; 
+    padding:0 40px 44px;
+    animation:slideUp .7s cubic-bezier(.34,1.2,.64,1) .1s both;
+  }
   .hero-title {
-    font-family: 'Montserrat', sans-serif;
-    font-size: clamp(32px, 4vw, 58px);
-    font-weight: 900;
-    color: var(--white);
-    line-height: 1.08;
-    letter-spacing: -1px;
-    margin-bottom: 20px;
+    font-family:'Playfair Display',serif;
+    font-size:clamp(32px,4.5vw,60px);
+    font-weight:900; color:#fff;
+    line-height:1.05; letter-spacing:-2px;
+    margin-bottom:18px;
+    text-shadow:0 4px 40px rgba(0,0,0,.3);
+    max-width:680px;
   }
-  .hero-title span {
-    color: var(--brand-primary);
-  }
-  .hero-sub {
-    font-size: 16px;
-    font-weight: 400;
-    color: rgba(255,255,255,0.68);
-    line-height: 1.8;
-    max-width: 430px;
-    margin-bottom: 36px;
+  .hero-title em { font-style:normal; color:#02AFCF; }
+  .hero-subtitle {
+    font-size:16px; color:rgba(255,255,255,.65);
+    line-height:1.75; max-width:540px; margin-bottom:28px;
   }
   .hero-cta {
-    display: inline-flex;
-    align-items: center;
-    gap: 10px;
-    padding: 13px 28px;
-    background: var(--brand-primary);
-    color: var(--white);
-    border-radius: 4px;
-    font-size: 13px;
-    font-weight: 700;
-    text-decoration: none;
-    letter-spacing: 0.5px;
-    text-transform: uppercase;
-    font-family: 'Montserrat', sans-serif;
-    transition: background 0.2s, transform 0.15s;
-    box-shadow: 0 4px 16px rgba(2,175,207,0.35);
+    display:inline-flex; align-items:center; gap:10px;
+    padding:14px 30px; background:#02AFCF; color:#fff;
+    border-radius:12px; font-size:14px; font-weight:700;
+    text-decoration:none; border:2px solid #02AFCF;
+    transition:all .35s cubic-bezier(.34,1.2,.64,1);
+    box-shadow:0 8px 28px rgba(2,175,207,.35);
   }
-  .hero-cta:hover { background: var(--teal); transform: translateY(-1px); }
-  .hero-img-wrap {
-    position: relative;
-    border-radius: 6px;
-    overflow: hidden;
-    box-shadow: var(--shadow-lg);
-  }
-  .hero-img-wrap::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    border: 3px solid rgba(2,175,207,0.3);
-    border-radius: 6px;
-    pointer-events: none;
-  }
-  .hero-img-wrap img {
-    display: block;
-    width: 100%;
-    height: 400px;
-    object-fit: cover;
-  }
-  /* Floating accent badge on hero image */
-  .hero-badge {
-    position: absolute;
-    bottom: -18px;
-    left: -18px;
-    background: var(--brand-primary);
-    color: var(--white);
-    border-radius: 6px;
-    padding: 16px 20px;
-    box-shadow: var(--shadow-md);
-    font-family: 'Montserrat', sans-serif;
-    z-index: 2;
-  }
-  .hero-badge-num {
-    font-size: 32px;
-    font-weight: 900;
-    line-height: 1;
-    margin-bottom: 2px;
-  }
-  .hero-badge-label {
-    font-size: 10px;
-    font-weight: 600;
-    letter-spacing: 1.2px;
-    text-transform: uppercase;
-    opacity: 0.85;
-  }
+  .hero-cta:hover { background:transparent; color:#02AFCF; transform:translateY(-3px); }
 
-  /* ══════════════════════════
-     MISSION — white bg, clean 2-col
-  ══════════════════════════ */
-  .mission-section {
-    background: var(--white);
-    padding: 96px 48px 80px;
-    border-bottom: 1px solid var(--gray-200);
+  /* badge flottant sur image hero */
+  .hero-float-badge {
+    position:absolute; top:28px; right:36px; z-index:5;
+    display:inline-flex; align-items:center; gap:8px;
+    padding:10px 18px; border-radius:100px;
+    background:rgba(0,0,0,.45); backdrop-filter:blur(12px);
+    border:1px solid rgba(255,255,255,.18);
+    color:rgba(255,255,255,.85); font-size:12px; font-weight:700;
+  }
+  .hero-float-badge-dot { width:7px; height:7px; border-radius:50%; background:#02AFCF; }
+
+  /* scroll hint */
+  .scroll-hint {
+    position:absolute; bottom:20px; left:50%;
+    animation:float 2.4s ease-in-out infinite;
+    opacity:.6; cursor:pointer; transition:opacity .3s;
+  }
+  .scroll-hint:hover { opacity:1; }
+
+  /* ══════════════════════════════════════
+     MISSION — blanc, 2 colonnes
+  ══════════════════════════════════════ */
+  .mission-wrap {
+    background:#fff; padding:96px 40px 88px;
+    border-bottom:1px solid #EBEBEB;
   }
   .mission-inner {
-    max-width: 1120px;
-    margin: 0 auto;
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 80px;
-    align-items: center;
+    max-width:1200px; margin:0 auto;
+    display:grid; grid-template-columns:1fr 1fr; gap:80px; align-items:center;
   }
   .mission-title {
-    font-family: 'Montserrat', sans-serif;
-    font-size: clamp(24px, 2.8vw, 40px);
-    font-weight: 800;
-    color: var(--brand-dark);
-    line-height: 1.12;
-    letter-spacing: -0.8px;
-    margin-bottom: 16px;
+    font-family:'Playfair Display',serif;
+    font-size:clamp(26px,3vw,42px);
+    font-weight:900; color:#053366;
+    line-height:1.1; letter-spacing:-1px; margin-bottom:16px;
   }
   .mission-sub {
-    font-size: 15px;
-    font-weight: 400;
-    color: var(--gray-600);
-    line-height: 1.85;
-    margin-bottom: 20px;
+    font-size:15px; color:#6B7280; line-height:1.85; margin-bottom:20px;
   }
-  /* Right visual card — styled like reference blue panel */
-  .mission-visual {
-    background: var(--brand-dark);
-    border-radius: 6px;
-    padding: 44px 40px;
-    position: relative;
-    overflow: hidden;
+  /* Panneau quote (= même style que PathsSection) */
+  .mission-panel {
+    background:#053366; border-radius:20px; padding:44px 40px;
+    position:relative; overflow:hidden;
   }
-  .mission-visual::before {
-    content: '';
-    position: absolute;
-    top: -40px; right: -40px;
-    width: 180px; height: 180px;
-    border-radius: 50%;
-    background: rgba(2,175,207,0.12);
-    pointer-events: none;
+  .mission-panel::before {
+    content:''; position:absolute; top:-40px; right:-40px;
+    width:180px; height:180px; border-radius:50%;
+    background:rgba(2,175,207,.12); pointer-events:none;
   }
-  .mission-visual::after {
-    content: '';
-    position: absolute;
-    bottom: -60px; left: -30px;
-    width: 200px; height: 200px;
-    border-radius: 50%;
-    background: rgba(37,159,252,0.07);
-    pointer-events: none;
+  .mission-panel::after {
+    content:''; position:absolute; bottom:-60px; left:-30px;
+    width:200px; height:200px; border-radius:50%;
+    background:rgba(37,159,252,.07); pointer-events:none;
   }
-  .mission-visual-icon {
-    width: 52px; height: 52px;
-    border-radius: 50%;
-    background: var(--brand-primary);
-    display: flex; align-items: center; justify-content: center;
-    margin-bottom: 24px;
-    position: relative; z-index: 1;
+  .mission-panel-icon {
+    width:52px; height:52px; border-radius:50%; background:#02AFCF;
+    display:flex; align-items:center; justify-content:center;
+    margin-bottom:24px; position:relative; z-index:1;
   }
-  .mission-visual-quote {
-    font-size: 16px;
-    font-weight: 400;
-    color: rgba(255,255,255,0.78);
-    line-height: 1.9;
-    font-style: italic;
-    position: relative; z-index: 1;
-    margin-bottom: 28px;
+  .mission-panel-quote {
+    font-family:'Playfair Display',serif;
+    font-size:17px; font-weight:700; font-style:italic;
+    color:rgba(255,255,255,.82); line-height:1.75;
+    position:relative; z-index:1; margin-bottom:28px;
   }
-  .mission-visual-divider {
-    width: 40px; height: 3px;
-    background: var(--brand-primary);
-    border-radius: 2px;
-    margin-bottom: 16px;
-    position: relative; z-index: 1;
-  }
-  .mission-visual-author {
-    font-family: 'Montserrat', sans-serif;
-    font-size: 12px;
-    font-weight: 700;
-    color: var(--brand-primary);
-    letter-spacing: 1.2px;
-    text-transform: uppercase;
-    position: relative; z-index: 1;
+  .mission-panel-bar  { width:36px; height:2px; background:#02AFCF; border-radius:2px; margin-bottom:14px; position:relative; z-index:1; }
+  .mission-panel-author {
+    font-size:11px; font-weight:800; color:#02AFCF;
+    letter-spacing:2px; text-transform:uppercase;
+    position:relative; z-index:1;
   }
 
-  /* ══════════════════════════
-     STATS — sand bg, horizontal
-  ══════════════════════════ */
-  .stats-section {
-    background: var(--sand);
-    padding: 72px 48px;
-    border-bottom: 1px solid var(--gray-200);
+  /* ══════════════════════════════════════
+     STATS — #F7F8FA, cards blanches
+  ══════════════════════════════════════ */
+  .stats-wrap {
+    background:#F7F8FA; padding:80px 40px;
+    border-bottom:1px solid #EBEBEB;
   }
-  .stats-heading {
-    font-family: 'Montserrat', sans-serif;
-    font-size: clamp(16px, 1.8vw, 22px);
-    font-weight: 700;
-    color: var(--brand-dark);
-    text-align: center;
-    margin-bottom: 48px;
-    letter-spacing: -0.3px;
+  .stats-heading-row {
+    max-width:1200px; margin:0 auto 48px;
+    display:flex; align-items:flex-end; justify-content:space-between; gap:20px; flex-wrap:wrap;
   }
   .stats-row {
-    max-width: 1120px;
-    margin: 0 auto;
-    display: grid;
-    gap: 20px;
+    max-width:1200px; margin:0 auto;
+    display:grid; gap:18px;
   }
-  .stat-cell {
-    background: var(--white);
-    border-radius: 6px;
-    padding: 36px 24px;
-    text-align: center;
-    border: 1px solid var(--gray-200);
-    border-top: 4px solid var(--brand-primary);
-    box-shadow: var(--shadow-sm);
-    transition: transform 0.18s, box-shadow 0.18s, border-top-color 0.18s;
+  .stat-card {
+    background:#fff; border-radius:20px;
+    border:1px solid #EBEBEB; border-top:3px solid #02AFCF;
+    padding:36px 24px; text-align:center;
+    transition:transform .25s cubic-bezier(.34,1.2,.64,1), box-shadow .25s ease, border-top-color .25s;
   }
-  .stat-cell:hover {
-    transform: translateY(-3px);
-    box-shadow: var(--shadow-md);
-    border-top-color: var(--brand-dark);
+  .stat-card:hover {
+    transform:translateY(-5px);
+    box-shadow:0 20px 48px rgba(5,51,102,.1);
+    border-top-color:#053366;
   }
   .stat-num {
-    font-family: 'Montserrat', sans-serif;
-    font-size: 48px;
-    font-weight: 900;
-    color: var(--brand-dark);
-    letter-spacing: -2px;
-    line-height: 1;
-    margin-bottom: 8px;
+    font-family:'Playfair Display',serif;
+    font-size:52px; font-weight:900; color:#053366;
+    letter-spacing:-2px; line-height:1; margin-bottom:8px;
   }
-  .stat-num span { color: var(--brand-primary); }
-  .stat-desc {
-    font-size: 12px;
-    font-weight: 600;
-    color: var(--gray-400);
-    letter-spacing: 1px;
-    text-transform: uppercase;
-    font-family: 'Montserrat', sans-serif;
+  .stat-num span { color:#02AFCF; }
+  .stat-label {
+    font-size:11px; font-weight:800; color:#9CA3AF;
+    letter-spacing:2px; text-transform:uppercase;
   }
 
-  /* ══════════════════════════
-     VALUES — white bg, card grid
-     matches "Nos Expertises" style
-  ══════════════════════════ */
-  .values-section {
-    background: var(--white);
-    padding: 88px 48px;
-    border-bottom: 1px solid var(--gray-200);
+  /* ══════════════════════════════════════
+     VALEURS — blanc, grid cards
+     (= même pattern que PopularExcursions)
+  ══════════════════════════════════════ */
+  .values-wrap {
+    background:#fff; padding:96px 40px 88px;
+    border-bottom:1px solid #EBEBEB;
   }
-  .values-header {
-    max-width: 1120px;
-    margin: 0 auto 52px;
-    text-align: center;
+  .values-header { max-width:1200px; margin:0 auto 52px; }
+  .values-title {
+    font-family:'Playfair Display',serif;
+    font-size:clamp(28px,3vw,44px);
+    font-weight:900; color:#053366;
+    letter-spacing:-1.5px; line-height:1.1; margin-bottom:14px;
   }
-  .values-header-title {
-    font-family: 'Montserrat', sans-serif;
-    font-size: clamp(26px, 2.8vw, 40px);
-    font-weight: 800;
-    color: var(--brand-dark);
-    letter-spacing: -1px;
-    line-height: 1.1;
-    margin-bottom: 14px;
-  }
-  .values-header-title span { color: var(--brand-primary); }
-  .values-header-sub {
-    font-size: 15px;
-    font-weight: 400;
-    color: var(--gray-600);
-    line-height: 1.75;
-    max-width: 520px;
-    margin: 0 auto;
-  }
+  .values-sub { font-size:15px; color:#6B7280; line-height:1.75; max-width:520px; }
+
   .values-grid {
-    max-width: 1120px;
-    margin: 0 auto;
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 20px;
+    max-width:1200px; margin:0 auto;
+    display:grid; grid-template-columns:repeat(3,1fr); gap:20px;
   }
-  .value-item {
-    background: var(--white);
-    border: 1px solid var(--gray-200);
-    border-radius: 6px;
-    padding: 32px 28px;
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0;
-    transition: border-color 0.18s, box-shadow 0.18s, transform 0.18s;
-    position: relative;
-    overflow: hidden;
+  /* card standard */
+  .value-card {
+    background:#fff; border-radius:20px;
+    border:1px solid #EBEBEB; padding:32px 28px;
+    display:flex; flex-direction:column; gap:0;
+    transition:transform .3s cubic-bezier(.34,1.2,.64,1), box-shadow .3s ease, border-color .3s;
+    position:relative; overflow:hidden;
   }
-  .value-item::after {
-    content: '';
-    position: absolute;
-    bottom: 0; left: 0; right: 0;
-    height: 3px;
-    background: var(--brand-primary);
-    transform: scaleX(0);
-    transition: transform 0.22s ease;
-    transform-origin: left;
+  .value-card::after {
+    content:''; position:absolute; bottom:0; left:0; right:0; height:2px;
+    background:#02AFCF; transform:scaleX(0); transition:transform .25s ease; transform-origin:left;
   }
-  .value-item:hover {
-    border-color: rgba(2,175,207,0.4);
-    box-shadow: var(--shadow-md);
-    transform: translateY(-2px);
-  }
-  .value-item:hover::after { transform: scaleX(1); }
-  /* "Active" / highlighted card — matches blue card in reference */
-  .value-item.featured {
-    background: var(--brand-dark);
-    border-color: var(--brand-dark);
-  }
-  .value-item.featured::after { background: var(--brand-primary); transform: scaleX(1); }
-  .value-item.featured .value-icon-box { background: rgba(2,175,207,0.2); border-color: rgba(2,175,207,0.3); color: var(--brand-primary); }
-  .value-item.featured .value-item-title { color: var(--white); }
-  .value-item.featured .value-item-text  { color: rgba(255,255,255,0.65); }
-  .value-icon-box {
-    flex-shrink: 0;
-    width: 50px;
-    height: 50px;
-    border-radius: 50%;
-    background: var(--brand-lavender);
-    border: 1px solid rgba(5,51,102,0.1);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: var(--brand-dark);
-    margin-bottom: 20px;
-    transition: background 0.18s;
-  }
-  .value-item:not(.featured):hover .value-icon-box {
-    background: var(--brand-primary);
-    border-color: var(--brand-primary);
-    color: var(--white);
-  }
-  .value-item-title {
-    font-family: 'Montserrat', sans-serif;
-    font-size: 15px;
-    font-weight: 700;
-    color: var(--brand-dark);
-    margin-bottom: 10px;
-    letter-spacing: -0.2px;
-  }
-  .value-item-text {
-    font-size: 13.5px;
-    font-weight: 400;
-    color: var(--gray-600);
-    line-height: 1.72;
-  }
-  .value-link {
-    margin-top: 20px;
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    font-size: 12px;
-    font-weight: 700;
-    color: var(--brand-primary);
-    text-decoration: none;
-    text-transform: uppercase;
-    letter-spacing: 0.8px;
-    font-family: 'Montserrat', sans-serif;
-  }
-  .value-link svg { transition: transform 0.15s; }
-  .value-link:hover svg { transform: translateX(3px); }
+  .value-card:hover { transform:translateY(-5px); box-shadow:0 20px 48px rgba(5,51,102,.1); border-color:rgba(2,175,207,.35); }
+  .value-card:hover::after { transform:scaleX(1); }
 
-  /* ══════════════════════════
-     TEAM — sand bg
-  ══════════════════════════ */
-  .team-section {
-    background: var(--sand);
-    padding: 88px 48px;
-    border-bottom: 1px solid var(--gray-200);
+  /* card featured (= PathsSection dark card) */
+  .value-card.featured {
+    background:#053366; border-color:#053366;
   }
-  .team-header {
-    max-width: 1120px;
-    margin: 0 auto 48px;
+  .value-card.featured::after { background:#02AFCF; transform:scaleX(1); }
+  .value-card.featured .v-icon  { background:rgba(2,175,207,.2); border-color:rgba(2,175,207,.3); color:#02AFCF; }
+  .value-card.featured .v-title { color:#fff; }
+  .value-card.featured .v-text  { color:rgba(255,255,255,.62); }
+  .value-card.featured .v-link  { color:#02AFCF; }
+
+  .v-icon {
+    width:52px; height:52px; border-radius:14px;
+    background:#EEF2FF; border:1px solid rgba(5,51,102,.1);
+    display:flex; align-items:center; justify-content:center;
+    color:#053366; margin-bottom:20px;
+    transition:background .2s, color .2s;
   }
-  .team-section-title {
-    font-family: 'Montserrat', sans-serif;
-    font-size: clamp(24px, 2.8vw, 40px);
-    font-weight: 800;
-    color: var(--brand-dark);
-    letter-spacing: -1px;
-    line-height: 1.1;
-    margin-bottom: 10px;
+  .value-card:not(.featured):hover .v-icon {
+    background:#02AFCF; border-color:#02AFCF; color:#fff;
   }
-  .team-section-sub {
-    font-size: 15px;
-    font-weight: 400;
-    color: var(--gray-600);
-    line-height: 1.75;
-    max-width: 460px;
+  .v-title {
+    font-family:'Playfair Display',serif;
+    font-size:17px; font-weight:800; color:#053366;
+    margin-bottom:10px; letter-spacing:-.3px;
   }
+  .v-text  { font-size:13.5px; color:#6B7280; line-height:1.72; }
+  .v-link  {
+    margin-top:20px; display:inline-flex; align-items:center; gap:5px;
+    font-size:12px; font-weight:700; color:#02AFCF;
+    text-decoration:none; text-transform:uppercase; letter-spacing:.8px;
+  }
+  .v-link svg { transition:transform .15s; }
+  .v-link:hover svg { transform:translateX(3px); }
+
+  /* ══════════════════════════════════════
+     TEAM — #F7F8FA, cards blanches
+  ══════════════════════════════════════ */
+  .team-wrap {
+    background:#F7F8FA; padding:96px 40px 88px;
+    border-bottom:1px solid #EBEBEB;
+  }
+  .team-header { max-width:1200px; margin:0 auto 48px; }
+  .team-title {
+    font-family:'Playfair Display',serif;
+    font-size:clamp(26px,3vw,42px);
+    font-weight:900; color:#053366;
+    letter-spacing:-1.5px; line-height:1.1; margin-bottom:10px;
+  }
+  .team-sub { font-size:15px; color:#6B7280; line-height:1.75; max-width:460px; }
+
   .team-grid {
-    max-width: 1120px;
-    margin: 0 auto;
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 20px;
+    max-width:1200px; margin:0 auto;
+    display:grid; grid-template-columns:repeat(3,1fr); gap:20px;
   }
   .team-card {
-    background: var(--white);
-    border: 1px solid var(--gray-200);
-    border-radius: 6px;
-    overflow: hidden;
-    transition: border-color 0.18s, box-shadow 0.18s, transform 0.18s;
+    background:#fff; border-radius:20px;
+    border:1px solid #EBEBEB; overflow:hidden;
+    transition:transform .3s cubic-bezier(.34,1.2,.64,1), box-shadow .3s, border-color .3s;
   }
   .team-card:hover {
-    border-color: rgba(2,175,207,0.4);
-    box-shadow: var(--shadow-md);
-    transform: translateY(-2px);
+    transform:translateY(-5px);
+    box-shadow:0 20px 48px rgba(5,51,102,.1);
+    border-color:rgba(2,175,207,.35);
   }
-  .team-photo { width: 100%; height: 220px; object-fit: cover; display: block; }
+  .team-card:hover .team-photo { transform:scale(1.05); }
+  .team-photo-wrap { height:240px; overflow:hidden; position:relative; background:#EEF2FF; }
+  .team-photo { width:100%; height:100%; object-fit:cover; display:block; transition:transform .45s ease; }
+  .team-photo-overlay {
+    position:absolute; inset:0;
+    background:linear-gradient(to top, rgba(5,19,51,.28), transparent 55%);
+  }
   .team-avatar {
-    width: 100%; height: 220px;
-    background: linear-gradient(145deg, var(--brand-lavender), #c9d8ff);
-    display: flex; align-items: center; justify-content: center;
+    width:100%; height:240px; background:linear-gradient(145deg, #DCE5FF, #c9d8ff);
+    display:flex; align-items:center; justify-content:center;
   }
   .team-avatar-letter {
-    font-family: 'Montserrat', sans-serif;
-    font-size: 64px; font-weight: 900; color: var(--brand-dark); opacity: 0.2;
+    font-family:'Playfair Display',serif;
+    font-size:72px; font-weight:900; color:#053366; opacity:.18;
   }
-  .team-info { padding: 20px 22px 24px; }
+  .team-info { padding:20px 22px 24px; }
   .team-name {
-    font-family: 'Montserrat', sans-serif;
-    font-size: 15px; font-weight: 700; color: var(--brand-dark); margin-bottom: 4px;
+    font-family:'Playfair Display',serif;
+    font-size:17px; font-weight:800; color:#053366; margin-bottom:4px;
   }
   .team-role {
-    font-size: 11px; font-weight: 700; color: var(--brand-primary);
-    text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 12px;
-    font-family: 'Montserrat', sans-serif;
+    font-size:11px; font-weight:800; color:#02AFCF;
+    text-transform:uppercase; letter-spacing:1.5px; margin-bottom:12px;
   }
-  .team-bio { font-size: 13px; font-weight: 400; color: var(--gray-600); line-height: 1.68; }
+  .team-bio { font-size:13px; color:#6B7280; line-height:1.68; }
 
-  /* ══════════════════════════
-     CTA — brand dark with accent
-  ══════════════════════════ */
-  .cta-section {
-    background: var(--brand-dark);
-    padding: 96px 48px;
-    text-align: center;
-    position: relative;
-    overflow: hidden;
+  /* ══════════════════════════════════════
+     CTA — dark navy (= PathsSection)
+  ══════════════════════════════════════ */
+  .cta-wrap {
+    position:relative; overflow:hidden;
+    background:#053366; padding:96px 40px;
+    text-align:center;
   }
-  .cta-section::before {
-    content: '';
-    position: absolute;
-    inset: 0;
+  .cta-wrap::before {
+    content:''; position:absolute; inset:0;
     background:
-      radial-gradient(ellipse 55% 80% at 80% 50%, rgba(2,175,207,0.1) 0%, transparent 65%),
-      radial-gradient(ellipse 40% 60% at 10% 60%, rgba(37,159,252,0.07) 0%, transparent 60%);
-    pointer-events: none;
+      radial-gradient(ellipse 55% 80% at 80% 50%, rgba(2,175,207,.12) 0%, transparent 65%),
+      radial-gradient(ellipse 40% 60% at 10% 60%, rgba(37,159,252,.07) 0%, transparent 60%);
+    pointer-events:none;
   }
+  .cta-grid-overlay {
+    position:absolute; inset:0;
+    background-image:linear-gradient(rgba(255,255,255,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.025) 1px,transparent 1px);
+    background-size:48px 48px; pointer-events:none;
+  }
+  .cta-inner { max-width:600px; margin:0 auto; position:relative; z-index:1; }
   .cta-title {
-    font-family: 'Montserrat', sans-serif;
-    font-size: clamp(26px, 3.5vw, 50px);
-    font-weight: 900;
-    color: var(--white);
-    letter-spacing: -1.5px;
-    line-height: 1.08;
-    margin-bottom: 16px;
-    position: relative;
+    font-family:'Playfair Display',serif;
+    font-size:clamp(28px,4vw,52px);
+    font-weight:900; color:#fff;
+    letter-spacing:-2px; line-height:1.05; margin-bottom:16px;
   }
-  .cta-title span { color: var(--brand-primary); }
+  .cta-title em { font-style:normal; color:#02AFCF; }
   .cta-sub {
-    font-size: 16px;
-    font-weight: 400;
-    color: rgba(255,255,255,0.6);
-    line-height: 1.75;
-    max-width: 440px;
-    margin: 0 auto 40px;
-    position: relative;
+    font-size:16px; color:rgba(255,255,255,.58);
+    line-height:1.75; max-width:440px; margin:0 auto 40px;
   }
   .cta-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 10px;
-    padding: 15px 32px;
-    background: var(--brand-primary);
-    color: var(--white);
-    border-radius: 4px;
-    font-size: 13px;
-    font-weight: 700;
-    text-decoration: none;
-    letter-spacing: 0.8px;
-    text-transform: uppercase;
-    font-family: 'Montserrat', sans-serif;
-    transition: background 0.2s, gap 0.15s, transform 0.15s;
-    box-shadow: 0 6px 24px rgba(2,175,207,0.4);
-    position: relative;
+    display:inline-flex; align-items:center; gap:10px;
+    padding:15px 32px; background:#02AFCF; color:#fff;
+    border-radius:12px; font-size:14px; font-weight:700;
+    text-decoration:none; border:2px solid #02AFCF;
+    transition:all .35s cubic-bezier(.34,1.2,.64,1);
+    box-shadow:0 8px 28px rgba(2,175,207,.35);
   }
-  .cta-btn:hover {
-    background: var(--teal);
-    gap: 16px;
-    transform: translateY(-1px);
-  }
+  .cta-btn:hover { background:transparent; color:#02AFCF; transform:translateY(-3px); gap:14px; }
 
-  /* ══════════════════════════
-     DIVIDER ACCENT
-  ══════════════════════════ */
-  .section-divider {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    margin-bottom: 12px;
+  /* ══ RESPONSIVE ══ */
+  @media (max-width:1024px) {
+    .mission-inner { grid-template-columns:1fr; gap:36px; }
+    .values-grid   { grid-template-columns:repeat(2,1fr); }
+    .team-grid     { grid-template-columns:repeat(2,1fr); }
+    .stats-row     { grid-template-columns:repeat(2,1fr) !important; }
   }
-  .section-divider-line {
-    width: 32px;
-    height: 3px;
-    border-radius: 2px;
-    background: var(--brand-primary);
+  @media (max-width:640px) {
+    .hero-wrap   { height:440px; }
+    .hero-content{ padding:0 20px 32px; }
+    .hero-float-badge { display:none; }
+    .mission-wrap,.values-wrap,.team-wrap,.cta-wrap,.stats-wrap { padding:64px 20px; }
+    .values-grid { grid-template-columns:1fr; }
+    .team-grid   { grid-template-columns:1fr; }
+    .stats-row   { grid-template-columns:repeat(2,1fr) !important; }
+    .stat-num    { font-size:40px; }
+    .cta-btn     { width:100%; justify-content:center; }
   }
-
-  /* ══════════════════════════
-     RESPONSIVE
-  ══════════════════════════ */
-  @media (max-width: 960px) {
-    .hero-inner    { grid-template-columns: 1fr; gap: 40px; }
-    .hero-sub      { max-width: 100%; }
-    .hero-img-wrap img { height: 280px; }
-    .mission-inner { grid-template-columns: 1fr; gap: 36px; }
-    .values-grid   { grid-template-columns: repeat(2, 1fr); }
-    .team-grid     { grid-template-columns: repeat(2, 1fr); }
-    .stats-row     { grid-template-columns: repeat(2, 1fr) !important; }
-  }
-  @media (max-width: 640px) {
-    .hero-section, .mission-section, .stats-section,
-    .values-section, .team-section, .cta-section { padding: 60px 20px; }
-    .hero-section { padding-bottom: 90px; }
-    .hero-img-wrap img { height: 220px; }
-    .hero-badge { display: none; }
-    .stats-row { grid-template-columns: repeat(2, 1fr) !important; }
-    .stat-num  { font-size: 36px; }
-    .values-grid { grid-template-columns: 1fr; }
-    .team-grid { grid-template-columns: 1fr; }
-    .cta-btn   { width: 100%; justify-content: center; }
-  }
-  @media (max-width: 380px) {
-    .stats-row { grid-template-columns: 1fr !important; }
+  @media (max-width:380px) {
+    .stats-row { grid-template-columns:1fr !important; }
   }
 `;
 
@@ -736,9 +470,9 @@ export default async function AboutPage() {
   const team    = get("team");
   const cta     = get("cta");
 
-  const statsItems  = (stats?.meta?.items  as { value: string; label: string }[])                     ?? [];
-  const valuesItems = (values?.meta?.items as { icon: string; title: string; text: string }[])         ?? [];
-  const teamMembers = (team?.meta?.members as { name: string; role: string; photo: string; bio: string }[]) ?? [];
+  const statsItems  = (stats?.meta?.items   as { value: string; label: string }[])                       ?? [];
+  const valuesItems = (values?.meta?.items  as { icon: string; title: string; text: string }[])          ?? [];
+  const teamMembers = (team?.meta?.members  as { name: string; role: string; photo: string; bio: string }[]) ?? [];
 
   const jsonLd = {
     "@context": "https://schema.org", "@type": "TravelAgency",
@@ -752,106 +486,166 @@ export default async function AboutPage() {
       <style>{CSS}</style>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       <TouristeNav />
-      <div style={{ paddingTop: 64 }} />
 
-      {/* ── HERO ── */}
+      {/* ══ HERO — plein écran image (= BlogDetailPage) ═══════════════════════ */}
       {hero && (
-        <section aria-label="Présentation" className="hero-section">
-          <div className={`hero-inner${hero.image_url ? "" : " full"}`}>
-            <div>
-              <span className="eyebrow-light">À propos de nous</span>
-              <h1 className="hero-title">{hero.title}</h1>
-              {hero.subtitle && <p className="hero-sub">{hero.subtitle}</p>}
-              {hero.content && (
-                <div className="rich-dark" dangerouslySetInnerHTML={{ __html: hero.content }} />
-              )}
-              <Link href="/excursions" className="hero-cta">
-                Découvrir nos excursions
-                <ArrowRight size={16} />
-              </Link>
-            </div>
-            {hero.image_url && (
-              <div className="hero-img-wrap">
-                <img src={hero.image_url} alt={hero.title ?? "VoyajAime"} />
-                <div className="hero-badge">
-                  <p className="hero-badge-num">+2K</p>
-                  <p className="hero-badge-label">Voyageurs</p>
-                </div>
-              </div>
+        <div className="hero-wrap">
+          {/* Image */}
+          <div style={{ position: "absolute", inset: 0 }}>
+            {hero.image_url ? (
+              <img
+                src={hero.image_url}
+                alt={hero.title ?? "VoyajAime"}
+                className="hero-img"
+              />
+            ) : (
+              <div style={{
+                position: "absolute", inset: 0,
+                background: "linear-gradient(135deg, #071e3d 0%, #1a3a5c 60%, #0d2340 100%)",
+              }} />
             )}
           </div>
-        </section>
+
+          {/* Overlays */}
+          <div className="hero-overlay-l" />
+          <div className="hero-overlay-b" />
+          <div className="hero-grid-overlay" />
+
+          
+
+          {/* Contenu bas gauche */}
+          <div className="hero-content">
+            <div className="pill-badge pill-badge-cyan" style={{ marginBottom: 20 }}>
+              <span className="pill-dot" />
+              À propos de nous
+            </div>
+
+            <h1 className="hero-title">
+              {hero.title ?? "Nous rendons la Tunisie <em>inoubliable</em>"}
+            </h1>
+
+            {hero.subtitle && (
+              <p className="hero-subtitle">{hero.subtitle}</p>
+            )}
+
+            {hero.content && (
+              <div className="rich-dark" style={{ marginBottom: 28 }}
+                dangerouslySetInnerHTML={{ __html: hero.content }} />
+            )}
+
+            <Link href="/excursions" className="hero-cta">
+              Découvrir nos excursions <ArrowRight size={16} />
+            </Link>
+          </div>
+
+          {/* Scroll hint */}
+          <div className="scroll-hint">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.5">
+              <path d="M6 9l6 6 6-6" />
+            </svg>
+          </div>
+        </div>
       )}
 
-      {/* ── MISSION ── */}
+      {!hero && <div style={{ paddingTop: 80 }} />}
+
+      {/* ══ MISSION ══════════════════════════════════════════════════════════ */}
       {mission && (
-        <section aria-labelledby="mission-heading" className="mission-section">
+        <section aria-labelledby="mission-heading" className="mission-wrap">
           <div className="mission-inner">
+            {/* Texte */}
             <div>
-              <span className="eyebrow">Notre mission</span>
+              <div className="section-label">
+                <div className="label-bar label-bar-cyan" />
+                <span className="label-text label-text-cyan">Notre mission</span>
+              </div>
               {mission.title && (
                 <h2 id="mission-heading" className="mission-title">{mission.title}</h2>
               )}
-              {mission.subtitle && <p className="mission-sub">{mission.subtitle}</p>}
+              {mission.subtitle && (
+                <p className="mission-sub">{mission.subtitle}</p>
+              )}
               {mission.content && (
-                <div className="rich-light" dangerouslySetInnerHTML={{ __html: mission.content }} />
+                <div className="rich-light"
+                  dangerouslySetInnerHTML={{ __html: mission.content }} />
               )}
             </div>
-            <div className="mission-visual">
-              <div className="mission-visual-icon">
+
+            {/* Panneau quote */}
+            <div className="mission-panel">
+              <div className="mission-panel-icon">
                 <Globe size={24} color="white" strokeWidth={1.8} />
               </div>
-              <p className="mission-visual-quote">
+              <p className="mission-panel-quote">
                 {mission.subtitle ?? "Notre engagement est de proposer des expériences de voyage authentiques, responsables et mémorables à travers toute la Tunisie."}
               </p>
-              <div className="mission-visual-divider" />
-              <p className="mission-visual-author">— VoyajAime, {new Date().getFullYear()}</p>
+              <div className="mission-panel-bar" />
+              <p className="mission-panel-author">— VoyajAime, {new Date().getFullYear()}</p>
             </div>
           </div>
         </section>
       )}
 
-      {/* ── STATS ── */}
+      {/* ══ STATS ════════════════════════════════════════════════════════════ */}
       {stats && statsItems.length > 0 && (
-        <section aria-labelledby="stats-heading" className="stats-section">
-          {stats.title && (
-            <h2 id="stats-heading" className="stats-heading">{stats.title}</h2>
-          )}
+        <section aria-labelledby="stats-heading" className="stats-wrap">
+          <div className="stats-heading-row">
+            <div>
+              <div className="section-label">
+                <div className="label-bar label-bar-navy" />
+                <span className="label-text label-text-navy">En chiffres</span>
+              </div>
+              {stats.title && (
+                <h2 id="stats-heading" style={{
+                  fontFamily: "'Playfair Display', serif",
+                  fontSize: "clamp(24px, 2.8vw, 38px)",
+                  fontWeight: 900, color: "#053366",
+                  letterSpacing: "-1px", lineHeight: 1.1,
+                }}>
+                  {stats.title}
+                </h2>
+              )}
+            </div>
+          </div>
           <div
             className="stats-row"
             style={{ gridTemplateColumns: `repeat(${Math.min(statsItems.length, 4)}, 1fr)` }}
           >
             {statsItems.map((item, i) => (
-              <div key={i} className="stat-cell">
+              <div key={i} className="stat-card">
                 <p className="stat-num">{item.value}</p>
-                <p className="stat-desc">{item.label}</p>
+                <p className="stat-label">{item.label}</p>
               </div>
             ))}
           </div>
         </section>
       )}
 
-      {/* ── VALEURS ── */}
+      {/* ══ VALEURS ══════════════════════════════════════════════════════════ */}
       {values && valuesItems.length > 0 && (
-        <section aria-labelledby="values-heading" className="values-section">
+        <section aria-labelledby="values-heading" className="values-wrap">
           <div className="values-header">
-            <span className="eyebrow">Ce qui nous guide</span>
+            <div className="section-label">
+              <div className="label-bar label-bar-cyan" />
+              <span className="label-text label-text-cyan">Ce qui nous guide</span>
+            </div>
             {values.title && (
-              <h2 id="values-heading" className="values-header-title">{values.title}</h2>
+              <h2 id="values-heading" className="values-title">{values.title}</h2>
             )}
             {values.subtitle && (
-              <p className="values-header-sub">{values.subtitle}</p>
+              <p className="values-sub">{values.subtitle}</p>
             )}
           </div>
+
           <div className="values-grid">
             {valuesItems.map((item, i) => (
-              <div key={i} className={`value-item${i === 1 ? " featured" : ""}`}>
-                <div className="value-icon-box">
+              <div key={i} className={`value-card${i === 1 ? " featured" : ""}`}>
+                <div className="v-icon">
                   {ICON_MAP[item.icon] ?? <Star size={22} strokeWidth={1.8} />}
                 </div>
-                <p className="value-item-title">{item.title}</p>
-                <p className="value-item-text">{item.text}</p>
-                <a href="#" className="value-link">
+                <p className="v-title">{item.title}</p>
+                <p className="v-text">{item.text}</p>
+                <a href="#" className="v-link">
                   En savoir plus <ArrowRight size={12} />
                 </a>
               </div>
@@ -860,28 +654,36 @@ export default async function AboutPage() {
         </section>
       )}
 
-      {/* ── ÉQUIPE ── */}
+      {/* ══ ÉQUIPE ═══════════════════════════════════════════════════════════ */}
       {team && (
-        <section aria-labelledby="team-heading" className="team-section">
+        <section aria-labelledby="team-heading" className="team-wrap">
           <div className="team-header">
-            <span className="eyebrow">Notre équipe</span>
+            <div className="section-label">
+              <div className="label-bar label-bar-navy" />
+              <span className="label-text label-text-navy">Notre équipe</span>
+            </div>
             {team.title && (
-              <h2 id="team-heading" className="team-section-title">{team.title}</h2>
+              <h2 id="team-heading" className="team-title">{team.title}</h2>
             )}
-            {team.subtitle && <p className="team-section-sub">{team.subtitle}</p>}
+            {team.subtitle && <p className="team-sub">{team.subtitle}</p>}
           </div>
 
           {teamMembers.length > 0 && (
             <div className="team-grid">
               {teamMembers.map((m, i) => (
                 <article key={i} className="team-card">
-                  {m.photo ? (
-                    <img className="team-photo" src={m.photo} alt={`${m.name} — ${m.role}`} />
-                  ) : (
-                    <div className="team-avatar">
-                      <span className="team-avatar-letter">{m.name?.[0]?.toUpperCase()}</span>
-                    </div>
-                  )}
+                  <div className="team-photo-wrap">
+                    {m.photo ? (
+                      <>
+                        <img className="team-photo" src={m.photo} alt={`${m.name} — ${m.role}`} />
+                        <div className="team-photo-overlay" />
+                      </>
+                    ) : (
+                      <div className="team-avatar">
+                        <span className="team-avatar-letter">{m.name?.[0]?.toUpperCase()}</span>
+                      </div>
+                    )}
+                  </div>
                   <div className="team-info">
                     <p className="team-name">{m.name}</p>
                     <p className="team-role">{m.role}</p>
@@ -894,16 +696,24 @@ export default async function AboutPage() {
         </section>
       )}
 
-      {/* ── CTA ── */}
+      {/* ══ CTA ══════════════════════════════════════════════════════════════ */}
       {cta && (
-        <section aria-labelledby="cta-heading" className="cta-section">
-          <div style={{ maxWidth: 600, margin: "0 auto", position: "relative" }}>
-            <span className="eyebrow-light">Passez à l'action</span>
+        <section aria-labelledby="cta-heading" className="cta-wrap">
+          <div className="cta-grid-overlay" />
+          <div className="cta-inner">
+            <div className="pill-badge pill-badge-light" style={{ marginBottom: 20 }}>
+              <span className="pill-dot" />
+              Passez à l'action
+            </div>
             {cta.title && (
-              <h2 id="cta-heading" className="cta-title">{cta.title}</h2>
+              <h2 id="cta-heading" className="cta-title"
+                dangerouslySetInnerHTML={{ __html: cta.title }} />
             )}
             {cta.subtitle && <p className="cta-sub">{cta.subtitle}</p>}
-            <Link href={(cta.meta?.button_url as string) ?? "/excursions"} className="cta-btn">
+            <Link
+              href={(cta.meta?.button_url as string) ?? "/excursions"}
+              className="cta-btn"
+            >
               {(cta.meta?.button_text as string) ?? "Commencer l'aventure"}
               <ArrowRight size={16} />
             </Link>

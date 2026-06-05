@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 import { createAdminClient } from "@/lib/supabaseAdmin";
-import { sendReservationConfirmation } from "@/lib/emails/resend";
+import { notifyReservationConfirmed } from "@/lib/notifications";
 
 export async function POST(req: NextRequest) {
   const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
@@ -104,39 +104,59 @@ export async function POST(req: NextRequest) {
       console.error("Erreur mise à jour réservation (non bloquante):", reservationError);
     }
 
-    // ── 5. Envoyer un email de confirmation de réservation ────────
+    // ── 5. Créer les notifications réservation ───────────────────
     try {
-      // Récupérer le profil du touriste (jointure séparée)
-      const { data: touristeProfile } = await supabase
-        .from("profiles")
-        .select("full_name, email")
-        .eq("user_id", reservation.touriste_id)
-        .single();
-
       const excursion = Array.isArray(reservation.excursions) 
         ? reservation.excursions[0] 
         : reservation.excursions;
 
-      if (touristeProfile?.email && excursion) {
-        await sendReservationConfirmation({
-          email: touristeProfile.email,
-          touristeName: touristeProfile.full_name || "Voyageur",
-          excursionTitle: excursion.title || "Excursion",
-          excursionCity: excursion.city || "Tunisie",
-          date: reservation.date,
-          time: reservation.time,
-          peopleCount: reservation.people_count,
-          totalPrice: reservation.total_price,
-          bookingCode: reservation.booking_code,
-          duration_hours: excursion.duration_hours,
-          meeting_point: excursion.meeting_point,
+      const [touristeProfile, prestataireProfile] = await Promise.all([
+        supabase
+          .from("profiles")
+          .select("user_id, full_name")
+          .eq("user_id", reservation.touriste_id)
+          .single(),
+        excursion?.prestataire_id
+          ? supabase
+              .from("profiles")
+              .select("user_id, full_name, agency_name")
+              .eq("user_id", excursion.prestataire_id)
+              .single()
+          : Promise.resolve({ data: null }),
+      ]);
+
+      if (touristeProfile?.data && excursion) {
+        await notifyReservationConfirmed({
+          reservation: {
+            id: reservation.id,
+            date: reservation.date,
+            time: reservation.time,
+            people_count: reservation.people_count,
+            total_price: reservation.total_price,
+            booking_code: reservation.booking_code,
+          },
+          excursion: {
+            title: excursion.title || "Excursion",
+            city: excursion.city || "Tunisie",
+          },
+          touriste: {
+            userId: reservation.touriste_id,
+            role: "touriste",
+            fullName: touristeProfile.data.full_name,
+          },
+          prestataire: {
+            userId: excursion.prestataire_id,
+            role: "prestataire",
+            fullName: prestataireProfile?.data?.full_name || null,
+            agencyName: prestataireProfile?.data?.agency_name || null,
+          },
         });
-        console.log(`✅ Email de confirmation envoyé à ${touristeProfile.email}`);
+        console.log(`✅ Notifications de réservation créées pour ${reservation_id}`);
       } else {
-        console.warn("⚠️ Profil touriste ou email manquant — email non envoyé");
+        console.warn("⚠️ Profil touriste ou excursion manquant — notifications non envoyées");
       }
     } catch (emailError) {
-      console.error("⚠️ Erreur envoi email (non bloquant):", emailError);
+      console.error("⚠️ Erreur notifications réservation (non bloquante):", emailError);
     }
 
     console.log(`✅ Paiement confirmé — réservation ${reservation_id} — ${amount} EUR`);
