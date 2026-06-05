@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabaseClient";
 import { ROUTES } from "@/app/lib/routes";
-import { Menu, X, ChevronDown, Wand2, Navigation, Compass } from "lucide-react";
+import { LogOut, Menu, X, MessageCircle, User, Plane, Clock, ChevronDown } from "lucide-react";
 
 const Logo = () => (
   <img
@@ -31,16 +31,19 @@ export default function TouristeNav({
   const [planOpen,       setPlanOpen]       = useState(false);
   const [scrolled,       setScrolled]       = useState(false);
   const [isUserLoggedIn, setIsUserLoggedIn] = useState(isLoggedIn);
+  const [userId,         setUserId]         = useState<string | null>(null);
 
   const pathname = usePathname();
   const router   = useRouter();
   const supabase = useMemo(() => createClient(), []);
 
+  /* ── Auth ── */
   useEffect(() => {
     const checkAuth = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       setIsUserLoggedIn(!!session);
       if (session) {
+        setUserId(session.user.id);
         const { data: profile } = await supabase
           .from("profiles").select("full_name, avatar_url")
           .eq("user_id", session.user.id).single();
@@ -55,12 +58,14 @@ export default function TouristeNav({
     return () => subscription.unsubscribe();
   }, [supabase, userName]);
 
+  /* ── Scroll ── */
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 12);
+    const onScroll = () => setScrolled(window.scrollY > 10);
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
+  /* ── Avatar refresh ── */
   useEffect(() => {
     if (!isUserLoggedIn) return;
     (async () => {
@@ -79,21 +84,21 @@ export default function TouristeNav({
     router.push(ROUTES.home);
   };
 
+  /* ── Links ── */
   const touristeLinks = [
-    { href: ROUTES.excursions,            label: "Explorer"        },
-    { href: ROUTES.touriste.itineraires,  label: "Mes itinéraires" },
-    { href: ROUTES.touriste.reservations, label: "Réservations"    },
-    { href: ROUTES.about,                 label: "À propos"        },
-    { href: ROUTES.blog,                  label: "Blog"            },
-    { href: ROUTES.contact,               label: "Contact"         },
+    { href: ROUTES.excursions,            icon: "ti-compass",     label: "Explorer"        },
+    { href: ROUTES.touriste.itineraires,  icon: "ti-map",         label: "Mes itinéraires" },
+    { href: ROUTES.touriste.reservations, icon: "ti-calendar",    label: "Réservations"    },
+    { href: ROUTES.about,                 icon: "ti-help-circle", label: "À propos"        },
+    { href: ROUTES.blog,                  icon: "ti-book",        label: "Blog"            },
+    { href: ROUTES.contact,               icon: "ti-phone",       label: "Contact"         },
   ];
 
   const publicLinks = [
-    { href: ROUTES.excursions, label: "Excursions",        anchor: false },
-    { href: "#chemins",        label: "Comment ça marche", anchor: true  },
-    { href: ROUTES.about,      label: "À propos",          anchor: false },
-    { href: ROUTES.blog,       label: "Blog",              anchor: false },
-    { href: ROUTES.contact,    label: "Contact",           anchor: false },
+    { href: ROUTES.excursions, icon: "ti-compass",     label: "Excursions",        anchor: false },
+    { href: ROUTES.about,      icon: "ti-help-circle", label: "À propos",          anchor: false },
+    { href: ROUTES.blog,       icon: "ti-book",        label: "Blog",              anchor: false },
+    { href: ROUTES.contact,    icon: "ti-phone",       label: "Contact",           anchor: false },
   ];
 
   const isActive = (href: string) =>
@@ -113,504 +118,598 @@ export default function TouristeNav({
     ? userName.charAt(0).toUpperCase()
     : isUserLoggedIn ? "T" : "";
 
+  /* ── Is hero page (needs dark nav text when not scrolled)? ── */
   const isHeroPage = pathname === "/" || pathname === ROUTES.home;
 
-  const onHero = isHeroPage && !scrolled;
+  /*
+    Text color logic:
+    - Hero page + not scrolled → white (on image background)
+    - Everything else           → dark (#1E293B)
+    scrolled always uses dark bg so dark text is fine
+  */
+  const navTextColor   = isHeroPage && !scrolled ? "rgba(255,255,255,0.92)" : "#1E293B";
+  const navTextHover   = isHeroPage && !scrolled ? "#ffffff"                : "#2B96A8";
+  const navBg =
+    scrolled
+      ? "#FFFFFF"
+      : isHeroPage
+      ? "transparent"
+      : "#FFFFFF";
+  const navBorder =
+    scrolled
+      ? "1px solid rgba(5,51,102,0.10)"
+      : isHeroPage
+      ? "1px solid transparent"
+      : "1px solid rgba(5,51,102,0.10)";
+  const navShadow =
+    scrolled
+      ? "0 2px 20px rgba(5,51,102,0.08)"
+      : isHeroPage
+      ? "none"
+      : "0 2px 20px rgba(5,51,102,0.06)";
 
   return (
     <>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700;9..40,800&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;0,9..40,800&display=swap');
+        @import url('https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css');
 
+        /* ── Reset ── */
         .gnav * { box-sizing: border-box; margin: 0; padding: 0; }
+        .gnav    { font-family: inherit'DM Sans', sans-serif; }
 
         /* ── Logo ── */
-        .gnav-logo-img { height: 38px; transition: opacity 0.2s; display: block; }
-        .gnav-logo-img:hover { opacity: 0.82; }
+        .gnav-logo-img { height: 40px; transition: opacity 0.2s; }
+        .gnav-logo-img:hover { opacity: 0.85; }
 
-        /* ── Wrapper ── */
-        .gnav-wrapper {
-          position: fixed; top: 0; left: 0; right: 0; z-index: 1000;
-          font-family: 'DM Sans', sans-serif;
-          transition: all 0.3s cubic-bezier(0.4,0,0.2,1);
-        }
-
-        /* scrolled: frosted glass card */
-        .gnav-wrapper.scrolled {
-          padding: 0 20px;
-        }
-
-        .gnav-inner {
-          max-width: 1280px; margin: 0 auto;
-          display: flex; align-items: center; justify-content: space-between;
-          height: 68px; padding: 0 28px;
-          transition: all 0.3s cubic-bezier(0.4,0,0.2,1);
-        }
-
-        .gnav-wrapper.scrolled .gnav-inner {
-          background: rgba(255,255,255,0.92);
-          backdrop-filter: blur(20px) saturate(1.6);
-          -webkit-backdrop-filter: blur(20px) saturate(1.6);
-          border-radius: 16px;
-          border: 1px solid rgba(15,23,42,0.06);
-          box-shadow: 0 4px 24px rgba(15,23,42,0.07), 0 1px 2px rgba(15,23,42,0.04);
-          height: 60px;
-          margin-top: 10px;
-          padding: 0 20px;
-        }
-
-        .gnav-wrapper:not(.scrolled) .gnav-inner {
-          background: transparent;
-          border: none;
-          box-shadow: none;
-        }
-
-        /* ── Nav links ── */
+        /* ── Nav link ── */
         .glink {
           display: flex; align-items: center; gap: 5px;
-          padding: 7px 12px; border-radius: 9px;
-          font-size: 13.5px; font-weight: 600; letter-spacing: -0.1px;
+          padding: 7px 11px; border-radius: 8px;
+          font-size: 14px; font-weight: 600; letter-spacing: -0.1px;
+          color: var(--gnav-text);
           text-decoration: none; white-space: nowrap;
           border: 1px solid transparent;
-          transition: all 0.2s cubic-bezier(0.4,0,0.2,1);
-          font-family: 'DM Sans', sans-serif;
+          transition: color 0.15s, background 0.15s, border-color 0.15s;
+          font-family: inherit'DM Sans', sans-serif;
         }
-
-        /* Hero transparent mode */
-        .gnav-hero .glink {
-          color: rgba(255,255,255,0.88);
-        }
-        .gnav-hero .glink:hover {
-          color: white;
-          background: rgba(255,255,255,0.12);
-          border-color: rgba(255,255,255,0.18);
-        }
-        .gnav-hero .glink.on {
-          color: white;
-          background: rgba(255,255,255,0.15);
-          border-color: rgba(255,255,255,0.22);
-        }
-
-        /* Scrolled / light mode */
-        .gnav-light .glink {
-          color: #334155;
-        }
-        .gnav-light .glink:hover {
+        .glink i { font-size: 14px; opacity: 0.65; transition: opacity 0.15s; }
+        .glink:hover {
           color: #2B96A8;
-          background: rgba(43,150,168,0.07);
-          border-color: rgba(43,150,168,0.12);
-        }
-        .gnav-light .glink.on {
-          color: #2B96A8;
-          font-weight: 700;
-          background: rgba(43,150,168,0.08);
+          background: rgba(43,150,168,0.09);
           border-color: rgba(43,150,168,0.14);
         }
+        .glink:hover i { opacity: 1; }
+        .glink.on {
+          color: #2B96A8; font-weight: 700;
+          background: rgba(43,150,168,0.09);
+          border-color: rgba(43,150,168,0.16);
+        }
+        .glink.on i { opacity: 1; }
 
-        /* active dot indicator */
-        .glink.on::after {
-          content: '';
-          display: block;
-          width: 4px; height: 4px;
-          border-radius: 50%;
-          background: currentColor;
-          margin-left: 2px;
-          flex-shrink: 0;
-        }
+        /* Override for hero transparent bg — white links */
+        .gnav-hero-mode .glink       { color: rgba(255,255,255,0.88); }
+        .gnav-hero-mode .glink:hover { color: #fff; background: rgba(255,255,255,0.12); border-color: rgba(255,255,255,0.2); }
+        .gnav-hero-mode .glink.on    { color: #fff; background: rgba(255,255,255,0.15); border-color: rgba(255,255,255,0.25); }
 
-        /* ── Planifier dropdown trigger ── */
-        .g-plan-btn {
-          display: inline-flex; align-items: center; gap: 7px;
-          padding: 8px 16px; border-radius: 10px;
-          font-size: 13.5px; font-weight: 700; letter-spacing: -0.1px;
-          border: 1.5px solid; cursor: pointer; font-family: 'DM Sans', sans-serif;
-          transition: all 0.2s cubic-bezier(0.4,0,0.2,1);
-          white-space: nowrap; background: none;
+        /* ── Planifier button ── */
+        .glink-plan {
+          display: flex; align-items: center; gap: 5px;
+          padding: 7px 11px; border-radius: 8px;
+          font-size: 14px; font-weight: 600; letter-spacing: -0.1px;
+          color: var(--gnav-text); white-space: nowrap;
+          cursor: pointer; background: none;
+          border: 1px solid transparent;
+          font-family: inherit'DM Sans', sans-serif;
+          transition: color 0.15s, background 0.15s, border-color 0.15s;
         }
-        .gnav-hero .g-plan-btn {
-          color: white; border-color: rgba(255,255,255,0.55);
-        }
-        .gnav-hero .g-plan-btn:hover {
-          background: rgba(255,255,255,0.12); border-color: rgba(255,255,255,0.8);
-        }
-        .gnav-hero .g-plan-btn.on {
-          background: rgba(43,150,168,0.4); border-color: #2B96A8; color: white;
-        }
-        .gnav-light .g-plan-btn {
-          color: #2B96A8; border-color: rgba(43,150,168,0.35);
-        }
-        .gnav-light .g-plan-btn:hover {
-          background: rgba(43,150,168,0.06); border-color: #2B96A8;
-        }
-        .gnav-light .g-plan-btn.on {
-          background: rgba(43,150,168,0.1); border-color: #2B96A8;
-        }
-        .g-plan-btn .chevron {
-          transition: transform 0.2s; opacity: 0.75;
-        }
-        .g-plan-btn.open .chevron { transform: rotate(180deg); opacity: 1; }
+        .glink-plan i.mi { font-size: 14px; opacity: 0.65; }
+        .glink-plan .chev { font-size: 13px; opacity: 0.5; transition: transform 0.2s, opacity 0.15s; }
+        .glink-plan:hover       { color: #2B96A8; background: rgba(43,150,168,0.09); border-color: rgba(43,150,168,0.14); }
+        .glink-plan:hover i     { opacity: 1; }
+        .glink-plan.on          { color: #2B96A8; font-weight: 700; background: rgba(43,150,168,0.09); border-color: rgba(43,150,168,0.16); }
+        .glink-plan.on i        { opacity: 1; }
+        .glink-plan.open .chev  { transform: rotate(180deg); opacity: 0.8; }
 
-        /* ── Dropdown ── */
-        .g-plan-drop {
-          position: absolute; top: calc(100% + 10px); left: 0;
-          background: white;
-          border: 1px solid rgba(15,23,42,0.07);
-          border-radius: 14px;
-          box-shadow: 0 8px 32px rgba(15,23,42,0.10), 0 2px 8px rgba(15,23,42,0.06);
-          padding: 8px;
-          min-width: 240px;
-          z-index: 100;
-          animation: dropIn 0.2s cubic-bezier(0.16,1,0.3,1);
+        .gnav-hero-mode .glink-plan       { color: rgba(255,255,255,0.88); }
+        .gnav-hero-mode .glink-plan:hover { color: #fff; background: rgba(255,255,255,0.12); border-color: rgba(255,255,255,0.2); }
+        .gnav-hero-mode .glink-plan.on    { color: #fff; background: rgba(255,255,255,0.15); border-color: rgba(255,255,255,0.25); }
+
+        /* ── Planifier dropdown ── */
+        .plan-drop {
+          position: absolute; top: calc(100% + 10px); left: 50%;
+          transform: translateX(-50%);
+          background: #FFFFFF;
+          border: 1px solid rgba(5,51,102,0.10);
+          border-radius: 16px; padding: 8px;
+          min-width: 340px;
+          box-shadow: 0 16px 48px rgba(5,51,102,0.14), 0 4px 12px rgba(5,51,102,0.07);
+          z-index: 500;
+          animation: dropIn 0.16s cubic-bezier(.16,1,.3,1);
         }
         @keyframes dropIn {
-          from { opacity: 0; transform: translateY(-6px) scale(0.98); }
-          to   { opacity: 1; transform: translateY(0) scale(1); }
+          from { opacity: 0; transform: translateX(-50%) translateY(-8px) scale(0.97); }
+          to   { opacity: 1; transform: translateX(-50%) translateY(0)    scale(1);    }
         }
-        .drop-item {
-          display: flex; align-items: center; gap: 12px;
-          padding: 11px 14px; border-radius: 9px;
-          text-decoration: none; color: #1E293B;
-          font-size: 13.5px; font-weight: 600; font-family: 'DM Sans', sans-serif;
-          transition: background 0.15s;
-        }
-        .drop-item:hover { background: #F1F5F9; }
-        .drop-item .drop-icon {
-          width: 34px; height: 34px; border-radius: 9px;
-          display: flex; align-items: center; justify-content: center;
-          flex-shrink: 0;
-        }
-        .drop-item .drop-sub {
-          font-size: 11.5px; font-weight: 400; color: #64748B; display: block; margin-top: 1px;
-        }
-
-        /* ── User avatar dropdown ── */
-        .drop {
-          position: absolute; top: calc(100% + 10px); right: 0;
-          background: white;
-          border: 1px solid rgba(15,23,42,0.07);
-          border-radius: 14px;
-          box-shadow: 0 8px 32px rgba(15,23,42,0.10), 0 2px 8px rgba(15,23,42,0.06);
-          min-width: 220px; padding: 8px; z-index: 100;
-          animation: dropIn 0.2s cubic-bezier(0.16,1,0.3,1);
-          font-family: 'DM Sans', sans-serif;
-        }
-        .drop-header {
-          display: flex; align-items: center; gap: 12px;
-          padding: 12px 14px 14px;
-          border-bottom: 1px solid #F1F5F9; margin-bottom: 6px;
-        }
-        .drop-av {
-          width: 38px; height: 38px; border-radius: 50%;
-          background: linear-gradient(135deg, #2B96A8, #053366);
-          color: white; font-size: 15px; font-weight: 700;
-          display: flex; align-items: center; justify-content: center;
-          overflow: hidden; flex-shrink: 0;
-        }
-        .drop-av img { width: 100%; height: 100%; object-fit: cover; }
-        .drop-name { font-size: 14px; font-weight: 700; color: #0F172A; }
-        .drop-role {
-          font-size: 11.5px; color: #64748B; display: flex;
-          align-items: center; gap: 5px; margin-top: 2px;
-        }
-        .ddi {
-          display: flex; align-items: center; gap: 9px;
-          padding: 10px 14px; border-radius: 9px;
-          font-size: 13.5px; font-weight: 500; color: #1E293B;
-          text-decoration: none; font-family: 'DM Sans', sans-serif;
-          transition: background 0.15s; cursor: pointer;
-          background: none; border: none; width: 100%; text-align: left;
-        }
-        .ddi:hover { background: #F1F5F9; }
-        .ddi.red { color: #EF4444; }
-        .ddi.red:hover { background: #FEF2F2; }
-        .drop-divider { height: 1px; background: #F1F5F9; margin: 6px 0; }
-
-        /* ── Right controls ── */
-        .g-fav {
-          width: 38px; height: 38px; border-radius: 10px;
-          display: flex; align-items: center; justify-content: center;
-          text-decoration: none; position: relative;
-          transition: all 0.2s;
+        .plan-card {
+          display: flex; align-items: flex-start; gap: 12px;
+          padding: 12px 13px; border-radius: 10px;
+          text-decoration: none; cursor: pointer;
           border: 1px solid transparent;
+          transition: background 0.15s, border-color 0.15s;
         }
-        .gnav-hero .g-fav { color: rgba(255,255,255,0.85); }
-        .gnav-hero .g-fav:hover { background: rgba(255,255,255,0.12); color: white; border-color: rgba(255,255,255,0.2); }
-        .gnav-light .g-fav { color: #475569; }
-        .gnav-light .g-fav:hover { background: rgba(43,150,168,0.07); color: #2B96A8; border-color: rgba(43,150,168,0.12); }
-        .g-fav .nb {
-          position: absolute; top: -4px; right: -4px;
-          background: #EF4444; color: white;
-          font-size: 9px; font-weight: 800;
-          width: 17px; height: 17px; border-radius: 50%;
+        .plan-card:hover       { background: rgba(43,150,168,0.06); border-color: rgba(43,150,168,0.14); }
+        .plan-card.active-mode { background: rgba(43,150,168,0.08); border-color: rgba(43,150,168,0.20); }
+
+        .plan-icon {
+          width: 36px; height: 36px; border-radius: 9px;
           display: flex; align-items: center; justify-content: center;
-          border: 2px solid white;
+          flex-shrink: 0; margin-top: 1px;
         }
+        .plan-icon i { font-size: 17px; }
+        .plan-icon.assiste { background: rgba(2,175,207,0.10); border: 1px solid rgba(2,175,207,0.22); }
+        .plan-icon.libre   { background: rgba(43,150,168,0.10); border: 1px solid rgba(43,150,168,0.22); }
 
-        .g-sep {
-          width: 1px; height: 20px; margin: 0 4px;
-          flex-shrink: 0;
+        .plan-title { font-size: 14px; font-weight: 700; color: #053366; margin-bottom: 2px; font-family: inherit'DM Sans', sans-serif; }
+        .plan-desc  { font-size: 13px; color: #64748B; font-weight: 500; line-height: 1.5; font-family: inherit'DM Sans', sans-serif; }
+        .plan-badge {
+          display: inline-flex; align-items: center; gap: 3px; margin-top: 5px;
+          padding: 2px 8px; border-radius: 20px;
+          font-size: 10px; font-weight: 700; letter-spacing: 0.2px;
+          font-family: inherit'DM Sans', sans-serif;
         }
-        .gnav-hero .g-sep { background: rgba(255,255,255,0.25); }
-        .gnav-light .g-sep { background: #E2E8F0; }
+        .plan-badge i { font-size: 9px; }
+        .plan-badge.ai   { background: rgba(2,175,207,0.09);  color: #0891A8; border: 1px solid rgba(2,175,207,0.22); }
+        .plan-badge.free { background: rgba(43,150,168,0.09); color: #1E7A8A; border: 1px solid rgba(43,150,168,0.22); }
+        .plan-divider    { height: 1px; background: rgba(5,51,102,0.07); margin: 4px 0; }
 
-        .av {
-          width: 36px; height: 36px; border-radius: 50%;
-          background: linear-gradient(135deg, #2B96A8, #053366);
-          color: white; font-size: 14px; font-weight: 700;
-          display: flex; align-items: center; justify-content: center;
-          overflow: hidden; cursor: pointer;
-          border: 2px solid rgba(43,150,168,0.3);
-          transition: all 0.2s; font-family: 'DM Sans', sans-serif;
-        }
-        .av img { width: 100%; height: 100%; object-fit: cover; }
-        .av:hover { transform: scale(1.06); box-shadow: 0 4px 16px rgba(43,150,168,0.35); }
-
-        /* ── Auth button ── */
+        /* ── Right actions ── */
         .g-btn {
           display: inline-flex; align-items: center; gap: 7px;
-          padding: 9px 18px; border-radius: 10px;
-          font-size: 13.5px; font-weight: 700; letter-spacing: 0.1px;
-          text-decoration: none; font-family: 'DM Sans', sans-serif;
-          transition: all 0.2s; border: 1.5px solid;
-          white-space: nowrap;
+          padding: 8px 18px; border-radius: 9px;
+          background: linear-gradient(135deg, #02AFCF, #0891A8);
+          border: none;
+          font-size: 14px; font-weight: 700; color: #fff;
+          cursor: pointer; font-family: inherit'DM Sans', sans-serif;
+          white-space: nowrap; text-decoration: none;
+          box-shadow: 0 2px 10px rgba(2,175,207,0.30);
+          transition: opacity 0.15s, box-shadow 0.15s, transform 0.1s;
         }
-        .gnav-hero .g-btn {
-          color: white; border-color: rgba(255,255,255,0.55);
-          background: rgba(255,255,255,0.1);
-          backdrop-filter: blur(8px);
+        .g-btn i { font-size: 14px; }
+        .g-btn:hover { opacity: 0.92; box-shadow: 0 4px 16px rgba(2,175,207,0.38); transform: translateY(-1px); }
+
+        /* Hero override — outlined white button */
+        .gnav-hero-mode .g-btn {
+          background: rgba(255,255,255,0.15);
+          border: 1.5px solid rgba(255,255,255,0.55);
+          color: #fff;
+          box-shadow: none;
+          backdrop-filter: blur(6px);
         }
-        .gnav-hero .g-btn:hover {
-          background: white; color: #053366; border-color: white;
-        }
-        .gnav-light .g-btn {
-          color: white; background: #2B96A8; border-color: #2B96A8;
-          box-shadow: 0 4px 16px rgba(43,150,168,0.25);
-        }
-        .gnav-light .g-btn:hover {
-          background: #227f90; border-color: #227f90;
+        .gnav-hero-mode .g-btn:hover {
+          background: rgba(255,255,255,0.25);
+          border-color: rgba(255,255,255,0.80);
+          box-shadow: none;
           transform: translateY(-1px);
-          box-shadow: 0 6px 22px rgba(43,150,168,0.35);
         }
+
+        /* Fav icon button */
+        .g-fav {
+          width: 38px; height: 38px; border-radius: 50%;
+          border: 1.5px solid rgba(5,51,102,0.12);
+          color: #64748B; background: transparent;
+          display: flex; align-items: center; justify-content: center;
+          cursor: pointer; position: relative; text-decoration: none;
+          transition: background 0.15s, border-color 0.15s, color 0.15s;
+        }
+        .g-fav i { font-size: 18px; }
+        .g-fav:hover { background: rgba(5,51,102,0.05); color: #E11D48; border-color: rgba(225,29,72,0.25); }
+        .gnav-hero-mode .g-fav { border-color: rgba(255,255,255,0.35); color: rgba(255,255,255,0.85); background: rgba(255,255,255,0.10); }
+        .gnav-hero-mode .g-fav:hover { background: rgba(255,255,255,0.20); border-color: rgba(255,255,255,0.60); color: #fff; }
+        .nb {
+          position: absolute; top: -3px; right: -3px;
+          background: #E11D48; color: white; border-radius: 50%;
+          width: 16px; height: 16px; font-size: 9px; font-weight: 800;
+          display: flex; align-items: center; justify-content: center;
+          border: 2px solid white; font-family: inherit'DM Sans', sans-serif;
+        }
+
+        .g-sep { width: 1px; height: 22px; background: rgba(5,51,102,0.10); flex-shrink: 0; }
+        .gnav-hero-mode .g-sep { background: rgba(255,255,255,0.25); }
+
+        /* Avatar button */
+        .av {
+          width: 38px; height: 38px; border-radius: 50%;
+          background: linear-gradient(135deg, #02AFCF, #053366);
+          color: white;
+          border: 2px solid rgba(255,255,255,0.7);
+          box-shadow: 0 0 0 1.5px rgba(5,51,102,0.15);
+          cursor: pointer; font-size: 14px; font-weight: 800;
+          font-family: inherit'DM Sans', sans-serif;
+          display: flex; align-items: center; justify-content: center;
+          transition: box-shadow 0.15s, transform 0.1s;
+          flex-shrink: 0; overflow: hidden; padding: 0;
+        }
+        .av:hover { box-shadow: 0 0 0 3px rgba(43,150,168,0.30); transform: scale(1.04); }
+        .av img   { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
+
+        /* Avatar dropdown */
+        .drop {
+          position: absolute; top: calc(100% + 10px); right: 0;
+          background: #FFFFFF; border: 1px solid rgba(5,51,102,0.10);
+          border-radius: 16px; padding: 6px; min-width: 230px;
+          box-shadow: 0 16px 48px rgba(5,51,102,0.14), 0 4px 12px rgba(5,51,102,0.06);
+          z-index: 500;
+          animation: dropInRight 0.16s cubic-bezier(.16,1,.3,1);
+        }
+        @keyframes dropInRight {
+          from { opacity: 0; transform: translateY(-8px) scale(0.97); }
+          to   { opacity: 1; transform: translateY(0)    scale(1);    }
+        }
+        .drop-header {
+          padding: 12px 14px;
+          border-bottom: 1px solid rgba(5,51,102,0.07);
+          margin-bottom: 4px;
+          display: flex; align-items: center; gap: 10px;
+        }
+        .drop-av {
+          width: 38px; height: 38px; border-radius: 50%; flex-shrink: 0;
+          background: linear-gradient(135deg,#02AFCF,#053366);
+          display: flex; align-items: center; justify-content: center;
+          font-size: 14px; font-weight: 800; color: white;
+          overflow: hidden;
+        }
+        .drop-av img { width: 100%; height: 100%; object-fit: cover; }
+        .drop-name   { font-size: 13px; font-weight: 700; color: #0F172A; margin-bottom: 2px; font-family: inherit'DM Sans', sans-serif; }
+        .drop-role   { font-size: 11px; color: #2B96A8; font-weight: 600; display: flex; align-items: center; gap: 4px; font-family: inherit'DM Sans', sans-serif; }
+
+        .ddi {
+          display: flex; align-items: center; gap: 9px;
+          padding: 9px 13px; border-radius: 9px;
+          text-decoration: none; font-size: 13px; font-weight: 600;
+          color: #1E293B; cursor: pointer;
+          border: none; background: none;
+          font-family: inherit'DM Sans', sans-serif; width: 100%; text-align: left;
+          transition: background 0.13s, color 0.13s;
+        }
+        .ddi i { font-size: 15px; opacity: 0.7; }
+        .ddi:hover      { background: rgba(43,150,168,0.07); color: #2B96A8; }
+        .ddi:hover i    { opacity: 1; }
+        .ddi.red        { color: #DC2626; }
+        .ddi.red:hover  { background: #FEF2F2; color: #B91C1C; }
+        .ddi.red i      { opacity: 0.8; }
+        .drop-divider   { height: 1px; background: rgba(5,51,102,0.07); margin: 4px 2px; }
 
         /* ── Burger ── */
         .g-burger {
-          display: none; width: 38px; height: 38px;
-          align-items: center; justify-content: center;
-          border-radius: 10px; border: 1.5px solid; cursor: pointer;
-          background: none; transition: all 0.2s;
+          display: none; background: none;
+          border: 1.5px solid rgba(5,51,102,0.14);
+          cursor: pointer; padding: 7px; border-radius: 9px;
+          color: #1E293B; align-items: center; justify-content: center;
+          transition: background 0.15s;
         }
-        .gnav-hero .g-burger { color: white; border-color: rgba(255,255,255,0.4); }
-        .gnav-hero .g-burger:hover { background: rgba(255,255,255,0.12); border-color: rgba(255,255,255,0.7); }
-        .gnav-light .g-burger { color: #334155; border-color: #E2E8F0; }
-        .gnav-light .g-burger:hover { border-color: #2B96A8; color: #2B96A8; background: rgba(43,150,168,0.05); }
+        .g-burger:hover { background: rgba(5,51,102,0.06); }
+        .gnav-hero-mode .g-burger { border-color: rgba(255,255,255,0.35); color: white; background: rgba(255,255,255,0.10); }
+        .gnav-hero-mode .g-burger:hover { background: rgba(255,255,255,0.20); }
 
         /* ── Mobile drawer ── */
         .g-drawer {
-          position: fixed; top: 0; right: 0; bottom: 0;
-          width: min(320px, 90vw);
-          background: white;
-          box-shadow: -8px 0 48px rgba(15,23,42,0.15);
-          z-index: 1001; padding: 0;
-          display: flex; flex-direction: column;
-          transform: translateX(0);
-          transition: transform 0.3s cubic-bezier(0.4,0,0.2,1);
+          position: fixed; top: 68px; left: 0; right: 0;
+          background: #FFFFFF;
+          border-bottom: 1px solid rgba(5,51,102,0.09);
+          box-shadow: 0 12px 32px rgba(5,51,102,0.10);
+          z-index: 490;
+          display: flex; flex-direction: column; gap: 2px;
+          padding: 10px 14px 16px;
+          max-height: calc(100vh - 68px);
           overflow-y: auto;
-          font-family: 'DM Sans', sans-serif;
         }
-        .g-drawer.closed { transform: translateX(100%); }
-        .g-drawer-header {
-          display: flex; align-items: center; justify-content: space-between;
-          padding: 20px 20px 16px;
-          border-bottom: 1px solid #F1F5F9; flex-shrink: 0;
-        }
-        .g-drawer-body { padding: 16px 12px; flex: 1; }
+        .g-drawer.closed { display: none; }
 
         .g-mlink {
-          display: flex; align-items: center; gap: 11px;
-          padding: 11px 14px; border-radius: 10px;
-          font-size: 14px; font-weight: 600; color: #334155;
-          text-decoration: none; font-family: 'DM Sans', sans-serif;
-          transition: all 0.15s; cursor: pointer;
-          border: none; background: none; width: 100%; text-align: left;
+          display: flex; align-items: center; gap: 10px;
+          padding: 11px 14px; border-radius: 9px;
+          font-size: 14px; font-weight: 600;
+          color: #1E293B; text-decoration: none;
+          border: 1px solid transparent;
+          transition: background 0.13s, color 0.13s, border-color 0.13s;
+          font-family: inherit'DM Sans', sans-serif;
         }
-        .g-mlink:hover { background: #F8FAFC; color: #2B96A8; }
-        .g-mlink.on {
-          background: rgba(43,150,168,0.08); color: #2B96A8; font-weight: 700;
+        .g-mlink i { font-size: 16px; opacity: 0.6; }
+        .g-mlink:hover, .g-mlink.on {
+          background: rgba(43,150,168,0.07);
+          border-color: rgba(43,150,168,0.13);
+          color: #2B96A8; font-weight: 700;
         }
+        .g-mlink:hover i, .g-mlink.on i { opacity: 1; }
 
         .g-plan-section {
-          background: #F8FAFC; border-radius: 12px;
-          padding: 14px 12px; margin-bottom: 10px;
+          border-bottom: 1px solid rgba(5,51,102,0.07);
+          margin-bottom: 6px; padding-bottom: 8px;
         }
         .g-plan-label {
-          font-size: 10.5px; font-weight: 800; color: #94A3B8;
-          text-transform: uppercase; letter-spacing: 2px; padding: 0 6px;
-          margin-bottom: 8px;
+          font-size: 10px; font-weight: 800; color: #94A3B8;
+          text-transform: uppercase; letter-spacing: 1.2px;
+          padding: 4px 14px 8px;
+          font-family: inherit'DM Sans', sans-serif;
         }
 
-        /* ── Mobile backdrop ── */
-        .g-backdrop {
-          position: fixed; inset: 0; z-index: 1000;
-          background: rgba(15,23,42,0.4);
-          backdrop-filter: blur(4px);
-          animation: fadeIn 0.2s ease;
+        /* ── Responsive ── */
+        @media (max-width: 1020px) {
+          .g-center  { display: none !important; }
+          .g-burger  { display: flex !important; }
         }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
-        /* ── Responsive visibility ── */
-        @media (max-width: 900px) {
-          .gnav-links-area { display: none !important; }
-          .g-burger { display: flex !important; }
+        /* ── Mobile ≤ 640px ── */
+        @media (max-width: 640px) {
+          .gnav-inner { padding: 0 14px !important; }
+          .gnav-logo-img { height: 30px !important; }
+          .g-btn-text { display: none !important; }
+          .g-btn { padding: 7px 10px !important; gap: 0 !important; }
+          .g-fav  { width: 34px !important; height: 34px !important; }
+          .g-fav i { font-size: 16px !important; }
+          .av     { width: 34px !important; height: 34px !important; font-size: 12px !important; }
+          .g-burger { padding: 6px !important; }
         }
-        @media (min-width: 901px) {
-          .g-drawer { display: none !important; }
-          .g-backdrop { display: none !important; }
+
+        /* ── Very small ≤ 380px ── */
+        @media (max-width: 380px) {
+          .gnav-logo-img { height: 26px !important; }
+          .g-fav  { width: 30px !important; height: 30px !important; }
+          .av     { width: 30px !important; height: 30px !important; }
         }
       `}</style>
 
-      {/* ── Backdrop mobile ── */}
-      {mobileOpen && (
-        <div className="g-backdrop" onClick={() => setMobileOpen(false)} />
-      )}
+      {/* CSS variable scoped to nav element */}
+      <style>{`
+        .gnav-inner { --gnav-text: ${navTextColor}; }
+      `}</style>
 
-      {/* ── Navbar ── */}
       <header
-        className={`gnav-wrapper${scrolled ? " scrolled" : ""}`}
-        style={{ fontFamily: "'DM Sans', sans-serif" }}
+        className={`gnav${isHeroPage && !scrolled ? " gnav-hero-mode" : ""}`}
+        style={{
+          position:  "fixed", top: 0, left: 0, right: 0,
+          zIndex:    200, height: 68,
+          background: navBg,
+          backdropFilter: scrolled ? "blur(20px)" : isHeroPage ? "none" : "blur(0px)",
+          WebkitBackdropFilter: scrolled ? "blur(20px)" : "none",
+          borderBottom: navBorder,
+          boxShadow:    navShadow,
+          transition:   "background 0.35s ease, border-color 0.35s ease, box-shadow 0.35s ease",
+        }}
       >
-        <div className={`gnav-inner ${onHero ? "gnav-hero" : "gnav-light"}`}>
-
-          {/* Logo */}
-          <Link href={ROUTES.home} style={{ flexShrink: 0, display: "flex" }}>
+        {/* Inner wrapper — centré avec max-width */}
+        <div
+          className="gnav-inner"
+          style={{
+            maxWidth: 1280,
+            margin: "0 auto",
+            padding: "0 28px",
+            height: "100%",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: 16,
+          }}
+        >
+          {/* ── Logo ── */}
+          <Link href={ROUTES.home}
+            style={{ display: "flex", alignItems: "center", textDecoration: "none", flexShrink: 0 }}>
             <Logo />
           </Link>
 
-          {/* Links area */}
-          <nav
-            className="gnav-links-area"
-            style={{ display: "flex", alignItems: "center", gap: 2, flex: 1, justifyContent: "center" }}
-          >
-            {/* Planifier dropdown */}
-            <div style={{ position: "relative" }}>
-              <button
-                className={`g-plan-btn ${isPlanActive ? "on" : ""} ${planOpen ? "open" : ""}`}
-                onClick={() => setPlanOpen(o => !o)}
-              >
-                <Compass size={14} style={{ flexShrink: 0 }} />
-                Planifier
-                <ChevronDown size={13} className="chevron" />
-              </button>
+          {/* ── Centre ── */}
+          <nav className="g-center"
+            style={{ display: "flex", alignItems: "center", flex: 1, justifyContent: "center", gap: 2 }}>
+            {isUserLoggedIn ? (
+              <>
+                {/* Planifier dropdown */}
+                <div style={{ position: "relative" }}>
+                  <button
+                    className={`glink-plan ${isPlanActive ? "on" : ""} ${planOpen ? "open" : ""}`}
+                    onClick={() => setPlanOpen(o => !o)}
+                  >
+                    <i className="ti ti-route mi" aria-hidden="true" />
+                    Planifier
+                    <i className="ti ti-chevron-down chev" aria-hidden="true" />
+                  </button>
 
-              {planOpen && (
-                <>
-                  <div style={{ position: "fixed", inset: 0, zIndex: 99 }} onClick={() => setPlanOpen(false)} />
-                  <div className="g-plan-drop">
-                    <Link
-                      href={isUserLoggedIn ? ROUTES.touriste.ModeAssiste : ROUTES.ModeAssiste}
-                      className="drop-item"
-                      onClick={() => setPlanOpen(false)}
-                    >
-                      <div className="drop-icon" style={{ background: "rgba(2,175,207,0.1)" }}>
-                        <Wand2 size={16} color="#02AFCF" />
+                  {planOpen && (
+                    <>
+                      <div style={{ position: "fixed", inset: 0, zIndex: 499 }}
+                        onClick={() => setPlanOpen(false)} />
+                      <div className="plan-drop">
+                        <Link
+                          href={ROUTES.touriste.ModeAssiste}
+                          className={`plan-card ${
+                            pathname === ROUTES.touriste.ModeAssiste ||
+                            pathname.startsWith("/touriste/modeAssister") ? "active-mode" : ""
+                          }`}
+                          onClick={() => setPlanOpen(false)}
+                        >
+                          <div className="plan-icon assiste">
+                            <i className="ti ti-wand" style={{ color: "#02AFCF" }} aria-hidden="true" />
+                          </div>
+                          <div>
+                            <p className="plan-title">Mode Assisté</p>
+                            <p className="plan-desc">Laissez notre IA concevoir votre itinéraire idéal selon vos préférences.</p>
+                            <span className="plan-badge ai">
+                              <i className="ti ti-wand" aria-hidden="true" /> Propulsé par l'IA
+                            </span>
+                          </div>
+                        </Link>
+                        <div className="plan-divider" />
+                        <Link
+                          href={ROUTES.touriste.modeLibre}
+                          className={`plan-card ${
+                            pathname === ROUTES.touriste.modeLibre ||
+                            pathname.startsWith("/touriste/modeLibre") ? "active-mode" : ""
+                          }`}
+                          onClick={() => setPlanOpen(false)}
+                        >
+                          <div className="plan-icon libre">
+                            <i className="ti ti-navigation" style={{ color: "#2B96A8" }} aria-hidden="true" />
+                          </div>
+                          <div>
+                            <p className="plan-title">Mode Libre</p>
+                            <p className="plan-desc">Construisez votre voyage étape par étape, selon vos propres choix.</p>
+                            <span className="plan-badge free">
+                              <i className="ti ti-navigation" aria-hidden="true" /> Personnalisé
+                            </span>
+                          </div>
+                        </Link>
                       </div>
-                      <div>
-                        <span style={{ display: "block" }}>Mode Assisté</span>
-                        <span className="drop-sub">Itinéraire sur-mesure guidé</span>
-                      </div>
-                    </Link>
-                    <Link
-                      href={isUserLoggedIn ? ROUTES.touriste.modeLibre : "/modeLibre?mode=libre"}
-                      className="drop-item"
-                      onClick={() => setPlanOpen(false)}
-                    >
-                      <div className="drop-icon" style={{ background: "rgba(43,150,168,0.1)" }}>
-                        <Navigation size={16} color="#2B96A8" />
-                      </div>
-                      <div>
-                        <span style={{ display: "block" }}>Mode Libre</span>
-                        <span className="drop-sub">Construisez votre voyage</span>
-                      </div>
-                    </Link>
-                  </div>
-                </>
-              )}
-            </div>
+                    </>
+                  )}
+                </div>
 
-            {/* Standard links */}
-            {(isUserLoggedIn ? touristeLinks : publicLinks).map((l: any) =>
-              l.anchor ? (
-                <a key={l.href} href={l.href} className="glink" onClick={() => setMobileOpen(false)}>
-                  {l.label}
-                </a>
-              ) : (
-                <Link
-                  key={l.href}
-                  href={l.href}
-                  className={`glink${isActive(l.href) ? " on" : ""}`}
-                >
-                  {l.label}
-                </Link>
-              )
+                {/* Liens touriste */}
+                {touristeLinks.map(l => (
+                  <Link key={l.href} href={l.href}
+                    className={`glink ${isActive(l.href) ? "on" : ""}`}>
+                    <i className={`ti ${l.icon}`} aria-hidden="true" />
+                    {l.label}
+                  </Link>
+                ))}
+              </>
+            ) : (
+              <>
+                {/* Planifier dropdown (public) */}
+                <div style={{ position: "relative" }}>
+                  <button
+                    className={`glink-plan ${isPlanActive ? "on" : ""} ${planOpen ? "open" : ""}`}
+                    onClick={() => setPlanOpen(o => !o)}
+                  >
+                    <i className="ti ti-route mi" aria-hidden="true" />
+                    Planifier
+                    <i className="ti ti-chevron-down chev" aria-hidden="true" />
+                  </button>
+
+                  {planOpen && (
+                    <>
+                      <div style={{ position: "fixed", inset: 0, zIndex: 499 }}
+                        onClick={() => setPlanOpen(false)} />
+                      <div className="plan-drop">
+                        <Link
+                          href={ROUTES.ModeAssiste}
+                          className={`plan-card ${
+                            pathname === ROUTES.ModeAssiste ||
+                            pathname.startsWith("/modeAssister") ? "active-mode" : ""
+                          }`}
+                          onClick={() => setPlanOpen(false)}
+                        >
+                          <div className="plan-icon assiste">
+                            <i className="ti ti-wand" style={{ color: "#02AFCF" }} aria-hidden="true" />
+                          </div>
+                          <div>
+                            <p className="plan-title">Mode Assisté</p>
+                            <p className="plan-desc">Laissez notre IA concevoir votre itinéraire idéal selon vos préférences.</p>
+                            <span className="plan-badge ai">
+                              <i className="ti ti-wand" aria-hidden="true" /> Propulsé par l'IA
+                            </span>
+                          </div>
+                        </Link>
+                        <div className="plan-divider" />
+                        <Link
+                          href={ROUTES.touriste.modeLibre}
+                          className={`plan-card ${
+                            pathname === ROUTES.touriste.modeLibre ||
+                            pathname.startsWith("/modeLibre") ? "active-mode" : ""
+                          }`}
+                          onClick={() => setPlanOpen(false)}
+                        >
+                          <div className="plan-icon libre">
+                            <i className="ti ti-navigation" style={{ color: "#2B96A8" }} aria-hidden="true" />
+                          </div>
+                          <div>
+                            <p className="plan-title">Mode Libre</p>
+                            <p className="plan-desc">Construisez votre voyage étape par étape, selon vos propres choix.</p>
+                            <span className="plan-badge free">
+                              <i className="ti ti-navigation" aria-hidden="true" /> Personnalisé
+                            </span>
+                          </div>
+                        </Link>
+                      </div>
+                    </>
+                  )}
+                </div>
+
+                {/* Liens publics */}
+                {publicLinks.map(l =>
+                  l.anchor
+                    ? <a key={l.href} href={l.href} className="glink">
+                        <i className={`ti ${l.icon}`} aria-hidden="true" /> {l.label}
+                      </a>
+                    : <Link key={l.href} href={l.href}
+                        className={`glink ${isActive(l.href) ? "on" : ""}`}>
+                        <i className={`ti ${l.icon}`} aria-hidden="true" /> {l.label}
+                      </Link>
+                )}
+              </>
             )}
           </nav>
 
-          {/* Right controls */}
-          <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
-            <button
-              className="g-burger"
-              onClick={() => setMobileOpen(o => !o)}
-              aria-label="Menu"
-            >
-              {mobileOpen ? <X size={18} /> : <Menu size={18} />}
+          {/* ── Droite ── */}
+          <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
+
+            {/* Burger (mobile) */}
+            <button className="g-burger" onClick={() => setMobileOpen(o => !o)}>
+              {mobileOpen ? <X size={20} /> : <Menu size={20} />}
             </button>
 
             {isUserLoggedIn ? (
               <>
-                <Link href={ROUTES.touriste.favoris} className="g-fav" aria-label="Favoris">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
-                  </svg>
+
+                {/* Favoris */}
+                <Link href={ROUTES.touriste.favoris} className="g-fav">
+                  <i className="ti ti-heart" aria-hidden="true" />
                   {favCount > 0 && <span className="nb">{favCount > 9 ? "9+" : favCount}</span>}
                 </Link>
+
                 <div className="g-sep" />
+
+                {/* Avatar + dropdown */}
                 <div style={{ position: "relative" }}>
                   <button className="av" onClick={() => setMenuOpen(o => !o)}>
                     {avatarUrl ? <img src={avatarUrl} alt={initial} /> : initial}
                   </button>
+
                   {menuOpen && (
                     <>
-                      <div style={{ position: "fixed", inset: 0, zIndex: 499 }} onClick={() => setMenuOpen(false)} />
+                      <div style={{ position: "fixed", inset: 0, zIndex: 499 }}
+                        onClick={() => setMenuOpen(false)} />
                       <div className="drop">
+                        {/* Header profil */}
                         <div className="drop-header">
                           <div className="drop-av">
-                            {avatarUrl ? <img src={avatarUrl} alt={initial} /> : initial}
+                            {avatarUrl
+                              ? <img src={avatarUrl} alt={initial} />
+                              : initial}
                           </div>
                           <div>
                             <p className="drop-name">{userName || "Touriste"}</p>
                             <span className="drop-role">
-                              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 9.18 19.79 19.79 0 0 1 1.64 .5a2 2 0 0 1 2-2.18h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z" /></svg>
+                              <i className="ti ti-plane" style={{ fontSize: 11 }} aria-hidden="true" />
                               Compte touriste
                             </span>
                           </div>
                         </div>
+
                         <Link href={ROUTES.touriste.profil} className="ddi" onClick={() => setMenuOpen(false)}>
-                          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></svg>
-                          Mon profil
+                          <i className="ti ti-user" aria-hidden="true" /> Mon profil
                         </Link>
                         <Link href={ROUTES.touriste.messages} className="ddi" onClick={() => setMenuOpen(false)}>
-                          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg>
-                          Messages
+                          <i className="ti ti-message-circle" aria-hidden="true" /> Messages
                         </Link>
                         {ROUTES.touriste.historique && (
                           <Link href={ROUTES.touriste.historique} className="ddi" onClick={() => setMenuOpen(false)}>
-                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>
-                            Historique
+                            <i className="ti ti-clock" aria-hidden="true" /> Historique
                           </Link>
                         )}
+
                         <div className="drop-divider" />
                         <button className="ddi red" onClick={handleSignOut}>
-                          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" /><polyline points="16 17 21 12 16 7" /><line x1="21" y1="12" x2="9" y2="12" /></svg>
-                          Se déconnecter
+                          <i className="ti ti-logout" aria-hidden="true" /> Se déconnecter
                         </button>
                       </div>
                     </>
@@ -619,107 +718,121 @@ export default function TouristeNav({
               </>
             ) : (
               <>
-                <Link href={ROUTES.touriste.favoris} className="g-fav" aria-label="Favoris">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
-                  </svg>
+                {/* Favoris (non connecté) */}
+                <Link href={ROUTES.touriste.favoris} className="g-fav">
+                  <i className="ti ti-heart" aria-hidden="true" />
                 </Link>
                 <div className="g-sep" />
+                {/* Bouton connexion */}
                 <Link href={ROUTES.auth} className="g-btn">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></svg>
-                  <span>Connexion</span>
+                  <i className="ti ti-user" aria-hidden="true" />
+                  <span className="g-btn-text">Connexion</span>
                 </Link>
               </>
             )}
           </div>
-        </div>
+        </div>{/* fin gnav-inner */}
       </header>
 
-      {/* ── Mobile Drawer ── */}
+      {/* ── Drawer mobile ── */}
       <div className={`g-drawer ${mobileOpen ? "" : "closed"}`}>
-        <div className="g-drawer-header">
-          <Logo />
-          <button
-            onClick={() => setMobileOpen(false)}
-            style={{
-              width: 32, height: 32, borderRadius: 8,
-              border: "1px solid #E2E8F0", background: "none",
-              display: "flex", alignItems: "center", justifyContent: "center",
-              cursor: "pointer", color: "#64748B",
-            }}
-          >
-            <X size={16} />
-          </button>
-        </div>
-
-        <div className="g-drawer-body">
-          <div className="g-plan-section">
-            <p className="g-plan-label">Planifier mon voyage</p>
-            <Link
-              href={isUserLoggedIn ? ROUTES.touriste.ModeAssiste : ROUTES.ModeAssiste}
-              className={`g-mlink ${pathname.startsWith("/touriste/modeAssister") || pathname.startsWith("/modeAssister") ? "on" : ""}`}
-              onClick={() => setMobileOpen(false)}
-              style={{ marginBottom: 4 }}
-            >
-              <Wand2 size={16} color="#02AFCF" />
-              Mode Assisté
-            </Link>
-            <Link
-              href={isUserLoggedIn ? ROUTES.touriste.modeLibre : "/modeLibre?mode=libre"}
-              className={`g-mlink ${pathname.startsWith("/touriste/modeLibre") || pathname.startsWith("/modeLibre") ? "on" : ""}`}
-              onClick={() => setMobileOpen(false)}
-            >
-              <Navigation size={16} color="#2B96A8" />
-              Mode Libre
-            </Link>
-          </div>
-
-          {(isUserLoggedIn ? touristeLinks : publicLinks).map((l: any) =>
-            l.anchor ? (
-              <a key={l.href} href={l.href} className="g-mlink" onClick={() => setMobileOpen(false)}>
-                {l.label}
-              </a>
-            ) : (
+        {isUserLoggedIn ? (
+          <>
+            {/* Planifier EN PREMIER */}
+            <div className="g-plan-section">
+              <p className="g-plan-label">Planifier mon voyage</p>
               <Link
-                key={l.href}
-                href={l.href}
-                className={`g-mlink ${isActive(l.href) ? "on" : ""}`}
+                href={ROUTES.touriste.ModeAssiste}
+                className={`g-mlink ${pathname.startsWith("/touriste/modeAssister") ? "on" : ""}`}
                 onClick={() => setMobileOpen(false)}
               >
+                <i className="ti ti-wand" style={{ color: "#02AFCF" }} aria-hidden="true" />
+                Mode Assisté
+              </Link>
+              <Link
+                href={ROUTES.touriste.modeLibre}
+                className={`g-mlink ${pathname.startsWith("/touriste/modeLibre") ? "on" : ""}`}
+                onClick={() => setMobileOpen(false)}
+              >
+                <i className="ti ti-navigation" style={{ color: "#2B96A8" }} aria-hidden="true" />
+                Mode Libre
+              </Link>
+            </div>
+
+            {touristeLinks.map(l => (
+              <Link key={l.href} href={l.href}
+                className={`g-mlink ${isActive(l.href) ? "on" : ""}`}
+                onClick={() => setMobileOpen(false)}>
+                <i className={`ti ${l.icon}`} aria-hidden="true" />
                 {l.label}
               </Link>
-            )
-          )}
+            ))}
 
-          <div style={{ borderTop: "1px solid #F1F5F9", marginTop: 12, paddingTop: 12 }}>
-            {isUserLoggedIn ? (
+            <div style={{ borderTop: "1px solid rgba(5,51,102,0.08)", marginTop: 6, paddingTop: 6 }}>
               <button
-                className="g-mlink"
+                className="ddi red"
+                style={{ width: "100%", borderRadius: 9, fontSize: 14 }}
                 onClick={handleSignOut}
-                style={{ color: "#EF4444", width: "100%" }}
               >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" /><polyline points="16 17 21 12 16 7" /><line x1="21" y1="12" x2="9" y2="12" /></svg>
-                Se déconnecter
+                <i className="ti ti-logout" aria-hidden="true" /> Se déconnecter
               </button>
-            ) : (
+            </div>
+          </>
+        ) : (
+          <>
+            {/* Planifier EN PREMIER (public) */}
+            <div className="g-plan-section">
+              <p className="g-plan-label">Planifier mon voyage</p>
+              <Link
+                href={ROUTES.ModeAssiste}
+                className={`g-mlink ${pathname.startsWith("/modeAssister") ? "on" : ""}`}
+                onClick={() => setMobileOpen(false)}
+              >
+                <i className="ti ti-wand" style={{ color: "#02AFCF" }} aria-hidden="true" />
+                Mode Assisté
+              </Link>
+              <Link
+                href={ROUTES.touriste.modeLibre}
+                className={`g-mlink ${pathname.startsWith("/modeLibre") ? "on" : ""}`}
+                onClick={() => setMobileOpen(false)}
+              >
+                <i className="ti ti-navigation" style={{ color: "#2B96A8" }} aria-hidden="true" />
+                Mode Libre
+              </Link>
+            </div>
+
+            {publicLinks.map(l =>
+              l.anchor ? (
+                <a key={l.href} href={l.href} className="g-mlink" onClick={() => setMobileOpen(false)}>
+                  <i className={`ti ${l.icon}`} aria-hidden="true" /> {l.label}
+                </a>
+              ) : (
+                <Link key={l.href} href={l.href}
+                  className={`g-mlink ${isActive(l.href) ? "on" : ""}`}
+                  onClick={() => setMobileOpen(false)}>
+                  <i className={`ti ${l.icon}`} aria-hidden="true" /> {l.label}
+                </Link>
+              )
+            )}
+
+            <div style={{ borderTop: "1px solid rgba(5,51,102,0.08)", marginTop: 6, paddingTop: 6 }}>
               <Link
                 href={ROUTES.auth}
                 onClick={() => setMobileOpen(false)}
                 style={{
                   display: "flex", alignItems: "center", gap: 9,
                   padding: "12px 16px",
-                  background: "linear-gradient(135deg, #2B96A8, #053366)",
-                  color: "white", borderRadius: 10,
+                  background: "linear-gradient(135deg, #02AFCF, #053366)",
+                  color: "white", borderRadius: 9,
                   textDecoration: "none", fontSize: 14, fontWeight: 700,
                   fontFamily: "'DM Sans', sans-serif",
                 }}
               >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" /><polyline points="10 17 15 12 10 7" /><line x1="15" y1="12" x2="3" y2="12" /></svg>
-                Se connecter
+                <i className="ti ti-login" aria-hidden="true" /> Se connecter
               </Link>
-            )}
-          </div>
-        </div>
+            </div>
+          </>
+        )}
       </div>
     </>
   );
