@@ -2,7 +2,7 @@ import { createServerSupabaseClient } from "@/lib/supabaseServer";
 import { redirect } from "next/navigation";
 import TouristeNav from "../components/touriste/TouristeNav";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 300;
 
 export default async function TouristeLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createServerSupabaseClient();
