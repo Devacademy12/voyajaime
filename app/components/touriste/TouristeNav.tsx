@@ -163,9 +163,9 @@ export default function TouristeNav({
         }
         .glink:hover i { opacity: 1; }
         .glink.on {
-          color: #053366; font-weight: 800;
-          background: rgba(5,51,102,0.05);
-          border-color: rgba(5,51,102,0.10);
+           color: #053366;
+          background: rgba(37,159,252,0.45);
+          border-color: rgba(37,159,252,0.45);
         }
 
         /* ══════════════════════════════════════════
@@ -187,14 +187,14 @@ export default function TouristeNav({
         .glink-plan i.main-icon { font-size: 16px; opacity: 1; }
         .glink-plan .chevron    { font-size: 14px; opacity: 0.75; transition: transform 0.2s ease, opacity 0.2s; }
         .glink-plan:hover {
-        color: #053366;
-         background: rgba(37,159,252,0.45);
+       color: #053366;
+          background: rgba(37,159,252,0.45);
           border-color: rgba(37,159,252,0.45);
         }
         .glink-plan.on {
-          background: #0e72c7;
-          border-color: #0e72c7;
-          box-shadow: 0 4px 18px rgba(37,159,252,0.4);
+          color: #053366;
+          background: rgba(37,159,252,0.45);
+          border-color: rgba(37,159,252,0.45);
         }
         .glink-plan.open .chevron { transform: rotate(180deg); opacity: 1; }
 
