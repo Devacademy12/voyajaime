@@ -1,16 +1,11 @@
-// StripeReturnHandler.tsx — version corrigée (redirection + bouton fix)
+// app/components/paiement/StripeReturnHandler.tsx
 "use client";
 
 import { useEffect, useState, useRef } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
+import { createPortal } from "react-dom";
 import { CheckCircle2, XCircle, Loader2, ArrowRight } from "lucide-react";
 
-const SPIN_CSS = `@keyframes stripe-spin { to { transform: rotate(360deg); } }
-@keyframes stripe-fadeIn { from { opacity: 0; transform: scale(0.96); } to { opacity: 1; transform: scale(1); } }`;
-
-const SUCCESS_DISPLAY_MS = 3500;
-
-// Clé unique pour éviter le double-traitement après refresh
 const STRIPE_HANDLED_KEY = "stripe_session_handled";
 
 export function StripeReturnHandler() {
@@ -18,19 +13,42 @@ export function StripeReturnHandler() {
   const router = useRouter();
 
   const [status, setStatus] = useState<"idle" | "verifying" | "success" | "error" | "cancelled">("idle");
+  const [mounted, setMounted] = useState(false);
+  const [countdown, setCountdown] = useState(3);
   const hasRun = useRef(false);
+  const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  useEffect(() => {
+  setStatus("idle");
+  hasRun.current = false;
+}, [searchParams]);
 
-  // ── Nettoyer l'URL immédiatement pour éviter la réouverture ──
-  const cleanUrl = () => {
-    if (typeof window !== "undefined") {
-      window.history.replaceState({}, "", "/touriste/reservations");
-    }
-  };
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const goToReservations = () => {
-    cleanUrl();
-    router.replace("/touriste/reservations");
-  };
+  setStatus("idle"); // 🔥 ADD THIS LINE
+  router.replace("/touriste/reservations");
+};
+
+  // Countdown auto-redirect sur succès
+  useEffect(() => {
+    if (status !== "success") return;
+    setCountdown(3);
+    countdownRef.current = setInterval(() => {
+      setCountdown((prev) => {
+        if (prev <= 1) {
+          clearInterval(countdownRef.current!);
+          goToReservations();
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => {
+      if (countdownRef.current) clearInterval(countdownRef.current);
+    };
+  }, [status]);
 
   useEffect(() => {
     if (hasRun.current) return;
@@ -39,17 +57,17 @@ export function StripeReturnHandler() {
     const success = searchParams.get("success");
     const canceled = searchParams.get("canceled");
 
-    // ── Déjà traité (protection double-run) ──
+    // ✅ Vérifier si déjà traité
     const alreadyHandled = sessionId && sessionStorage.getItem(STRIPE_HANDLED_KEY) === sessionId;
     if (alreadyHandled) {
-      cleanUrl();
+      // ✅ Ne pas appeler cleanUrl() ! Laisser l'URL comme elle est
+      // Le user verra l'URL avec les params, c'est normal. Stripe les met là.
       return;
     }
 
-    // ── Paiement annulé ──
+    // Utilisateur a annulé le paiement sur Stripe
     if (canceled === "true") {
       hasRun.current = true;
-      cleanUrl(); // ← nettoie l'URL immédiatement
       setStatus("cancelled");
       return;
     }
@@ -57,10 +75,10 @@ export function StripeReturnHandler() {
     if (!sessionId || success !== "true") return;
 
     hasRun.current = true;
-    cleanUrl(); // ← nettoie l'URL immédiatement, avant même la vérification
     sessionStorage.setItem(STRIPE_HANDLED_KEY, sessionId);
     setStatus("verifying");
 
+    // Confirmer le paiement auprès du backend
     const confirm = async (attempt = 0) => {
       try {
         const res = await fetch("/api/paiement/stripe/confirm", {
@@ -69,208 +87,256 @@ export function StripeReturnHandler() {
           body: JSON.stringify({ session_id: sessionId }),
         });
         const data = await res.json();
-
         if (!res.ok) throw new Error(data.error || "Erreur serveur");
-
         if (!data.paid) {
-          if (attempt < 8) {
-            setTimeout(() => confirm(attempt + 1), 2000);
-          } else {
-            setStatus("success");
-          }
+          // ✅ Retry avec backoff exponentiel
+          attempt < 8 ? setTimeout(() => confirm(attempt + 1), 2000) : setStatus("success");
           return;
         }
-
         setStatus("success");
       } catch (err) {
         console.error("[StripeReturnHandler]", err);
-        if (attempt < 5) {
-          setTimeout(() => confirm(attempt + 1), 2000);
-        } else {
-          setStatus("error");
-        }
+        attempt < 5 ? setTimeout(() => confirm(attempt + 1), 2000) : setStatus("error");
       }
     };
-
     confirm();
   }, [searchParams]);
 
-  if (status === "idle") return null;
+  if (status === "idle" || !mounted) return null;
 
-  return (
-    <div
-      style={{
-        position: "fixed",
-        inset: 0,
-        background: "rgba(15,23,42,0.6)",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        zIndex: 9999,
-        backdropFilter: "blur(6px)",
-      }}
-      // ← clic sur le fond = fermeture si succès/annulé/erreur
-      onClick={() => {
-        if (status !== "verifying") goToReservations();
-      }}
-    >
-      <style>{SPIN_CSS}</style>
+  // ─── Styles ────────────────────────────────────────────────────────────────
 
-      <div
-        style={{
-          background: "#FFFFFF",
-          borderRadius: 24,
-          padding: "48px 52px",
-          textAlign: "center",
-          maxWidth: 400,
-          width: "90%",
-          boxShadow: "0 32px 80px rgba(0,0,0,0.2)",
-          animation: "stripe-fadeIn 0.25s ease both",
-        }}
-        onClick={(e) => e.stopPropagation()} // évite fermeture au clic sur la modale
-      >
+  const overlayStyle: React.CSSProperties = {
+    position: "fixed",
+    inset: 0,
+    background: "rgba(15,23,42,0.6)",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    zIndex: 2147483647,
+  };
 
-        {/* ── Vérification ── */}
-        {status === "verifying" && (
+  const cardStyle: React.CSSProperties = {
+    background: "#FFFFFF",
+    borderRadius: 24,
+    padding: "48px 40px",
+    textAlign: "center",
+    maxWidth: 420,
+    width: "90%",
+    boxShadow: "0 32px 80px rgba(0,0,0,0.25)",
+    isolation: "isolate",
+    position: "relative",
+    zIndex: 2147483647,
+  };
+
+  const btnStyle: React.CSSProperties = {
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    padding: "14px 28px",
+    background: "#0D9488",
+    color: "#fff",
+    border: "none",
+    borderRadius: 12,
+    fontSize: 15,
+    fontWeight: 700,
+    cursor: "pointer",
+    fontFamily: "inherit",
+    width: "100%",
+    pointerEvents: "auto",
+    position: "relative",
+    zIndex: 1,
+  };
+
+  const btnDarkStyle: React.CSSProperties = {
+    ...btnStyle,
+    background: "#0F172A",
+  };
+
+  function iconCircle(bg: string, border: string): React.CSSProperties {
+    return {
+      width: 80,
+      height: 80,
+      borderRadius: "50%",
+      background: bg,
+      border: `2.5px solid ${border}`,
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      margin: "0 auto 20px",
+    };
+  }
+
+  // ─── Contenu selon état ─────────────────────────────────────────────────────
+
+  const renderContent = () => {
+    switch (status) {
+      case "verifying":
+        return (
           <>
             <Loader2
               size={52}
               color="#0D9488"
-              style={{ animation: "stripe-spin 1s linear infinite", marginBottom: 20 }}
+              style={{
+                animation: "stripeSpinAnim 1s linear infinite",
+                marginBottom: 20,
+              }}
             />
-            <h3 style={{ fontSize: 20, fontWeight: 700, color: "#0F172A", margin: "0 0 8px" }}>
+            <h3
+              style={{
+                fontSize: 20,
+                fontWeight: 700,
+                color: "#0F172A",
+                margin: "0 0 8px",
+              }}
+            >
               Confirmation en cours…
             </h3>
             <p style={{ fontSize: 14, color: "#64748B", margin: 0 }}>
               Vérification et enregistrement de votre paiement
             </p>
           </>
-        )}
+        );
 
-        {/* ── Succès ── */}
-        {status === "success" && (
+      case "success":
+        return (
           <>
-            <div style={{
-              width: 80, height: 80, borderRadius: "50%",
-              background: "#F0FDFA", border: "2.5px solid #99F6E4",
-              display: "flex", alignItems: "center", justifyContent: "center",
-              margin: "0 auto 20px",
-            }}>
+            <div style={iconCircle("#F0FDFA", "#99F6E4")}>
               <CheckCircle2 size={40} color="#0D9488" strokeWidth={1.5} />
             </div>
-            <h3 style={{ fontSize: 22, fontWeight: 700, color: "#0F172A", margin: "0 0 10px" }}>
+            <h3
+              style={{
+                fontSize: 22,
+                fontWeight: 700,
+                color: "#0F172A",
+                margin: "0 0 10px",
+              }}
+            >
               Paiement confirmé !
             </h3>
-            <p style={{ fontSize: 14, color: "#64748B", lineHeight: 1.7, margin: "0 0 24px" }}>
-              Votre réservation est confirmée.<br />
+            <p
+              style={{
+                fontSize: 14,
+                color: "#64748B",
+                lineHeight: 1.7,
+                margin: "0 0 6px",
+              }}
+            >
+              Votre réservation est confirmée.
+              <br />
               Un email de confirmation vous a été envoyé.
             </p>
+            <p style={{ fontSize: 13, color: "#94A3B8", margin: "0 0 28px" }}>
+              Redirection dans {countdown} seconde{countdown !== 1 ? "s" : ""}…
+            </p>
             <button
-              onClick={goToReservations}
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 8,
-                padding: "12px 24px",
-                background: "#0D9488",
-                color: "#fff",
-                border: "none",
-                borderRadius: 12,
-                fontSize: 14,
-                fontWeight: 700,
-                cursor: "pointer",
-                fontFamily: "inherit",
-                transition: "background 0.15s",
+              type="button"
+              style={btnStyle}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                goToReservations();
               }}
-              onMouseEnter={e => (e.currentTarget.style.background = "#0F766E")}
-              onMouseLeave={e => (e.currentTarget.style.background = "#0D9488")}
             >
-              Voir mes réservations
-              <ArrowRight size={16} />
+              Aller à mes réservations <ArrowRight size={16} />
             </button>
           </>
-        )}
+        );
 
-        {/* ── Erreur réseau ── */}
-        {status === "error" && (
+      case "error":
+        return (
           <>
-            <div style={{
-              width: 80, height: 80, borderRadius: "50%",
-              background: "#FEF2F2", border: "2.5px solid #FCA5A5",
-              display: "flex", alignItems: "center", justifyContent: "center",
-              margin: "0 auto 20px",
-            }}>
+            <div style={iconCircle("#FEF2F2", "#FCA5A5")}>
               <XCircle size={40} color="#EF4444" strokeWidth={1.5} />
             </div>
-            <h3 style={{ fontSize: 22, fontWeight: 700, color: "#0F172A", margin: "0 0 10px" }}>
+            <h3
+              style={{
+                fontSize: 22,
+                fontWeight: 700,
+                color: "#0F172A",
+                margin: "0 0 10px",
+              }}
+            >
               Erreur de vérification
             </h3>
-            <p style={{ fontSize: 14, color: "#64748B", margin: "0 0 24px" }}>
-              Votre paiement a peut-être été traité. Vérifiez vos réservations.
+            <p style={{ fontSize: 14, color: "#64748B", margin: "0 0 28px" }}>
+              Votre paiement a peut-être été traité.
+              <br />
+              Vérifiez vos réservations.
             </p>
             <button
-              onClick={goToReservations}
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 8,
-                padding: "12px 24px",
-                background: "#0F172A",
-                color: "#fff",
-                border: "none",
-                borderRadius: 12,
-                fontSize: 14,
-                fontWeight: 700,
-                cursor: "pointer",
-                fontFamily: "inherit",
+              type="button"
+              style={btnDarkStyle}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                goToReservations();
               }}
             >
-              Voir mes réservations
-              <ArrowRight size={16} />
+              Voir mes réservations <ArrowRight size={16} />
             </button>
           </>
-        )}
+        );
 
-        {/* ── Annulé ── */}
-        {status === "cancelled" && (
+      case "cancelled":
+        return (
           <>
-            <div style={{
-              width: 80, height: 80, borderRadius: "50%",
-              background: "#FFF7ED", border: "2.5px solid #FCD34D",
-              display: "flex", alignItems: "center", justifyContent: "center",
-              margin: "0 auto 20px",
-            }}>
+            <div style={iconCircle("#FFF7ED", "#FCD34D")}>
               <XCircle size={40} color="#F59E0B" strokeWidth={1.5} />
             </div>
-            <h3 style={{ fontSize: 22, fontWeight: 700, color: "#0F172A", margin: "0 0 10px" }}>
-              Paiement annulé
-            </h3>
-            <p style={{ fontSize: 14, color: "#64748B", margin: "0 0 24px" }}>
-              Votre réservation reste en attente. Vous pouvez réessayer à tout moment.
-            </p>
-            <button
-              onClick={goToReservations}
+            <h3
               style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 8,
-                padding: "12px 24px",
-                background: "#0F172A",
-                color: "#fff",
-                border: "none",
-                borderRadius: 12,
-                fontSize: 14,
+                fontSize: 22,
                 fontWeight: 700,
-                cursor: "pointer",
-                fontFamily: "inherit",
+                color: "#0F172A",
+                margin: "0 0 10px",
               }}
             >
-              Retour aux réservations
-              <ArrowRight size={16} />
+              Paiement annulé
+            </h3>
+            <p style={{ fontSize: 14, color: "#64748B", margin: "0 0 28px" }}>
+              Votre réservation reste en attente.
+              <br />
+              Vous pouvez réessayer à tout moment.
+            </p>
+            <button
+              type="button"
+              style={btnDarkStyle}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                goToReservations();
+              }}
+            >
+              Retour aux réservations <ArrowRight size={16} />
             </button>
           </>
-        )}
+        );
+
+      default:
+        return null;
+    }
+  };
+
+  return createPortal(
+    <>
+      <style>{`
+        @keyframes stripeSpinAnim { to { transform: rotate(360deg); } }
+      `}</style>
+
+      <div
+        style={overlayStyle}
+        onClick={(e) => {
+          if (e.target === e.currentTarget && status !== "verifying")
+            goToReservations();
+        }}
+      >
+        <div style={cardStyle} onClick={(e) => e.stopPropagation()}>
+          {renderContent()}
+        </div>
       </div>
-    </div>
+    </>,
+    document.body
   );
 }

@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import { createClient } from "@/lib/supabaseClient";
 import Link from "next/link";
 import {
-  Sparkles, ArrowRight, History, Compass, RefreshCcw, Loader2,
+  Sparkles, ArrowRight, History, Compass, RefreshCcw,
   CheckCircle2, AlertCircle, CalendarDays,
 } from "lucide-react";
 import { Reservation } from "@/app/components/reservation/type";
@@ -12,9 +13,9 @@ import ReservationCard from "@/app/components/reservation/Reservationcard";
 import CheckoutModal from "@/app/components/paiement/checkoutmodal";
 
 const CSS = `
-  @keyframes fadeUp { 
-    from { opacity: 0; transform: translateY(12px); } 
-    to { opacity: 1; transform: translateY(0); } 
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(12px); }
+    to   { opacity: 1; transform: translateY(0); }
   }
   @keyframes spin { to { transform: rotate(360deg); } }
 
@@ -72,8 +73,8 @@ const CSS = `
     white-space: nowrap;
     box-shadow: 0 1px 2px rgba(0,0,0,.02);
   }
-  .rc-refresh:hover:not(:disabled) { 
-    border-color: #02AFCF; 
+  .rc-refresh:hover:not(:disabled) {
+    border-color: #02AFCF;
     color: #02AFCF;
     box-shadow: 0 4px 12px rgba(2,175,207,.12);
     transform: translateY(-1px);
@@ -195,7 +196,7 @@ const CSS = `
     cursor: pointer;
     box-shadow: 0 4px 12px rgba(2,175,207,.25);
   }
-  .rc-btn-primary:hover { 
+  .rc-btn-primary:hover {
     transform: translateY(-2px);
     box-shadow: 0 8px 20px rgba(2,175,207,.35);
   }
@@ -215,7 +216,7 @@ const CSS = `
     transition: all .2s;
     cursor: pointer;
   }
-  .rc-btn-secondary:hover { 
+  .rc-btn-secondary:hover {
     border-color: #02AFCF;
     color: #02AFCF;
     box-shadow: 0 4px 12px rgba(2,175,207,.12);
@@ -223,15 +224,15 @@ const CSS = `
 
   @media (max-width: 900px) {
     .rc-stats { grid-template-columns: repeat(3, 1fr); gap: 12px; }
-    .rc-grid { grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px; }
+    .rc-grid   { grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px; }
   }
   @media (max-width: 640px) {
     .rc-header { padding: 20px 0 18px; margin-bottom: 20px; }
     .rc-header-title { font-size: 22px; }
     .rc-header-inner { flex-direction: column; align-items: flex-start; gap: 12px; }
     .rc-stats { grid-template-columns: 1fr; gap: 10px; }
-    .rc-stat { padding: 14px 16px; border-radius: 14px; }
-    .rc-grid { grid-template-columns: 1fr; gap: 14px; }
+    .rc-stat  { padding: 14px 16px; border-radius: 14px; }
+    .rc-grid  { grid-template-columns: 1fr; gap: 14px; }
     .rc-empty { padding: 56px 20px; border-radius: 20px; }
     .rc-empty h3 { font-size: 18px; }
     .rc-empty-actions { gap: 8px; }
@@ -261,10 +262,14 @@ export default function ReservationsClient({ reservations: init, autoOpenId }: P
   const [reservations, setReservations] = useState(init);
   const [checkout,     setCheckout]     = useState<Reservation | null>(null);
   const [loading,      setLoading]      = useState(false);
+  const [portalReady,  setPortalReady]  = useState(false); // ← pour le portail SSR-safe
 
   const total     = reservations.length;
   const pending   = reservations.filter(r => r.status === "pending").length;
   const confirmed = reservations.filter(r => r.status === "confirmed").length;
+
+  // Activer le portail côté client uniquement
+  useEffect(() => { setPortalReady(true); }, []);
 
   /* ── Move expired paid reservations to history ── */
   const moveExpiredToHistory = useCallback(async (list: Reservation[]) => {
@@ -318,7 +323,7 @@ export default function ReservationsClient({ reservations: init, autoOpenId }: P
         time:            r.time,
         people_count:    r.people_count,
         total_price:     r.total_price,
-        platform_fee:    r.platform_fee    ?? 0,
+        platform_fee:    r.platform_fee ?? 0,
         payment_status:  "expired",
         payment_date:    new Date().toISOString(),
         moved_to_history: true,
@@ -355,7 +360,7 @@ export default function ReservationsClient({ reservations: init, autoOpenId }: P
     if (!hasPending) return;
     const id = setInterval(() => {
       if (reservations.some(hasActivePending)) refreshReservations();
-    }, 30000);
+    }, 30_000);
     return () => clearInterval(id);
   }, [reservations, refreshReservations]);
 
@@ -380,21 +385,9 @@ export default function ReservationsClient({ reservations: init, autoOpenId }: P
 
   /* ── Stats config ── */
   const stats = [
-    {
-      icon: <CalendarDays size={18} color="#2B96A8"/>,
-      num: total, lbl: "Total",
-      iconBg: "rgba(43,150,168,.1)",
-    },
-    {
-      icon: <AlertCircle size={18} color="#D97706"/>,
-      num: pending, lbl: "En attente",
-      iconBg: "rgba(217,119,6,.1)",
-    },
-    {
-      icon: <CheckCircle2 size={18} color="#10B981"/>,
-      num: confirmed, lbl: "Confirmées",
-      iconBg: "rgba(16,185,129,.1)",
-    },
+    { icon: <CalendarDays size={18} color="#2B96A8" />, num: total,     lbl: "Total",      iconBg: "rgba(43,150,168,.1)"  },
+    { icon: <AlertCircle  size={18} color="#D97706" />, num: pending,   lbl: "En attente", iconBg: "rgba(217,119,6,.1)"   },
+    { icon: <CheckCircle2 size={18} color="#10B981" />, num: confirmed, lbl: "Confirmées", iconBg: "rgba(16,185,129,.1)"  },
   ];
 
   return (
@@ -428,9 +421,7 @@ export default function ReservationsClient({ reservations: init, autoOpenId }: P
           <div className="rc-stats">
             {stats.map(({ icon, num, lbl, iconBg }, i) => (
               <div key={lbl} className="rc-stat" style={{ animationDelay: `${i * 0.07}s` }}>
-                <div className="rc-stat-icon" style={{ background: iconBg }}>
-                  {icon}
-                </div>
+                <div className="rc-stat-icon" style={{ background: iconBg }}>{icon}</div>
                 <div>
                   <p className="rc-stat-num">{num}</p>
                   <p className="rc-stat-lbl">{lbl}</p>
@@ -444,16 +435,16 @@ export default function ReservationsClient({ reservations: init, autoOpenId }: P
         {total === 0 ? (
           <div className="rc-empty">
             <div className="rc-empty-icon">
-              <Compass size={28} color="#02AFCF" strokeWidth={1.5}/>
+              <Compass size={28} color="#02AFCF" strokeWidth={1.5} />
             </div>
             <h3>Aucune réservation active</h3>
             <p>Explorez les excursions disponibles et planifiez votre prochain voyage en Tunisie.</p>
             <div className="rc-empty-actions">
               <Link href="/excursions" className="rc-btn-primary">
-                <Sparkles size={13}/> Explorer <ArrowRight size={13}/>
+                <Sparkles size={13} /> Explorer <ArrowRight size={13} />
               </Link>
               <Link href="/touriste/historique" className="rc-btn-secondary">
-                <History size={13}/> Historique
+                <History size={13} /> Historique
               </Link>
             </div>
           </div>
@@ -471,17 +462,18 @@ export default function ReservationsClient({ reservations: init, autoOpenId }: P
             ))}
           </div>
         )}
-
-        {/* ── Checkout modal ── */}
-        {checkout && (
-          <CheckoutModal
-            reservation={checkout}
-            onClose={() => setCheckout(null)}
-            onPaid={handlePaid}
-            autoStart={!!autoOpenId && checkout.id === autoOpenId}
-          />
-        )}
       </div>
+
+      {/* ── CheckoutModal via portail → échappe tout stacking context ── */}
+      {checkout && portalReady && createPortal(
+        <CheckoutModal
+          reservation={checkout}
+          onClose={() => setCheckout(null)}
+          onPaid={handlePaid}
+          autoStart={!!autoOpenId && checkout.id === autoOpenId}
+        />,
+        document.body
+      )}
     </>
   );
 }
