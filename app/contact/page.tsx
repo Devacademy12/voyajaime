@@ -6,7 +6,6 @@ import ContactForm from "./ContactForm";
 import { Mail, Phone, MapPin, Clock, ArrowRight, Send, MessageCircle } from "lucide-react";
 import Link from "next/link";
 
-/* ══ SEO ══ */
 export async function generateMetadata(): Promise<Metadata> {
   return {
     title: "Contactez-nous | VoyajAime",
@@ -18,347 +17,417 @@ export async function generateMetadata(): Promise<Metadata> {
 interface ContactContent { key: string; value: string | null; }
 
 const CSS = `
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: 'Plus Jakarta Sans', system-ui, sans-serif; background: #0D1117; color: #fff; }
+  @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
 
-  /* ── Page wrapper ── */
-  .contact-page {
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  .contact-page-light {
     min-height: 100vh;
-    background: #0D1117;
+    background: linear-gradient(160deg, #EEF6F8 0%, #F7F9FC 50%, #EEF3FB 100%);
+    font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
     position: relative;
     overflow: hidden;
   }
 
-  /* Background overlay */
-  .contact-page::before {
+  .contact-page-light::before {
     content: '';
     position: absolute;
-    inset: 0;
-    background: rgba(4,12,22,0.75);
-    z-index: 0;
+    top: -120px; right: -120px;
+    width: 500px; height: 500px;
+    background: radial-gradient(circle, rgba(11,122,138,0.07) 0%, transparent 70%);
+    border-radius: 50%;
+    pointer-events: none;
   }
 
-  /* Blurred background image */
-  .contact-bg-blur {
+  .contact-page-light::after {
+    content: '';
     position: absolute;
-    inset: 0;
-    background-size: cover;
-    background-position: center;
-    filter: blur(3px) brightness(0.35);
-    transform: scale(1.05);
-    z-index: 0;
+    bottom: -80px; left: -80px;
+    width: 360px; height: 360px;
+    background: radial-gradient(circle, rgba(5,51,102,0.05) 0%, transparent 70%);
+    border-radius: 50%;
+    pointer-events: none;
   }
 
-  /* Main content */
-  .contact-content {
-    position: relative;
-    z-index: 2;
-  }
-
-  /* ── Main section ── */
-  .contact-section {
+  /* ── Section principale ── */
+  .cp-section {
     max-width: 1200px;
     margin: 0 auto;
     padding: 80px 40px 100px;
-    display: grid;
-    grid-template-columns: 1fr 1.4fr;
-    gap: 80px;
-    align-items: start;
+    position: relative;
+    z-index: 1;
   }
 
-  /* ══ LEFT — coordonnées ══ */
-  .info-badge {
+  /* ── Header centré ── */
+  .cp-header {
+    text-align: center;
+    margin-bottom: 56px;
+  }
+
+  .cp-eyebrow {
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    padding: 5px 12px;
+    padding: 5px 14px;
     border-radius: 20px;
-    background: rgba(43,150,168,0.3);
-    border: 1px solid rgba(43,150,168,0.5);
-    margin-bottom: 20px;
+    background: #E6F4F6;
+    border: 1px solid rgba(11,122,138,0.2);
+    margin-bottom: 16px;
   }
-  .info-badge span {
+  .cp-eyebrow span {
     font-size: 10px;
     font-weight: 800;
-    color: #A5F3FC;
+    color: #0B7A8A;
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+  }
+
+  .cp-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: clamp(32px, 4vw, 48px);
+    font-weight: 700;
+    color: #053366;
+    letter-spacing: -1px;
+    line-height: 1.08;
+    margin-bottom: 16px;
+  }
+
+  .cp-subtitle {
+    font-size: 15px;
+    color: #6B7280;
+    line-height: 1.7;
+    max-width: 460px;
+    margin: 0 auto;
+  }
+
+  /* ── Grid 2 colonnes ── */
+  .cp-grid {
+    display: flex;
+    gap: 28px;
+    align-items: flex-start;
+  }
+
+  /* ── Carte info ── */
+  .cp-info-card {
+    flex: 1.2;
+    background: white;
+    border-radius: 24px;
+    border: 1px solid #E5E7EB;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.04);
+    overflow: hidden;
+  }
+
+  .cp-info-head {
+    padding: 24px 24px 16px;
+    border-bottom: 1px solid #F3F4F6;
+  }
+
+  .cp-info-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 12px;
+    border-radius: 20px;
+    background: #E6F4F6;
+    border: 1px solid rgba(11,122,138,0.2);
+    margin-bottom: 16px;
+  }
+  .cp-info-badge span {
+    font-size: 10px;
+    font-weight: 800;
+    color: #0B7A8A;
     letter-spacing: 1px;
   }
-  .info-title {
-    font-family: 'Playfair Display', serif;
-    font-size: clamp(32px, 4vw, 52px);
-    font-weight: 900;
-    color: #fff;
-    letter-spacing: -1.5px;
-    line-height: 1.06;
-    margin-bottom: 24px;
+
+  .cp-info-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 24px;
+    font-weight: 700;
+    color: #053366;
+    margin-bottom: 6px;
+    letter-spacing: -0.3px;
   }
-  .info-description {
-    font-size: 16px;
-    color: rgba(255,255,255,0.55);
-    line-height: 1.7;
-    margin-bottom: 48px;
+
+  .cp-info-desc {
+    font-size: 13px;
+    color: #6B7280;
+    line-height: 1.6;
   }
 
   /* Info items */
-  .info-item {
-    display: flex;
-    align-items: flex-start;
-    gap: 16px;
-    padding: 20px 0;
-    border-bottom: 1px solid rgba(255,255,255,.07);
-    transition: background 0.15s;
-  }
-  .info-item:last-child { border-bottom: none; }
-  .info-item:hover { background: rgba(255,255,255,0.02); padding-left: 8px; margin-left: -8px; border-radius: 12px; }
+  .cp-info-items { padding: 8px 0; }
 
-  .info-icon {
-    width: 48px;
-    height: 48px;
-    border-radius: 16px;
-    background: rgba(43,150,168,0.2);
-    border: 1px solid rgba(43,150,168,0.3);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-    color: #A5F3FC;
-  }
-
-  .info-label {
-    font-size: 11px;
-    font-weight: 800;
-    color: rgba(255,255,255,0.45);
-    text-transform: uppercase;
-    letter-spacing: 1.2px;
-    margin-bottom: 6px;
-  }
-  .info-value {
-    font-size: 16px;
-    font-weight: 700;
-    color: #fff;
-    text-decoration: none;
-    transition: color .18s;
-  }
-  .info-value:hover { color: #A5F3FC; }
-
-  /* Status badge */
-  .status-badge {
-    margin-top: 28px;
-    padding: 16px 20px;
-    background: rgba(34,197,94,0.12);
-    border: 1px solid rgba(34,197,94,0.25);
-    border-radius: 20px;
+  .cp-info-row {
     display: flex;
     align-items: center;
     gap: 14px;
+    padding: 16px 24px;
+    border-bottom: 1px solid #F3F4F6;
+    transition: background 0.15s;
   }
-  .status-dot {
-    width: 10px;
-    height: 10px;
+  .cp-info-row:last-of-type { border-bottom: none; }
+  .cp-info-row:hover { background: #F7F9FC; }
+
+  .cp-info-icon {
+    width: 40px; height: 40px;
+    border-radius: 12px;
+    background: #E6F4F6;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    color: #0B7A8A;
+  }
+
+  .cp-info-label {
+    font-size: 11px;
+    font-weight: 700;
+    color: #9CA3AF;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 3px;
+  }
+
+  .cp-info-value {
+    font-size: 14px;
+    font-weight: 600;
+    color: #053366;
+    text-decoration: none;
+    transition: color 0.15s;
+  }
+  .cp-info-value:hover { color: #0B7A8A; }
+  .cp-info-value-plain {
+    font-size: 14px;
+    font-weight: 500;
+    color: #374151;
+  }
+
+  /* Status badge */
+  .cp-status {
+    margin: 0 24px 16px;
+    padding: 12px 16px;
+    background: #F0FDF4;
+    border: 1px solid #BBF7D0;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .cp-status-dot {
+    width: 8px; height: 8px;
     border-radius: 50%;
     background: #22c55e;
     flex-shrink: 0;
     box-shadow: 0 0 0 3px rgba(34,197,94,0.2);
   }
-  .status-text {
-    font-size: 14px;
+  .cp-status-text {
+    font-size: 13px;
     font-weight: 700;
-    color: #4ade80;
+    color: #15803d;
   }
-  .status-subtext {
+  .cp-status-sub {
     font-size: 12px;
-    font-weight: 500;
-    color: rgba(255,255,255,0.55);
-    margin-top: 2px;
+    color: #6B7280;
+    margin-top: 1px;
   }
 
-  /* ══ RIGHT — formulaire ══ */
-  .form-box {
-    background: rgba(255,255,255,0.06);
-    backdrop-filter: blur(12px);
-    border: 1px solid rgba(255,255,255,0.12);
-    border-radius: 32px;
+  /* Link vers page contact */
+  .cp-more-link {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin: 0 24px 24px;
+    padding: 12px 18px;
+    background: #F7F9FC;
+    border: 1px solid #E5E7EB;
+    border-radius: 14px;
+    text-decoration: none;
+    transition: all 0.15s;
+  }
+  .cp-more-link:hover {
+    background: #E6F4F6;
+    border-color: rgba(11,122,138,0.25);
+  }
+  .cp-more-link span {
+    font-size: 13px;
+    font-weight: 700;
+    color: #374151;
+  }
+
+  /* ── Carte formulaire ── */
+  .cp-form-card {
+    flex: 1.8;
+    background: white;
+    border-radius: 24px;
+    border: 1px solid #E5E7EB;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.04);
     overflow: hidden;
   }
 
-  .form-header {
-    padding: 28px 32px 20px;
-    border-bottom: 1px solid rgba(255,255,255,0.08);
+  .cp-form-head {
+    padding: 24px 28px 16px;
+    border-bottom: 1px solid #F3F4F6;
   }
-  .form-badge {
+
+  .cp-form-badge {
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    padding: 5px 12px;
+    padding: 4px 12px;
     border-radius: 20px;
-    background: rgba(43,150,168,0.3);
-    border: 1px solid rgba(43,150,168,0.5);
-    margin-bottom: 20px;
+    background: #E6F4F6;
+    border: 1px solid rgba(11,122,138,0.2);
+    margin-bottom: 16px;
   }
-  .form-badge span {
+  .cp-form-badge span {
     font-size: 10px;
     font-weight: 800;
-    color: #A5F3FC;
+    color: #0B7A8A;
     letter-spacing: 1px;
   }
-  .form-title {
-    font-family: 'Playfair Display', serif;
-    font-size: 28px;
-    font-weight: 900;
-    color: #fff;
-    letter-spacing: -0.5px;
-    margin-bottom: 12px;
+
+  .cp-form-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 26px;
+    font-weight: 700;
+    color: #053366;
+    margin-bottom: 6px;
+    letter-spacing: -0.3px;
   }
-  .form-description {
-    font-size: 14px;
-    color: rgba(255,255,255,0.55);
+
+  .cp-form-desc {
+    font-size: 13px;
+    color: #6B7280;
     line-height: 1.6;
   }
 
-  .form-body {
-    padding: 28px 32px 32px;
-  }
+  .cp-form-body { padding: 24px 28px 28px; }
 
-  /* Dark mode styles for ContactForm */
-  .contact-form-dark input,
-  .contact-form-dark textarea,
-  .contact-form-dark select {
-    background: rgba(255,255,255,0.08) !important;
-    border: 1px solid rgba(255,255,255,0.15) !important;
-    border-radius: 16px !important;
-    padding: 12px 16px !important;
-    color: white !important;
+  /* Override ContactForm for light context */
+  .cp-form-light input,
+  .cp-form-light textarea,
+  .cp-form-light select {
+    background: #F7F9FC !important;
+    border: 1.5px solid #E5E7EB !important;
+    border-radius: 12px !important;
+    padding: 11px 14px !important;
+    color: #111827 !important;
     font-size: 14px !important;
     width: 100% !important;
-    font-family: inherit !important;
+    font-family: 'Plus Jakarta Sans', inherit !important;
+    transition: border-color 0.2s !important;
   }
-  .contact-form-dark input:focus,
-  .contact-form-dark textarea:focus,
-  .contact-form-dark select:focus {
+  .cp-form-light input:focus,
+  .cp-form-light textarea:focus {
     outline: none !important;
-    border-color: #2B96A8 !important;
-    background: rgba(255,255,255,0.12) !important;
+    border-color: #0B7A8A !important;
+    background: white !important;
   }
-  .contact-form-dark input::placeholder,
-  .contact-form-dark textarea::placeholder {
-    color: rgba(255,255,255,0.4) !important;
+  .cp-form-light input::placeholder,
+  .cp-form-light textarea::placeholder {
+    color: #9CA3AF !important;
   }
-  .contact-form-dark label {
-    color: rgba(255,255,255,0.7) !important;
+  .cp-form-light label {
+    color: #374151 !important;
     font-size: 13px !important;
     font-weight: 600 !important;
     margin-bottom: 6px !important;
     display: block !important;
   }
-  .contact-form-dark button[type="submit"],
-  .contact-form-dark button:not([type="button"]) {
-    background: #2B96A8 !important;
+  .cp-form-light button[type="submit"],
+  .cp-form-light button:not([type="button"]) {
+    background: #0B7A8A !important;
     border: none !important;
     border-radius: 40px !important;
-    padding: 14px 28px !important;
+    padding: 13px 28px !important;
     color: white !important;
     font-weight: 700 !important;
-    font-size: 13px !important;
-    letter-spacing: 0.5px !important;
+    font-size: 14px !important;
     cursor: pointer !important;
     width: 100% !important;
-    transition: all 0.15s !important;
+    transition: all 0.2s !important;
+    box-shadow: 0 4px 14px rgba(11,122,138,0.22) !important;
+    font-family: inherit !important;
   }
-  .contact-form-dark button[type="submit"]:hover,
-  .contact-form-dark button:not([type="button"]):hover {
-    background: #1e6f7e !important;
+  .cp-form-light button[type="submit"]:hover,
+  .cp-form-light button:not([type="button"]):hover {
+    background: #095f6c !important;
     transform: translateY(-1px) !important;
   }
 
-  /* ── Footer ── */
-  .contact-footer {
-    background: rgba(13,17,23,.92);
-    border-top: 1px solid rgba(255,255,255,.06);
-    padding: 24px 40px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 12px;
-  }
-
-  /* CTA Banner */
-  .cta-banner {
-    max-width: 1200px;
-    margin: -40px auto 0;
-    padding: 0 40px 60px;
-    position: relative;
-    z-index: 2;
-  }
-  .cta-banner-inner {
+  /* ── CTA Banner ── */
+  .cp-cta {
+    margin-top: 40px;
     display: flex;
     align-items: center;
     justify-content: space-between;
     flex-wrap: wrap;
     gap: 20px;
-    padding: 20px 28px;
-    background: rgba(43,150,168,0.12);
-    border-radius: 24px;
-    border: 1px solid rgba(43,150,168,0.25);
+    padding: 20px 24px;
+    background: white;
+    border-radius: 18px;
+    border: 1px solid #E5E7EB;
+    box-shadow: 0 1px 6px rgba(0,0,0,0.03);
   }
-  .cta-banner-content {
+
+  .cp-cta-left {
     display: flex;
     align-items: center;
-    gap: 16px;
+    gap: 14px;
   }
-  .cta-banner-icon {
-    width: 48px;
-    height: 48px;
-    border-radius: 16px;
-    background: rgba(43,150,168,0.25);
-    display: flex;
-    align-items: center;
-    justify-content: center;
+
+  .cp-cta-icon {
+    width: 44px; height: 44px;
+    border-radius: 14px;
+    background: #E6F4F6;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
   }
-  .cta-banner-text h4 {
-    font-size: 15px;
+
+  .cp-cta-title {
+    font-size: 14px;
     font-weight: 700;
-    color: white;
-    margin-bottom: 4px;
+    color: #053366;
+    margin-bottom: 3px;
   }
-  .cta-banner-text p {
+
+  .cp-cta-sub {
     font-size: 13px;
-    color: rgba(255,255,255,0.55);
+    color: #6B7280;
   }
-  .cta-banner-link {
+
+  .cp-cta-link {
     display: inline-flex;
     align-items: center;
-    gap: 10px;
-    padding: 12px 28px;
+    gap: 8px;
+    padding: 11px 24px;
     border-radius: 40px;
-    background: rgba(255,255,255,0.1);
-    border: 1px solid rgba(255,255,255,0.2);
-    color: white;
+    background: #E6F4F6;
+    border: 1px solid rgba(11,122,138,0.2);
+    color: #0B7A8A;
     font-size: 13px;
     font-weight: 700;
     text-decoration: none;
     white-space: nowrap;
-    transition: all 0.15s;
+    transition: all 0.2s;
   }
-  .cta-banner-link:hover {
-    background: rgba(255,255,255,0.15);
-    transform: translateY(-1px);
+  .cp-cta-link:hover {
+    background: #0B7A8A;
+    color: white;
   }
 
-  @media(max-width: 900px){
-    .contact-section {
-      grid-template-columns: 1fr !important;
-      gap: 48px;
-      padding: 60px 24px 80px;
-    }
-    .cta-banner { padding: 0 24px 60px; }
-    .cta-banner-inner { flex-direction: column; text-align: center; }
-    .cta-banner-content { flex-direction: column; text-align: center; }
+  /* ── Responsive ── */
+  @media (max-width: 900px) {
+    .cp-section { padding: 60px 24px 80px; }
+    .cp-grid { flex-direction: column; }
+    .cp-cta { flex-direction: column; align-items: flex-start; }
   }
-  @media(max-width: 480px){
-    .form-header { padding: 20px; }
-    .form-body { padding: 20px; }
-    .info-item:hover { padding-left: 0; margin-left: 0; }
+
+  @media (max-width: 480px) {
+    .cp-form-head { padding: 20px; }
+    .cp-form-body { padding: 20px; }
+    .cp-info-head { padding: 20px 20px 16px; }
+    .cp-info-row { padding: 14px 20px; }
+    .cp-more-link { margin: 0 20px 20px; }
+    .cp-status { margin: 0 20px 16px; }
   }
 `;
 
@@ -376,7 +445,6 @@ export default async function ContactPage() {
   const hours      = c.hours       || "Lun–Ven : 9h–18h";
   const ctaLabel   = c.cta_label   || "Envoyer le message";
   const successMsg = c.success_msg || "Message envoyé ! Nous vous répondrons sous 24h.";
-  const bgImage    = c.bg_image    || "";
 
   const jsonLd = {
     "@context": "https://schema.org",
@@ -386,10 +454,10 @@ export default async function ContactPage() {
   };
 
   const INFO_ITEMS = [
-    { icon: <Mail  size={18} strokeWidth={1.8}/>, label:"EMAIL",    value: email,   href: `mailto:${email}` },
-    { icon: <Phone size={18} strokeWidth={1.8}/>, label:"TÉLÉPHONE",value: phone,   href: `tel:${phone.replace(/\s/g,"")}` },
-    { icon: <MapPin size={18} strokeWidth={1.8}/>,label:"ADRESSE",  value: address, href: undefined },
-    { icon: <Clock size={18} strokeWidth={1.8}/>, label:"HORAIRES", value: hours,   href: undefined },
+    { icon: <Mail   size={18} strokeWidth={1.8} />, label: "Email",     value: email,   href: `mailto:${email}` },
+    { icon: <Phone  size={18} strokeWidth={1.8} />, label: "Téléphone", value: phone,   href: `tel:${phone.replace(/\s/g, "")}` },
+    { icon: <MapPin size={18} strokeWidth={1.8} />, label: "Adresse",   value: address, href: undefined },
+    { icon: <Clock  size={18} strokeWidth={1.8} />, label: "Horaires",  value: hours,   href: undefined },
   ];
 
   return (
@@ -398,88 +466,111 @@ export default async function ContactPage() {
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       <TouristeNav />
 
-      <div className="contact-page">
-        {/* Blurred background image */}
-        {bgImage && (
-          <div
-            className="contact-bg-blur"
-            style={{ backgroundImage: `url(${bgImage})` }}
-          />
-        )}
+      <div className="contact-page-light">
+        <div style={{ paddingTop: 64 }} />
 
-        <div className="contact-content">
-          <div style={{ paddingTop: 64 }} />
+        <main className="cp-section">
 
-          <main className="contact-section">
+          {/* ── Header ── */}
+          <div className="cp-header">
+            <div className="cp-eyebrow">
+              <MessageCircle size={11} color="#0B7A8A" />
+              <span>Contactez-nous</span>
+            </div>
+            <h1 className="cp-title">Prenons contact</h1>
+            <p className="cp-subtitle">
+              Une question ? Un projet sur mesure ? Écrivez-nous, nous vous répondons sous 24h.
+            </p>
+          </div>
 
-            {/* ── Gauche : coordonnées ── */}
-            <div>
-              <div className="info-badge">
-                <MessageCircle size={11} color="#A5F3FC" />
-                <span>NOS COORDONNÉES</span>
+          {/* ── Grid ── */}
+          <div className="cp-grid">
+
+            {/* ── Gauche : infos ── */}
+            <div className="cp-info-card">
+              <div className="cp-info-head">
+                <div className="cp-info-badge">
+                  <MessageCircle size={11} color="#0B7A8A" />
+                  <span>Coordonnées</span>
+                </div>
+                <h2 className="cp-info-title">Comment nous joindre</h2>
+                <p className="cp-info-desc">
+                  Que ce soit par téléphone, email ou en personne, notre équipe est là pour vous guider.
+                </p>
               </div>
-              <h1 className="info-title">Nous sommes là pour vous</h1>
-              <p className="info-description">
-                Que ce soit par téléphone, email ou en personne, notre équipe est là pour vous guider et répondre à toutes vos questions.
-              </p>
 
-              {INFO_ITEMS.map((item, i) => (
-                <div key={i} className="info-item">
-                  <div className="info-icon">{item.icon}</div>
-                  <div>
-                    <p className="info-label">{item.label}</p>
-                    {item.href
-                      ? <a href={item.href} className="info-value">{item.value}</a>
-                      : <p className="info-value" style={{ cursor:"default" }}>{item.value}</p>}
+              <div className="cp-info-items">
+                {INFO_ITEMS.map((item, i) => (
+                  <div key={i} className="cp-info-row">
+                    <div className="cp-info-icon">{item.icon}</div>
+                    <div>
+                      <p className="cp-info-label">{item.label}</p>
+                      {item.href
+                        ? <a href={item.href} className="cp-info-value">{item.value}</a>
+                        : <span className="cp-info-value-plain">{item.value}</span>
+                      }
+                    </div>
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>
 
-             </div>
-            {/* ── Droite : formulaire ── */}
-            <div className="form-box">
-              <div className="form-header">
-                <div className="form-badge">
-                  <Send size={11} color="#A5F3FC" />
-                  <span>FORMULAIRE RAPIDE</span>
+              {/* Status */}
+              <div className="cp-status">
+                <div className="cp-status-dot" />
+                <div>
+                  <p className="cp-status-text">Équipe disponible</p>
+                  <p className="cp-status-sub">Réponse garantie sous 24h</p>
                 </div>
-                <h2 className="form-title">Envoyez-nous un message</h2>
-                <p className="form-description">
+              </div>
+
+              <Link href="/excursions" className="cp-more-link">
+                <span>Voir nos excursions</span>
+                <ArrowRight size={14} color="#6B7280" />
+              </Link>
+            </div>
+
+            {/* ── Droite : formulaire ── */}
+            <div className="cp-form-card">
+              <div className="cp-form-head">
+                <div className="cp-form-badge">
+                  <Send size={11} color="#0B7A8A" />
+                  <span>Formulaire rapide</span>
+                </div>
+                <h2 className="cp-form-title">Envoyez-nous un message</h2>
+                <p className="cp-form-desc">
                   Remplissez le formulaire ci-dessous, nous vous recontacterons dans les plus brefs délais.
                 </p>
               </div>
-              <div className="form-body">
-                <div className="contact-form-dark">
+              <div className="cp-form-body">
+                <div className="cp-form-light">
                   <ContactForm ctaLabel={ctaLabel} successMsg={successMsg} />
                 </div>
               </div>
             </div>
 
-          </main>
-
-          {/* CTA Banner */}
-          <div className="cta-banner">
-            <div className="cta-banner-inner">
-              <div className="cta-banner-content">
-                <div className="cta-banner-icon">
-                  <Phone size={22} color="#A5F3FC" />
-                </div>
-                <div className="cta-banner-text">
-                  <h4>Besoin d&apos;une réponse immédiate ?</h4>
-                  <p>Appelez-nous directement au <strong style={{ color: "#A5F3FC" }}>{phone}</strong></p>
-                </div>
-              </div>
-              <a
-                href={`tel:${phone.replace(/\s/g, "")}`}
-                className="cta-banner-link"
-              >
-                Appeler maintenant <ArrowRight size={14} />
-              </a>
-            </div>
           </div>
 
-          <HomeFooter user={null} />
-        </div>
+          {/* ── CTA Banner ── */}
+          <div className="cp-cta">
+            <div className="cp-cta-left">
+              <div className="cp-cta-icon">
+                <Phone size={20} color="#0B7A8A" />
+              </div>
+              <div>
+                <p className="cp-cta-title">Besoin d&apos;une réponse immédiate ?</p>
+                <p className="cp-cta-sub">
+                  Appelez-nous directement au <strong style={{ color: "#0B7A8A" }}>{phone}</strong>
+                </p>
+              </div>
+            </div>
+            <a href={`tel:${phone.replace(/\s/g, "")}`} className="cp-cta-link">
+              Appeler maintenant <ArrowRight size={13} />
+            </a>
+          </div>
+
+        </main>
+
+        <HomeFooter user={null} />
       </div>
     </>
   );

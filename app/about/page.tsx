@@ -1,5 +1,5 @@
 import { createServerSupabaseClient } from "@/lib/supabaseServer";
-import { Heart, ShieldCheck, Globe, Star, ArrowRight, MapPin, Users } from "lucide-react";
+import { Heart, ShieldCheck, Globe, Star, ArrowRight, MapPin, Users, MessageCircle, Phone } from "lucide-react";
 import Link from "next/link";
 import type { Metadata } from "next";
 import TouristeNav from "@/app/components/touriste/TouristeNav";
@@ -41,415 +41,424 @@ const ICON_MAP: Record<string, React.ReactNode> = {
   users:  <Users  size={22} strokeWidth={1.8} />,
 };
 
-/* ══ CSS — tokens identiques à BlogPage + HomeSlider ══ */
 const CSS = `
-  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,800;0,900;1,700&family=DM+Sans:wght@300;400;500;600;700;800&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
 
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
   body {
-    font-family: 'DM Sans', system-ui, sans-serif;
-    background: #F7F8FA;
+    font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+    background: linear-gradient(160deg, #EEF6F8 0%, #F7F9FC 50%, #EEF3FB 100%);
     color: #374151;
     -webkit-font-smoothing: antialiased;
   }
 
-  @keyframes slideUp   { from { opacity:0; transform:translateY(28px); filter:blur(5px); } to { opacity:1; transform:translateY(0); filter:blur(0); } }
-  @keyframes fadeIn    { from { opacity:0; } to { opacity:1; } }
-  @keyframes float     { 0%,100%{transform:translateX(-50%) translateY(0)} 50%{transform:translateX(-50%) translateY(10px)} }
-
-  /* ── RICH content dark ── */
-  .rich-dark p         { margin-bottom:14px; line-height:1.85; font-size:15px; color:rgba(255,255,255,0.7); }
-  .rich-dark h2        { font-family:'Playfair Display',serif; font-size:20px; font-weight:900; color:#fff; margin-bottom:10px; }
-  .rich-dark ul        { padding-left:20px; margin-bottom:14px; }
-  .rich-dark ul li     { margin-bottom:6px; line-height:1.75; color:rgba(255,255,255,0.7); font-size:14px; }
-  .rich-dark blockquote{ border-left:3px solid #02AFCF; padding:12px 20px; background:rgba(2,175,207,0.12); border-radius:0 12px 12px 0; margin:16px 0; color:rgba(255,255,255,0.7); font-style:italic; }
-  .rich-dark strong    { font-weight:700; color:#fff; }
-
-  /* ── RICH content light ── */
-  .rich-light p        { margin-bottom:14px; line-height:1.85; font-size:15px; color:#6B7280; }
-  .rich-light ul       { padding-left:20px; margin-bottom:14px; }
-  .rich-light ul li    { margin-bottom:6px; line-height:1.75; color:#6B7280; font-size:14px; }
-  .rich-light strong   { font-weight:700; color:#053366; }
-  .rich-light a        { color:#02AFCF; }
-
-  /* ── section label (identique BlogPage) ── */
-  .section-label { display:flex; align-items:center; gap:10px; margin-bottom:12px; }
-  .label-bar     { width:28px; height:2px; border-radius:2px; }
-  .label-bar-cyan{ background:#02AFCF; }
-  .label-bar-navy{ background:#053366; }
-  .label-text    { font-size:10px; font-weight:800; letter-spacing:3px; text-transform:uppercase; }
-  .label-text-cyan{ color:#02AFCF; }
-  .label-text-navy{ color:#053366; }
-
-  /* ── pill badge (identique aux filter pills de BlogPage) ── */
-  .pill-badge {
-    display:inline-flex; align-items:center; gap:7px;
-    padding:5px 16px; border-radius:100px;
-    font-size:10px; font-weight:800; letter-spacing:1.8px; text-transform:uppercase;
-    margin-bottom:20px;
+  /* ── Page wrapper ── */
+  .about-page {
+    min-height: 100vh;
+    background: linear-gradient(160deg, #EEF6F8 0%, #F7F9FC 50%, #EEF3FB 100%);
+    font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+    position: relative;
+    overflow: hidden;
   }
-  .pill-badge-cyan {
-    background:rgba(2,175,207,0.14); border:1px solid rgba(2,175,207,0.4); color:#02AFCF;
+  .about-page::before {
+    content: '';
+    position: absolute; top: -120px; right: -120px;
+    width: 500px; height: 500px;
+    background: radial-gradient(circle, rgba(11,122,138,0.07) 0%, transparent 70%);
+    border-radius: 50%; pointer-events: none;
   }
-  .pill-badge-light {
-    background:rgba(255,255,255,0.12); border:1px solid rgba(255,255,255,0.25); color:rgba(255,255,255,0.85);
+  .about-page::after {
+    content: '';
+    position: absolute; bottom: -80px; left: -80px;
+    width: 360px; height: 360px;
+    background: radial-gradient(circle, rgba(5,51,102,0.05) 0%, transparent 70%);
+    border-radius: 50%; pointer-events: none;
   }
-  .pill-badge-navy {
-    background:rgba(5,51,102,0.08); border:1px solid rgba(5,51,102,0.18); color:#053366;
+
+  /* ── Eyebrow badge ── */
+  .ab-badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 5px 14px; border-radius: 20px;
+    background: #E6F4F6; border: 1px solid rgba(11,122,138,0.2);
+    margin-bottom: 16px;
   }
-  .pill-dot { width:6px; height:6px; border-radius:50%; background:currentColor; }
+  .ab-badge span {
+    font-size: 10px; font-weight: 800; color: #0B7A8A;
+    letter-spacing: 1.2px; text-transform: uppercase;
+  }
+
+  /* ── Rich content ── */
+  .rich-light p        { margin-bottom: 14px; line-height: 1.85; font-size: 15px; color: #6B7280; }
+  .rich-light ul       { padding-left: 20px; margin-bottom: 14px; }
+  .rich-light ul li    { margin-bottom: 6px; line-height: 1.75; color: #6B7280; font-size: 14px; }
+  .rich-light strong   { font-weight: 700; color: #053366; }
+  .rich-light a        { color: #0B7A8A; }
 
   /* ══════════════════════════════════════
-     HERO — image plein écran (= BlogPage)
+     HERO — image avec overlay light
   ══════════════════════════════════════ */
-  .hero-wrap {
-    position:relative; height:580px; overflow:hidden; margin-top:60px;
+  .ab-hero {
+    position: relative; height: 520px; overflow: hidden; margin-top: 64px;
+    border-bottom: 1px solid #E5E7EB;
   }
-  .hero-img {
-    position:absolute; ; width:100%; height:100%;
-    object-fit:cover; display:block; filter:brightness(0.52);
+  .ab-hero-img {
+    position: absolute; inset: 0; width: 100%; height: 100%;
+    object-fit: cover; display: block; filter: brightness(0.45);
   }
-  .hero-overlay-l {
-    position:absolute; inset:0;
-    background:linear-gradient(to right, rgba(0,0,0,.82) 0%, rgba(0,0,0,.42) 52%, rgba(0,0,0,.12) 100%);
+  .ab-hero-fallback {
+    position: absolute; inset: 0;
+    background: linear-gradient(135deg, #053366 0%, #0B7A8A 100%);
   }
-  .hero-overlay-b {
-    position:absolute; inset:0;
-    background:linear-gradient(to top, rgba(5,51,102,.75) 0%, transparent 52%);
+  .ab-hero-overlay {
+    position: absolute; inset: 0;
+    background: linear-gradient(to right, rgba(5,51,102,0.82) 0%, rgba(5,51,102,0.45) 55%, rgba(11,122,138,0.15) 100%);
   }
-  .hero-grid-overlay {
-    position:absolute; inset:0;
-    background-image:linear-gradient(rgba(255,255,255,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.025) 1px,transparent 1px);
-    background-size:48px 48px;
-    pointer-events:none;
+  .ab-hero-overlay-b {
+    position: absolute; inset: 0;
+    background: linear-gradient(to top, rgba(5,51,102,0.6) 0%, transparent 50%);
   }
-  .hero-content {
-    position:absolute; bottom:0; left:10%; 
-    padding:0 40px 44px;
-    animation:slideUp .7s cubic-bezier(.34,1.2,.64,1) .1s both;
+  .ab-hero-content {
+    position: absolute; bottom: 0; left: 0;
+    padding: 80px 40px;
+    max-width: 760px;
   }
-  .hero-title {
-    font-family:'Playfair Display',serif;
-    font-size:clamp(32px,4.5vw,60px);
-    font-weight:900; color:#fff;
-    line-height:1.05; letter-spacing:-2px;
-    margin-bottom:18px;
-    text-shadow:0 4px 40px rgba(0,0,0,.3);
-    max-width:680px;
+  .ab-hero-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: clamp(34px, 4.5vw, 58px);
+    font-weight: 700; color: #fff;
+    line-height: 1.07; letter-spacing: -1.5px;
+    margin-bottom: 16px;
   }
-  .hero-title em { font-style:normal; color:#02AFCF; }
-  .hero-subtitle {
-    font-size:16px; color:rgba(255,255,255,.65);
-    line-height:1.75; max-width:540px; margin-bottom:28px;
+  .ab-hero-subtitle {
+    font-size: 16px; color: rgba(255,255,255,0.68);
+    line-height: 1.75; max-width: 520px; margin-bottom: 28px;
   }
-  .hero-cta {
-    display:inline-flex; align-items:center; gap:10px;
-    padding:14px 30px; background:#02AFCF; color:#fff;
-    border-radius:12px; font-size:14px; font-weight:700;
-    text-decoration:none; border:2px solid #02AFCF;
-    transition:all .35s cubic-bezier(.34,1.2,.64,1);
-    box-shadow:0 8px 28px rgba(2,175,207,.35);
+  .ab-hero-cta {
+    display: inline-flex; align-items: center; gap: 10px;
+    padding: 13px 28px; background: #0B7A8A; color: #fff;
+    border-radius: 40px; font-size: 14px; font-weight: 700;
+    text-decoration: none; transition: all 0.2s;
+    box-shadow: 0 6px 20px rgba(11,122,138,0.35);
   }
-  .hero-cta:hover { background:transparent; color:#02AFCF; transform:translateY(-3px); }
+  .ab-hero-cta:hover { background: #095f6c; transform: translateY(-2px); }
 
-  /* badge flottant sur image hero */
-  .hero-float-badge {
-    position:absolute; top:28px; right:36px; z-index:5;
-    display:inline-flex; align-items:center; gap:8px;
-    padding:10px 18px; border-radius:100px;
-    background:rgba(0,0,0,.45); backdrop-filter:blur(12px);
-    border:1px solid rgba(255,255,255,.18);
-    color:rgba(255,255,255,.85); font-size:12px; font-weight:700;
+  /* Float badge hero */
+  .ab-hero-float {
+    position: absolute; top: 28px; right: 40px;
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 10px 18px; border-radius: 100px;
+    background: rgba(255,255,255,0.12); backdrop-filter: blur(12px);
+    border: 1px solid rgba(255,255,255,0.2);
+    color: rgba(255,255,255,0.9); font-size: 12px; font-weight: 700;
   }
-  .hero-float-badge-dot { width:7px; height:7px; border-radius:50%; background:#02AFCF; }
-
-  /* scroll hint */
-  .scroll-hint {
-    position:absolute; bottom:20px; left:50%;
-    animation:float 2.4s ease-in-out infinite;
-    opacity:.6; cursor:pointer; transition:opacity .3s;
-  }
-  .scroll-hint:hover { opacity:1; }
+  .ab-hero-float-dot { width: 7px; height: 7px; border-radius: 50%; background: #A5F3FC; }
 
   /* ══════════════════════════════════════
-     MISSION — blanc, 2 colonnes
+     SECTION WRAPPER COMMUN
   ══════════════════════════════════════ */
-  .mission-wrap {
-    background:#fff; padding:96px 40px 88px;
-    border-bottom:1px solid #EBEBEB;
+  .ab-section {
+    padding: 80px 40px;
+    position: relative; z-index: 1;
   }
-  .mission-inner {
-    max-width:1200px; margin:0 auto;
-    display:grid; grid-template-columns:1fr 1fr; gap:80px; align-items:center;
+  .ab-section-inner {
+    max-width: 1200px; margin: 0 auto;
   }
-  .mission-title {
-    font-family:'Playfair Display',serif;
-    font-size:clamp(26px,3vw,42px);
-    font-weight:900; color:#053366;
-    line-height:1.1; letter-spacing:-1px; margin-bottom:16px;
+
+  /* White sections */
+  .ab-section-white { background: white; border-bottom: 1px solid #E5E7EB; }
+  /* Gray sections */
+  .ab-section-gray  { background: #F7F9FC; border-bottom: 1px solid #E5E7EB; }
+
+  /* Section header */
+  .ab-section-header { margin-bottom: 48px; }
+  .ab-section-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: clamp(28px, 3vw, 44px);
+    font-weight: 700; color: #053366;
+    letter-spacing: -1px; line-height: 1.1; margin-bottom: 12px;
   }
-  .mission-sub {
-    font-size:15px; color:#6B7280; line-height:1.85; margin-bottom:20px;
-  }
-  /* Panneau quote (= même style que PathsSection) */
-  .mission-panel {
-    background:#053366; border-radius:20px; padding:44px 40px;
-    position:relative; overflow:hidden;
-  }
-  .mission-panel::before {
-    content:''; position:absolute; top:-40px; right:-40px;
-    width:180px; height:180px; border-radius:50%;
-    background:rgba(2,175,207,.12); pointer-events:none;
-  }
-  .mission-panel::after {
-    content:''; position:absolute; bottom:-60px; left:-30px;
-    width:200px; height:200px; border-radius:50%;
-    background:rgba(37,159,252,.07); pointer-events:none;
-  }
-  .mission-panel-icon {
-    width:52px; height:52px; border-radius:50%; background:#02AFCF;
-    display:flex; align-items:center; justify-content:center;
-    margin-bottom:24px; position:relative; z-index:1;
-  }
-  .mission-panel-quote {
-    font-family:'Playfair Display',serif;
-    font-size:17px; font-weight:700; font-style:italic;
-    color:rgba(255,255,255,.82); line-height:1.75;
-    position:relative; z-index:1; margin-bottom:28px;
-  }
-  .mission-panel-bar  { width:36px; height:2px; background:#02AFCF; border-radius:2px; margin-bottom:14px; position:relative; z-index:1; }
-  .mission-panel-author {
-    font-size:11px; font-weight:800; color:#02AFCF;
-    letter-spacing:2px; text-transform:uppercase;
-    position:relative; z-index:1;
+  .ab-section-sub {
+    font-size: 15px; color: #6B7280; line-height: 1.75; max-width: 500px;
   }
 
   /* ══════════════════════════════════════
-     STATS — #F7F8FA, cards blanches
+     MISSION — 2 colonnes
   ══════════════════════════════════════ */
-  .stats-wrap {
-    background:#F7F8FA; padding:80px 40px;
-    border-bottom:1px solid #EBEBEB;
+  .ab-mission-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 32px; align-items: stretch;
   }
-  .stats-heading-row {
-    max-width:1200px; margin:0 auto 48px;
-    display:flex; align-items:flex-end; justify-content:space-between; gap:20px; flex-wrap:wrap;
+
+  /* Carte info mission */
+  .ab-mission-card {
+    background: white; border-radius: 24px;
+    border: 1px solid #E5E7EB;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.04);
+    padding: 36px;
   }
-  .stats-row {
-    max-width:1200px; margin:0 auto;
-    display:grid; gap:18px;
+
+  /* Panneau teal mission */
+  .ab-mission-panel {
+    background: #053366; border-radius: 24px;
+    border: 1px solid #053366;
+    padding: 40px 36px; position: relative; overflow: hidden;
+    display: flex; flex-direction: column; justify-content: space-between;
   }
-  .stat-card {
-    background:#fff; border-radius:20px;
-    border:1px solid #EBEBEB; border-top:3px solid #02AFCF;
-    padding:36px 24px; text-align:center;
-    transition:transform .25s cubic-bezier(.34,1.2,.64,1), box-shadow .25s ease, border-top-color .25s;
+  .ab-mission-panel::before {
+    content: ''; position: absolute; top: -40px; right: -40px;
+    width: 180px; height: 180px; border-radius: 50%;
+    background: rgba(11,122,138,0.2); pointer-events: none;
   }
-  .stat-card:hover {
-    transform:translateY(-5px);
-    box-shadow:0 20px 48px rgba(5,51,102,.1);
-    border-top-color:#053366;
+  .ab-mission-panel::after {
+    content: ''; position: absolute; bottom: -60px; left: -30px;
+    width: 200px; height: 200px; border-radius: 50%;
+    background: rgba(165,243,252,0.06); pointer-events: none;
   }
-  .stat-num {
-    font-family:'Playfair Display',serif;
-    font-size:52px; font-weight:900; color:#053366;
-    letter-spacing:-2px; line-height:1; margin-bottom:8px;
+  .ab-mission-panel-icon {
+    width: 48px; height: 48px; border-radius: 14px;
+    background: rgba(11,122,138,0.3); border: 1px solid rgba(11,122,138,0.4);
+    display: flex; align-items: center; justify-content: center;
+    color: #A5F3FC; margin-bottom: 24px; position: relative; z-index: 1;
   }
-  .stat-num span { color:#02AFCF; }
-  .stat-label {
-    font-size:11px; font-weight:800; color:#9CA3AF;
-    letter-spacing:2px; text-transform:uppercase;
+  .ab-mission-panel-quote {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 19px; font-weight: 600; font-style: italic;
+    color: rgba(255,255,255,0.85); line-height: 1.75;
+    position: relative; z-index: 1; margin-bottom: 28px;
+  }
+  .ab-mission-panel-bar {
+    width: 32px; height: 2px; background: #0B7A8A;
+    border-radius: 2px; margin-bottom: 12px; position: relative; z-index: 1;
+  }
+  .ab-mission-panel-author {
+    font-size: 11px; font-weight: 800; color: #A5F3FC;
+    letter-spacing: 2px; text-transform: uppercase;
+    position: relative; z-index: 1;
   }
 
   /* ══════════════════════════════════════
-     VALEURS — blanc, grid cards
-     (= même pattern que PopularExcursions)
+     STATS — cards blanches
   ══════════════════════════════════════ */
-  .values-wrap {
-    background:#fff; padding:96px 40px 88px;
-    border-bottom:1px solid #EBEBEB;
+  .ab-stats-grid {
+    display: grid; gap: 18px;
   }
-  .values-header { max-width:1200px; margin:0 auto 52px; }
-  .values-title {
-    font-family:'Playfair Display',serif;
-    font-size:clamp(28px,3vw,44px);
-    font-weight:900; color:#053366;
-    letter-spacing:-1.5px; line-height:1.1; margin-bottom:14px;
+  .ab-stat-card {
+    background: white; border-radius: 20px;
+    border: 1px solid #E5E7EB;
+    border-top: 3px solid #0B7A8A;
+    padding: 36px 24px; text-align: center;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    transition: transform 0.25s, box-shadow 0.25s, border-top-color 0.25s;
   }
-  .values-sub { font-size:15px; color:#6B7280; line-height:1.75; max-width:520px; }
-
-  .values-grid {
-    max-width:1200px; margin:0 auto;
-    display:grid; grid-template-columns:repeat(3,1fr); gap:20px;
+  .ab-stat-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 20px 48px rgba(5,51,102,0.1);
+    border-top-color: #053366;
   }
-  /* card standard */
-  .value-card {
-    background:#fff; border-radius:20px;
-    border:1px solid #EBEBEB; padding:32px 28px;
-    display:flex; flex-direction:column; gap:0;
-    transition:transform .3s cubic-bezier(.34,1.2,.64,1), box-shadow .3s ease, border-color .3s;
-    position:relative; overflow:hidden;
+  .ab-stat-num {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 52px; font-weight: 700; color: #053366;
+    letter-spacing: -2px; line-height: 1; margin-bottom: 8px;
   }
-  .value-card::after {
-    content:''; position:absolute; bottom:0; left:0; right:0; height:2px;
-    background:#02AFCF; transform:scaleX(0); transition:transform .25s ease; transform-origin:left;
+  .ab-stat-num span { color: #0B7A8A; }
+  .ab-stat-label {
+    font-size: 11px; font-weight: 800; color: #9CA3AF;
+    letter-spacing: 2px; text-transform: uppercase;
   }
-  .value-card:hover { transform:translateY(-5px); box-shadow:0 20px 48px rgba(5,51,102,.1); border-color:rgba(2,175,207,.35); }
-  .value-card:hover::after { transform:scaleX(1); }
-
-  /* card featured (= PathsSection dark card) */
-  .value-card.featured {
-    background:#053366; border-color:#053366;
-  }
-  .value-card.featured::after { background:#02AFCF; transform:scaleX(1); }
-  .value-card.featured .v-icon  { background:rgba(2,175,207,.2); border-color:rgba(2,175,207,.3); color:#02AFCF; }
-  .value-card.featured .v-title { color:#fff; }
-  .value-card.featured .v-text  { color:rgba(255,255,255,.62); }
-  .value-card.featured .v-link  { color:#02AFCF; }
-
-  .v-icon {
-    width:52px; height:52px; border-radius:14px;
-    background:#EEF2FF; border:1px solid rgba(5,51,102,.1);
-    display:flex; align-items:center; justify-content:center;
-    color:#053366; margin-bottom:20px;
-    transition:background .2s, color .2s;
-  }
-  .value-card:not(.featured):hover .v-icon {
-    background:#02AFCF; border-color:#02AFCF; color:#fff;
-  }
-  .v-title {
-    font-family:'Playfair Display',serif;
-    font-size:17px; font-weight:800; color:#053366;
-    margin-bottom:10px; letter-spacing:-.3px;
-  }
-  .v-text  { font-size:13.5px; color:#6B7280; line-height:1.72; }
-  .v-link  {
-    margin-top:20px; display:inline-flex; align-items:center; gap:5px;
-    font-size:12px; font-weight:700; color:#02AFCF;
-    text-decoration:none; text-transform:uppercase; letter-spacing:.8px;
-  }
-  .v-link svg { transition:transform .15s; }
-  .v-link:hover svg { transform:translateX(3px); }
 
   /* ══════════════════════════════════════
-     TEAM — #F7F8FA, cards blanches
+     VALEURS — cards blanches
   ══════════════════════════════════════ */
-  .team-wrap {
-    background:#F7F8FA; padding:96px 40px 88px;
-    border-bottom:1px solid #EBEBEB;
+  .ab-values-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px;
   }
-  .team-header { max-width:1200px; margin:0 auto 48px; }
-  .team-title {
-    font-family:'Playfair Display',serif;
-    font-size:clamp(26px,3vw,42px);
-    font-weight:900; color:#053366;
-    letter-spacing:-1.5px; line-height:1.1; margin-bottom:10px;
+  .ab-value-card {
+    background: white; border-radius: 20px;
+    border: 1px solid #E5E7EB;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    padding: 32px 28px;
+    display: flex; flex-direction: column;
+    position: relative; overflow: hidden;
+    transition: transform 0.3s, box-shadow 0.3s, border-color 0.3s;
   }
-  .team-sub { font-size:15px; color:#6B7280; line-height:1.75; max-width:460px; }
+  .ab-value-card::after {
+    content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 2px;
+    background: #0B7A8A; transform: scaleX(0);
+    transition: transform 0.25s ease; transform-origin: left;
+  }
+  .ab-value-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 20px 48px rgba(5,51,102,0.1);
+    border-color: rgba(11,122,138,0.35);
+  }
+  .ab-value-card:hover::after { transform: scaleX(1); }
 
-  .team-grid {
-    max-width:1200px; margin:0 auto;
-    display:grid; grid-template-columns:repeat(3,1fr); gap:20px;
+  /* featured card (navy) */
+  .ab-value-card.featured {
+    background: #053366; border-color: #053366;
   }
-  .team-card {
-    background:#fff; border-radius:20px;
-    border:1px solid #EBEBEB; overflow:hidden;
-    transition:transform .3s cubic-bezier(.34,1.2,.64,1), box-shadow .3s, border-color .3s;
+  .ab-value-card.featured::after { background: #0B7A8A; transform: scaleX(1); }
+  .ab-value-card.featured .ab-v-icon  { background: rgba(11,122,138,0.25); border-color: rgba(11,122,138,0.35); color: #A5F3FC; }
+  .ab-value-card.featured .ab-v-title { color: #fff; }
+  .ab-value-card.featured .ab-v-text  { color: rgba(255,255,255,0.6); }
+  .ab-value-card.featured .ab-v-link  { color: #A5F3FC; }
+
+  .ab-v-icon {
+    width: 48px; height: 48px; border-radius: 14px;
+    background: #E6F4F6; border: 1px solid rgba(11,122,138,0.15);
+    display: flex; align-items: center; justify-content: center;
+    color: #0B7A8A; margin-bottom: 20px;
+    transition: background 0.2s, color 0.2s;
   }
-  .team-card:hover {
-    transform:translateY(-5px);
-    box-shadow:0 20px 48px rgba(5,51,102,.1);
-    border-color:rgba(2,175,207,.35);
+  .ab-value-card:not(.featured):hover .ab-v-icon {
+    background: #0B7A8A; border-color: #0B7A8A; color: #fff;
   }
-  .team-card:hover .team-photo { transform:scale(1.05); }
-  .team-photo-wrap { height:240px; overflow:hidden; position:relative; background:#EEF2FF; }
-  .team-photo { width:100%; height:100%; object-fit:cover; display:block; transition:transform .45s ease; }
-  .team-photo-overlay {
-    position:absolute; inset:0;
-    background:linear-gradient(to top, rgba(5,19,51,.28), transparent 55%);
+  .ab-v-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 19px; font-weight: 700; color: #053366;
+    margin-bottom: 10px; letter-spacing: -0.3px;
   }
-  .team-avatar {
-    width:100%; height:240px; background:linear-gradient(145deg, #DCE5FF, #c9d8ff);
-    display:flex; align-items:center; justify-content:center;
+  .ab-v-text  { font-size: 13.5px; color: #6B7280; line-height: 1.72; }
+  .ab-v-link  {
+    margin-top: 20px; display: inline-flex; align-items: center; gap: 5px;
+    font-size: 12px; font-weight: 700; color: #0B7A8A;
+    text-decoration: none; text-transform: uppercase; letter-spacing: 0.8px;
   }
-  .team-avatar-letter {
-    font-family:'Playfair Display',serif;
-    font-size:72px; font-weight:900; color:#053366; opacity:.18;
-  }
-  .team-info { padding:20px 22px 24px; }
-  .team-name {
-    font-family:'Playfair Display',serif;
-    font-size:17px; font-weight:800; color:#053366; margin-bottom:4px;
-  }
-  .team-role {
-    font-size:11px; font-weight:800; color:#02AFCF;
-    text-transform:uppercase; letter-spacing:1.5px; margin-bottom:12px;
-  }
-  .team-bio { font-size:13px; color:#6B7280; line-height:1.68; }
+  .ab-v-link svg { transition: transform 0.15s; }
+  .ab-v-link:hover svg { transform: translateX(3px); }
 
   /* ══════════════════════════════════════
-     CTA — dark navy (= PathsSection)
+     ÉQUIPE — cards blanches
   ══════════════════════════════════════ */
-  .cta-wrap {
-    position:relative; overflow:hidden;
-    background:#053366; padding:96px 40px;
-    text-align:center;
+  .ab-team-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px;
   }
-  .cta-wrap::before {
-    content:''; position:absolute; inset:0;
-    background:
-      radial-gradient(ellipse 55% 80% at 80% 50%, rgba(2,175,207,.12) 0%, transparent 65%),
-      radial-gradient(ellipse 40% 60% at 10% 60%, rgba(37,159,252,.07) 0%, transparent 60%);
-    pointer-events:none;
+  .ab-team-card {
+    background: white; border-radius: 20px;
+    border: 1px solid #E5E7EB;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    overflow: hidden;
+    transition: transform 0.3s, box-shadow 0.3s, border-color 0.3s;
   }
-  .cta-grid-overlay {
-    position:absolute; inset:0;
-    background-image:linear-gradient(rgba(255,255,255,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.025) 1px,transparent 1px);
-    background-size:48px 48px; pointer-events:none;
+  .ab-team-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 20px 48px rgba(5,51,102,0.1);
+    border-color: rgba(11,122,138,0.35);
   }
-  .cta-inner { max-width:600px; margin:0 auto; position:relative; z-index:1; }
-  .cta-title {
-    font-family:'Playfair Display',serif;
-    font-size:clamp(28px,4vw,52px);
-    font-weight:900; color:#fff;
-    letter-spacing:-2px; line-height:1.05; margin-bottom:16px;
+  .ab-team-card:hover .ab-team-photo { transform: scale(1.05); }
+  .ab-team-photo-wrap {
+    height: 220px; overflow: hidden;
+    position: relative; background: #E6F4F6;
   }
-  .cta-title em { font-style:normal; color:#02AFCF; }
-  .cta-sub {
-    font-size:16px; color:rgba(255,255,255,.58);
-    line-height:1.75; max-width:440px; margin:0 auto 40px;
+  .ab-team-photo {
+    width: 100%; height: 100%; object-fit: cover;
+    display: block; transition: transform 0.45s ease;
   }
-  .cta-btn {
-    display:inline-flex; align-items:center; gap:10px;
-    padding:15px 32px; background:#02AFCF; color:#fff;
-    border-radius:12px; font-size:14px; font-weight:700;
-    text-decoration:none; border:2px solid #02AFCF;
-    transition:all .35s cubic-bezier(.34,1.2,.64,1);
-    box-shadow:0 8px 28px rgba(2,175,207,.35);
+  .ab-team-photo-overlay {
+    position: absolute; inset: 0;
+    background: linear-gradient(to top, rgba(5,51,102,0.2), transparent 55%);
   }
-  .cta-btn:hover { background:transparent; color:#02AFCF; transform:translateY(-3px); gap:14px; }
+  .ab-team-avatar {
+    width: 100%; height: 220px;
+    background: linear-gradient(145deg, #E6F4F6, #c9e9ed);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .ab-team-avatar-letter {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 72px; font-weight: 700; color: #0B7A8A; opacity: 0.25;
+  }
+  .ab-team-info { padding: 20px 22px 24px; }
+  .ab-team-name {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 18px; font-weight: 700; color: #053366; margin-bottom: 4px;
+  }
+  .ab-team-role {
+    font-size: 11px; font-weight: 800; color: #0B7A8A;
+    text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 12px;
+  }
+  .ab-team-bio { font-size: 13px; color: #6B7280; line-height: 1.68; }
+
+  /* ══════════════════════════════════════
+     CTA BANNER — style ContactSection
+  ══════════════════════════════════════ */
+  .ab-cta-section {
+    padding: 80px 40px; position: relative; z-index: 1;
+    background: #F7F9FC; border-top: 1px solid #E5E7EB;
+  }
+  .ab-cta-inner {
+    max-width: 1200px; margin: 0 auto; text-align: center;
+  }
+  .ab-cta-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: clamp(30px, 4vw, 50px);
+    font-weight: 700; color: #053366;
+    letter-spacing: -1.5px; line-height: 1.08; margin-bottom: 14px;
+  }
+  .ab-cta-sub {
+    font-size: 15px; color: #6B7280;
+    line-height: 1.75; max-width: 440px; margin: 0 auto 36px;
+  }
+  .ab-cta-btn {
+    display: inline-flex; align-items: center; gap: 10px;
+    padding: 14px 32px; background: #0B7A8A; color: #fff;
+    border-radius: 40px; font-size: 14px; font-weight: 700;
+    text-decoration: none; transition: all 0.2s;
+    box-shadow: 0 6px 20px rgba(11,122,138,0.28);
+  }
+  .ab-cta-btn:hover { background: #095f6c; transform: translateY(-2px); }
+
+  /* CTA bar bas (= ContactSection) */
+  .ab-cta-bar {
+    max-width: 1200px; margin: 36px auto 0;
+    display: flex; align-items: center; justify-content: space-between;
+    flex-wrap: wrap; gap: 20px;
+    padding: 20px 24px; background: white;
+    border-radius: 18px; border: 1px solid #E5E7EB;
+    box-shadow: 0 1px 6px rgba(0,0,0,0.03);
+  }
+  .ab-cta-bar-left { display: flex; align-items: center; gap: 14px; }
+  .ab-cta-bar-icon {
+    width: 44px; height: 44px; border-radius: 14px;
+    background: #E6F4F6;
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  }
+  .ab-cta-bar-title {
+    font-size: 14px; font-weight: 700; color: #053366; margin-bottom: 3px;
+  }
+  .ab-cta-bar-sub { font-size: 13px; color: #6B7280; }
+  .ab-cta-bar-link {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 11px 24px; border-radius: 40px;
+    background: #E6F4F6; border: 1px solid rgba(11,122,138,0.2);
+    color: #0B7A8A; font-size: 13px; font-weight: 700;
+    text-decoration: none; white-space: nowrap; transition: all 0.2s;
+  }
+  .ab-cta-bar-link:hover { background: #0B7A8A; color: white; }
 
   /* ══ RESPONSIVE ══ */
-  @media (max-width:1024px) {
-    .mission-inner { grid-template-columns:1fr; gap:36px; }
-    .values-grid   { grid-template-columns:repeat(2,1fr); }
-    .team-grid     { grid-template-columns:repeat(2,1fr); }
-    .stats-row     { grid-template-columns:repeat(2,1fr) !important; }
+  @media (max-width: 1024px) {
+    .ab-mission-grid { grid-template-columns: 1fr; }
+    .ab-values-grid  { grid-template-columns: repeat(2, 1fr); }
+    .ab-team-grid    { grid-template-columns: repeat(2, 1fr); }
+    .ab-stats-grid   { grid-template-columns: repeat(2, 1fr) !important; }
   }
-  @media (max-width:640px) {
-    .hero-wrap   { height:440px; }
-    .hero-content{ padding:0 20px 32px; }
-    .hero-float-badge { display:none; }
-    .mission-wrap,.values-wrap,.team-wrap,.cta-wrap,.stats-wrap { padding:64px 20px; }
-    .values-grid { grid-template-columns:1fr; }
-    .team-grid   { grid-template-columns:1fr; }
-    .stats-row   { grid-template-columns:repeat(2,1fr) !important; }
-    .stat-num    { font-size:40px; }
-    .cta-btn     { width:100%; justify-content:center; }
+  @media (max-width: 768px) {
+    .ab-section { padding: 60px 24px; }
+    .ab-hero-content { padding: 0 24px 36px; }
+    .ab-hero-float { display: none; }
+    .ab-cta-section { padding: 60px 24px; }
+    .ab-cta-bar { flex-direction: column; align-items: flex-start; }
   }
-  @media (max-width:380px) {
-    .stats-row { grid-template-columns:1fr !important; }
+  @media (max-width: 640px) {
+    .ab-hero { height: 440px; }
+    .ab-values-grid { grid-template-columns: 1fr; }
+    .ab-team-grid   { grid-template-columns: 1fr; }
+    .ab-stats-grid  { grid-template-columns: repeat(2, 1fr) !important; }
+    .ab-stat-num    { font-size: 42px; }
+    .ab-cta-btn     { width: 100%; justify-content: center; }
+  }
+  @media (max-width: 380px) {
+    .ab-stats-grid { grid-template-columns: 1fr !important; }
   }
 `;
 
@@ -470,9 +479,9 @@ export default async function AboutPage() {
   const team    = get("team");
   const cta     = get("cta");
 
-  const statsItems  = (stats?.meta?.items   as { value: string; label: string }[])                       ?? [];
-  const valuesItems = (values?.meta?.items  as { icon: string; title: string; text: string }[])          ?? [];
-  const teamMembers = (team?.meta?.members  as { name: string; role: string; photo: string; bio: string }[]) ?? [];
+  const statsItems  = (stats?.meta?.items   as { value: string; label: string }[])                            ?? [];
+  const valuesItems = (values?.meta?.items  as { icon: string; title: string; text: string }[])               ?? [];
+  const teamMembers = (team?.meta?.members  as { name: string; role: string; photo: string; bio: string }[])  ?? [];
 
   const jsonLd = {
     "@context": "https://schema.org", "@type": "TravelAgency",
@@ -487,241 +496,228 @@ export default async function AboutPage() {
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       <TouristeNav />
 
-      {/* ══ HERO — plein écran image (= BlogDetailPage) ═══════════════════════ */}
-      {hero && (
-        <div className="hero-wrap">
-          {/* Image */}
-          <div style={{ position: "absolute", inset: 0 }}>
-            {hero.image_url ? (
-              <img
-                src={hero.image_url}
-                alt={hero.title ?? "VoyajAime"}
-                className="hero-img"
-              />
-            ) : (
-              <div style={{
-                position: "absolute", inset: 0,
-                background: "linear-gradient(135deg, #071e3d 0%, #1a3a5c 60%, #0d2340 100%)",
-              }} />
-            )}
-          </div>
+      <div className="about-page">
 
-          {/* Overlays */}
-          <div className="hero-overlay-l" />
-          <div className="hero-overlay-b" />
-          <div className="hero-grid-overlay" />
+        {/* ══ HERO ══ */}
+        {hero && (
+          <div className="ab-hero">
+            {hero.image_url
+              ? <img src={hero.image_url} alt={hero.title ?? "VoyajAime"} className="ab-hero-img" />
+              : <div className="ab-hero-fallback" />
+            }
+            <div className="ab-hero-overlay" />
+            <div className="ab-hero-overlay-b" />
 
-          
-
-          {/* Contenu bas gauche */}
-          <div className="hero-content">
-            <div className="pill-badge pill-badge-cyan" style={{ marginBottom: 20 }}>
-              <span className="pill-dot" />
-              À propos de nous
+            <div className="ab-hero-float">
+              <span className="ab-hero-float-dot" />
+              À propos de VoyajAime
             </div>
 
-            <h1 className="hero-title">
-              {hero.title ?? "Nous rendons la Tunisie <em>inoubliable</em>"}
-            </h1>
-
-            {hero.subtitle && (
-              <p className="hero-subtitle">{hero.subtitle}</p>
-            )}
-
-            {hero.content && (
-              <div className="rich-dark" style={{ marginBottom: 28 }}
-                dangerouslySetInnerHTML={{ __html: hero.content }} />
-            )}
-
-            <Link href="/excursions" className="hero-cta">
-              Découvrir nos excursions <ArrowRight size={16} />
-            </Link>
-          </div>
-
-          {/* Scroll hint */}
-          <div className="scroll-hint">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.5">
-              <path d="M6 9l6 6 6-6" />
-            </svg>
-          </div>
-        </div>
-      )}
-
-      {!hero && <div style={{ paddingTop: 80 }} />}
-
-      {/* ══ MISSION ══════════════════════════════════════════════════════════ */}
-      {mission && (
-        <section aria-labelledby="mission-heading" className="mission-wrap">
-          <div className="mission-inner">
-            {/* Texte */}
-            <div>
-              <div className="section-label">
-                <div className="label-bar label-bar-cyan" />
-                <span className="label-text label-text-cyan">Notre mission</span>
+            <div className="ab-hero-content">
+              <div className="ab-badge" style={{ background: "rgba(165,243,252,0.15)", borderColor: "rgba(165,243,252,0.3)" }}>
+                <MessageCircle size={11} color="#A5F3FC" />
+                <span style={{ color: "#A5F3FC" }}>Notre histoire</span>
               </div>
-              {mission.title && (
-                <h2 id="mission-heading" className="mission-title">{mission.title}</h2>
-              )}
-              {mission.subtitle && (
-                <p className="mission-sub">{mission.subtitle}</p>
-              )}
-              {mission.content && (
-                <div className="rich-light"
-                  dangerouslySetInnerHTML={{ __html: mission.content }} />
-              )}
-            </div>
-
-            {/* Panneau quote */}
-            <div className="mission-panel">
-              <div className="mission-panel-icon">
-                <Globe size={24} color="white" strokeWidth={1.8} />
-              </div>
-              <p className="mission-panel-quote">
-                {mission.subtitle ?? "Notre engagement est de proposer des expériences de voyage authentiques, responsables et mémorables à travers toute la Tunisie."}
-              </p>
-              <div className="mission-panel-bar" />
-              <p className="mission-panel-author">— VoyajAime, {new Date().getFullYear()}</p>
+              <h1 className="ab-hero-title">{hero.title ?? "Nous rendons la Tunisie inoubliable"}</h1>
+              {hero.subtitle && <p className="ab-hero-subtitle">{hero.subtitle}</p>}
+              <Link href="/excursions" className="ab-hero-cta">
+                Découvrir nos excursions <ArrowRight size={15} />
+              </Link>
             </div>
           </div>
-        </section>
-      )}
+        )}
 
-      {/* ══ STATS ════════════════════════════════════════════════════════════ */}
-      {stats && statsItems.length > 0 && (
-        <section aria-labelledby="stats-heading" className="stats-wrap">
-          <div className="stats-heading-row">
-            <div>
-              <div className="section-label">
-                <div className="label-bar label-bar-navy" />
-                <span className="label-text label-text-navy">En chiffres</span>
-              </div>
-              {stats.title && (
-                <h2 id="stats-heading" style={{
-                  fontFamily: "'Playfair Display', serif",
-                  fontSize: "clamp(24px, 2.8vw, 38px)",
-                  fontWeight: 900, color: "#053366",
-                  letterSpacing: "-1px", lineHeight: 1.1,
-                }}>
-                  {stats.title}
-                </h2>
-              )}
-            </div>
-          </div>
-          <div
-            className="stats-row"
-            style={{ gridTemplateColumns: `repeat(${Math.min(statsItems.length, 4)}, 1fr)` }}
-          >
-            {statsItems.map((item, i) => (
-              <div key={i} className="stat-card">
-                <p className="stat-num">{item.value}</p>
-                <p className="stat-label">{item.label}</p>
-              </div>
-            ))}
-          </div>
-        </section>
-      )}
+        {!hero && <div style={{ paddingTop: 80 }} />}
 
-      {/* ══ VALEURS ══════════════════════════════════════════════════════════ */}
-      {values && valuesItems.length > 0 && (
-        <section aria-labelledby="values-heading" className="values-wrap">
-          <div className="values-header">
-            <div className="section-label">
-              <div className="label-bar label-bar-cyan" />
-              <span className="label-text label-text-cyan">Ce qui nous guide</span>
-            </div>
-            {values.title && (
-              <h2 id="values-heading" className="values-title">{values.title}</h2>
-            )}
-            {values.subtitle && (
-              <p className="values-sub">{values.subtitle}</p>
-            )}
-          </div>
+        {/* ══ MISSION ══ */}
+        {mission && (
+          <section aria-labelledby="mission-heading" className={`ab-section ab-section-white`}>
+            <div className="ab-section-inner">
+              <div className="ab-mission-grid">
 
-          <div className="values-grid">
-            {valuesItems.map((item, i) => (
-              <div key={i} className={`value-card${i === 1 ? " featured" : ""}`}>
-                <div className="v-icon">
-                  {ICON_MAP[item.icon] ?? <Star size={22} strokeWidth={1.8} />}
+                {/* Texte */}
+                <div className="ab-mission-card">
+                  <div className="ab-badge">
+                    <Globe size={11} color="#0B7A8A" />
+                    <span>Notre mission</span>
+                  </div>
+                  {mission.title && (
+                    <h2 id="mission-heading" className="ab-section-title">{mission.title}</h2>
+                  )}
+                  {mission.subtitle && (
+                    <p style={{ fontSize: 15, color: "#6B7280", lineHeight: 1.8, marginBottom: 16 }}>{mission.subtitle}</p>
+                  )}
+                  {mission.content && (
+                    <div className="rich-light" dangerouslySetInnerHTML={{ __html: mission.content }} />
+                  )}
                 </div>
-                <p className="v-title">{item.title}</p>
-                <p className="v-text">{item.text}</p>
-                <a href="#" className="v-link">
-                  En savoir plus <ArrowRight size={12} />
-                </a>
+
+                {/* Panneau quote */}
+                <div className="ab-mission-panel">
+                  <div className="ab-mission-panel-icon">
+                    <Globe size={22} color="#A5F3FC" strokeWidth={1.8} />
+                  </div>
+                  <p className="ab-mission-panel-quote">
+                    {mission.subtitle ?? "Notre engagement est de proposer des expériences de voyage authentiques, responsables et mémorables à travers toute la Tunisie."}
+                  </p>
+                  <div>
+                    <div className="ab-mission-panel-bar" />
+                    <p className="ab-mission-panel-author">— VoyajAime, {new Date().getFullYear()}</p>
+                  </div>
+                </div>
+
               </div>
-            ))}
-          </div>
-        </section>
-      )}
-
-      {/* ══ ÉQUIPE ═══════════════════════════════════════════════════════════ */}
-      {team && (
-        <section aria-labelledby="team-heading" className="team-wrap">
-          <div className="team-header">
-            <div className="section-label">
-              <div className="label-bar label-bar-navy" />
-              <span className="label-text label-text-navy">Notre équipe</span>
             </div>
-            {team.title && (
-              <h2 id="team-heading" className="team-title">{team.title}</h2>
-            )}
-            {team.subtitle && <p className="team-sub">{team.subtitle}</p>}
-          </div>
+          </section>
+        )}
 
-          {teamMembers.length > 0 && (
-            <div className="team-grid">
-              {teamMembers.map((m, i) => (
-                <article key={i} className="team-card">
-                  <div className="team-photo-wrap">
-                    {m.photo ? (
-                      <>
-                        <img className="team-photo" src={m.photo} alt={`${m.name} — ${m.role}`} />
-                        <div className="team-photo-overlay" />
-                      </>
-                    ) : (
-                      <div className="team-avatar">
-                        <span className="team-avatar-letter">{m.name?.[0]?.toUpperCase()}</span>
+        {/* ══ STATS ══ */}
+        {stats && statsItems.length > 0 && (
+          <section aria-labelledby="stats-heading" className={`ab-section ab-section-gray`}>
+            <div className="ab-section-inner">
+              <div className="ab-section-header">
+                <div className="ab-badge">
+                  <span>En chiffres</span>
+                </div>
+                {stats.title && (
+                  <h2 id="stats-heading" className="ab-section-title">{stats.title}</h2>
+                )}
+              </div>
+              <div
+                className="ab-stats-grid"
+                style={{ gridTemplateColumns: `repeat(${Math.min(statsItems.length, 4)}, 1fr)` }}
+              >
+                {statsItems.map((item, i) => (
+                  <div key={i} className="ab-stat-card">
+                    <p className="ab-stat-num">{item.value}</p>
+                    <p className="ab-stat-label">{item.label}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </section>
+        )}
+
+        {/* ══ VALEURS ══ */}
+        {values && valuesItems.length > 0 && (
+          <section aria-labelledby="values-heading" className={`ab-section ab-section-white`}>
+            <div className="ab-section-inner">
+              <div className="ab-section-header">
+                <div className="ab-badge">
+                  <Star size={11} color="#0B7A8A" />
+                  <span>Ce qui nous guide</span>
+                </div>
+                {values.title && (
+                  <h2 id="values-heading" className="ab-section-title">{values.title}</h2>
+                )}
+                {values.subtitle && <p className="ab-section-sub">{values.subtitle}</p>}
+              </div>
+
+              <div className="ab-values-grid">
+                {valuesItems.map((item, i) => (
+                  <div key={i} className={`ab-value-card${i === 1 ? " featured" : ""}`}>
+                    <div className="ab-v-icon">
+                      {ICON_MAP[item.icon] ?? <Star size={22} strokeWidth={1.8} />}
+                    </div>
+                    <p className="ab-v-title">{item.title}</p>
+                    <p className="ab-v-text">{item.text}</p>
+                    <a href="#" className="ab-v-link">
+                      En savoir plus <ArrowRight size={12} />
+                    </a>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </section>
+        )}
+
+        {/* ══ ÉQUIPE ══ */}
+        {team && (
+          <section aria-labelledby="team-heading" className={`ab-section ab-section-gray`}>
+            <div className="ab-section-inner">
+              <div className="ab-section-header">
+                <div className="ab-badge">
+                  <Users size={11} color="#0B7A8A" />
+                  <span>Notre équipe</span>
+                </div>
+                {team.title && (
+                  <h2 id="team-heading" className="ab-section-title">{team.title}</h2>
+                )}
+                {team.subtitle && <p className="ab-section-sub">{team.subtitle}</p>}
+              </div>
+
+              {teamMembers.length > 0 && (
+                <div className="ab-team-grid">
+                  {teamMembers.map((m, i) => (
+                    <article key={i} className="ab-team-card">
+                      <div className="ab-team-photo-wrap">
+                        {m.photo ? (
+                          <>
+                            <img className="ab-team-photo" src={m.photo} alt={`${m.name} — ${m.role}`} />
+                            <div className="ab-team-photo-overlay" />
+                          </>
+                        ) : (
+                          <div className="ab-team-avatar">
+                            <span className="ab-team-avatar-letter">{m.name?.[0]?.toUpperCase()}</span>
+                          </div>
+                        )}
                       </div>
-                    )}
-                  </div>
-                  <div className="team-info">
-                    <p className="team-name">{m.name}</p>
-                    <p className="team-role">{m.role}</p>
-                    {m.bio && <p className="team-bio">{m.bio}</p>}
-                  </div>
-                </article>
-              ))}
+                      <div className="ab-team-info">
+                        <p className="ab-team-name">{m.name}</p>
+                        <p className="ab-team-role">{m.role}</p>
+                        {m.bio && <p className="ab-team-bio">{m.bio}</p>}
+                      </div>
+                    </article>
+                  ))}
+                </div>
+              )}
             </div>
-          )}
-        </section>
-      )}
+          </section>
+        )}
 
-      {/* ══ CTA ══════════════════════════════════════════════════════════════ */}
-      {cta && (
-        <section aria-labelledby="cta-heading" className="cta-wrap">
-          <div className="cta-grid-overlay" />
-          <div className="cta-inner">
-            <div className="pill-badge pill-badge-light" style={{ marginBottom: 20 }}>
-              <span className="pill-dot" />
-              Passez à l'action
+        {/* ══ CTA ══ */}
+        <section aria-labelledby="cta-heading" className="ab-cta-section">
+          <div className="ab-cta-inner">
+            <div className="ab-badge" style={{ marginBottom: 20 }}>
+              <span>Passez à l'action</span>
             </div>
-            {cta.title && (
-              <h2 id="cta-heading" className="cta-title"
+            {cta?.title ? (
+              <h2 id="cta-heading" className="ab-cta-title"
                 dangerouslySetInnerHTML={{ __html: cta.title }} />
+            ) : (
+              <h2 id="cta-heading" className="ab-cta-title">Prêt pour l'aventure ?</h2>
             )}
-            {cta.subtitle && <p className="cta-sub">{cta.subtitle}</p>}
+            <p className="ab-cta-sub">
+              {cta?.subtitle ?? "Explorez nos excursions et vivez des moments inoubliables en Tunisie."}
+            </p>
             <Link
-              href={(cta.meta?.button_url as string) ?? "/excursions"}
-              className="cta-btn"
+              href={(cta?.meta?.button_url as string) ?? "/excursions"}
+              className="ab-cta-btn"
             >
-              {(cta.meta?.button_text as string) ?? "Commencer l'aventure"}
-              <ArrowRight size={16} />
+              {(cta?.meta?.button_text as string) ?? "Commencer l'aventure"}
+              <ArrowRight size={15} />
             </Link>
+
+            {/* CTA bar */}
+            <div className="ab-cta-bar">
+              <div className="ab-cta-bar-left">
+                <div className="ab-cta-bar-icon">
+                  <Phone size={20} color="#0B7A8A" />
+                </div>
+                <div>
+                  <p className="ab-cta-bar-title">Une question sur nos excursions ?</p>
+                  <p className="ab-cta-bar-sub">Notre équipe vous répond sous 24h</p>
+                </div>
+              </div>
+              <Link href="/contact" className="ab-cta-bar-link">
+                Nous contacter <ArrowRight size={13} />
+              </Link>
+            </div>
           </div>
         </section>
-      )}
 
-      <HomeFooter user={null} />
+        <HomeFooter user={null} />
+      </div>
     </>
   );
 }

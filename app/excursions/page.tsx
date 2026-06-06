@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabaseClient";
 import { sanitizeText } from "@/app/lib/sanitize";
+import { useRouter } from "next/navigation";
 import {
   Search, MapPin, Clock, Star, Heart,
   Loader2, Mountain, UserPlus, LogIn, Calendar, XCircle,
@@ -19,11 +20,10 @@ type Excursion = {
   max_people: number; available_dates: string[] | null;
 };
 
-// Map excursion_id -> Map<date, totalPeople>
 type ReservationsMap = Record<string, Record<string, number>>;
 
 const FALLBACK = "https://images.unsplash.com/photo-1568515387631-8b650bbcdb90?w=600&q=80&fit=crop";
-const TODAY    = new Date().toISOString().split("T")[0]; // "YYYY-MM-DD"
+const TODAY    = new Date().toISOString().split("T")[0];
 
 const Skeleton = () => (
   <div className={styles.skeleton}>
@@ -36,36 +36,24 @@ const Skeleton = () => (
   </div>
 );
 
-/**
- * Retourne true si l'excursion est indisponible.
- *
- * CAS 1 — is_active = false → indisponible
- * CAS 2 — available_dates est vide / null / toutes les dates sont passées → indisponible
- * CAS 3 — des dates futures existent mais toutes ont atteint max_people → indisponible
- */
 function isFullyBooked(exc: Excursion, reservations: ReservationsMap): boolean {
-  // Cas 1 : prestataire a désactivé l'excursion
   if (!exc.is_active) return true;
-
-  const allDates   = exc.available_dates || [];
+  const allDates    = exc.available_dates || [];
   const futureDates = allDates.filter(d => d >= TODAY);
-
-  // Cas 2 : aucune date future (soit pas de dates du tout, soit toutes passées)
   if (futureDates.length === 0) return true;
-
-  // Cas 3 : toutes les dates futures sont complètes (places épuisées)
   const excReservations = reservations[exc.id] || {};
   const hasAvailableDate = futureDates.some(date => {
     const booked = excReservations[date] || 0;
     return booked < (exc.max_people || Infinity);
   });
-
   return !hasAvailableDate;
 }
 
 const DEFAULT_LIMIT = 12;
 
 export default function ExcursionsPage() {
+  const router = useRouter();
+
   const [excursions,    setExcursions]    = useState<Excursion[]>([]);
   const [filtered,      setFiltered]      = useState<Excursion[]>([]);
   const [villes,        setVilles]        = useState<string[]>([]);
@@ -88,7 +76,6 @@ export default function ExcursionsPage() {
 
   const supabase = createClient();
 
-  // Détermine si un filtre ou une recherche est actif
   const isFiltering =
     selectedCities.length > 0 ||
     selectedCategories.length > 0 ||
@@ -96,14 +83,18 @@ export default function ExcursionsPage() {
     filterHeure ||
     search.trim() !== "";
 
-  // Excursions à afficher :
-  // - Sans filtre : les 12 premières seulement
-  // - Avec filtre/recherche : tous les résultats filtrés
   const displayed = isFiltering ? filtered : filtered.slice(0, DEFAULT_LIMIT);
+
+  // ── Navigation sans rechargement ──
+  const goToExcursion = (id: string) => router.push(`/excursions/${id}`);
+
+  const goToAuth = (redirectPath: string) => {
+    sessionStorage.setItem("redirect_after_login", redirectPath);
+    router.push("/auth");
+  };
 
   useEffect(() => {
     (async () => {
-      // Auth
       const { data: authData } = await supabase.auth.getUser();
       if (authData.user) {
         setUser({ id: authData.user.id });
@@ -112,7 +103,6 @@ export default function ExcursionsPage() {
         if (favs) setFavorites(new Set(favs.map((f: { excursion_id: string }) => f.excursion_id)));
       }
 
-      // Excursions
       const { data: excsData } = await supabase
         .from("excursions")
         .select("id, title, city, price_per_person, duration_hours, rating, reviews_count, categories, photos, is_active, max_people, available_dates")
@@ -120,14 +110,12 @@ export default function ExcursionsPage() {
       const excs: Excursion[] = (excsData as Excursion[]) || [];
       setExcursions(excs);
 
-      // Réservations groupées par excursion_id + date
       if (excs.length > 0) {
         const ids = excs.map(e => e.id);
         const { data: resData } = await supabase
           .from("reservations")
           .select("excursion_id, date, people_count")
           .in("excursion_id", ids);
-
         const resMap: ReservationsMap = {};
         (resData || []).forEach((r: { excursion_id: string; date: string; people_count: number }) => {
           if (!resMap[r.excursion_id]) resMap[r.excursion_id] = {};
@@ -136,7 +124,6 @@ export default function ExcursionsPage() {
         setReservations(resMap);
       }
 
-      // Villes & catégories
       const { data: villesData } = await supabase.from("villes").select("nom").eq("active", true).order("nom");
       if (villesData) setVilles(villesData.map((v: { nom: string }) => v.nom));
 
@@ -168,8 +155,7 @@ export default function ExcursionsPage() {
 
   const toggleFav = async (excId: string) => {
     if (!user) {
-      sessionStorage.setItem("redirect_after_login", "/excursions");
-      window.location.href = "/auth";
+      goToAuth("/excursions");
       return;
     }
     setLoadingFav(excId);
@@ -238,7 +224,6 @@ export default function ExcursionsPage() {
     ? "Catégorie"
     : selectedCategories.length === 1 ? selectedCategories[0] : `${selectedCategories.length} catégories`;
 
-  // Texte du compteur adapté selon le mode d'affichage
   const countLabel = (() => {
     if (loading) return "Chargement…";
     if (isFiltering) {
@@ -266,7 +251,6 @@ export default function ExcursionsPage() {
       <div className={styles.navSpacer} />
 
       <style>{`
-        /* ── Container centré global (même logique que touriste/layout.tsx) ── */
         .exc-page-container {
           width: 100%;
           max-width: 1280px;
@@ -281,66 +265,86 @@ export default function ExcursionsPage() {
         @media (max-width: 640px) {
           .exc-page-container { padding-left: 16px; padding-right: 16px; }
         }
-
-        /* ── Badge Indisponible ── */
         .badge-unavailable {
-          position: absolute;
-          top: 10px;
-          left: 10px;
-          display: flex;
-          align-items: center;
-          gap: 5px;
+          position: absolute; top: 10px; left: 10px;
+          display: flex; align-items: center; gap: 5px;
           padding: 5px 10px;
           background: rgba(107, 114, 128, 0.88);
           backdrop-filter: blur(4px);
-          color: white;
-          font-size: 11px;
-          font-weight: 600;
-          border-radius: 20px;
-          letter-spacing: 0.3px;
-          z-index: 10;
-          box-shadow: 0 2px 8px rgba(0,0,0,.18);
+          color: white; font-size: 11px; font-weight: 600;
+          border-radius: 20px; letter-spacing: 0.3px;
+          z-index: 10; box-shadow: 0 2px 8px rgba(0,0,0,.18);
         }
-        /* Overlay grisé sur l'image si indisponible */
         .img-unavailable-overlay {
-          position: absolute;
-          inset: 0;
+          position: absolute; inset: 0;
           background: rgba(0,0,0,0.25);
-          border-radius: inherit;
-          z-index: 5;
-          pointer-events: none;
+          border-radius: inherit; z-index: 5; pointer-events: none;
         }
-        /* Bouton Réserver désactivé */
         .reserve-btn-disabled {
-          display: inline-flex;
-          align-items: center;
-          gap: 5px;
+          display: inline-flex; align-items: center; gap: 5px;
           padding: 8px 14px;
-          background: #F3F4F6 !important;
-          color: #9CA3AF !important;
-          border: none;
-          border-radius: 20px;
-          font-size: 12px;
-          font-weight: 700;
-          cursor: not-allowed;
-          font-family: inheritinherit;
+          background: #F3F4F6 !important; color: #9CA3AF !important;
+          border: none; border-radius: 20px;
+          font-size: 12px; font-weight: 700;
+          cursor: not-allowed; font-family: inherit;
+        }
+        .guest-cta-box {
+          display: flex; align-items: center;
+          justify-content: space-between; gap: 20px;
+          background: #EFF6FF; border: 1px solid #BFDBFE;
+          border-radius: 20px; padding: 24px 28px; margin-top: 32px;
+        }
+        .guest-cta-text h3 {
+          font-size: 17px; font-weight: 800; color: #053366;
+          margin: 0 0 4px; line-height: 1.3;
+        }
+        .guest-cta-text p {
+          font-size: 13px; color: #6B7280; margin: 0; line-height: 1.4;
+        }
+        .guest-cta-btns { display: flex; gap: 10px; flex-shrink: 0; }
+        .guest-btn-register {
+          display: inline-flex; align-items: center; gap: 7px;
+          padding: 11px 20px; background: #02AFCF; color: white;
+          border-radius: 14px; font-size: 14px; font-weight: 700;
+          text-decoration: none; white-space: nowrap;
+          transition: background .2s, transform .15s;
+        }
+        .guest-btn-register:hover { background: #0199B8; transform: translateY(-1px); }
+        .guest-btn-login {
+          display: inline-flex; align-items: center; gap: 7px;
+          padding: 11px 20px; background: white; color: #053366;
+          border: 1.5px solid #BFDBFE; border-radius: 14px;
+          font-size: 14px; font-weight: 700; text-decoration: none;
+          white-space: nowrap; transition: border-color .2s, background .2s, transform .15s;
+        }
+        .guest-btn-login:hover {
+          border-color: #02AFCF; background: #F0FBFF; transform: translateY(-1px);
+        }
+        @media (max-width: 768px) {
+          .guest-cta-box { flex-direction: column; align-items: flex-start; padding: 20px; gap: 16px; }
+          .guest-cta-btns { width: 100%; }
+        }
+        @media (max-width: 480px) {
+          .guest-cta-box { padding: 18px 16px; border-radius: 16px; }
+          .guest-cta-text h3 { font-size: 15px; }
+          .guest-cta-text p { font-size: 12px; }
+          .guest-cta-btns { flex-direction: column; gap: 8px; }
+          .guest-btn-register, .guest-btn-login {
+            width: 100%; justify-content: center;
+            padding: 13px 16px; font-size: 14px; border-radius: 12px;
+          }
         }
       `}</style>
 
       <div className={styles.root}>
 
-        {/* ── HERO — fullwidth, pas de container ── */}
+        {/* ── HERO ── */}
         <div className={styles.hero}>
-          {/*
-            Le hero garde toute la largeur de l'écran (background, image…).
-            On centre seulement son contenu intérieur avec exc-page-container.
-          */}
           <div className={`${styles.heroInner} exc-page-container`}>
             <h1 className={styles.heroTitle}>
               Découvrez des destinations<br />que vous adorerez
             </h1>
 
-            {/* Search */}
             <div className={styles.searchWrapper}>
               <Search size={17} color="#9CA3AF" className={styles.searchIcon} />
               <input
@@ -352,7 +356,6 @@ export default function ExcursionsPage() {
               />
             </div>
 
-            {/* Filter tabs */}
             <div className={styles.filtersRow}>
               <div className={styles.filterDropdownWrapper}>
                 <button
@@ -394,7 +397,7 @@ export default function ExcursionsPage() {
           </div>
         </div>
 
-        {/* ── CONTENT — centré avec le container ── */}
+        {/* ── CONTENT ── */}
         <div className={`${styles.content} exc-page-container`}>
 
           {/* Count + Sort */}
@@ -408,14 +411,12 @@ export default function ExcursionsPage() {
             </select>
           </div>
 
-          {/* Skeletons */}
           {loading && (
             <div className={styles.excGrid}>
               {Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} />)}
             </div>
           )}
 
-          {/* Empty */}
           {!loading && filtered.length === 0 && (
             <div className={styles.emptyState}>
               <div className={styles.emptyIcon}>
@@ -433,12 +434,10 @@ export default function ExcursionsPage() {
             </div>
           )}
 
-          {/* Cards grid */}
           {!loading && filtered.length > 0 && (
             <div className={styles.excGrid}>
               {displayed.map((exc, i) => {
                 const unavailable = isFullyBooked(exc, reservations);
-
                 return (
                   <div
                     key={exc.id}
@@ -448,9 +447,8 @@ export default function ExcursionsPage() {
                       opacity: unavailable ? 0.82 : 1,
                       cursor: unavailable ? "default" : "pointer",
                     }}
-                    onClick={() => { if (!unavailable) window.location.href = `/excursions/${exc.id}`; }}
+                    onClick={() => { if (!unavailable) goToExcursion(exc.id); }}
                   >
-                    {/* Image zone */}
                     <div className={styles.cardImgZone}>
                       <img
                         className={styles.cardImg}
@@ -459,29 +457,14 @@ export default function ExcursionsPage() {
                         onError={e => { (e.target as HTMLImageElement).src = FALLBACK; }}
                         style={{ filter: unavailable ? "grayscale(30%)" : "none" }}
                       />
-
-                      {/* Overlay grisé si indisponible */}
                       {unavailable && <div className="img-unavailable-overlay" />}
-
-                      {/* Badge catégorie */}
                       {exc.categories?.[0] && !unavailable && (
-                        <div className={styles.categoryBadge}>
-                          {sanitizeText(exc.categories[0])}
-                        </div>
+                        <div className={styles.categoryBadge}>{sanitizeText(exc.categories[0])}</div>
                       )}
-
-                      {/* Badge Indisponible — remplace le badge catégorie */}
                       {unavailable && (
-                        <div className="badge-unavailable">
-                          <XCircle size={12} /> Indisponible
-                        </div>
+                        <div className="badge-unavailable"><XCircle size={12} /> Indisponible</div>
                       )}
-
-                      {/* Bouton favori */}
-                      <button
-                        className={styles.heartBtn}
-                        onClick={e => { e.stopPropagation(); toggleFav(exc.id); }}
-                      >
+                      <button className={styles.heartBtn} onClick={e => { e.stopPropagation(); toggleFav(exc.id); }}>
                         {loadingFav === exc.id
                           ? <Loader2 size={15} color="#9CA3AF" className={styles.spinIcon} />
                           : user
@@ -491,7 +474,6 @@ export default function ExcursionsPage() {
                       </button>
                     </div>
 
-                    {/* Card body */}
                     <div className={styles.cardBody}>
                       <div className={styles.cardRow1}>
                         <h3 className={styles.cardTitle}>{sanitizeText(exc.title)}</h3>
@@ -521,7 +503,6 @@ export default function ExcursionsPage() {
                           </span>
                         </div>
 
-                        {/* Bouton Réserver — désactivé si indisponible */}
                         {unavailable ? (
                           <button className="reserve-btn-disabled" disabled onClick={e => e.stopPropagation()}>
                             <XCircle size={12} /> Complet
@@ -532,10 +513,9 @@ export default function ExcursionsPage() {
                             onClick={e => {
                               e.stopPropagation();
                               if (!user) {
-                                sessionStorage.setItem("redirect_after_login", `/excursions/${exc.id}`);
-                                window.location.href = "/auth";
+                                goToAuth(`/excursions/${exc.id}`);
                               } else {
-                                window.location.href = `/excursions/${exc.id}`;
+                                goToExcursion(exc.id);
                               }
                             }}
                           >
@@ -550,21 +530,25 @@ export default function ExcursionsPage() {
             </div>
           )}
 
-          {/* Guest CTA */}
+          {/* ══ Guest CTA ══ */}
           {!user && !loading && (
-            <div className={styles.guestCta}>
-              <div>
-                <h3 className={styles.guestCtaTitle}>Sauvegardez vos excursions préférées</h3>
-                <p className={styles.guestCtaSub}>Favoris, réservations et paiements nécessitent un compte gratuit</p>
+            <div className="guest-cta-box">
+              <div className="guest-cta-text">
+                <h3>Sauvegardez vos excursions préférées</h3>
+                <p>Favoris, réservations et paiements nécessitent un compte gratuit</p>
               </div>
-              <div className={styles.guestCtaBtns}>
-                <Link href="/auth" className={styles.btnRegister}><UserPlus size={15} /> Créer un compte</Link>
-                <Link href="/auth" className={styles.btnLogin}><LogIn size={15} /> Se connecter</Link>
+              <div className="guest-cta-btns">
+                <Link href="/auth" className="guest-btn-register">
+                  <UserPlus size={15} /> Créer un compte
+                </Link>
+                <Link href="/auth" className="guest-btn-login">
+                  <LogIn size={15} /> Se connecter
+                </Link>
               </div>
             </div>
           )}
 
-        </div>{/* fin .content + exc-page-container */}
+        </div>
       </div>
 
       {activeTab && <div className={styles.overlay} onClick={() => setActiveTab(null)} />}
