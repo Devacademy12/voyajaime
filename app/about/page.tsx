@@ -120,7 +120,7 @@ const CSS = `
   }
   .ab-hero-content {
     position: absolute; bottom: 0; left: 0;
-    padding: 0 64px 52px;
+    padding: 80px 40px;
     max-width: 760px;
   }
   .ab-hero-title {
