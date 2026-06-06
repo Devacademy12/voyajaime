@@ -1,11 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { createClient } from "@/lib/supabaseClient";
 import {
   Image, Video, Plus, Trash2, GripVertical, Save,
   Eye, EyeOff, Star, MapPin, Check, X, Loader2,
-  Play, AlertCircle, ChevronDown, ChevronUp, ArrowUp, ArrowDown, Monitor,
+  Play, AlertCircle, ChevronDown, ChevronUp, ArrowUp, ArrowDown, Monitor, Upload,
 } from "lucide-react";
 
 type SlideType = "excursion" | "video" | "custom";
@@ -40,15 +40,12 @@ const CSS = `
   @keyframes slideDown{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:translateY(0)}}
   @keyframes slideUp{from{opacity:0;transform:translateY(100%)}to{opacity:1;transform:translateY(0)}}
 
-  /* ── Cards ── */
   .slide-card{background:white;border-radius:18px;border:1.5px solid #E5E7EB;overflow:hidden;transition:all .2s;animation:fadeUp .25s ease both}
   .slide-card:hover{box-shadow:0 8px 24px rgba(0,0,0,.08)}
   .slide-card.inactive{opacity:.65}
 
-  /* ── Add form ── */
   .add-form-container{background:white;border-radius:18px;border:1.5px solid #DCE5FF;overflow:hidden;animation:slideDown .22s ease both;margin-bottom:16px}
 
-  /* ── Type selector bar ── */
   .type-selector-bar{
     display:flex;gap:0;background:#F8FAFF;border-bottom:1.5px solid #E5E7EB;
   }
@@ -63,7 +60,6 @@ const CSS = `
   .type-selector-tab.active{color:#053366;border-bottom-color:#02AFCF;background:white}
   .type-selector-tab:hover:not(.active){color:#374151;background:#F0F4FF}
 
-  /* ── Add trigger buttons ── */
   .add-trigger-bar{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px}
   .add-trigger-btn{
     display:flex;align-items:center;gap:7px;
@@ -76,12 +72,10 @@ const CSS = `
   .add-trigger-btn:hover{border-color:#02AFCF;color:#053366;background:#F0FBFF;border-style:solid}
   .add-trigger-btn.active{border-color:#053366;background:#053366;color:white;border-style:solid}
 
-  /* ── Excursion option ── */
   .exc-option{display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:12px;cursor:pointer;border:1.5px solid transparent;transition:all .18s;background:white}
   .exc-option:hover{background:#F8FAFF;border-color:#DCE5FF}
   .exc-option.selected{background:rgba(2,175,207,.08);border-color:#02AFCF}
 
-  /* ── Buttons ── */
   .save-btn{display:flex;align-items:center;gap:7px;padding:10px 22px;background:linear-gradient(135deg,#02AFCF,#053366);color:white;border:none;border-radius:14px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;transition:all .2s;box-shadow:0 4px 14px rgba(2,175,207,.3)}
   .save-btn:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(2,175,207,.4)}
   .save-btn:disabled{background:#E5E7EB;color:#9CA3AF;cursor:not-allowed;transform:none;box-shadow:none}
@@ -90,12 +84,10 @@ const CSS = `
   .action-btn{display:flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:9px;border:none;cursor:pointer;transition:all .15s;flex-shrink:0}
   .action-btn:hover{transform:scale(1.08)}
 
-  /* ── Preview ── */
   .preview-hero{position:relative;height:360px;border-radius:16px;overflow:hidden;background:#0D1117}
   .preview-overlay1{position:absolute;inset:0;background:linear-gradient(to right,rgba(0,0,0,.72) 0%,rgba(0,0,0,.35) 55%,rgba(0,0,0,.06) 100%)}
   .preview-overlay2{position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,.55) 0%,transparent 55%)}
 
-  /* ── Fields ── */
   .input-field{width:100%;padding:10px 14px;border:1.5px solid #E5E7EB;border-radius:12px;font-size:14px;font-family:inherit;color:#111827;background:white;outline:none;transition:all .2s}
   .input-field:focus{border-color:#02AFCF;box-shadow:0 0 0 3px rgba(2,175,207,.08)}
 
@@ -105,18 +97,29 @@ const CSS = `
   .exc-search{width:100%;padding:9px 14px 9px 36px;border:1.5px solid #E5E7EB;border-radius:10px;font-size:13px;font-family:inherit;outline:none;transition:all .2s}
   .exc-search:focus{border-color:#02AFCF}
 
-  /* ── Toggle ── */
   .toggle-btn{position:relative;width:44px;height:24px;border-radius:12px;border:none;cursor:pointer;transition:background .2s;flex-shrink:0}
   .toggle-knob{position:absolute;top:3px;width:18px;height:18px;border-radius:50%;background:white;transition:left .2s;box-shadow:0 1px 4px rgba(0,0,0,.2)}
 
   .badge{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:700}
 
-  /* ══ Layout ══ */
+  /* ── Upload zone ── */
+  .upload-zone{
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    gap:8px;padding:22px 16px;
+    border:2px dashed #CBD5E1;border-radius:14px;
+    background:#F8FAFF;cursor:pointer;transition:all .2s;
+    font-family:inherit;width:100%;
+  }
+  .upload-zone:hover{border-color:#02AFCF;background:#F0FBFF}
+  .upload-zone.has-image{border-style:solid;border-color:#02AFCF;padding:0;overflow:hidden;height:100px}
+
+  .upload-or{display:flex;align-items:center;gap:8px;color:#CBD5E1;font-size:11px;font-weight:700;margin:4px 0}
+  .upload-or::before,.upload-or::after{content:'';flex:1;height:1px;background:#E5E7EB}
+
   .layout-grid{display:grid;gap:24px}
   .layout-grid.with-preview{grid-template-columns:1fr 400px}
   .layout-grid.no-preview{grid-template-columns:1fr}
 
-  /* ══ Preview sheet (mobile) ══ */
   .preview-sheet-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:100}
   .preview-sheet{
     position:fixed;bottom:0;left:0;right:0;
@@ -127,13 +130,11 @@ const CSS = `
   }
   .preview-sheet-handle{width:40px;height:4px;background:#E5E7EB;border-radius:2px;margin:12px auto 8px}
 
-  /* ══ Responsive ≤ 900px ══ */
   @media (max-width:900px){
     .layout-grid.with-preview{grid-template-columns:1fr !important}
     .preview-col{display:none !important}
   }
 
-  /* ══ Responsive ≤ 600px ══ */
   @media (max-width:600px){
     .topbar{padding:12px 14px !important}
     .topbar-title h1{font-size:17px !important}
@@ -161,6 +162,112 @@ const CSS = `
   *::-webkit-scrollbar{width:4px;height:4px}
   *::-webkit-scrollbar-thumb{background:#E5E7EB;border-radius:2px}
 `;
+
+// ── Helper: convert File to base64 data URL ──
+function fileToDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+// ── Reusable image upload component ──
+function ImageUploadField({
+  value,
+  onChange,
+  placeholder = "https://images.unsplash.com/…",
+}: {
+  value: string;
+  onChange: (url: string) => void;
+  placeholder?: string;
+}) {
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+
+  const handleFile = async (file: File) => {
+    if (!file.type.startsWith("image/")) return;
+    setUploading(true);
+    try {
+      const dataUrl = await fileToDataUrl(file);
+      onChange(dataUrl);
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const onDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    const file = e.dataTransfer.files[0];
+    if (file) handleFile(file);
+  };
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+      {/* Upload zone */}
+      <div
+        className={`upload-zone ${value ? "has-image" : ""}`}
+        onClick={() => !value && fileRef.current?.click()}
+        onDragOver={e => e.preventDefault()}
+        onDrop={onDrop}
+        style={value ? { cursor: "default" } : {}}
+      >
+        {value ? (
+          <div style={{ position: "relative", width: "100%", height: "100%" }}>
+            <img
+              src={value}
+              alt=""
+              style={{ width: "100%", height: "100%", objectFit: "cover" }}
+            />
+            <button
+              onClick={e => { e.stopPropagation(); onChange(""); if (fileRef.current) fileRef.current.value = ""; }}
+              style={{
+                position: "absolute", top: 6, right: 6,
+                width: 24, height: 24, borderRadius: "50%",
+                background: "rgba(0,0,0,.6)", border: "none", cursor: "pointer",
+                display: "flex", alignItems: "center", justifyContent: "center",
+              }}
+            >
+              <X size={12} color="white" />
+            </button>
+          </div>
+        ) : uploading ? (
+          <Loader2 size={20} color="#02AFCF" style={{ animation: "spin .7s linear infinite" }} />
+        ) : (
+          <>
+            <div style={{ width: 40, height: 40, borderRadius: 12, background: "#EEF2FF", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <Upload size={18} color="#053366" />
+            </div>
+            <p style={{ fontSize: 13, fontWeight: 700, color: "#374151", textAlign: "center" }}>
+              Cliquer ou glisser une image
+            </p>
+            <p style={{ fontSize: 11, color: "#9CA3AF" }}>PNG, JPG, WEBP — depuis votre PC</p>
+          </>
+        )}
+      </div>
+
+      <input
+        ref={fileRef}
+        type="file"
+        accept="image/*"
+        style={{ display: "none" }}
+        onChange={e => { const f = e.target.files?.[0]; if (f) handleFile(f); }}
+      />
+
+      {/* OR divider */}
+      <div className="upload-or">ou entrer une URL</div>
+
+      {/* URL input */}
+      <input
+        className="input-field"
+        value={value.startsWith("data:") ? "" : value}
+        onChange={e => onChange(e.target.value)}
+        placeholder={placeholder}
+      />
+    </div>
+  );
+}
 
 export default function SliderAdminClient({
   initialSlides,
@@ -269,11 +376,25 @@ export default function SliderAdminClient({
     <div style={{ background:"white", borderRadius:20, border:"1px solid #E5E7EB", padding:16, boxShadow:"0 4px 20px rgba(0,0,0,.06)" }}>
       <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:14 }}>
         <p style={{ fontSize:13, fontWeight:800, color:"#053366" }}>Aperçu Hero</p>
-        <div style={{ display:"flex", gap:6 }}>
-          {activeSlides.map((_,i) => (
-            <button key={i} onClick={()=>setPreviewIdx(i)}
-              style={{ width:i===previewIdx?28:8, height:6, borderRadius:3, background:i===previewIdx?"#02AFCF":"#E5E7EB", border:"none", cursor:"pointer", transition:"all .2s" }}/>
-          ))}
+        {/* Navigation arrows au lieu des points */}
+        <div style={{ display:"flex", gap:6, alignItems:"center" }}>
+          <button
+            onClick={() => setPreviewIdx(i => Math.max(0, i - 1))}
+            disabled={previewIdx === 0}
+            style={{ width:26, height:26, borderRadius:8, border:"1.5px solid #E5E7EB", background:"white", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", color: previewIdx===0?"#D1D5DB":"#374151" }}
+          >
+            <ArrowUp size={12}/>
+          </button>
+          <span style={{ fontSize:11, fontWeight:700, color:"#9CA3AF", minWidth:40, textAlign:"center" }}>
+            {activeSlides.length > 0 ? `${previewIdx + 1} / ${activeSlides.length}` : "0 / 0"}
+          </span>
+          <button
+            onClick={() => setPreviewIdx(i => Math.min(activeSlides.length - 1, i + 1))}
+            disabled={previewIdx >= activeSlides.length - 1}
+            style={{ width:26, height:26, borderRadius:8, border:"1.5px solid #E5E7EB", background:"white", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", color: previewIdx>=activeSlides.length-1?"#D1D5DB":"#374151" }}
+          >
+            <ArrowDown size={12}/>
+          </button>
         </div>
       </div>
       {activeSlides.length===0 ? (
@@ -305,10 +426,9 @@ export default function SliderAdminClient({
               <div style={{ padding:"6px 12px", background:"rgba(255,255,255,.15)", border:"1px solid rgba(255,255,255,.35)", borderRadius:8, fontSize:11, fontWeight:600, color:"white" }}>Voir</div>
             </div>
           </div>
-          <div style={{ position:"absolute", bottom:12, left:24, display:"flex", gap:6 }}>
-            {activeSlides.map((_,i) => (
-              <div key={i} style={{ width:i===previewIdx?22:5, height:5, borderRadius:3, background:i===previewIdx?previewInfo.color:"rgba(255,255,255,.35)", transition:"all .2s" }}/>
-            ))}
+          {/* ── Barre de progression colorée en bas (remplace les dots) ── */}
+          <div style={{ position:"absolute", bottom:0, left:0, right:0, height:3, background:"rgba(255,255,255,.2)" }}>
+            <div style={{ height:"100%", background:previewInfo.color, width:`${((previewIdx+1)/activeSlides.length)*100}%`, transition:"width .3s" }}/>
           </div>
         </div>
       )}
@@ -361,7 +481,7 @@ export default function SliderAdminClient({
         {/* ══ LEFT ══ */}
         <div>
 
-          {/* ① ADD TRIGGER BUTTONS — always visible at top */}
+          {/* ① ADD TRIGGER BUTTONS */}
           <div className="add-trigger-bar">
             <button
               className={`add-trigger-btn ${addMode==="excursion"?"active":""}`}
@@ -386,10 +506,9 @@ export default function SliderAdminClient({
             </button>
           </div>
 
-          {/* ② ADD FORM — expanded inline below triggers */}
+          {/* ② ADD FORM */}
           {addMode && (
             <div className="add-form-container">
-              {/* Tab switcher inside form */}
               <div className="type-selector-bar">
                 {(["excursion","video","custom"] as SlideType[]).map(t => (
                   <button
@@ -402,7 +521,6 @@ export default function SliderAdminClient({
                     :                  <><Image size={14}/><span>Image</span></>}
                   </button>
                 ))}
-                {/* Close */}
                 <button
                   onClick={() => setAddMode(null)}
                   style={{ padding:"0 14px", border:"none", background:"transparent", cursor:"pointer", color:"#9CA3AF", display:"flex", alignItems:"center" }}
@@ -450,16 +568,11 @@ export default function SliderAdminClient({
                   </div>
                 )}
 
-                {/* Custom image */}
+                {/* Custom image — with PC upload */}
                 {addMode==="custom" && (
                   <div>
-                    <p style={{ fontSize:11, fontWeight:700, color:"#9CA3AF", textTransform:"uppercase", letterSpacing:".5px", marginBottom:6 }}>URL de l'image</p>
-                    <input className="input-field" value={newImgUrl} onChange={e=>setNewImgUrl(e.target.value)} placeholder="https://images.unsplash.com/…"/>
-                    {newImgUrl && (
-                      <div style={{ marginTop:8, height:80, borderRadius:10, overflow:"hidden", border:"1px solid #EEF2FF" }}>
-                        <img src={newImgUrl} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }} onError={e=>{(e.target as HTMLImageElement).style.display="none"}}/>
-                      </div>
-                    )}
+                    <p style={{ fontSize:11, fontWeight:700, color:"#9CA3AF", textTransform:"uppercase", letterSpacing:".5px", marginBottom:8 }}>Image</p>
+                    <ImageUploadField value={newImgUrl} onChange={setNewImgUrl} />
                   </div>
                 )}
 
@@ -607,9 +720,11 @@ export default function SliderAdminClient({
                         )}
                         {slide.type==="custom" && (
                           <div>
-                            <p style={{ fontSize:11, fontWeight:700, color:"#9CA3AF", textTransform:"uppercase", letterSpacing:".5px", marginBottom:6 }}>URL de l'image</p>
-                            <input className="input-field" value={slide.custom_image_url||""} placeholder="https://…"
-                              onChange={e=>setSlides(p=>p.map((s,i)=>i===idx?{...s,custom_image_url:e.target.value}:s))}/>
+                            <p style={{ fontSize:11, fontWeight:700, color:"#9CA3AF", textTransform:"uppercase", letterSpacing:".5px", marginBottom:8 }}>Image</p>
+                            <ImageUploadField
+                              value={slide.custom_image_url||""}
+                              onChange={url=>setSlides(p=>p.map((s,i)=>i===idx?{...s,custom_image_url:url}:s))}
+                            />
                           </div>
                         )}
                         <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>

@@ -17,7 +17,7 @@
 }
 
 body {
-  font-family: inherit'Outfit', sans-serif;
+  font-family: 'Outfit', sans-serif;
   background: var(--sand);
   color: var(--ink);
 }
@@ -98,8 +98,8 @@ body {
   letter-spacing: .3px;
 }
 .exc-title {
-  font-family: inherit'Cormorant Garamond', serif;
-  font-size: clamp(28px, 4vw, 42px);
+  font-family: 'Cormorant Garamond', serif;
+  font-size: clamp(24px, 4vw, 42px);
   font-weight: 700;
   color: #053366;
   letter-spacing: -.5px;
@@ -231,7 +231,7 @@ body {
   bottom: 22px;
   left: 24px;
   right: 24px;
-  font-family: inherit'Cormorant Garamond', serif;
+  font-family: 'Cormorant Garamond', serif;
   font-size: 28px;
   font-weight: 700;
   color: white;
@@ -266,6 +266,8 @@ body {
   overflow-x: auto;
   padding: 2px 0;
   margin-top: 10px;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
 }
 .thumb-rail::-webkit-scrollbar {
   height: 3px;
@@ -368,7 +370,7 @@ body {
 
 /* ========== SECTION HEADING ========== */
 .s-heading {
-  font-family: inherit'Cormorant Garamond', serif;
+  font-family: 'Cormorant Garamond', serif;
   font-size: 26px;
   font-weight: 700;
   color: var(--ink);
@@ -407,7 +409,7 @@ body {
   display: flex;
   align-items: center;
   gap: 6px;
-  font-family: inherit'Outfit', sans-serif;
+  font-family: 'Outfit', sans-serif;
   padding: 0;
 }
 
@@ -538,7 +540,7 @@ body {
   gap: 7px;
 }
 
-/* ========== ALERT BOXES (important_info & cancel_policy) ========== */
+/* ========== ALERT BOXES ========== */
 .exc-alert-box {
   display: flex;
   gap: 14px;
@@ -618,7 +620,7 @@ body {
   gap: 14px;
 }
 .exc-reviews-title {
-  font-family: inherit'Cormorant Garamond', serif;
+  font-family: 'Cormorant Garamond', serif;
   font-size: 28px;
   font-weight: 700;
   color: var(--ink);
@@ -662,6 +664,7 @@ body {
   align-items: center;
   gap: 3px;
   margin-bottom: 16px;
+  flex-wrap: wrap;
 }
 .star-btn {
   background: none;
@@ -688,7 +691,7 @@ body {
   border: 1.5px solid var(--border);
   border-radius: 14px;
   font-size: 14px;
-  font-family: inherit'Outfit', sans-serif;
+  font-family: 'Outfit', sans-serif;
   resize: vertical;
   color: var(--ink);
   background: var(--sand);
@@ -702,7 +705,7 @@ body {
   font-size: 14px;
   font-weight: 700;
   cursor: pointer;
-  font-family: inherit'Outfit', sans-serif;
+  font-family: 'Outfit', sans-serif;
   transition: all .2s;
   display: flex;
   align-items: center;
@@ -917,7 +920,7 @@ body {
   cursor: pointer;
   font-size: 12px;
   font-weight: 700;
-  font-family: inherit'Outfit', sans-serif;
+  font-family: 'Outfit', sans-serif;
   transition: all .18s;
   color: var(--muted);
 }
@@ -948,7 +951,7 @@ body {
   margin-bottom: 8px;
 }
 .booking-price-value {
-  font-family: inherit'Cormorant Garamond', serif;
+  font-family: 'Cormorant Garamond', serif;
   font-size: 42px;
   font-weight: 700;
   color: var(--ink);
@@ -1005,7 +1008,7 @@ body {
   font-size: 15px;
   font-weight: 700;
   cursor: pointer;
-  font-family: inherit'Outfit', sans-serif;
+  font-family: 'Outfit', sans-serif;
   transition: all .22s;
   display: flex;
   align-items: center;
@@ -1035,7 +1038,7 @@ body {
   font-size: 14px;
   font-weight: 700;
   cursor: pointer;
-  font-family: inherit'Outfit', sans-serif;
+  font-family: 'Outfit', sans-serif;
   transition: all .2s;
   display: flex;
   align-items: center;
@@ -1056,7 +1059,7 @@ body {
   font-size: 13.5px;
   font-weight: 600;
   cursor: pointer;
-  font-family: inherit'Outfit', sans-serif;
+  font-family: 'Outfit', sans-serif;
   transition: all .18s;
   display: flex;
   align-items: center;
@@ -1197,7 +1200,7 @@ body {
   margin-bottom: 20px;
 }
 .modal-title {
-  font-family: inherit'Cormorant Garamond', serif;
+  font-family: 'Cormorant Garamond', serif;
   font-size: 22px;
   font-weight: 700;
   color: var(--ink);
@@ -1250,7 +1253,7 @@ body {
   border: 1.5px solid var(--border);
   border-radius: 14px;
   font-size: 14px;
-  font-family: inherit'Outfit', sans-serif;
+  font-family: 'Outfit', sans-serif;
   resize: none;
   color: var(--ink);
   line-height: 1.7;
@@ -1270,7 +1273,7 @@ body {
   background: none;
   cursor: pointer;
   font-size: 14px;
-  font-family: inherit'Outfit', sans-serif;
+  font-family: 'Outfit', sans-serif;
   color: var(--muted);
 }
 .modal-send-btn {
@@ -1280,7 +1283,7 @@ body {
   border-radius: 12px;
   font-size: 14px;
   font-weight: 700;
-  font-family: inherit'Outfit', sans-serif;
+  font-family: 'Outfit', sans-serif;
   transition: all .2s;
   display: flex;
   align-items: center;
@@ -1314,7 +1317,7 @@ body {
   border: 2px solid #6EE7B7;
 }
 .modal-success-title {
-  font-family: inherit'Cormorant Garamond', serif;
+  font-family: 'Cormorant Garamond', serif;
   font-size: 22px;
   font-weight: 700;
   color: var(--ink);
@@ -1329,7 +1332,7 @@ body {
   margin-bottom: 24px;
 }
 .prestataire-modal-title {
-  font-family: inherit'Cormorant Garamond', serif;
+  font-family: 'Cormorant Garamond', serif;
   font-size: 24px;
   font-weight: 700;
   color: var(--ink);
@@ -1487,7 +1490,7 @@ input:focus, textarea:focus {
   align-items: center;
   justify-content: center;
   transition: all .15s;
-  font-family: inherit'Outfit', sans-serif;
+  font-family: 'Outfit', sans-serif;
 }
 .counter-btn:hover:not(:disabled) {
   background: #E5E7EB;
@@ -1497,48 +1500,667 @@ input:focus, textarea:focus {
   cursor: not-allowed;
 }
 
-/* ========== RESPONSIVE ========== */
+/* =====================================================
+   RESPONSIVE — TABLET (≤ 1024px)
+   ===================================================== */
 @media (max-width: 1024px) {
   .exc-grid {
     grid-template-columns: 1fr;
   }
+
+  /* Sidebar moves above content on tablet */
   .exc-right {
     position: static;
     order: -1;
   }
+
   .exc-stats-grid {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(4, 1fr);
+  }
+
+  .gallery-main {
+    height: 480px;
+  }
+
+  .booking-card {
+    /* Horizontal layout on tablet so it doesn't feel too tall */
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 0 24px;
+    align-items: start;
+  }
+
+  .booking-price {
+    grid-column: 1 / -1;
+  }
+
+  .booking-details {
+    grid-column: 1 / -1;
   }
 }
 
-@media (max-width: 640px) {
-  .exc-container {
-    padding: 0 16px 60px;
-  }
+/* =====================================================
+   RESPONSIVE — SMALL TABLET / LARGE PHONE (≤ 768px)
+   ===================================================== */
+@media (max-width: 768px) {
   .exc-breadcrumb {
-    padding: 10px 16px 0;
+    padding: 10px 20px 0;
   }
+
+  .exc-container {
+    padding: 0 20px 60px;
+  }
+
   .exc-title-block {
-    margin: 0 -16px 0;
-    padding: 20px 16px 24px;
+    margin: 0 -20px 0;
+    padding: 22px 20px 26px;
   }
+
+  .exc-title {
+    font-size: clamp(22px, 6vw, 32px);
+  }
+
+  .exc-meta {
+    gap: 12px;
+  }
+
+  .exc-meta-item {
+    font-size: 12px;
+  }
+
   .gallery-main {
-    height: 300px;
-    border-radius: 18px;
+    height: 380px;
+    border-radius: 20px;
   }
+
+  .gallery-city {
+    font-size: 22px;
+  }
+
+  .g-arrow {
+    width: 40px;
+    height: 40px;
+  }
+
   .exc-stats-grid {
     grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
   }
+
+  .stat-pill {
+    padding: 12px 14px;
+    gap: 8px;
+  }
+
+  .stat-icon-box {
+    width: 36px;
+    height: 36px;
+  }
+
+  .stat-value {
+    font-size: 15px;
+  }
+
+  .s-heading {
+    font-size: 22px;
+  }
+
+  .glass-card-padded {
+    padding: 20px;
+  }
+
+  .glass-card-sm {
+    padding: 16px 18px;
+  }
+
   .exc-inclusions-grid {
     grid-template-columns: 1fr;
   }
-  .glass-card-padded {
-    padding: 18px 18px;
+
+  .review-comment {
+    padding-left: 0;
   }
+
+  .review-response {
+    margin-left: 0;
+  }
+
+  .review-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .exc-reviews-title {
+    font-size: 22px;
+  }
+
+  .review-login-prompt {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 14px;
+    padding: 16px 18px;
+  }
+
+  .review-login-link {
+    width: 100%;
+    text-align: center;
+  }
+
   .booking-card {
-    padding: 18px;
+    display: block;
+    padding: 20px;
   }
+
+  .booking-price-value {
+    font-size: 36px;
+  }
+
+  .modal {
+    padding: 24px 20px;
+    border-radius: 22px;
+  }
+
+  .prestataire-profile {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 14px;
+  }
+
+  .prestataire-avatar {
+    width: 64px;
+    height: 64px;
+  }
+
+  .prestataire-name {
+    font-size: 17px;
+  }
+}
+
+/* =====================================================
+   RESPONSIVE — MOBILE (≤ 480px)
+   ===================================================== */
+@media (max-width: 480px) {
+  /* Layout & spacing */
+  .exc-breadcrumb {
+    padding: 8px 14px 0;
+  }
+
+  .exc-breadcrumb-title {
+    max-width: 130px;
+  }
+
+  .exc-container {
+    padding: 0 14px 56px;
+  }
+
+  .exc-title-block {
+    margin: 0 -14px 0;
+    padding: 18px 14px 22px;
+  }
+
+  /* Title */
+  .exc-title {
+    font-size: clamp(20px, 7vw, 28px);
+    margin-bottom: 12px;
+  }
+
+  /* Meta items — wrap tightly */
   .exc-meta {
+    gap: 8px 14px;
+  }
+
+  .exc-meta-item {
+    font-size: 11.5px;
+    gap: 4px;
+  }
+
+  .exc-categories {
+    gap: 5px;
+    margin-bottom: 10px;
+  }
+
+  .exc-category {
+    font-size: 10px;
+    padding: 3px 10px;
+  }
+
+  /* Gallery */
+  .gallery-main {
+    height: 260px;
+    border-radius: 16px;
+  }
+
+  .gallery-city {
+    font-size: 18px;
+    bottom: 16px;
+    left: 16px;
+    right: 16px;
+  }
+
+  .gallery-counter {
+    top: 12px;
+    left: 12px;
+    font-size: 11px;
+    padding: 5px 10px;
+  }
+
+  .gallery-fav-btn {
+    top: 12px;
+    right: 12px;
+    width: 40px;
+    height: 40px;
+  }
+
+  .g-arrow {
+    width: 36px;
+    height: 36px;
+  }
+
+  .thumb {
+    width: 62px;
+    height: 48px;
+    border-radius: 10px;
+  }
+
+  /* Stats — 2 columns stay but more compact */
+  .exc-stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 7px;
+  }
+
+  .stat-pill {
+    padding: 10px 12px;
+    border-radius: 14px;
+  }
+
+  .stat-icon-box {
+    width: 32px;
+    height: 32px;
+    border-radius: 10px;
+  }
+
+  .stat-value {
+    font-size: 14px;
+  }
+
+  .stat-label {
+    font-size: 9px;
+  }
+
+  .stat-sub {
+    font-size: 8px;
+  }
+
+  /* Cards */
+  .glass-card {
+    border-radius: 18px;
+  }
+
+  .glass-card-padded {
+    padding: 16px 15px;
+  }
+
+  .glass-card-sm {
+    padding: 14px 15px;
+  }
+
+  /* Headings */
+  .s-heading {
+    font-size: 19px;
+    margin-bottom: 14px;
+    gap: 9px;
+  }
+
+  .s-heading::before {
+    height: 20px;
+  }
+
+  /* Description */
+  .exc-description {
+    font-size: 14px;
+    line-height: 1.85;
+  }
+
+  /* Inclusions — single column */
+  .exc-inclusions-grid {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+
+  .inc-chip {
+    padding: 9px 12px;
+    font-size: 12.5px;
+  }
+
+  /* Info rows */
+  .exc-info-row {
+    gap: 10px;
+    padding: 12px 0;
+  }
+
+  .exc-info-icon-wrap {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+  }
+
+  .exc-info-value {
+    font-size: 13px;
+  }
+
+  /* Reviews */
+  .exc-reviews-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+    margin-bottom: 14px;
+  }
+
+  .exc-reviews-title {
+    font-size: 20px;
+  }
+
+  .exc-reviews-title-group {
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .review-form {
+    padding: 16px 15px;
+  }
+
+  .review-card {
+    padding: 16px 14px;
+    border-radius: 16px;
+  }
+
+  .review-comment {
+    padding-left: 0;
+    font-size: 13.5px;
+  }
+
+  .review-response {
+    margin-left: 0;
+    padding: 10px 13px;
+  }
+
+  .review-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .review-avatar {
+    width: 38px;
+    height: 38px;
+    font-size: 14px;
+  }
+
+  .review-name {
+    font-size: 13px;
+  }
+
+  .stars-row {
+    gap: 1px;
+  }
+
+  .star-btn {
+    padding: 1px 2px;
+  }
+
+  .rating-label {
+    font-size: 12px;
+    padding: 3px 10px;
+    margin-left: 6px;
+  }
+
+  .review-submit-btn {
+    padding: 11px 20px;
+    font-size: 13px;
+    width: 100%;
+    justify-content: center;
+  }
+
+  /* Booking card — full width compact */
+  .booking-card {
+    padding: 16px 15px;
+    border-radius: 20px;
+  }
+
+  .booking-price-value {
+    font-size: 32px;
+  }
+
+  .booking-price-currency {
+    font-size: 14px;
+  }
+
+  .booking-price-per {
+    font-size: 10px;
+  }
+
+  .booking-detail-row {
+    padding: 9px 12px;
+  }
+
+  .booking-detail-label {
+    font-size: 11px;
+  }
+
+  .booking-detail-value {
+    font-size: 12px;
+  }
+
+  .btn-book {
+    padding: 14px;
+    font-size: 14px;
+    border-radius: 14px;
+  }
+
+  .btn-msg {
+    padding: 12px;
+    font-size: 13px;
+    border-radius: 12px;
+  }
+
+  .btn-fav {
+    padding: 11px;
+    font-size: 13px;
+  }
+
+  .booking-guarantees {
+    gap: 7px;
+    margin-top: 14px;
+    padding-top: 14px;
+  }
+
+  .guarantee-item {
+    padding: 6px 9px;
+    border-radius: 8px;
+    font-size: 11px;
+  }
+
+  /* Guide card */
+  .guide-card {
+    padding: 12px 14px;
+  }
+
+  .guide-avatar {
+    width: 42px;
+    height: 42px;
+  }
+
+  .guide-name {
+    font-size: 13px;
+  }
+
+  /* Alert boxes */
+  .exc-alert-box {
+    padding: 13px 14px;
+    gap: 10px;
+  }
+
+  .exc-alert-icon {
+    width: 30px;
+    height: 30px;
+    border-radius: 8px;
+  }
+
+  .exc-alert-text {
+    font-size: 13px;
+    line-height: 1.75;
+    padding-top: 4px;
+  }
+
+  /* Lang items */
+  .exc-lang-item {
+    padding: 7px 14px;
+    font-size: 12px;
+  }
+
+  /* Date chips */
+  .exc-date-chip {
+    font-size: 12px;
+    padding: 6px 13px;
+  }
+
+  /* Modals — full bottom sheet feel */
+  .overlay {
+    align-items: flex-end;
+    padding: 0;
+  }
+
+  .modal {
+    border-radius: 24px 24px 0 0;
+    padding: 22px 18px 32px;
+    max-height: 92vh;
+    max-width: 100%;
+  }
+
+  .modal-title {
+    font-size: 19px;
+  }
+
+  .modal-subtitle {
+    font-size: 12px;
+  }
+
+  .modal-textarea {
+    height: 100px;
+    font-size: 13.5px;
+  }
+
+  .modal-actions {
+    gap: 8px;
+  }
+
+  .modal-cancel-btn {
+    padding: 11px;
+    font-size: 13px;
+  }
+
+  .modal-send-btn {
+    padding: 11px;
+    font-size: 13px;
+  }
+
+  /* Prestataire modal */
+  .prestataire-modal-title {
+    font-size: 20px;
+  }
+
+  .prestataire-profile {
+    flex-direction: row;
+    gap: 14px;
+  }
+
+  .prestataire-avatar {
+    width: 58px;
+    height: 58px;
+  }
+
+  .prestataire-name {
+    font-size: 16px;
+  }
+
+  .prestataire-description {
+    padding: 13px 14px;
+  }
+
+  .prestataire-desc-text {
+    font-size: 13.5px;
+  }
+
+  /* Login prompt */
+  .review-login-prompt {
+    flex-direction: column;
+    padding: 14px 15px;
     gap: 12px;
+  }
+
+  .review-login-link {
+    width: 100%;
+    text-align: center;
+    padding: 12px;
+    font-size: 13.5px;
+  }
+
+  /* Empty state */
+  .review-empty {
+    padding: 38px 16px;
+  }
+}
+
+/* =====================================================
+   RESPONSIVE — VERY SMALL PHONES (≤ 360px)
+   ===================================================== */
+@media (max-width: 360px) {
+  .exc-container {
+    padding: 0 12px 52px;
+  }
+
+  .exc-title-block {
+    margin: 0 -12px 0;
+    padding: 16px 12px 20px;
+  }
+
+  .exc-breadcrumb {
+    padding: 8px 12px 0;
+  }
+
+  .gallery-main {
+    height: 230px;
+  }
+
+  .exc-title {
+    font-size: 19px;
+  }
+
+  .exc-stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 6px;
+  }
+
+  .stat-pill {
+    padding: 9px 10px;
+    gap: 7px;
+  }
+
+  .stat-icon-box {
+    width: 28px;
+    height: 28px;
+  }
+
+  .stat-value {
+    font-size: 13px;
+  }
+
+  .s-heading {
+    font-size: 17px;
+  }
+
+  .booking-price-value {
+    font-size: 28px;
   }
 }
