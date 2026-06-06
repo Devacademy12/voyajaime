@@ -272,7 +272,7 @@ export default function ExcursionsListClient({
                 borderRadius: 20, fontSize: 14,
                 fontWeight: 800, color: "white",
               }}>
-                {exc.price_per_person} DT
+                {exc.price_per_person} € 
               </div>
 
               {/* Nb photos */}
