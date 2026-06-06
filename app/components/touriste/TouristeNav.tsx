@@ -166,14 +166,14 @@ export default function TouristeNav({
         .glink {
           display: flex; align-items: center; gap: 5px;
           padding: 7px 11px; border-radius: 8px;
-          font-size: 14px; font-weight: 600; letter-spacing: -0.1px;
+          font-size: 16px; font-weight: 600; letter-spacing: -0.1px;
           color: var(--gnav-text);
           text-decoration: none; white-space: nowrap;
           border: 1px solid transparent;
           transition: color 0.15s, background 0.15s, border-color 0.15s;
           font-family: inherit'DM Sans', sans-serif;
         }
-        .glink i { font-size: 14px; opacity: 0.65; transition: opacity 0.15s; }
+        .glink i { font-size: 16px; opacity: 0.65; transition: opacity 0.15s; }
         .glink:hover {
           color: #2B96A8;
           background: rgba(43,150,168,0.09);
@@ -196,14 +196,14 @@ export default function TouristeNav({
         .glink-plan {
           display: flex; align-items: center; gap: 5px;
           padding: 7px 11px; border-radius: 8px;
-          font-size: 14px; font-weight: 600; letter-spacing: -0.1px;
+          font-size: 16px; font-weight: 600; letter-spacing: -0.1px;
           color: var(--gnav-text); white-space: nowrap;
           cursor: pointer; background: none;
           border: 1px solid transparent;
           font-family: inherit'DM Sans', sans-serif;
           transition: color 0.15s, background 0.15s, border-color 0.15s;
         }
-        .glink-plan i.mi { font-size: 14px; opacity: 0.65; }
+        .glink-plan i.mi { font-size: 16px; opacity: 0.65; }
         .glink-plan .chev { font-size: 13px; opacity: 0.5; transition: transform 0.2s, opacity 0.15s; }
         .glink-plan:hover       { color: #2B96A8; background: rgba(43,150,168,0.09); border-color: rgba(43,150,168,0.14); }
         .glink-plan:hover i     { opacity: 1; }
