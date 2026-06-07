@@ -626,19 +626,18 @@ console.log("🖼️ CARD:", {
   <>
     {/* ✅ TEST DEBUG */}
     <img
-      src={photos[0]}
-      alt={activity.name}
-      loading="lazy"
-      style={{
-        width: "106px",
-        height: "120px", 
-        objectFit: "cover",
-        display: "block",
-        position: "static", // ← force hors du positionnement absolu
-      }}
-      onError={(e) => console.log("❌ IMAGE ERROR:", e)}
-      onLoad={() => console.log("✅ IMAGE LOADED:", photos[0])}
-    />
+  src={photos[0]}
+  alt={activity.name}
+  style={{
+    width: "106px",
+    height: "130px",
+    objectFit: "cover",
+    display: "block",
+  }}
+  onError={(e) => {
+    (e.currentTarget as HTMLImageElement).style.display = "none";
+  }}
+/>
   </>
         ) : (
           <div className="itin-act-img-ph">
