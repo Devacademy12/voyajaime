@@ -58,7 +58,35 @@ function parseList(val?: string | string[]): string[] {
   return val.split(/[,;|]/).map(s => s.trim()).filter(Boolean);
 }
 function parsePhotos(val?: string | string[]): string[] {
-  return parseList(val).filter(u => u.startsWith("http") || u.startsWith("/"));
+  if (!val) return [];
+  
+  if (typeof val === "string") {
+    try {
+      const parsed = JSON.parse(val);
+      if (Array.isArray(parsed)) {
+        return parsed.filter(
+          (p): p is string => typeof p === "string" && (p.startsWith("http") || p.startsWith("/"))
+        );
+      }
+    } catch {}
+    if (val.startsWith("http") || val.startsWith("/")) return [val];
+    return [];
+  }
+  
+  if (Array.isArray(val)) {
+    return val.flatMap(p => {
+      if (typeof p !== "string") return [];
+      try {
+        const parsed = JSON.parse(p);
+        if (Array.isArray(parsed)) return parsed.filter(
+          (x): x is string => typeof x === "string" && (x.startsWith("http") || x.startsWith("/"))
+        );
+      } catch {}
+      return (p.startsWith("http") || p.startsWith("/")) ? [p] : [];
+    });
+  }
+  
+  return [];
 }
 function getSlot(time?: string): "morning" | "afternoon" | "evening" | "unset" {
   if (!time) return "unset";
@@ -540,9 +568,7 @@ function ActivityCard({ activity, onEdit, onRemove, excursions }: {
     excursions.find(e => e.title?.toLowerCase().trim().includes(actName));
 
   // ✅ Photos : Supabase → activité → vide
-  const supabasePhotos = (realExc?.photos ?? []).filter(
-    (p): p is string => typeof p === "string" && (p.startsWith("http") || p.startsWith("/"))
-  );
+  const supabasePhotos = parsePhotos(realExc?.photos);
   const activityPhotos = parsePhotos(activity.photos).filter(
     p => p.startsWith("http") || p.startsWith("/")
   );

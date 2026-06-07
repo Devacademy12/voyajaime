@@ -175,9 +175,16 @@ function extractItinerary(raw: unknown, excursions: Excursion[]): Itinerary {
           const durationStr = `${durationHours}h`;
 
           // ✅ Photos : Supabase en priorité absolue, filtrage URLs valides
-          const supabasePhotos = (excursion?.photos ?? []).filter(
+              const supabasePhotos = excursion?.photos?.length
+        ? excursion.photos.filter(
             (p): p is string => typeof p === "string" && (p.startsWith("http") || p.startsWith("/"))
-          );
+          ).flatMap(p => {
+            try {
+              const parsed = JSON.parse(p);
+              return Array.isArray(parsed) ? parsed : [p];
+            } catch { return [p]; }
+          })
+        : [];
           const aiPhotos = (Array.isArray(act.photos) ? act.photos : []).filter(
             (p: unknown): p is string => typeof p === "string" && (p.startsWith("http") || p.startsWith("/"))
           );
