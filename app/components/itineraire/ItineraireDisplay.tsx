@@ -25,19 +25,21 @@ type DayPlan = {
 };
 type Itinerary = { title: string; days: DayPlan[] };
 
+type ExcursionData = {
+  id: string; title: string; city: string;
+  price_per_person?: number; duration_hours?: number;
+  description?: string; categories?: string[];
+  photos?: string[]; languages?: string[];
+  inclusions?: string[]; rating?: number; reviews_count?: number;
+  is_active?: boolean;
+};
+
 type ItineraireDisplayProps = {
   itinerary: Itinerary;
   selectedCities: string[];
   selectedCats?: string[];
   categories?: { id: string; nom?: string; name?: string }[];
-  excursions: {
-    id: string; title: string; city: string;
-    price_per_person?: number; duration_hours?: number;
-    description?: string; categories?: string[];
-    photos?: string[]; languages?: string[];
-    inclusions?: string[]; rating?: number; reviews_count?: number;
-    is_active?: boolean;
-  }[];
+  excursions: ExcursionData[];
   totalPrice: number;
   saving: boolean;
   saveStatus: "idle" | "ok" | "error" | "login" | "saving";
@@ -522,10 +524,21 @@ function SaveButton({ saving, saveStatus, onClick }: {
 }
 
 /* ── ActivityCard ── */
-function ActivityCard({ activity, onEdit, onRemove }: {
-  activity: Activity; onEdit: () => void; onRemove: () => void;
+// ✅ FIX : excursions passé en prop pour récupérer les vraies photos Supabase
+function ActivityCard({ activity, onEdit, onRemove, excursions }: {
+  activity: Activity;
+  onEdit: () => void;
+  onRemove: () => void;
+  excursions: ExcursionData[];
 }) {
-  const photos     = parsePhotos(activity.photos);
+  // ✅ Chercher la vraie excursion Supabase par ID ou par nom
+  const realExc = excursions.find(e =>
+    String(e.id) === String(activity.id) ||
+    e.title?.toLowerCase() === activity.name?.toLowerCase()
+  );
+
+  // ✅ Priorité aux photos Supabase (vraies URLs) sur celles de l'activité IA
+  const photos     = parsePhotos(realExc?.photos || activity.photos);
   const languages  = parseList(activity.languages);
   const inclusions = parseList(activity.inclusion);
   const price      = activity.price || 0;
@@ -622,9 +635,24 @@ function AlternativePicker({ alternatives, currentName, onPick, onClose }: {
           : <div className="itin-modal-body">
               {alternatives.map(exc => (
                 <div key={exc.id} className="itin-alt-item"
-                  onClick={() => onPick({ id:exc.id, name:exc.title, city:exc.city, price:exc.price_per_person||0, duration:exc.duration_hours?`${exc.duration_hours}h`:"2h", photos:exc.photos, rating:exc.rating })}>
+                  onClick={() => onPick({
+                    id: exc.id,
+                    name: exc.title,
+                    city: exc.city,
+                    price: exc.price_per_person || 0,
+                    duration: exc.duration_hours ? `${exc.duration_hours}h` : "2h",
+                    duration_hours: exc.duration_hours,
+                    photos: exc.photos,
+                    rating: exc.rating,
+                    languages: exc.languages,
+                    inclusion: exc.inclusions,
+                    description: exc.description,
+                  })}>
                   <div className="itin-alt-thumb">
-                    {exc.photos?.[0] ? <img src={exc.photos[0]} alt={exc.title}/> : <Camera size={15} color="#CBD5E1"/>}
+                    {exc.photos?.[0]
+                      ? <img src={exc.photos[0]} alt={exc.title}/>
+                      : <Camera size={15} color="#CBD5E1"/>
+                    }
                   </div>
                   <div style={{flex:1,minWidth:0}}>
                     <div className="itin-alt-name">{exc.title}</div>
@@ -646,7 +674,7 @@ function AlternativePicker({ alternatives, currentName, onPick, onClose }: {
 
 /* ── AddExcursionModal ── */
 function AddExcursionModal({ city, excursions, existingIds, slotKey, onAdd, onClose }: {
-  city: string; excursions: any[]; existingIds: string[];
+  city: string; excursions: ExcursionData[]; existingIds: string[];
   slotKey: "morning"|"afternoon"|"evening"; onAdd:(a:Activity)=>void; onClose:()=>void;
 }) {
   const [search, setSearch] = useState("");
@@ -671,9 +699,25 @@ function AddExcursionModal({ city, excursions, existingIds, slotKey, onAdd, onCl
             ? <div className="itin-no-alt"><Camera size={24} strokeWidth={1.5} style={{opacity:.3,marginBottom:10}}/><p style={{fontSize:12}}>{excursions.filter(e=>e.city===city).length===0?`Aucune excursion à ${city}`:"Aucun résultat"}</p></div>
             : filtered.map(exc => (
                 <div key={exc.id} className="itin-alt-item"
-                  onClick={() => onAdd({ id:exc.id, name:exc.title, city:exc.city, price:exc.price_per_person||0, duration:exc.duration_hours?`${exc.duration_hours}h`:"2h", duration_hours:exc.duration_hours, photos:exc.photos, rating:exc.rating, languages:exc.languages, inclusion:exc.inclusions, description:exc.description, time:SLOT_DEFAULT_TIMES[slotKey] })}>
+                  onClick={() => onAdd({
+                    id: exc.id,
+                    name: exc.title,
+                    city: exc.city,
+                    price: exc.price_per_person || 0,
+                    duration: exc.duration_hours ? `${exc.duration_hours}h` : "2h",
+                    duration_hours: exc.duration_hours,
+                    photos: exc.photos,
+                    rating: exc.rating,
+                    languages: exc.languages,
+                    inclusion: exc.inclusions,
+                    description: exc.description,
+                    time: SLOT_DEFAULT_TIMES[slotKey],
+                  })}>
                   <div className="itin-alt-thumb">
-                    {exc.photos?.[0]?<img src={exc.photos[0]} alt={exc.title}/>:<Camera size={15} color="#CBD5E1"/>}
+                    {exc.photos?.[0]
+                      ? <img src={exc.photos[0]} alt={exc.title}/>
+                      : <Camera size={15} color="#CBD5E1"/>
+                    }
                   </div>
                   <div style={{flex:1,minWidth:0}}>
                     <div className="itin-alt-name">{exc.title}</div>
@@ -806,7 +850,6 @@ export default function ItineraireDisplay({
 
       {/* NAV */}
       <nav className="itin-nav">
-        
         <div className="itin-nav-pill"><Sparkles size={10}/> Mode Assisté</div>
         <div style={{display:"flex",alignItems:"center",gap:7}}>
           <button className="btn btn-ghost" onClick={onReset}><RotateCcw size={13}/> Recommencer</button>
@@ -932,9 +975,14 @@ export default function ItineraireDisplay({
                   {acts.length===0
                     ? <div className="itin-slot-empty">Aucune activité — ajoutez-en une ci-dessous</div>
                     : acts.map(act=>(
-                        <ActivityCard key={act.id} activity={act}
+                        // ✅ FIX : excursions passé à ActivityCard pour récupérer les vraies photos
+                        <ActivityCard
+                          key={act.id}
+                          activity={act}
+                          excursions={excursions}
                           onEdit={()=>setEditing({dayIdx:activeDay,actIdx:globalIdx(act)})}
-                          onRemove={()=>handleRemove(activeDay,globalIdx(act))}/>
+                          onRemove={()=>handleRemove(activeDay,globalIdx(act))}
+                        />
                       ))
                   }
                   <button className="itin-add-act" onClick={()=>setAddingExc({slotKey:key})}>
