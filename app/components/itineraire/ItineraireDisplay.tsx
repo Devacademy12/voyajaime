@@ -621,18 +621,24 @@ console.log("🖼️ CARD:", {
   return (
     <div className="itin-act">
       <div className="itin-act-img">
-        {photos[0] ? (
-          <img
-            src={photos[0]}
-            alt={activity.name}
-            loading="lazy"
-            onError={(e) => {
-              // ✅ Si l'image casse, afficher le placeholder
-              (e.currentTarget as HTMLImageElement).style.display = "none";
-              (e.currentTarget.parentElement as HTMLElement).innerHTML =
-                `<div class="itin-act-img-ph"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#CBD5E1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg><span>Photo</span></div>`;
-            }}
-          />
+       {photos[0] ? (
+  <>
+    {/* ✅ TEST DEBUG */}
+    <img
+      src={photos[0]}
+      alt={activity.name}
+      loading="lazy"
+      style={{
+        width: "106px",
+        height: "120px", 
+        objectFit: "cover",
+        display: "block",
+        position: "static", // ← force hors du positionnement absolu
+      }}
+      onError={(e) => console.log("❌ IMAGE ERROR:", e)}
+      onLoad={() => console.log("✅ IMAGE LOADED:", photos[0])}
+    />
+  </>
         ) : (
           <div className="itin-act-img-ph">
             <Camera size={24} strokeWidth={1.5}/>
