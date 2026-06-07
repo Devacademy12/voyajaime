@@ -531,14 +531,18 @@ function ActivityCard({ activity, onEdit, onRemove, excursions }: {
   onRemove: () => void;
   excursions: ExcursionData[];
 }) {
-  // ✅ Chercher la vraie excursion Supabase par ID ou par nom
-  const realExc = excursions.find(e =>
-    String(e.id) === String(activity.id) ||
-    e.title?.toLowerCase() === activity.name?.toLowerCase()
-  );
+  // Recherche multicritère robuste
+  const realExc = excursions.find(e => String(e.id) === String(activity.id))
+    ?? excursions.find(e => e.title?.toLowerCase().trim() === activity.name?.toLowerCase().trim())
+    ?? excursions.find(e => activity.name?.toLowerCase().includes(e.title?.toLowerCase() ?? ""))
+    ?? excursions.find(e => e.title?.toLowerCase().includes(activity.name?.toLowerCase() ?? ""));
 
-  // ✅ Priorité aux photos Supabase (vraies URLs) sur celles de l'activité IA
-  const photos     = parsePhotos(realExc?.photos || activity.photos);
+  // ✅ Priorité absolue : photos Supabase → photos activité → placeholder
+  const supabasePhotos = parsePhotos(realExc?.photos);
+  const activityPhotos = parsePhotos(activity.photos);
+  const photos = supabasePhotos.length > 0 ? supabasePhotos : activityPhotos;
+
+  // ... reste du composant identique
   const languages  = parseList(activity.languages);
   const inclusions = parseList(activity.inclusion);
   const price      = activity.price || 0;

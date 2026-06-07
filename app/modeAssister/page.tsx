@@ -158,36 +158,42 @@ function extractItinerary(raw: unknown, excursions: Excursion[]): Itinerary {
         date: day.date || "",
         theme: day.theme || "Découverte",
         activities: (day.activities || []).map((act: any) => {
+          const actName = (act.name || act.title || "").toLowerCase().trim();
+
+          // ✅ Recherche multicritère robuste (ID exact → nom exact → includes)
           const excursion =
             excursions.find(e => String(e.id) === String(act.id)) ||
-            excursions.find(e =>
-              e.title?.toLowerCase() === (act.name || act.title || "").toLowerCase()
-            );
+            excursions.find(e => e.title?.toLowerCase().trim() === actName) ||
+            excursions.find(e => actName.includes(e.title?.toLowerCase().trim() ?? "___")) ||
+            excursions.find(e => e.title?.toLowerCase().trim().includes(actName));
 
           const durationHours =
             parseFloat(String(act.duration_hours)) ||
             excursion?.duration_hours ||
             2;
 
-          const durationStr = durationHours % 1 === 0
-            ? `${durationHours}h`
-            : `${durationHours}h`;
+          const durationStr = `${durationHours}h`;
 
-          // ✅ FIX PRINCIPAL : Priorité aux photos Supabase (vraies URLs)
-          // L'IA génère souvent des URLs fictives ou des tableaux vides
-          const photos = excursion?.photos?.length
-            ? excursion.photos
-            : (Array.isArray(act.photos) ? act.photos : []);
+          // ✅ Photos : Supabase en priorité absolue, filtrage URLs valides
+          const supabasePhotos = (excursion?.photos ?? []).filter(
+            (p): p is string => typeof p === "string" && (p.startsWith("http") || p.startsWith("/"))
+          );
+          const aiPhotos = (Array.isArray(act.photos) ? act.photos : []).filter(
+            (p: unknown): p is string => typeof p === "string" && (p.startsWith("http") || p.startsWith("/"))
+          );
+          const photos = supabasePhotos.length > 0 ? supabasePhotos : aiPhotos;
 
           return {
-            id: act.id || `act-${Date.now()}-${Math.random()}`,
+            // ✅ ID Supabase réel en priorité (critique pour le match dans ActivityCard)
+            id: excursion?.id ?? act.id ?? `act-${Date.now()}-${Math.random()}`,
             name: act.name || act.title || "Activité",
             description: act.description || excursion?.description || "",
             time: act.depart_time || act.time || excursion?.depart_time || "",
             duration: durationStr,
             duration_hours: durationHours,
-            price: typeof act.price === "number" ? act.price : (excursion?.price_per_person ?? parseFloat(String(act.price)) ?? 0),
-            // ✅ Photos Supabase en priorité
+            price: typeof act.price === "number"
+              ? act.price
+              : (excursion?.price_per_person ?? parseFloat(String(act.price)) ?? 0),
             photos,
             languages: act.languages || excursion?.languages || ["Français"],
             inclusion: act.inclusions || act.inclusion || excursion?.inclusions || [],
@@ -202,7 +208,6 @@ function extractItinerary(raw: unknown, excursions: Excursion[]): Itinerary {
     throw new Error(`Impossible de parser l'itinéraire: ${err instanceof Error ? err.message : "Format invalide"}`);
   }
 }
-
 function removeTimeConflicts(itinerary: Itinerary): Itinerary {
   return {
     ...itinerary,
