@@ -339,7 +339,6 @@ const CSS = `
   border-radius:var(--r-lg);border:1px solid var(--border);
   box-shadow:var(--shadow-sm);overflow:hidden;
   margin-bottom:10px;transition:box-shadow .2s,transform .2s;
-  align-items:stretch;
 }
 .itin-act:hover{box-shadow:var(--shadow-md);transform:translateY(-1px)}
 .itin-act.free-day{
@@ -351,18 +350,17 @@ const CSS = `
   width:106px;min-width:106px;flex-shrink:0;
   overflow:hidden;
   background:linear-gradient(135deg,#EFF6FF,#F0F9FF);
+  min-height:130px;
 }
 .itin-act-img img{
   width:106px;
-  height:100%;
-  min-height:120px;
+  height:130px;
   object-fit:cover;
   display:block;
 }
 .itin-act-img-ph{
   width:106px;
-  min-height:120px;
-  height:100%;
+  height:130px;
   display:flex;flex-direction:column;align-items:center;justify-content:center;
   gap:5px;color:#CBD5E1;font-size:10px;
 }
