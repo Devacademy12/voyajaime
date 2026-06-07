@@ -347,7 +347,7 @@ const CSS = `
   border-style:dashed;
 }
 
-..itin-act-img{
+.itin-act-img{
   width:106px;min-width:106px;flex-shrink:0;
   position:relative;overflow:hidden;
   background:linear-gradient(135deg,#EFF6FF,#F0F9FF);
