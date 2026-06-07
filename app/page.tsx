@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import dynamic from "next/dynamic";
 import { createClient } from "@/lib/supabaseClient";
 import { ROUTES } from "@/app/lib/routes";
@@ -113,11 +114,13 @@ const CSS_PAGE = `
     grid-template-columns: repeat(5, 1fr);
     gap: 14px;
   }
+  
+  /* FIX #1: .city-card doit être display: block avec dimensions explicites */
   .city-card {
     position: relative;
     border-radius: 16px;
     overflow: hidden;
-    aspect-ratio: 3/4;
+    aspect-ratio: 3 / 4;
     cursor: pointer;
     text-decoration: none;
     display: block;
@@ -128,27 +131,50 @@ const CSS_PAGE = `
     transform: translateY(-6px);
     box-shadow: 0 18px 44px rgba(0,0,0,0.14);
   }
+  
+  /* FIX #2: Position absolute + inset + z-index sur l'image */
   .city-card-img {
-    width: 100%; height: 100%;
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
     object-fit: cover;
     transition: transform 0.5s ease;
+    z-index: 1;
   }
-  .city-card:hover .city-card-img { transform: scale(1.07); }
+  .city-card:hover .city-card-img { 
+    transform: scale(1.07); 
+  }
+  
+  /* FIX #3: Z-index sur overlay pour qu'il soit au-dessus de l'image */
   .city-card-overlay {
-    position: absolute; inset: 0;
+    position: absolute; 
+    inset: 0;
     background: linear-gradient(to top, rgba(0,0,0,0.62) 0%, rgba(0,0,0,0.08) 55%, transparent 100%);
+    z-index: 2;
   }
+  
   .city-card-name {
-    position: absolute; bottom: 13px; left: 13px;
+    position: absolute; 
+    bottom: 13px; 
+    left: 13px;
     font-family: 'Cormorant Garamond', serif;
-    font-size: 17px; font-weight: 700;
-    color: white; letter-spacing: -0.2px;
+    font-size: 17px; 
+    font-weight: 700;
+    color: white; 
+    letter-spacing: -0.2px;
+    z-index: 3;
   }
   .city-card-count {
-    position: absolute; bottom: 36px; left: 14px;
-    font-size: 10px; font-weight: 700;
+    position: absolute; 
+    bottom: 36px; 
+    left: 14px;
+    font-size: 10px; 
+    font-weight: 700;
     color: rgba(255,255,255,0.65);
-    text-transform: uppercase; letter-spacing: 1.5px;
+    text-transform: uppercase; 
+    letter-spacing: 1.5px;
+    z-index: 3;
   }
 
   .newsletter-section {
@@ -247,15 +273,34 @@ const CSS_PAGE = `
   }
 `;
 
-// ── Destinations avec images Unsplash ─────────────────────────────────────────
+// ── Destinations avec images locales ──────────────────────────────────────────
 const CITIES = [
-  { name: "Tunis",     img: "https://imgs.search.brave.com/ekbH45D9ocaj-uhA_z7OJbSlbCSFgEACAklo_Y6Kphk/rs:fit:500:0:1:0/g:ce/aHR0cHM6Ly9tZWRp/YS5pc3RvY2twaG90/by5jb20vaWQvMTI1/NTc5MTE1Ni9waG90/by9zdHJlZXQtaW4t/c291c3NlLXR1bmlz/aWEuanBnP3M9NjEy/eDYxMiZ3PTAmaz0y/MCZjPXo4RjV5N0FC/ZjRxellTZmU2V3Ez/VngxNUtrVlFoZkhT/Uk0tU0xGREpkYVk9", count: 24 },
-  { name: "Djerba",    img: "https://imgs.search.brave.com/wUgvPgaV1SGn1DR0eaq5kkVInRMeryIu48dLWsAgsuQ/rs:fit:860:0:0:0/g:ce/aHR0cHM6Ly9kamVy/YmF5LmNvbS93cC1j/b250ZW50L3VwbG9h/ZHMvMjAyNS8wNS9U/b3VyLWRlLWxpbGUt/RGplcmJhLnBuZw", count: 18 },
-  { name: "Sousse",    img: "https://imgs.search.brave.com/7psac7T8Ljdty4B77lqZh9Zp5vR0Q--KMV4h7y3Q_ZE/rs:fit:500:0:1:0/g:ce/aHR0cHM6Ly9tZWRp/YS5nZXR0eWltYWdl/cy5jb20vaWQvMTM3/MTcxNDM5MS9waG90/by90dW5pc2lhLXNv/dXNzZS1tZWRpbmEu/anBnP3M9NjEyeDYx/MiZ3PTAmaz0yMCZj/PXJ4MEdjQVRRd201/c0Y4V1FBY195QkRQ/OExwNXdDaFFfVVdp/UktocFZLNEU9", count: 12 },
-  { name: "Hammamet",  img: "https://imgs.search.brave.com/RyD4-EAWsB7ZAFNjJ1jMxr-CPgQMabjHwxUwdyET2X0/rs:fit:500:0:1:0/g:ce/aHR0cHM6Ly93d3cu/Y2FudHJhdmVsd2ls/bHRyYXZlbC5jb20v/d3AtY29udGVudC91/cGxvYWRzL3RoaW5n/cy10by1kby1oYW1t/YW1ldC10dW5pc2lh/LW9sZC1tZWRpbmEu/anBn", count: 9  },
-  { name: "Kairouan",  img: "https://imgs.search.brave.com/Q0ZBbUY-9oGKYHA7ORVPcNeu65JC0udcRz5FppxZVJ8/rs:fit:500:0:1:0/g:ce/aHR0cHM6Ly9zYWNy/ZWRzaXRlcy5jb20v/aW1hZ2VzL2Fmcmlj/YS90dW5pc2lhL0th/aXJvdWFuLUdyZWF0/LU1vc3F1ZS0xLndl/YnA", count: 7  },
+  {
+    name: "Tunis",
+    img: "/images/cities/tunis.webp",
+    count: 24,
+  },
+  {
+    name: "Djerba",
+    img: "/images/cities/Djerba.webp",
+    count: 18,
+  },
+  {
+    name: "Sousse",
+    img: "/images/cities/sousse.webp",
+    count: 12,
+  },
+  {
+    name: "Hammamet",
+    img: "/images/cities/hammamet.webp",
+    count: 9,
+  },
+  {
+    name: "Kairouan",
+    img: "/images/cities/kairouan.webp",
+    count: 7,
+  },
 ];
-
 
 // ── Reveal hook ───────────────────────────────────────────────────────────────
 function useReveal() {
@@ -339,16 +384,16 @@ export default function HomePage() {
       <HomeStyles />
       <style>{CSS_PAGE}</style>
 
-      {/* ── Navbar ────────────────────────────────────────────────────── */}
+      {/* -- Navbar ────────────────────────────────────────────────────── */}
       <TouristeNav
         userName={user ? (user.email?.split("@")[0] || "Touriste") : undefined}
         isLoggedIn={!!user?.id}
       />
 
-      {/* ── 1. HERO SLIDER ────────────────────────────────────────────── */}
+      {/* -- 1. HERO SLIDER ────────────────────────────────────────────── */}
       <HeroSlider />
 
-      {/* ── 2. PATHS SECTION ─────────────────────────────────────────── */}
+      {/* -- 2. PATHS SECTION ─────────────────────────────────────────── */}
       <div ref={refPaths} className="home-section-reveal" id="chemins">
         <PathsSection
           slides={slides}
@@ -359,7 +404,7 @@ export default function HomePage() {
 
       <hr className="home-divider" />
 
-      {/* ── 3. EXCURSIONS POPULAIRES ─────────────────────────────────── */}
+      {/* -- 3. EXCURSIONS POPULAIRES ─────────────────────────────────── */}
       <div ref={refExc} className="home-section-reveal">
         <PopularExcursions
           excursions={excursions}
@@ -371,7 +416,7 @@ export default function HomePage() {
 
       <hr className="home-divider" />
 
-      {/* ── 4. NOS DESTINATIONS — cities strip ────────────────────────── */}
+      {/* -- 4. NOS DESTINATIONS — cities strip ────────────────────────── */}
       <div ref={refCities} className="home-section-reveal cities-strip">
         <div className="cities-strip-inner">
           <div className="cities-strip-header">
@@ -418,7 +463,14 @@ export default function HomePage() {
                 className="city-card"
                 style={{ animationDelay: `${i * 0.06}s` }}
               >
-                <img src={city.img} alt={city.name} className="city-card-img" loading="lazy" />
+                {/* FIX: loading="eager" pour charger immédiatement */}
+                <img 
+                  src={city.img} 
+                  alt={city.name} 
+                  className="city-card-img" 
+                  loading="eager"
+                  decoding="async"
+                />
                 <div className="city-card-overlay" />
                 <span className="city-card-count">{city.count} excursions</span>
                 <span className="city-card-name">{city.name}</span>
@@ -430,25 +482,24 @@ export default function HomePage() {
 
       <hr className="home-divider" />
 
-      {/* ── 5. ABOUT ─────────────────────────────────────────────────── */}
+      {/* -- 5. ABOUT ─────────────────────────────────────────────────── */}
       <div ref={refAbout} className="home-section-reveal">
         <AboutSection />
       </div>
 
       <hr className="home-divider" />
 
-      {/* ── 6. BLOG ──────────────────────────────────────────────────── */}
+      {/* -- 6. BLOG ──────────────────────────────────────────────────── */}
       <div ref={refBlog} className="home-section-reveal">
         <BlogSection />
       </div>
 
-      {/* ── 8. CONTACT ───────────────────────────────────────────────── */}
-      {/* suppressHydrationWarning sur le wrapper pour absorber les diffs résiduelles */}
+      {/* -- 8. CONTACT ───────────────────────────────────────────────── */}
       <div ref={refContact} className="home-section-reveal" suppressHydrationWarning>
         <ContactSection />
       </div>
 
-      {/* ── 9. FOOTER ────────────────────────────────────────────────── */}
+      {/* -- 9. FOOTER ────────────────────────────────────────────────── */}
       <HomeFooter user={user} openAuth={openAuth} />
     </div>
   );

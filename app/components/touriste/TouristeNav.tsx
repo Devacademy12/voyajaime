@@ -1,11 +1,11 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabaseClient";
 import { ROUTES } from "@/app/lib/routes";
-import { LogOut, Menu, X, MessageCircle, User, Plane, Clock, ChevronDown } from "lucide-react";
+import { Menu, X } from "lucide-react";
 
 const Logo = () => (
   <img
@@ -25,80 +25,120 @@ export default function TouristeNav({
   favCount?: number;
   isLoggedIn?: boolean;
 }) {
-  const [avatarUrl,      setAvatarUrl]      = useState<string | null>(null);
-  const [menuOpen,       setMenuOpen]       = useState(false);
-  const [mobileOpen,     setMobileOpen]     = useState(false);
-  const [planOpen,       setPlanOpen]       = useState(false);
-  const [scrolled,       setScrolled]       = useState(false);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const [planOpen, setPlanOpen] = useState(false);
+
+  // ── HYDRATION FIX: Séparation scroll state / auth state ──
+  // Scroll est locale au client et n'affecte que l'apparence
+  const [scrolled, setScrolled] = useState(false);
   const [isUserLoggedIn, setIsUserLoggedIn] = useState(isLoggedIn);
-  const [userId,         setUserId]         = useState<string | null>(null);
+  const [userId, setUserId] = useState<string | null>(null);
+
+  // Flag pour tracker si hydration est complète
+  const [isHydrated, setIsHydrated] = useState(false);
+  const authCheckDoneRef = useRef(false);
 
   const pathname = usePathname();
-  const router   = useRouter();
+  const router = useRouter();
   const supabase = useMemo(() => createClient(), []);
 
-  /* ── Auth ── */
+  /* ── Auth: Sync avec Supabase APRÈS hydratation ── */
   useEffect(() => {
+    if (authCheckDoneRef.current) return;
+    authCheckDoneRef.current = true;
+
     const checkAuth = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      setIsUserLoggedIn(!!session);
-      if (session) {
-        setUserId(session.user.id);
-        const { data: profile } = await supabase
-          .from("profiles").select("full_name, avatar_url")
-          .eq("user_id", session.user.id).single();
-        if (profile?.avatar_url) setAvatarUrl(profile.avatar_url);
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        setIsUserLoggedIn(!!session);
+        if (session) {
+          setUserId(session.user.id);
+          const { data: profile } = await supabase
+            .from("profiles")
+            .select("full_name, avatar_url")
+            .eq("user_id", session.user.id)
+            .single();
+          if (profile?.avatar_url) setAvatarUrl(profile.avatar_url);
+        }
+      } catch (error) {
+        console.error("Auth check failed:", error);
       }
     };
+
     checkAuth();
+
+    // Subscribe aux changements d'auth
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, session) => {
       setIsUserLoggedIn(!!session);
-      if (!session) { setMenuOpen(false); setMobileOpen(false); setPlanOpen(false); }
+      if (!session) {
+        setMenuOpen(false);
+        setMobileOpen(false);
+        setPlanOpen(false);
+      }
     });
-    return () => subscription.unsubscribe();
-  }, [supabase, userName]);
 
-  /* ── Scroll ── */
-  useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 10);
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
-  }, []);
+    return () => subscription?.unsubscribe();
+  }, [supabase]);
 
   /* ── Avatar refresh ── */
   useEffect(() => {
     if (!isUserLoggedIn) return;
     (async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-      const { data } = await supabase.from("profiles")
-        .select("avatar_url").eq("user_id", user.id).single();
-      if (data?.avatar_url) setAvatarUrl(data.avatar_url);
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+        const { data } = await supabase
+          .from("profiles")
+          .select("avatar_url")
+          .eq("user_id", user.id)
+          .single();
+        if (data?.avatar_url) setAvatarUrl(data.avatar_url);
+      } catch (error) {
+        console.error("Avatar refresh failed:", error);
+      }
     })();
   }, [supabase, isUserLoggedIn]);
 
+  /* ── Scroll listener (client-only) ── */
+  useEffect(() => {
+    setIsHydrated(true);
+
+    const onScroll = () => setScrolled(window.scrollY > 10);
+    window.addEventListener("scroll", onScroll, { passive: true });
+    
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
   const handleSignOut = async () => {
-    await supabase.auth.signOut();
-    setIsUserLoggedIn(false);
-    setMenuOpen(false); setMobileOpen(false); setPlanOpen(false);
-    router.push(ROUTES.home);
+    try {
+      await supabase.auth.signOut();
+      setIsUserLoggedIn(false);
+      setMenuOpen(false);
+      setMobileOpen(false);
+      setPlanOpen(false);
+      router.push(ROUTES.home);
+    } catch (error) {
+      console.error("Sign out failed:", error);
+    }
   };
 
   /* ── Links ── */
   const touristeLinks = [
-    { href: ROUTES.excursions,            icon: "ti-compass",     label: "Explorer"        },
-    { href: ROUTES.touriste.itineraires,  icon: "ti-map",         label: "Mes itinéraires" },
-    { href: ROUTES.touriste.reservations, icon: "ti-calendar",    label: "Réservations"    },
-    { href: ROUTES.about,                 icon: "ti-help-circle", label: "À propos"        },
-    { href: ROUTES.blog,                  icon: "ti-book",        label: "Blog"            },
-    { href: ROUTES.contact,               icon: "ti-phone",       label: "Contact"         },
+    { href: ROUTES.excursions, icon: "ti-compass", label: "Explorer" },
+    { href: ROUTES.touriste.itineraires, icon: "ti-map", label: "Mes itinéraires" },
+    { href: ROUTES.touriste.reservations, icon: "ti-calendar", label: "Réservations" },
+    { href: ROUTES.about, icon: "ti-help-circle", label: "À propos" },
+    { href: ROUTES.blog, icon: "ti-book", label: "Blog" },
+    { href: ROUTES.contact, icon: "ti-phone", label: "Contact" },
   ];
 
   const publicLinks = [
-    { href: ROUTES.excursions, icon: "ti-compass",     label: "Excursions",        anchor: false },
-    { href: ROUTES.about,      icon: "ti-help-circle", label: "À propos",          anchor: false },
-    { href: ROUTES.blog,       icon: "ti-book",        label: "Blog",              anchor: false },
-    { href: ROUTES.contact,    icon: "ti-phone",       label: "Contact",           anchor: false },
+    { href: ROUTES.excursions, icon: "ti-compass", label: "Excursions", anchor: false },
+    { href: ROUTES.about, icon: "ti-help-circle", label: "À propos", anchor: false },
+    { href: ROUTES.blog, icon: "ti-book", label: "Blog", anchor: false },
+    { href: ROUTES.contact, icon: "ti-phone", label: "Contact", anchor: false },
   ];
 
   const isActive = (href: string) =>
@@ -118,35 +158,26 @@ export default function TouristeNav({
     ? userName.charAt(0).toUpperCase()
     : isUserLoggedIn ? "T" : "";
 
-  /* ── Is hero page (needs dark nav text when not scrolled)? ── */
+  /* ── Is hero page ── */
   const isHeroPage = pathname === "/" || pathname === ROUTES.home;
 
-  /*
-    Text color logic:
-    - Hero page + not scrolled → white (on image background)
-    - Everything else           → dark (#1E293B)
-    scrolled always uses dark bg so dark text is fine
-  */
-  const navTextColor   = isHeroPage && !scrolled ? "rgba(255,255,255,0.92)" : "#1E293B";
-  const navTextHover   = isHeroPage && !scrolled ? "#ffffff"                : "#2B96A8";
-  const navBg =
-    scrolled
-      ? "#FFFFFF"
-      : isHeroPage
-      ? "transparent"
-      : "#FFFFFF";
-  const navBorder =
-    scrolled
-      ? "1px solid rgba(5,51,102,0.10)"
-      : isHeroPage
-      ? "1px solid transparent"
-      : "1px solid rgba(5,51,102,0.10)";
-  const navShadow =
-    scrolled
-      ? "0 2px 20px rgba(5,51,102,0.08)"
-      : isHeroPage
-      ? "none"
-      : "0 2px 20px rgba(5,51,102,0.06)";
+  /* ── HYDRATION FIX: Calculs dépendant du scroll state ── */
+  // Pendant le SSR (isHydrated=false), on ignore scrolled pour être cohérent
+  const effectiveScrolled = isHydrated ? scrolled : false;
+
+  const navTextColor = isHeroPage && !effectiveScrolled ? "rgba(255,255,255,0.92)" : "#1E293B";
+  const navTextHover = isHeroPage && !effectiveScrolled ? "#ffffff" : "#2B96A8";
+  const navBg = effectiveScrolled ? "#FFFFFF" : isHeroPage ? "transparent" : "#FFFFFF";
+  const navBorder = effectiveScrolled
+    ? "1px solid rgba(5,51,102,0.10)"
+    : isHeroPage
+    ? "1px solid transparent"
+    : "1px solid rgba(5,51,102,0.10)";
+  const navShadow = effectiveScrolled
+    ? "0 2px 20px rgba(5,51,102,0.08)"
+    : isHeroPage
+    ? "none"
+    : "0 2px 20px rgba(5,51,102,0.06)";
 
   return (
     <>
@@ -156,7 +187,7 @@ export default function TouristeNav({
 
         /* ── Reset ── */
         .gnav * { box-sizing: border-box; margin: 0; padding: 0; }
-        .gnav    { font-family: inherit'DM Sans', sans-serif; }
+        .gnav { font-family: 'DM Sans', sans-serif; }
 
         /* ── Logo ── */
         .gnav-logo-img { height: 40px; transition: opacity 0.2s; }
@@ -171,7 +202,7 @@ export default function TouristeNav({
           text-decoration: none; white-space: nowrap;
           border: 1px solid transparent;
           transition: color 0.15s, background 0.15s, border-color 0.15s;
-          font-family: inherit'DM Sans', sans-serif;
+          font-family: 'DM Sans', sans-serif;
         }
         .glink i { font-size: 16px; opacity: 0.65; transition: opacity 0.15s; }
         .glink:hover {
@@ -188,9 +219,9 @@ export default function TouristeNav({
         .glink.on i { opacity: 1; }
 
         /* Override for hero transparent bg — white links */
-        .gnav-hero-mode .glink       { color: rgba(255,255,255,0.88); }
+        .gnav-hero-mode .glink { color: rgba(255,255,255,0.88); }
         .gnav-hero-mode .glink:hover { color: #fff; background: rgba(255,255,255,0.12); border-color: rgba(255,255,255,0.2); }
-        .gnav-hero-mode .glink.on    { color: #fff; background: rgba(255,255,255,0.15); border-color: rgba(255,255,255,0.25); }
+        .gnav-hero-mode .glink.on { color: #fff; background: rgba(255,255,255,0.15); border-color: rgba(255,255,255,0.25); }
 
         /* ── Planifier button ── */
         .glink-plan {
@@ -200,20 +231,20 @@ export default function TouristeNav({
           color: var(--gnav-text); white-space: nowrap;
           cursor: pointer; background: none;
           border: 1px solid transparent;
-          font-family: inherit'DM Sans', sans-serif;
+          font-family: 'DM Sans', sans-serif;
           transition: color 0.15s, background 0.15s, border-color 0.15s;
         }
         .glink-plan i.mi { font-size: 16px; opacity: 0.65; }
         .glink-plan .chev { font-size: 13px; opacity: 0.5; transition: transform 0.2s, opacity 0.15s; }
-        .glink-plan:hover       { color: #2B96A8; background: rgba(43,150,168,0.09); border-color: rgba(43,150,168,0.14); }
-        .glink-plan:hover i     { opacity: 1; }
-        .glink-plan.on          { color: #2B96A8; font-weight: 700; background: rgba(43,150,168,0.09); border-color: rgba(43,150,168,0.16); }
-        .glink-plan.on i        { opacity: 1; }
-        .glink-plan.open .chev  { transform: rotate(180deg); opacity: 0.8; }
+        .glink-plan:hover { color: #2B96A8; background: rgba(43,150,168,0.09); border-color: rgba(43,150,168,0.14); }
+        .glink-plan:hover i { opacity: 1; }
+        .glink-plan.on { color: #2B96A8; font-weight: 700; background: rgba(43,150,168,0.09); border-color: rgba(43,150,168,0.16); }
+        .glink-plan.on i { opacity: 1; }
+        .glink-plan.open .chev { transform: rotate(180deg); opacity: 0.8; }
 
-        .gnav-hero-mode .glink-plan       { color: rgba(255,255,255,0.88); }
+        .gnav-hero-mode .glink-plan { color: rgba(255,255,255,0.88); }
         .gnav-hero-mode .glink-plan:hover { color: #fff; background: rgba(255,255,255,0.12); border-color: rgba(255,255,255,0.2); }
-        .gnav-hero-mode .glink-plan.on    { color: #fff; background: rgba(255,255,255,0.15); border-color: rgba(255,255,255,0.25); }
+        .gnav-hero-mode .glink-plan.on { color: #fff; background: rgba(255,255,255,0.15); border-color: rgba(255,255,255,0.25); }
 
         /* ── Planifier dropdown ── */
         .plan-drop {
@@ -229,7 +260,7 @@ export default function TouristeNav({
         }
         @keyframes dropIn {
           from { opacity: 0; transform: translateX(-50%) translateY(-8px) scale(0.97); }
-          to   { opacity: 1; transform: translateX(-50%) translateY(0)    scale(1);    }
+          to { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); }
         }
         .plan-card {
           display: flex; align-items: flex-start; gap: 12px;
@@ -238,7 +269,7 @@ export default function TouristeNav({
           border: 1px solid transparent;
           transition: background 0.15s, border-color 0.15s;
         }
-        .plan-card:hover       { background: rgba(43,150,168,0.06); border-color: rgba(43,150,168,0.14); }
+        .plan-card:hover { background: rgba(43,150,168,0.06); border-color: rgba(43,150,168,0.14); }
         .plan-card.active-mode { background: rgba(43,150,168,0.08); border-color: rgba(43,150,168,0.20); }
 
         .plan-icon {
@@ -248,20 +279,20 @@ export default function TouristeNav({
         }
         .plan-icon i { font-size: 17px; }
         .plan-icon.assiste { background: rgba(2,175,207,0.10); border: 1px solid rgba(2,175,207,0.22); }
-        .plan-icon.libre   { background: rgba(43,150,168,0.10); border: 1px solid rgba(43,150,168,0.22); }
+        .plan-icon.libre { background: rgba(43,150,168,0.10); border: 1px solid rgba(43,150,168,0.22); }
 
-        .plan-title { font-size: 14px; font-weight: 700; color: #053366; margin-bottom: 2px; font-family: inherit'DM Sans', sans-serif; }
-        .plan-desc  { font-size: 13px; color: #64748B; font-weight: 500; line-height: 1.5; font-family: inherit'DM Sans', sans-serif; }
+        .plan-title { font-size: 14px; font-weight: 700; color: #053366; margin-bottom: 2px; font-family: 'DM Sans', sans-serif; }
+        .plan-desc { font-size: 13px; color: #64748B; font-weight: 500; line-height: 1.5; font-family: 'DM Sans', sans-serif; }
         .plan-badge {
           display: inline-flex; align-items: center; gap: 3px; margin-top: 5px;
           padding: 2px 8px; border-radius: 20px;
           font-size: 10px; font-weight: 700; letter-spacing: 0.2px;
-          font-family: inherit'DM Sans', sans-serif;
+          font-family: 'DM Sans', sans-serif;
         }
         .plan-badge i { font-size: 9px; }
-        .plan-badge.ai   { background: rgba(2,175,207,0.09);  color: #0891A8; border: 1px solid rgba(2,175,207,0.22); }
+        .plan-badge.ai { background: rgba(2,175,207,0.09); color: #0891A8; border: 1px solid rgba(2,175,207,0.22); }
         .plan-badge.free { background: rgba(43,150,168,0.09); color: #1E7A8A; border: 1px solid rgba(43,150,168,0.22); }
-        .plan-divider    { height: 1px; background: rgba(5,51,102,0.07); margin: 4px 0; }
+        .plan-divider { height: 1px; background: rgba(5,51,102,0.07); margin: 4px 0; }
 
         /* ── Right actions ── */
         .g-btn {
@@ -270,7 +301,7 @@ export default function TouristeNav({
           background: linear-gradient(135deg, #02AFCF, #0891A8);
           border: none;
           font-size: 14px; font-weight: 700; color: #fff;
-          cursor: pointer; font-family: inherit'DM Sans', sans-serif;
+          cursor: pointer; font-family: 'DM Sans', sans-serif;
           white-space: nowrap; text-decoration: none;
           box-shadow: 0 2px 10px rgba(2,175,207,0.30);
           transition: opacity 0.15s, box-shadow 0.15s, transform 0.1s;
@@ -311,7 +342,7 @@ export default function TouristeNav({
           background: #E11D48; color: white; border-radius: 50%;
           width: 16px; height: 16px; font-size: 9px; font-weight: 800;
           display: flex; align-items: center; justify-content: center;
-          border: 2px solid white; font-family: inherit'DM Sans', sans-serif;
+          border: 2px solid white; font-family: 'DM Sans', sans-serif;
         }
 
         .g-sep { width: 1px; height: 22px; background: rgba(5,51,102,0.10); flex-shrink: 0; }
@@ -325,13 +356,13 @@ export default function TouristeNav({
           border: 2px solid rgba(255,255,255,0.7);
           box-shadow: 0 0 0 1.5px rgba(5,51,102,0.15);
           cursor: pointer; font-size: 14px; font-weight: 800;
-          font-family: inherit'DM Sans', sans-serif;
+          font-family: 'DM Sans', sans-serif;
           display: flex; align-items: center; justify-content: center;
           transition: box-shadow 0.15s, transform 0.1s;
           flex-shrink: 0; overflow: hidden; padding: 0;
         }
         .av:hover { box-shadow: 0 0 0 3px rgba(43,150,168,0.30); transform: scale(1.04); }
-        .av img   { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
+        .av img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
 
         /* Avatar dropdown */
         .drop {
@@ -344,7 +375,7 @@ export default function TouristeNav({
         }
         @keyframes dropInRight {
           from { opacity: 0; transform: translateY(-8px) scale(0.97); }
-          to   { opacity: 1; transform: translateY(0)    scale(1);    }
+          to { opacity: 1; transform: translateY(0) scale(1); }
         }
         .drop-header {
           padding: 12px 14px;
@@ -360,8 +391,8 @@ export default function TouristeNav({
           overflow: hidden;
         }
         .drop-av img { width: 100%; height: 100%; object-fit: cover; }
-        .drop-name   { font-size: 13px; font-weight: 700; color: #0F172A; margin-bottom: 2px; font-family: inherit'DM Sans', sans-serif; }
-        .drop-role   { font-size: 11px; color: #2B96A8; font-weight: 600; display: flex; align-items: center; gap: 4px; font-family: inherit'DM Sans', sans-serif; }
+        .drop-name { font-size: 13px; font-weight: 700; color: #0F172A; margin-bottom: 2px; font-family: 'DM Sans', sans-serif; }
+        .drop-role { font-size: 11px; color: #2B96A8; font-weight: 600; display: flex; align-items: center; gap: 4px; font-family: 'DM Sans', sans-serif; }
 
         .ddi {
           display: flex; align-items: center; gap: 9px;
@@ -369,16 +400,16 @@ export default function TouristeNav({
           text-decoration: none; font-size: 13px; font-weight: 600;
           color: #1E293B; cursor: pointer;
           border: none; background: none;
-          font-family: inherit'DM Sans', sans-serif; width: 100%; text-align: left;
+          font-family: 'DM Sans', sans-serif; width: 100%; text-align: left;
           transition: background 0.13s, color 0.13s;
         }
         .ddi i { font-size: 15px; opacity: 0.7; }
-        .ddi:hover      { background: rgba(43,150,168,0.07); color: #2B96A8; }
-        .ddi:hover i    { opacity: 1; }
-        .ddi.red        { color: #DC2626; }
-        .ddi.red:hover  { background: #FEF2F2; color: #B91C1C; }
-        .ddi.red i      { opacity: 0.8; }
-        .drop-divider   { height: 1px; background: rgba(5,51,102,0.07); margin: 4px 2px; }
+        .ddi:hover { background: rgba(43,150,168,0.07); color: #2B96A8; }
+        .ddi:hover i { opacity: 1; }
+        .ddi.red { color: #DC2626; }
+        .ddi.red:hover { background: #FEF2F2; color: #B91C1C; }
+        .ddi.red i { opacity: 0.8; }
+        .drop-divider { height: 1px; background: rgba(5,51,102,0.07); margin: 4px 2px; }
 
         /* ── Burger ── */
         .g-burger {
@@ -413,7 +444,7 @@ export default function TouristeNav({
           color: #1E293B; text-decoration: none;
           border: 1px solid transparent;
           transition: background 0.13s, color 0.13s, border-color 0.13s;
-          font-family: inherit'DM Sans', sans-serif;
+          font-family: 'DM Sans', sans-serif;
         }
         .g-mlink i { font-size: 16px; opacity: 0.6; }
         .g-mlink:hover, .g-mlink.on {
@@ -431,13 +462,13 @@ export default function TouristeNav({
           font-size: 10px; font-weight: 800; color: #94A3B8;
           text-transform: uppercase; letter-spacing: 1.2px;
           padding: 4px 14px 8px;
-          font-family: inherit'DM Sans', sans-serif;
+          font-family: 'DM Sans', sans-serif;
         }
 
         /* ── Responsive ── */
         @media (max-width: 1020px) {
-          .g-center  { display: none !important; }
-          .g-burger  { display: flex !important; }
+          .g-center { display: none !important; }
+          .g-burger { display: flex !important; }
         }
 
         /* ── Mobile ≤ 640px ── */
@@ -446,36 +477,40 @@ export default function TouristeNav({
           .gnav-logo-img { height: 30px !important; }
           .g-btn-text { display: none !important; }
           .g-btn { padding: 7px 10px !important; gap: 0 !important; }
-          .g-fav  { width: 34px !important; height: 34px !important; }
+          .g-fav { width: 34px !important; height: 34px !important; }
           .g-fav i { font-size: 16px !important; }
-          .av     { width: 34px !important; height: 34px !important; font-size: 12px !important; }
+          .av { width: 34px !important; height: 34px !important; font-size: 12px !important; }
           .g-burger { padding: 6px !important; }
         }
 
         /* ── Very small ≤ 380px ── */
         @media (max-width: 380px) {
           .gnav-logo-img { height: 26px !important; }
-          .g-fav  { width: 30px !important; height: 30px !important; }
-          .av     { width: 30px !important; height: 30px !important; }
+          .g-fav { width: 30px !important; height: 30px !important; }
+          .av { width: 30px !important; height: 30px !important; }
         }
       `}</style>
 
-      {/* CSS variable scoped to nav element */}
+      {/* CSS variable scoped to nav element - maintenant sans dépendance client */}
       <style>{`
         .gnav-inner { --gnav-text: ${navTextColor}; }
       `}</style>
 
       <header
-        className={`gnav${isHeroPage && !scrolled ? " gnav-hero-mode" : ""}`}
+        className={`gnav${isHeroPage && !effectiveScrolled ? " gnav-hero-mode" : ""}`}
         style={{
-          position:  "fixed", top: 0, left: 0, right: 0,
-          zIndex:    200, height: 68,
+          position: "fixed",
+          top: 0,
+          left: 0,
+          right: 0,
+          zIndex: 200,
+          height: 68,
           background: navBg,
-          backdropFilter: scrolled ? "blur(20px)" : isHeroPage ? "none" : "blur(0px)",
-          WebkitBackdropFilter: scrolled ? "blur(20px)" : "none",
+          backdropFilter: effectiveScrolled ? "blur(20px)" : isHeroPage ? "none" : "blur(0px)",
+          WebkitBackdropFilter: effectiveScrolled ? "blur(20px)" : "none",
           borderBottom: navBorder,
-          boxShadow:    navShadow,
-          transition:   "background 0.35s ease, border-color 0.35s ease, box-shadow 0.35s ease",
+          boxShadow: navShadow,
+          transition: "background 0.35s ease, border-color 0.35s ease, box-shadow 0.35s ease",
         }}
       >
         {/* Inner wrapper — centré avec max-width */}
@@ -493,48 +528,94 @@ export default function TouristeNav({
           }}
         >
           {/* ── Logo ── */}
-          <Link href={ROUTES.home}
-            style={{ display: "flex", alignItems: "center", textDecoration: "none", flexShrink: 0 }}>
+          <Link
+            href={ROUTES.home}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              textDecoration: "none",
+              flexShrink: 0,
+            }}
+          >
             <Logo />
           </Link>
 
           {/* ── Centre ── */}
-          <nav className="g-center"
-            style={{ display: "flex", alignItems: "center", flex: 1, justifyContent: "center", gap: 2 }}>
+          <nav
+            className="g-center"
+            style={{
+              display: "flex",
+              alignItems: "center",
+              flex: 1,
+              justifyContent: "center",
+              gap: 2,
+            }}
+          >
             {isUserLoggedIn ? (
               <>
                 {/* Planifier dropdown */}
                 <div style={{ position: "relative" }}>
                   <button
-                    className={`glink-plan ${isPlanActive ? "on" : ""} ${planOpen ? "open" : ""}`}
-                    onClick={() => setPlanOpen(o => !o)}
+                    className={`glink-plan ${isPlanActive ? "on" : ""} ${
+                      planOpen ? "open" : ""
+                    }`}
+                    onClick={() => setPlanOpen((o) => !o)}
                   >
-                    <i className="ti ti-route mi" aria-hidden="true" />
+                    <i
+                      className="ti ti-route mi"
+                      aria-hidden="true"
+                    />
                     Planifier
-                    <i className="ti ti-chevron-down chev" aria-hidden="true" />
+                    <i
+                      className="ti ti-chevron-down chev"
+                      aria-hidden="true"
+                    />
                   </button>
 
                   {planOpen && (
                     <>
-                      <div style={{ position: "fixed", inset: 0, zIndex: 499 }}
-                        onClick={() => setPlanOpen(false)} />
+                      <div
+                        style={{
+                          position: "fixed",
+                          inset: 0,
+                          zIndex: 499,
+                        }}
+                        onClick={() => setPlanOpen(false)}
+                      />
                       <div className="plan-drop">
                         <Link
                           href={ROUTES.touriste.ModeAssiste}
                           className={`plan-card ${
-                            pathname === ROUTES.touriste.ModeAssiste ||
-                            pathname.startsWith("/touriste/modeAssister") ? "active-mode" : ""
+                            pathname ===
+                              ROUTES.touriste.ModeAssiste ||
+                            pathname.startsWith(
+                              "/touriste/modeAssister"
+                            )
+                              ? "active-mode"
+                              : ""
                           }`}
                           onClick={() => setPlanOpen(false)}
                         >
                           <div className="plan-icon assiste">
-                            <i className="ti ti-wand" style={{ color: "#02AFCF" }} aria-hidden="true" />
+                            <i
+                              className="ti ti-wand"
+                              style={{ color: "#02AFCF" }}
+                              aria-hidden="true"
+                            />
                           </div>
                           <div>
                             <p className="plan-title">Mode Assisté</p>
-                            <p className="plan-desc">Laissez notre IA concevoir votre itinéraire idéal selon vos préférences.</p>
+                            <p className="plan-desc">
+                              Laissez notre IA concevoir votre
+                              itinéraire idéal selon vos
+                              préférences.
+                            </p>
                             <span className="plan-badge ai">
-                              <i className="ti ti-wand" aria-hidden="true" /> Propulsé par l'IA
+                              <i
+                                className="ti ti-wand"
+                                aria-hidden="true"
+                              />{" "}
+                              Propulsé par l&apos;IA
                             </span>
                           </div>
                         </Link>
@@ -542,19 +623,35 @@ export default function TouristeNav({
                         <Link
                           href={ROUTES.touriste.modeLibre}
                           className={`plan-card ${
-                            pathname === ROUTES.touriste.modeLibre ||
-                            pathname.startsWith("/touriste/modeLibre") ? "active-mode" : ""
+                            pathname ===
+                              ROUTES.touriste.modeLibre ||
+                            pathname.startsWith(
+                              "/touriste/modeLibre"
+                            )
+                              ? "active-mode"
+                              : ""
                           }`}
                           onClick={() => setPlanOpen(false)}
                         >
                           <div className="plan-icon libre">
-                            <i className="ti ti-navigation" style={{ color: "#2B96A8" }} aria-hidden="true" />
+                            <i
+                              className="ti ti-navigation"
+                              style={{ color: "#2B96A8" }}
+                              aria-hidden="true"
+                            />
                           </div>
                           <div>
                             <p className="plan-title">Mode Libre</p>
-                            <p className="plan-desc">Construisez votre voyage étape par étape, selon vos propres choix.</p>
+                            <p className="plan-desc">
+                              Construisez votre voyage étape par
+                              étape, selon vos propres choix.
+                            </p>
                             <span className="plan-badge free">
-                              <i className="ti ti-navigation" aria-hidden="true" /> Personnalisé
+                              <i
+                                className="ti ti-navigation"
+                                aria-hidden="true"
+                              />{" "}
+                              Personnalisé
                             </span>
                           </div>
                         </Link>
@@ -564,10 +661,16 @@ export default function TouristeNav({
                 </div>
 
                 {/* Liens touriste */}
-                {touristeLinks.map(l => (
-                  <Link key={l.href} href={l.href}
-                    className={`glink ${isActive(l.href) ? "on" : ""}`}>
-                    <i className={`ti ${l.icon}`} aria-hidden="true" />
+                {touristeLinks.map((l) => (
+                  <Link
+                    key={l.href}
+                    href={l.href}
+                    className={`glink ${isActive(l.href) ? "on" : ""}`}
+                  >
+                    <i
+                      className={`ti ${l.icon}`}
+                      aria-hidden="true"
+                    />
                     {l.label}
                   </Link>
                 ))}
@@ -577,35 +680,65 @@ export default function TouristeNav({
                 {/* Planifier dropdown (public) */}
                 <div style={{ position: "relative" }}>
                   <button
-                    className={`glink-plan ${isPlanActive ? "on" : ""} ${planOpen ? "open" : ""}`}
-                    onClick={() => setPlanOpen(o => !o)}
+                    className={`glink-plan ${isPlanActive ? "on" : ""} ${
+                      planOpen ? "open" : ""
+                    }`}
+                    onClick={() => setPlanOpen((o) => !o)}
                   >
-                    <i className="ti ti-route mi" aria-hidden="true" />
+                    <i
+                      className="ti ti-route mi"
+                      aria-hidden="true"
+                    />
                     Planifier
-                    <i className="ti ti-chevron-down chev" aria-hidden="true" />
+                    <i
+                      className="ti ti-chevron-down chev"
+                      aria-hidden="true"
+                    />
                   </button>
 
                   {planOpen && (
                     <>
-                      <div style={{ position: "fixed", inset: 0, zIndex: 499 }}
-                        onClick={() => setPlanOpen(false)} />
+                      <div
+                        style={{
+                          position: "fixed",
+                          inset: 0,
+                          zIndex: 499,
+                        }}
+                        onClick={() => setPlanOpen(false)}
+                      />
                       <div className="plan-drop">
                         <Link
                           href={ROUTES.ModeAssiste}
                           className={`plan-card ${
                             pathname === ROUTES.ModeAssiste ||
-                            pathname.startsWith("/modeAssister") ? "active-mode" : ""
+                            pathname.startsWith(
+                              "/modeAssister"
+                            )
+                              ? "active-mode"
+                              : ""
                           }`}
                           onClick={() => setPlanOpen(false)}
                         >
                           <div className="plan-icon assiste">
-                            <i className="ti ti-wand" style={{ color: "#02AFCF" }} aria-hidden="true" />
+                            <i
+                              className="ti ti-wand"
+                              style={{ color: "#02AFCF" }}
+                              aria-hidden="true"
+                            />
                           </div>
                           <div>
                             <p className="plan-title">Mode Assisté</p>
-                            <p className="plan-desc">Laissez notre IA concevoir votre itinéraire idéal selon vos préférences.</p>
+                            <p className="plan-desc">
+                              Laissez notre IA concevoir votre
+                              itinéraire idéal selon vos
+                              préférences.
+                            </p>
                             <span className="plan-badge ai">
-                              <i className="ti ti-wand" aria-hidden="true" /> Propulsé par l'IA
+                              <i
+                                className="ti ti-wand"
+                                aria-hidden="true"
+                              />{" "}
+                              Propulsé par l&apos;IA
                             </span>
                           </div>
                         </Link>
@@ -613,19 +746,33 @@ export default function TouristeNav({
                         <Link
                           href={ROUTES.touriste.modeLibre}
                           className={`plan-card ${
-                            pathname === ROUTES.touriste.modeLibre ||
-                            pathname.startsWith("/modeLibre") ? "active-mode" : ""
+                            pathname ===
+                              ROUTES.touriste.modeLibre ||
+                            pathname.startsWith("/modeLibre")
+                              ? "active-mode"
+                              : ""
                           }`}
                           onClick={() => setPlanOpen(false)}
                         >
                           <div className="plan-icon libre">
-                            <i className="ti ti-navigation" style={{ color: "#2B96A8" }} aria-hidden="true" />
+                            <i
+                              className="ti ti-navigation"
+                              style={{ color: "#2B96A8" }}
+                              aria-hidden="true"
+                            />
                           </div>
                           <div>
                             <p className="plan-title">Mode Libre</p>
-                            <p className="plan-desc">Construisez votre voyage étape par étape, selon vos propres choix.</p>
+                            <p className="plan-desc">
+                              Construisez votre voyage étape par
+                              étape, selon vos propres choix.
+                            </p>
                             <span className="plan-badge free">
-                              <i className="ti ti-navigation" aria-hidden="true" /> Personnalisé
+                              <i
+                                className="ti ti-navigation"
+                                aria-hidden="true"
+                              />{" "}
+                              Personnalisé
                             </span>
                           </div>
                         </Link>
@@ -635,81 +782,164 @@ export default function TouristeNav({
                 </div>
 
                 {/* Liens publics */}
-                {publicLinks.map(l =>
-                  l.anchor
-                    ? <a key={l.href} href={l.href} className="glink">
-                        <i className={`ti ${l.icon}`} aria-hidden="true" /> {l.label}
-                      </a>
-                    : <Link key={l.href} href={l.href}
-                        className={`glink ${isActive(l.href) ? "on" : ""}`}>
-                        <i className={`ti ${l.icon}`} aria-hidden="true" /> {l.label}
-                      </Link>
+                {publicLinks.map((l) =>
+                  l.anchor ? (
+                    <a
+                      key={l.href}
+                      href={l.href}
+                      className="glink"
+                    >
+                      <i
+                        className={`ti ${l.icon}`}
+                        aria-hidden="true"
+                      />{" "}
+                      {l.label}
+                    </a>
+                  ) : (
+                    <Link
+                      key={l.href}
+                      href={l.href}
+                      className={`glink ${
+                        isActive(l.href) ? "on" : ""
+                      }`}
+                    >
+                      <i
+                        className={`ti ${l.icon}`}
+                        aria-hidden="true"
+                      />{" "}
+                      {l.label}
+                    </Link>
+                  )
                 )}
               </>
             )}
           </nav>
 
           {/* ── Droite ── */}
-          <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
-
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+              flexShrink: 0,
+            }}
+          >
             {/* Burger (mobile) */}
-            <button className="g-burger" onClick={() => setMobileOpen(o => !o)}>
+            <button
+              className="g-burger"
+              onClick={() => setMobileOpen((o) => !o)}
+            >
               {mobileOpen ? <X size={20} /> : <Menu size={20} />}
             </button>
 
             {isUserLoggedIn ? (
               <>
-
                 {/* Favoris */}
                 <Link href={ROUTES.touriste.favoris} className="g-fav">
                   <i className="ti ti-heart" aria-hidden="true" />
-                  {favCount > 0 && <span className="nb">{favCount > 9 ? "9+" : favCount}</span>}
+                  {favCount > 0 && (
+                    <span className="nb">
+                      {favCount > 9 ? "9+" : favCount}
+                    </span>
+                  )}
                 </Link>
 
                 <div className="g-sep" />
 
                 {/* Avatar + dropdown */}
                 <div style={{ position: "relative" }}>
-                  <button className="av" onClick={() => setMenuOpen(o => !o)}>
-                    {avatarUrl ? <img src={avatarUrl} alt={initial} /> : initial}
+                  <button
+                    className="av"
+                    onClick={() => setMenuOpen((o) => !o)}
+                  >
+                    {avatarUrl ? (
+                      <img src={avatarUrl} alt={initial} />
+                    ) : (
+                      initial
+                    )}
                   </button>
 
                   {menuOpen && (
                     <>
-                      <div style={{ position: "fixed", inset: 0, zIndex: 499 }}
-                        onClick={() => setMenuOpen(false)} />
+                      <div
+                        style={{
+                          position: "fixed",
+                          inset: 0,
+                          zIndex: 499,
+                        }}
+                        onClick={() => setMenuOpen(false)}
+                      />
                       <div className="drop">
                         {/* Header profil */}
                         <div className="drop-header">
                           <div className="drop-av">
-                            {avatarUrl
-                              ? <img src={avatarUrl} alt={initial} />
-                              : initial}
+                            {avatarUrl ? (
+                              <img src={avatarUrl} alt={initial} />
+                            ) : (
+                              initial
+                            )}
                           </div>
                           <div>
-                            <p className="drop-name">{userName || "Touriste"}</p>
+                            <p className="drop-name">
+                              {userName || "Touriste"}
+                            </p>
                             <span className="drop-role">
-                              <i className="ti ti-plane" style={{ fontSize: 11 }} aria-hidden="true" />
+                              <i
+                                className="ti ti-plane"
+                                style={{ fontSize: 11 }}
+                                aria-hidden="true"
+                              />
                               Compte touriste
                             </span>
                           </div>
                         </div>
 
-                        <Link href={ROUTES.touriste.profil} className="ddi" onClick={() => setMenuOpen(false)}>
-                          <i className="ti ti-user" aria-hidden="true" /> Mon profil
+                        <Link
+                          href={ROUTES.touriste.profil}
+                          className="ddi"
+                          onClick={() => setMenuOpen(false)}
+                        >
+                          <i
+                            className="ti ti-user"
+                            aria-hidden="true"
+                          />{" "}
+                          Mon profil
                         </Link>
-                        <Link href={ROUTES.touriste.messages} className="ddi" onClick={() => setMenuOpen(false)}>
-                          <i className="ti ti-message-circle" aria-hidden="true" /> Messages
+                        <Link
+                          href={ROUTES.touriste.messages}
+                          className="ddi"
+                          onClick={() => setMenuOpen(false)}
+                        >
+                          <i
+                            className="ti ti-message-circle"
+                            aria-hidden="true"
+                          />{" "}
+                          Messages
                         </Link>
                         {ROUTES.touriste.historique && (
-                          <Link href={ROUTES.touriste.historique} className="ddi" onClick={() => setMenuOpen(false)}>
-                            <i className="ti ti-clock" aria-hidden="true" /> Historique
+                          <Link
+                            href={ROUTES.touriste.historique}
+                            className="ddi"
+                            onClick={() => setMenuOpen(false)}
+                          >
+                            <i
+                              className="ti ti-clock"
+                              aria-hidden="true"
+                            />{" "}
+                            Historique
                           </Link>
                         )}
 
                         <div className="drop-divider" />
-                        <button className="ddi red" onClick={handleSignOut}>
-                          <i className="ti ti-logout" aria-hidden="true" /> Se déconnecter
+                        <button
+                          className="ddi red"
+                          onClick={handleSignOut}
+                        >
+                          <i
+                            className="ti ti-logout"
+                            aria-hidden="true"
+                          />{" "}
+                          Se déconnecter
                         </button>
                       </div>
                     </>
@@ -731,7 +961,8 @@ export default function TouristeNav({
               </>
             )}
           </div>
-        </div>{/* fin gnav-inner */}
+        </div>
+        {/* fin gnav-inner */}
       </header>
 
       {/* ── Drawer mobile ── */}
@@ -743,38 +974,67 @@ export default function TouristeNav({
               <p className="g-plan-label">Planifier mon voyage</p>
               <Link
                 href={ROUTES.touriste.ModeAssiste}
-                className={`g-mlink ${pathname.startsWith("/touriste/modeAssister") ? "on" : ""}`}
+                className={`g-mlink ${
+                  pathname.startsWith("/touriste/modeAssister")
+                    ? "on"
+                    : ""
+                }`}
                 onClick={() => setMobileOpen(false)}
               >
-                <i className="ti ti-wand" style={{ color: "#02AFCF" }} aria-hidden="true" />
+                <i
+                  className="ti ti-wand"
+                  style={{ color: "#02AFCF" }}
+                  aria-hidden="true"
+                />
                 Mode Assisté
               </Link>
               <Link
                 href={ROUTES.touriste.modeLibre}
-                className={`g-mlink ${pathname.startsWith("/touriste/modeLibre") ? "on" : ""}`}
+                className={`g-mlink ${
+                  pathname.startsWith("/touriste/modeLibre")
+                    ? "on"
+                    : ""
+                }`}
                 onClick={() => setMobileOpen(false)}
               >
-                <i className="ti ti-navigation" style={{ color: "#2B96A8" }} aria-hidden="true" />
+                <i
+                  className="ti ti-navigation"
+                  style={{ color: "#2B96A8" }}
+                  aria-hidden="true"
+                />
                 Mode Libre
               </Link>
             </div>
 
-            {touristeLinks.map(l => (
-              <Link key={l.href} href={l.href}
+            {touristeLinks.map((l) => (
+              <Link
+                key={l.href}
+                href={l.href}
                 className={`g-mlink ${isActive(l.href) ? "on" : ""}`}
-                onClick={() => setMobileOpen(false)}>
-                <i className={`ti ${l.icon}`} aria-hidden="true" />
+                onClick={() => setMobileOpen(false)}
+              >
+                <i
+                  className={`ti ${l.icon}`}
+                  aria-hidden="true"
+                />
                 {l.label}
               </Link>
             ))}
 
-            <div style={{ borderTop: "1px solid rgba(5,51,102,0.08)", marginTop: 6, paddingTop: 6 }}>
+            <div
+              style={{
+                borderTop: "1px solid rgba(5,51,102,0.08)",
+                marginTop: 6,
+                paddingTop: 6,
+              }}
+            >
               <button
                 className="ddi red"
                 style={{ width: "100%", borderRadius: 9, fontSize: 14 }}
                 onClick={handleSignOut}
               >
-                <i className="ti ti-logout" aria-hidden="true" /> Se déconnecter
+                <i className="ti ti-logout" aria-hidden="true" /> Se
+                déconnecter
               </button>
             </div>
           </>
@@ -785,50 +1045,93 @@ export default function TouristeNav({
               <p className="g-plan-label">Planifier mon voyage</p>
               <Link
                 href={ROUTES.ModeAssiste}
-                className={`g-mlink ${pathname.startsWith("/modeAssister") ? "on" : ""}`}
+                className={`g-mlink ${
+                  pathname.startsWith("/modeAssister") ? "on" : ""
+                }`}
                 onClick={() => setMobileOpen(false)}
               >
-                <i className="ti ti-wand" style={{ color: "#02AFCF" }} aria-hidden="true" />
+                <i
+                  className="ti ti-wand"
+                  style={{ color: "#02AFCF" }}
+                  aria-hidden="true"
+                />
                 Mode Assisté
               </Link>
               <Link
                 href={ROUTES.touriste.modeLibre}
-                className={`g-mlink ${pathname.startsWith("/modeLibre") ? "on" : ""}`}
+                className={`g-mlink ${
+                  pathname.startsWith("/modeLibre") ? "on" : ""
+                }`}
                 onClick={() => setMobileOpen(false)}
               >
-                <i className="ti ti-navigation" style={{ color: "#2B96A8" }} aria-hidden="true" />
+                <i
+                  className="ti ti-navigation"
+                  style={{ color: "#2B96A8" }}
+                  aria-hidden="true"
+                />
                 Mode Libre
               </Link>
             </div>
 
-            {publicLinks.map(l =>
+            {publicLinks.map((l) =>
               l.anchor ? (
-                <a key={l.href} href={l.href} className="g-mlink" onClick={() => setMobileOpen(false)}>
-                  <i className={`ti ${l.icon}`} aria-hidden="true" /> {l.label}
+                <a
+                  key={l.href}
+                  href={l.href}
+                  className="g-mlink"
+                  onClick={() => setMobileOpen(false)}
+                >
+                  <i
+                    className={`ti ${l.icon}`}
+                    aria-hidden="true"
+                  />{" "}
+                  {l.label}
                 </a>
               ) : (
-                <Link key={l.href} href={l.href}
-                  className={`g-mlink ${isActive(l.href) ? "on" : ""}`}
-                  onClick={() => setMobileOpen(false)}>
-                  <i className={`ti ${l.icon}`} aria-hidden="true" /> {l.label}
+                <Link
+                  key={l.href}
+                  href={l.href}
+                  className={`g-mlink ${
+                    isActive(l.href) ? "on" : ""
+                  }`}
+                  onClick={() => setMobileOpen(false)}
+                >
+                  <i
+                    className={`ti ${l.icon}`}
+                    aria-hidden="true"
+                  />{" "}
+                  {l.label}
                 </Link>
               )
             )}
 
-            <div style={{ borderTop: "1px solid rgba(5,51,102,0.08)", marginTop: 6, paddingTop: 6 }}>
+            <div
+              style={{
+                borderTop: "1px solid rgba(5,51,102,0.08)",
+                marginTop: 6,
+                paddingTop: 6,
+              }}
+            >
               <Link
                 href={ROUTES.auth}
                 onClick={() => setMobileOpen(false)}
                 style={{
-                  display: "flex", alignItems: "center", gap: 9,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 9,
                   padding: "12px 16px",
-                  background: "linear-gradient(135deg, #02AFCF, #053366)",
-                  color: "white", borderRadius: 9,
-                  textDecoration: "none", fontSize: 14, fontWeight: 700,
+                  background:
+                    "linear-gradient(135deg, #02AFCF, #053366)",
+                  color: "white",
+                  borderRadius: 9,
+                  textDecoration: "none",
+                  fontSize: 14,
+                  fontWeight: 700,
                   fontFamily: "'DM Sans', sans-serif",
                 }}
               >
-                <i className="ti ti-login" aria-hidden="true" /> Se connecter
+                <i className="ti ti-login" aria-hidden="true" /> Se
+                connecter
               </Link>
             </div>
           </>
