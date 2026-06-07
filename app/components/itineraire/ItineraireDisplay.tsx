@@ -579,6 +579,10 @@ function ActivityCard({ activity, onEdit, onRemove, excursions }: {
   const price      = activity.price || 0;
   const isFree     = price === 0;
   // 🔍 DEBUG TEMPORAIRE - à supprimer après fix
+  // Dans ActivityCard, ajoutez juste après le calcul de photos :
+console.log("📸 PHOTO URL:", photos[0]);
+console.log("📸 SUPABASE RAW:", realExc?.photos);
+console.log("📸 ACTIVITY RAW:", activity.photos);
 console.log("🖼️ CARD:", {
   activityId: activity.id,
   activityName: activity.name,
