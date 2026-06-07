@@ -530,7 +530,7 @@ function ActivityCard({ activity, onEdit, onRemove, excursions }: {
   onEdit: () => void;
   onRemove: () => void;
   excursions: ExcursionData[];
-}) {
+  }) {
   // ✅ Recherche multicritère identique à extractItinerary
   const actName = (activity.name ?? "").toLowerCase().trim();
   const realExc =
@@ -552,7 +552,16 @@ function ActivityCard({ activity, onEdit, onRemove, excursions }: {
   const inclusions = parseList(activity.inclusion);
   const price      = activity.price || 0;
   const isFree     = price === 0;
-
+  // 🔍 DEBUG TEMPORAIRE - à supprimer après fix
+console.log("🖼️ CARD:", {
+  activityId: activity.id,
+  activityName: activity.name,
+  activityPhotos: activity.photos,
+  realExcFound: realExc ? `✅ ${realExc.id} - ${realExc.title}` : "❌ NON TROUVÉ",
+  supabasePhotos,
+  finalPhotos: photos,
+  photo0: photos[0] ?? "VIDE ❌",
+});
   if (activity.is_free_day) {
     return (
       <div className="itin-act free-day">

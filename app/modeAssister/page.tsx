@@ -182,7 +182,16 @@ function extractItinerary(raw: unknown, excursions: Excursion[]): Itinerary {
             (p: unknown): p is string => typeof p === "string" && (p.startsWith("http") || p.startsWith("/"))
           );
           const photos = supabasePhotos.length > 0 ? supabasePhotos : aiPhotos;
-
+           // 🔍 DEBUG TEMPORAIRE - à supprimer après fix
+          console.log("🔍 EXTRACT:", {
+            actId: act.id,
+            actName,
+            excursionFound: excursion ? `✅ ${excursion.id} - ${excursion.title}` : "❌ NON TROUVÉ",
+            supabasePhotos,
+            aiPhotos,
+            finalPhotos: photos,
+            finalId: excursion?.id ?? act.id,
+          });
           return {
             // ✅ ID Supabase réel en priorité (critique pour le match dans ActivityCard)
             id: excursion?.id ?? act.id ?? `act-${Date.now()}-${Math.random()}`,
