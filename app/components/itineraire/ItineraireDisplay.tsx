@@ -339,6 +339,7 @@ const CSS = `
   border-radius:var(--r-lg);border:1px solid var(--border);
   box-shadow:var(--shadow-sm);overflow:hidden;
   margin-bottom:10px;transition:box-shadow .2s,transform .2s;
+  align-items:stretch;
 }
 .itin-act:hover{box-shadow:var(--shadow-md);transform:translateY(-1px)}
 .itin-act.free-day{
@@ -347,20 +348,21 @@ const CSS = `
 }
 
 .itin-act-img{
-  width:106px;min-width:106px;flex-shrink:0;
+  width:110px;min-width:110px;flex-shrink:0;
   overflow:hidden;
   background:linear-gradient(135deg,#EFF6FF,#F0F9FF);
-  min-height:130px;
 }
 .itin-act-img img{
-  width:106px;
-  height:130px;
+  width:110px;
+  height:100%;
+  min-height:140px;
   object-fit:cover;
   display:block;
 }
 .itin-act-img-ph{
-  width:106px;
-  height:130px;
+  width:110px;
+  min-height:140px;
+  height:100%;
   display:flex;flex-direction:column;align-items:center;justify-content:center;
   gap:5px;color:#CBD5E1;font-size:10px;
 }
@@ -626,19 +628,18 @@ console.log("🖼️ CARD:", {
   <>
     {/* ✅ TEST DEBUG */}
     <img
-      src={photos[0]}
-      alt={activity.name}
-      loading="lazy"
-      style={{
-        width: "106px",
-        height: "120px", 
-        objectFit: "cover",
-        display: "block",
-        position: "static", // ← force hors du positionnement absolu
-      }}
-      onError={(e) => console.log("❌ IMAGE ERROR:", e)}
-      onLoad={() => console.log("✅ IMAGE LOADED:", photos[0])}
-    />
+  src={photos[0]}
+  alt={activity.name}
+  style={{
+    width: "106px",
+    height: "130px",
+    objectFit: "cover",
+    display: "block",
+  }}
+  onError={(e) => {
+    (e.currentTarget as HTMLImageElement).style.display = "none";
+  }}
+/>
   </>
         ) : (
           <div className="itin-act-img-ph">
