@@ -347,19 +347,20 @@ const CSS = `
   border-style:dashed;
 }
 
-.itin-act-img{
+..itin-act-img{
   width:106px;min-width:106px;flex-shrink:0;
   position:relative;overflow:hidden;
   background:linear-gradient(135deg,#EFF6FF,#F0F9FF);
-  min-height:120px;align-self:stretch;
 }
 .itin-act-img img{
-  position:absolute;inset:0;
-  width:100%;height:100%;
-  object-fit:cover;display:block;
+  width:100%;
+  height:120px;
+  object-fit:cover;
+  display:block;
 }
 .itin-act-img-ph{
-  width:100%;height:100%;
+  width:100%;
+  height:120px;
   display:flex;flex-direction:column;align-items:center;justify-content:center;
   gap:5px;color:#CBD5E1;font-size:10px;
 }
