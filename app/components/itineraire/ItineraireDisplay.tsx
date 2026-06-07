@@ -531,18 +531,23 @@ function ActivityCard({ activity, onEdit, onRemove, excursions }: {
   onRemove: () => void;
   excursions: ExcursionData[];
 }) {
-  // Recherche multicritère robuste
-  const realExc = excursions.find(e => String(e.id) === String(activity.id))
-    ?? excursions.find(e => e.title?.toLowerCase().trim() === activity.name?.toLowerCase().trim())
-    ?? excursions.find(e => activity.name?.toLowerCase().includes(e.title?.toLowerCase() ?? ""))
-    ?? excursions.find(e => e.title?.toLowerCase().includes(activity.name?.toLowerCase() ?? ""));
+  // ✅ Recherche multicritère identique à extractItinerary
+  const actName = (activity.name ?? "").toLowerCase().trim();
+  const realExc =
+    excursions.find(e => String(e.id) === String(activity.id)) ||
+    excursions.find(e => e.title?.toLowerCase().trim() === actName) ||
+    excursions.find(e => actName.includes(e.title?.toLowerCase().trim() ?? "___")) ||
+    excursions.find(e => e.title?.toLowerCase().trim().includes(actName));
 
-  // ✅ Priorité absolue : photos Supabase → photos activité → placeholder
-  const supabasePhotos = parsePhotos(realExc?.photos);
-  const activityPhotos = parsePhotos(activity.photos);
+  // ✅ Photos : Supabase → activité → vide
+  const supabasePhotos = (realExc?.photos ?? []).filter(
+    (p): p is string => typeof p === "string" && (p.startsWith("http") || p.startsWith("/"))
+  );
+  const activityPhotos = parsePhotos(activity.photos).filter(
+    p => p.startsWith("http") || p.startsWith("/")
+  );
   const photos = supabasePhotos.length > 0 ? supabasePhotos : activityPhotos;
 
-  // ... reste du composant identique
   const languages  = parseList(activity.languages);
   const inclusions = parseList(activity.inclusion);
   const price      = activity.price || 0;
@@ -570,10 +575,24 @@ function ActivityCard({ activity, onEdit, onRemove, excursions }: {
   return (
     <div className="itin-act">
       <div className="itin-act-img">
-        {photos[0]
-          ? <img src={photos[0]} alt={activity.name} loading="lazy"/>
-          : <div className="itin-act-img-ph"><Camera size={24} strokeWidth={1.5}/><span>Photo</span></div>
-        }
+        {photos[0] ? (
+          <img
+            src={photos[0]}
+            alt={activity.name}
+            loading="lazy"
+            onError={(e) => {
+              // ✅ Si l'image casse, afficher le placeholder
+              (e.currentTarget as HTMLImageElement).style.display = "none";
+              (e.currentTarget.parentElement as HTMLElement).innerHTML =
+                `<div class="itin-act-img-ph"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#CBD5E1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg><span>Photo</span></div>`;
+            }}
+          />
+        ) : (
+          <div className="itin-act-img-ph">
+            <Camera size={24} strokeWidth={1.5}/>
+            <span>Photo</span>
+          </div>
+        )}
         {activity.time && (
           <div className="itin-act-time-tag"><Clock size={9}/>{activity.time}</div>
         )}
@@ -618,7 +637,6 @@ function ActivityCard({ activity, onEdit, onRemove, excursions }: {
     </div>
   );
 }
-
 /* ── AlternativePicker ── */
 function AlternativePicker({ alternatives, currentName, onPick, onClose }: {
   alternatives: any[]; currentName: string;
