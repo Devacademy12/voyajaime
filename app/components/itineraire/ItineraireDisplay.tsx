@@ -349,8 +349,12 @@ const CSS = `
 .itin-act-img{
   width:106px;flex-shrink:0;position:relative;overflow:hidden;
   background:linear-gradient(135deg,#EFF6FF,#F0F9FF);
+  min-height:110px;
 }
-.itin-act-img img{width:100%;height:100%;object-fit:cover}
+.itin-act-img img{
+  width:100%;height:100%;object-fit:cover;
+  display:block;position:absolute;inset:0;
+}
 .itin-act-img-ph{
   width:100%;height:100%;
   display:flex;flex-direction:column;align-items:center;justify-content:center;
