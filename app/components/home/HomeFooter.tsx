@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { User, LogIn, MapPin, Phone, Mail } from "lucide-react";
+import { User, LogIn, MapPin, Phone, Mail } from "tabler-icons-react";
 import { ROUTES } from "@/app/lib/routes";
 import { Logo } from "@/lib/homeUtils";
 

@@ -17,23 +17,25 @@ const CARD_CSS = `
   .rp-card {
     font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
     background: #fff;
-    border-radius: 18px;
+    border-radius: 16px;
     border: 1.5px solid #E2E8F0;
     overflow: hidden;
     transition: box-shadow .2s, border-color .2s, transform .2s;
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
+    height: 160px;
   }
   .rp-card:hover {
-    box-shadow: 0 8px 32px rgba(0,0,0,.09);
+    box-shadow: 0 6px 24px rgba(0,0,0,.1);
     border-color: #CBD5E1;
     transform: translateY(-2px);
   }
 
-  /* ── Image ── */
+  /* ── Image (left panel) ── */
   .rp-img {
     position: relative;
-    height: 180px;
+    width: 200px;
+    min-width: 200px;
     overflow: hidden;
     background: #F1F5F9;
     flex-shrink: 0;
@@ -49,7 +51,7 @@ const CARD_CSS = `
   .rp-img-overlay {
     position: absolute;
     inset: 0;
-    background: linear-gradient(to top, rgba(0,0,0,.72) 0%, rgba(0,0,0,.1) 55%, transparent 100%);
+    background: linear-gradient(to bottom, rgba(0,0,0,.45) 0%, rgba(0,0,0,.1) 50%, rgba(0,0,0,.35) 100%);
   }
   .rp-img-empty {
     width: 100%;
@@ -59,59 +61,59 @@ const CARD_CSS = `
     justify-content: center;
   }
 
-  /* badges top */
+  /* badges top-left / top-right on image */
   .rp-badges-top {
     position: absolute;
-    top: 10px;
-    left: 10px;
-    right: 10px;
+    top: 8px;
+    left: 8px;
+    right: 8px;
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
-    gap: 6px;
+    gap: 4px;
   }
   .rp-status-pill {
     display: inline-flex;
     align-items: center;
-    gap: 5px;
-    padding: 4px 10px;
+    gap: 4px;
+    padding: 3px 8px;
     border-radius: 20px;
-    font-size: 11px;
+    font-size: 10px;
     font-weight: 700;
     backdrop-filter: blur(6px);
     letter-spacing: .02em;
   }
   .rp-status-dot {
-    width: 6px; height: 6px;
+    width: 5px; height: 5px;
     border-radius: 50%;
     animation: rc-pulse 2.5s ease infinite;
   }
   .rp-tag {
     display: inline-flex;
     align-items: center;
-    gap: 5px;
-    padding: 4px 10px;
+    gap: 4px;
+    padding: 3px 8px;
     border-radius: 20px;
-    font-size: 11px;
+    font-size: 10px;
     font-weight: 700;
     backdrop-filter: blur(6px);
   }
   .rp-tag-paid  { background: rgba(13,148,136,.88); color: #fff; }
   .rp-tag-days  { background: rgba(15,23,42,.75);   color: #fff; }
 
-  /* title over image */
+  /* title + meta at bottom of image */
   .rp-img-bottom {
     position: absolute;
     bottom: 0; left: 0; right: 0;
-    padding: 14px 14px 12px;
+    padding: 10px 10px 9px;
   }
   .rp-img-title {
-    font-size: 15px;
+    font-size: 12px;
     font-weight: 800;
     color: #fff;
-    margin: 0 0 5px;
+    margin: 0 0 4px;
     line-height: 1.25;
-    text-shadow: 0 1px 4px rgba(0,0,0,.4);
+    text-shadow: 0 1px 4px rgba(0,0,0,.5);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -119,44 +121,47 @@ const CARD_CSS = `
   .rp-img-meta {
     display: flex;
     align-items: center;
-    gap: 10px;
-    flex-wrap: wrap;
+    gap: 8px;
+    flex-wrap: nowrap;
   }
   .rp-img-meta span {
     display: inline-flex;
     align-items: center;
-    gap: 4px;
-    font-size: 11.5px;
+    gap: 3px;
+    font-size: 10px;
     color: rgba(255,255,255,.85);
     font-weight: 500;
+    white-space: nowrap;
   }
 
-  /* ── Body ── */
-  .rp-body {
-    padding: 14px 16px 0;
+  /* ── Right panel ── */
+  .rp-right {
+    flex: 1;
+    min-width: 0;
     display: flex;
     flex-direction: column;
-    gap: 10px;
-    flex: 1;
+    padding: 12px 14px;
+    gap: 8px;
   }
 
-  /* Info row — compact inline */
+  /* Compact info row */
   .rp-info-row {
     display: flex;
     align-items: center;
     gap: 0;
     background: #F8FAFC;
     border: 1px solid #E2E8F0;
-    border-radius: 12px;
+    border-radius: 10px;
     overflow: hidden;
+    flex-shrink: 0;
   }
   .rp-info-item {
     flex: 1;
     display: flex;
     flex-direction: column;
     align-items: center;
-    padding: 9px 6px;
-    gap: 3px;
+    padding: 7px 4px;
+    gap: 2px;
     position: relative;
   }
   .rp-info-item + .rp-info-item::before {
@@ -167,7 +172,7 @@ const CARD_CSS = `
     background: #E2E8F0;
   }
   .rp-info-lbl {
-    font-size: 10px;
+    font-size: 9px;
     font-weight: 600;
     color: #94A3B8;
     text-transform: uppercase;
@@ -175,14 +180,10 @@ const CARD_CSS = `
     white-space: nowrap;
   }
   .rp-info-val {
-    font-size: 13px;
+    font-size: 12px;
     font-weight: 700;
     color: #0F172A;
     white-space: nowrap;
-  }
-  .rp-info-icon {
-    color: #94A3B8;
-    flex-shrink: 0;
   }
 
   /* Timer bar */
@@ -190,51 +191,51 @@ const CARD_CSS = `
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 8px 12px;
-    border-radius: 10px;
-    font-size: 12px;
+    padding: 5px 10px;
+    border-radius: 8px;
+    font-size: 11px;
     font-weight: 700;
+    flex-shrink: 0;
   }
   .rp-timer-normal  { background: #F0FDFA; color: #0D9488; border: 1px solid #CCFBF1; }
   .rp-timer-urgent  { background: #FEF2F2; color: #EF4444; border: 1px solid #FEE2E2; animation: rc-urgent 1.5s ease infinite; }
   .rp-timer-expired { background: #FEF2F2; color: #EF4444; border: 1px solid #FEE2E2; }
-  .rp-timer-left  { display: flex; align-items: center; gap: 5px; }
-  .rp-timer-clock { font-family: monospace; font-size: 13px; letter-spacing: .05em; }
+  .rp-timer-left  { display: flex; align-items: center; gap: 4px; }
+  .rp-timer-clock { font-family: monospace; font-size: 12px; letter-spacing: .05em; }
 
-  /* ── Footer ── */
+  /* ── Footer row (price + actions) ── */
   .rp-footer {
-    padding: 12px 16px 14px;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 10px;
-    border-top: 1px solid #F1F5F9;
-    margin-top: 12px;
+    gap: 8px;
+    margin-top: auto;
+    flex-shrink: 0;
   }
   .rp-footer-left {
     display: flex;
     flex-direction: column;
-    gap: 2px;
+    gap: 1px;
     min-width: 0;
   }
   .rp-price {
     display: flex;
     align-items: baseline;
-    gap: 4px;
+    gap: 3px;
   }
   .rp-price-amount {
-    font-size: 18px;
+    font-size: 17px;
     font-weight: 800;
     color: #0F172A;
     letter-spacing: -0.3px;
   }
   .rp-price-currency {
-    font-size: 12px;
+    font-size: 11px;
     font-weight: 600;
     color: #64748B;
   }
   .rp-booking-code {
-    font-size: 10.5px;
+    font-size: 10px;
     font-weight: 600;
     color: #94A3B8;
     font-family: 'Courier New', monospace;
@@ -242,26 +243,27 @@ const CARD_CSS = `
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    max-width: 160px;
+    max-width: 130px;
   }
 
   /* Action buttons */
   .rp-footer-actions {
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: 5px;
     flex-shrink: 0;
   }
+  /* Payer (teal solid) */
   .rp-btn-pay {
     display: inline-flex;
     align-items: center;
-    gap: 6px;
-    padding: 9px 16px;
+    gap: 5px;
+    padding: 7px 13px;
     background: #0D9488;
     color: #fff;
     border: none;
-    border-radius: 10px;
-    font-size: 13px;
+    border-radius: 8px;
+    font-size: 12px;
     font-weight: 700;
     cursor: pointer;
     font-family: 'Plus Jakarta Sans', sans-serif;
@@ -270,23 +272,50 @@ const CARD_CSS = `
   }
   .rp-btn-pay:hover { background: #0F766E; transform: translateY(-1px); }
 
-  .rp-btn-icon {
+  /* Détails (outline blue) */
+  .rp-btn-details {
     display: inline-flex;
     align-items: center;
-    justify-content: center;
-    width: 34px; height: 34px;
-    border-radius: 9px;
-    border: 1.5px solid #E2E8F0;
+    gap: 5px;
+    padding: 6px 12px;
     background: #fff;
-    color: #475569;
+    color: #2B96A8;
+    border: 1.5px solid #2B96A8;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 700;
     cursor: pointer;
     font-family: 'Plus Jakarta Sans', sans-serif;
-    transition: border-color .15s, color .15s, background .15s;
+    transition: background .15s, color .15s, transform .1s;
+    white-space: nowrap;
     text-decoration: none;
-    flex-shrink: 0;
   }
-  .rp-btn-icon:hover { border-color: #CBD5E1; background: #F8FAFC; color: #0F172A; }
-  .rp-btn-icon-danger:hover { border-color: #FCA5A5; background: #FEF2F2; color: #EF4444; }
+  .rp-btn-details:hover { background: #EBF8FA; transform: translateY(-1px); }
+
+  /* Annuler (solid red) */
+  .rp-btn-cancel {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 6px 12px;
+    background: #EF4444;
+    color: #fff;
+    border: 1.5px solid #EF4444;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    transition: background .15s, transform .1s;
+    white-space: nowrap;
+  }
+  .rp-btn-cancel:hover { background: #DC2626; border-color: #DC2626; transform: translateY(-1px); }
+
+  /* Responsive: stack on very small screens */
+  @media (max-width: 420px) {
+    .rp-card { flex-direction: column; height: auto; }
+    .rp-img  { width: 100%; min-width: 0; height: 140px; }
+  }
 `;
 
 interface Props {
@@ -332,26 +361,10 @@ export default function ReservationCard({ r, onPay, onRefresh, onExpired }: Prop
   const expired = timeLeft === 0;
 
   const infoItems = [
-    {
-      icon: <CalendarDays size={12} className="rp-info-icon" />,
-      lbl: "Date",
-      val: fmtDate(r.date, true),
-    },
-    {
-      icon: <Clock size={12} className="rp-info-icon" />,
-      lbl: "Heure",
-      val: r.time,
-    },
-    {
-      icon: <Users size={12} className="rp-info-icon" />,
-      lbl: "Personnes",
-      val: `${r.people_count}`,
-    },
-    {
-      icon: <Clock size={12} className="rp-info-icon" />,
-      lbl: "Durée",
-      val: `${exc?.duration_hours ?? "–"}h`,
-    },
+    { lbl: "Date",      val: fmtDate(r.date, true) },
+    { lbl: "Heure",     val: r.time },
+    { lbl: "Personnes", val: `${r.people_count}` },
+    { lbl: "Durée",     val: `${exc?.duration_hours ?? "–"}h` },
   ];
 
   return (
@@ -360,15 +373,15 @@ export default function ReservationCard({ r, onPay, onRefresh, onExpired }: Prop
 
       <div className="rp-card">
 
-        {/* ── Image ── */}
+        {/* ── Image (left) ── */}
         <div className="rp-img">
           {photo
             ? <img src={photo} alt={exc?.title || ""} />
-            : <div className="rp-img-empty"><Compass size={36} color="rgba(0,0,0,.15)" /></div>
+            : <div className="rp-img-empty"><Compass size={32} color="rgba(0,0,0,.15)" /></div>
           }
           <div className="rp-img-overlay" />
 
-          {/* Badges top */}
+          {/* Status + paid badges */}
           <div className="rp-badges-top">
             <div
               className="rp-status-pill"
@@ -380,35 +393,35 @@ export default function ReservationCard({ r, onPay, onRefresh, onExpired }: Prop
 
             {paid ? (
               <div className="rp-tag rp-tag-paid">
-                <CheckCircle size={10} /> Payée
+                <CheckCircle size={9} /> Payée
               </div>
             ) : days >= 0 ? (
               <div className="rp-tag rp-tag-days">
-                <CalendarDays size={10} />
+                <CalendarDays size={9} />
                 {days === 0 ? "Aujourd'hui" : days === 1 ? "Demain" : `J-${days}`}
               </div>
             ) : null}
           </div>
 
-          {/* Title + meta over image */}
+          {/* Title + meta */}
           <div className="rp-img-bottom">
             <h3 className="rp-img-title">{exc?.title ?? "Excursion"}</h3>
             <div className="rp-img-meta">
-              {exc?.city    && <span><MapPin size={11} /> {exc.city}</span>}
-              {exc?.duration_hours && <span><Clock size={11} /> {exc.duration_hours}h</span>}
-              {exc?.rating  && (
+              {exc?.city && <span><MapPin size={10} /> {exc.city}</span>}
+              {exc?.duration_hours && <span><Clock size={10} /> {exc.duration_hours}h</span>}
+              {exc?.rating && (
                 <span style={{ color: "#FCD34D" }}>
-                  <Star size={11} /> {exc.rating.toFixed(1)}
+                  <Star size={10} /> {exc.rating.toFixed(1)}
                 </span>
               )}
             </div>
           </div>
         </div>
 
-        {/* ── Body ── */}
-        <div className="rp-body">
+        {/* ── Right panel ── */}
+        <div className="rp-right">
 
-          {/* Compact info row */}
+          {/* Info row */}
           <div className="rp-info-row">
             {infoItems.map((item) => (
               <div key={item.lbl} className="rp-info-item">
@@ -422,8 +435,8 @@ export default function ReservationCard({ r, onPay, onRefresh, onExpired }: Prop
           {timeLeft !== null && timeLeft > 0 && (
             <div className={`rp-timer ${urgent ? "rp-timer-urgent" : "rp-timer-normal"}`}>
               <span className="rp-timer-left">
-                <Timer size={12} />
-                {urgent ? "⚡ Urgent — expire bientôt" : "Paiement requis avant"}
+                <Timer size={11} />
+                {urgent ? "⚡ Expire bientôt" : "Paiement avant"}
               </span>
               <span className="rp-timer-clock">
                 {String(Math.floor(timeLeft / 60)).padStart(2, "0")}:
@@ -431,56 +444,50 @@ export default function ReservationCard({ r, onPay, onRefresh, onExpired }: Prop
               </span>
             </div>
           )}
-
           {expired && (
             <div className="rp-timer rp-timer-expired">
-              <span className="rp-timer-left"><Timer size={12} /> Délai expiré</span>
+              <span className="rp-timer-left"><Timer size={11} /> Délai expiré</span>
             </div>
           )}
-        </div>
 
-        {/* ── Footer ── */}
-        <div className="rp-footer">
-          <div className="rp-footer-left">
-            <div className="rp-price">
-              <span className="rp-price-amount">{r.total_price}</span>
-              <span className="rp-price-currency">EUR</span>
+          {/* Footer: price + actions */}
+          <div className="rp-footer">
+            <div className="rp-footer-left">
+              <div className="rp-price">
+                <span className="rp-price-amount">{r.total_price}</span>
+                <span className="rp-price-currency">EUR</span>
+              </div>
+              <span className="rp-booking-code">#{r.booking_code}</span>
             </div>
-            <span className="rp-booking-code">#{r.booking_code}</span>
-          </div>
 
-          <div className="rp-footer-actions">
-            {/* Bouton Payer */}
-            {!paid && r.status !== "cancelled" && !expired && (
-              <button className="rp-btn-pay" onClick={onPay}>
-                <CreditCard size={13} /> Payer
-              </button>
-            )}
-
-            {/* Détails + Annuler (si payé) */}
-            {paid && (
-              <>
-                <Link
-                  href={`/excursions/${exc?.id}`}
-                  className="rp-btn-icon"
-                  title="Voir les détails"
-                >
-                  <TrendingUp size={15} />
-                </Link>
-                <button
-                  className="rp-btn-icon rp-btn-icon-danger"
-                  onClick={() => setShowCancel(true)}
-                  title="Annuler la réservation"
-                >
-                  <Trash2 size={15} />
+            <div className="rp-footer-actions">
+              {!paid && r.status !== "cancelled" && !expired && (
+                <button className="rp-btn-pay" onClick={onPay}>
+                  <CreditCard size={12} /> Payer
                 </button>
-              </>
-            )}
+              )}
+
+              {paid && (
+                <>
+                  <Link
+                    href={`/excursions/${exc?.id}`}
+                    className="rp-btn-details"
+                  >
+                    Détails
+                  </Link>
+                  <button
+                    className="rp-btn-cancel"
+                    onClick={() => setShowCancel(true)}
+                  >
+                    Annuler
+                  </button>
+                </>
+              )}
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Modal d'annulation */}
       {showCancel && (
         <CancellationModal
           reservation={r}
