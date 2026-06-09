@@ -295,9 +295,10 @@ const CITIES = [
     img: "/images/cities/hammamet.webp",
     count: 9,
   },
+  
+  
   {
-    name: "Kairouan",
-    img: "/images/cities/kairouan.webp",
+    name: "Kairouan", img: "/images/cities/Kairouan.webp",
     count: 7,
   },
 ];
