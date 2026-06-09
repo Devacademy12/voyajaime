@@ -15,8 +15,10 @@ import PopularExcursions from "@/app/components/home/PopularExcursions";
 import AboutSection      from "@/app/components/home/AboutSection";
 import BlogSection       from "@/app/components/home/BlogSection";
 import HomeFooter        from "@/app/components/home/HomeFooter";
+import CitiesGridClient from "@/app/components/home/CitiesGridClient";
 
-// ── ContactSection chargé côté client uniquement (fix hydration) ─────────────
+
+// ── Chargés côté client uniquement (fix hydration) ───────────────────────────
 const ContactSection = dynamic(
   () => import("@/app/components/home/ContactSection"),
   { ssr: false }
@@ -247,16 +249,6 @@ const CSS_PAGE = `
   }
 `;
 
-// ── Destinations avec images Unsplash ─────────────────────────────────────────
-const CITIES = [
-  { name: "Tunis",     img: "https://imgs.search.brave.com/ekbH45D9ocaj-uhA_z7OJbSlbCSFgEACAklo_Y6Kphk/rs:fit:500:0:1:0/g:ce/aHR0cHM6Ly9tZWRp/YS5pc3RvY2twaG90/by5jb20vaWQvMTI1/NTc5MTE1Ni9waG90/by9zdHJlZXQtaW4t/c291c3NlLXR1bmlz/aWEuanBnP3M9NjEy/eDYxMiZ3PTAmaz0y/MCZjPXo4RjV5N0FC/ZjRxellTZmU2V3Ez/VngxNUtrVlFoZkhT/Uk0tU0xGREpkYVk9", count: 24 },
-  { name: "Djerba",    img: "https://imgs.search.brave.com/wUgvPgaV1SGn1DR0eaq5kkVInRMeryIu48dLWsAgsuQ/rs:fit:860:0:0:0/g:ce/aHR0cHM6Ly9kamVy/YmF5LmNvbS93cC1j/b250ZW50L3VwbG9h/ZHMvMjAyNS8wNS9U/b3VyLWRlLWxpbGUt/RGplcmJhLnBuZw", count: 18 },
-  { name: "Sousse",    img: "https://imgs.search.brave.com/7psac7T8Ljdty4B77lqZh9Zp5vR0Q--KMV4h7y3Q_ZE/rs:fit:500:0:1:0/g:ce/aHR0cHM6Ly9tZWRp/YS5nZXR0eWltYWdl/cy5jb20vaWQvMTM3/MTcxNDM5MS9waG90/by90dW5pc2lhLXNv/dXNzZS1tZWRpbmEu/anBnP3M9NjEyeDYx/MiZ3PTAmaz0yMCZj/PXJ4MEdjQVRRd201/c0Y4V1FBY195QkRQ/OExwNXdDaFFfVVdp/UktocFZLNEU9", count: 12 },
-  { name: "Hammamet",  img: "https://imgs.search.brave.com/RyD4-EAWsB7ZAFNjJ1jMxr-CPgQMabjHwxUwdyET2X0/rs:fit:500:0:1:0/g:ce/aHR0cHM6Ly93d3cu/Y2FudHJhdmVsd2ls/bHRyYXZlbC5jb20v/d3AtY29udGVudC91/cGxvYWRzL3RoaW5n/cy10by1kby1oYW1t/YW1ldC10dW5pc2lh/LW9sZC1tZWRpbmEu/anBn", count: 9  },
-  { name: "Kairouan",  img: "https://imgs.search.brave.com/Q0ZBbUY-9oGKYHA7ORVPcNeu65JC0udcRz5FppxZVJ8/rs:fit:500:0:1:0/g:ce/aHR0cHM6Ly9zYWNy/ZWRzaXRlcy5jb20v/aW1hZ2VzL2Fmcmlj/YS90dW5pc2lhL0th/aXJvdWFuLUdyZWF0/LU1vc3F1ZS0xLndl/YnA", count: 7  },
-];
-
-
 // ── Reveal hook ───────────────────────────────────────────────────────────────
 function useReveal() {
   const ref = useRef<HTMLDivElement>(null);
@@ -388,8 +380,9 @@ export default function HomePage() {
                 Explorez la Tunisie
               </h2>
             </div>
-            
-            <a  href={ROUTES.excursions}
+              <a
+                          
+              href={ROUTES.excursions}
               style={{
                 fontSize: 13, fontWeight: 700, color: "#0B7A8A",
                 textDecoration: "none", display: "flex", alignItems: "center", gap: 6,
@@ -410,21 +403,9 @@ export default function HomePage() {
             </a>
           </div>
 
-          <div className="cities-grid">
-            {CITIES.map((city, i) => (
-             <a
-                key={i}
-                href={`${ROUTES.excursions}?city=${encodeURIComponent(city.name)}`}
-                className="city-card"
-                style={{ animationDelay: `${i * 0.06}s` }}
-              >
-                <img src={city.img} alt={city.name} className="city-card-img" loading="lazy" />
-                <div className="city-card-overlay" />
-                <span className="city-card-count">{city.count} excursions</span>
-                <span className="city-card-name">{city.name}</span>
-              </a>
-            ))}
-          </div>
+          {/* ← CitiesGrid isolé en client-only pour éviter le mismatch Brave */}
+     <CitiesGridClient />
+
         </div>
       </div>
 
@@ -442,13 +423,12 @@ export default function HomePage() {
         <BlogSection />
       </div>
 
-      {/* ── 8. CONTACT ───────────────────────────────────────────────── */}
-      {/* suppressHydrationWarning sur le wrapper pour absorber les diffs résiduelles */}
+      {/* ── 7. CONTACT ───────────────────────────────────────────────── */}
       <div ref={refContact} className="home-section-reveal" suppressHydrationWarning>
         <ContactSection />
       </div>
 
-      {/* ── 9. FOOTER ────────────────────────────────────────────────── */}
+      {/* ── 8. FOOTER ────────────────────────────────────────────────── */}
       <HomeFooter user={user} openAuth={openAuth} />
     </div>
   );
