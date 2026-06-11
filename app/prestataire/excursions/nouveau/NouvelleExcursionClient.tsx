@@ -10,7 +10,7 @@ import {
   Languages, Package, MapPin, CalendarDays, Trash2,
   ChevronDown, AlertCircle, Navigation, Star, Lock,
 } from "lucide-react";
-
+import Link from "next/link";
 /* ─────────────────────────────────────────────
    Constantes
 ───────────────────────────────────────────── */
@@ -500,9 +500,9 @@ export default function NouvelleExcursionClient({
 
         {/* ── Header ── */}
         <div style={{ marginBottom:24 }}>
-          <a href="/prestataire/excursions" style={{ fontSize:12, color:"#94A3B8", textDecoration:"none", fontWeight:600, display:"inline-flex", alignItems:"center", gap:5, marginBottom:12 }}>
+          <Link href="/prestataire/excursions" style={{ fontSize:12, color:"#94A3B8", textDecoration:"none", fontWeight:600, display:"inline-flex", alignItems:"center", gap:5, marginBottom:12 }}>
             <ArrowLeft size={12} /> Mes excursions
-          </a>
+          </Link>
           <div style={{ display:"flex", alignItems:"flex-start", justifyContent:"space-between", flexWrap:"wrap", gap:14 }}>
             <div>
               <h1 style={{ fontSize:26, fontWeight:800, color:"#053366", margin:0, letterSpacing:"-.04em" }}>Nouvelle excursion</h1>
@@ -615,7 +615,7 @@ export default function NouvelleExcursionClient({
                   <div className="nf-inner-grid-3" style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:14 }}>
                     <Field label="Durée (heures)" hint="Ex : 2, 3.5, 8">
                       <div className="nf-field">
-                        <input type="number" min={0.5} max={24} step={0.5} value={duration} onChange={e=>setDuration(Number(e.target.value))}/>
+                        <input type="text" inputMode="numeric" min={0.5} max={24} step={0.5} value={duration} onChange={e=>setDuration(Number(e.target.value))}/>
                       </div>
                     </Field>
                     <Field label="Prix par personne (EUR)">
@@ -625,7 +625,7 @@ export default function NouvelleExcursionClient({
                     </Field>
                     <Field label="Personnes max" hint="Capacité du groupe">
                       <div className="nf-field">
-                        <input type="number" min={1} max={100} step={1} value={maxPeople} onChange={e=>setMaxPeople(Number(e.target.value))}/>
+                        <input type="text" inputMode="numeric" min={1} max={100} step={1} value={maxPeople} onChange={e=>setMaxPeople(Number(e.target.value))}/>
                       </div>
                     </Field>
                   </div>
@@ -685,7 +685,7 @@ export default function NouvelleExcursionClient({
                     <Field label="Âge minimum" hint="Laisser vide si aucune restriction d'âge">
                       <div className="nf-field" style={{ position:"relative" }}>
                         <Users size={13} color="#94A3B8" style={{ position:"absolute", left:11, top:"50%", transform:"translateY(-50%)", pointerEvents:"none" }}/>
-                        <input type="number" min={3} max={80} style={{ paddingLeft:30 }} placeholder="Ex : 12" value={minAge} onChange={e=>setMinAge(e.target.value?Number(e.target.value):"")}/>
+                        <input type="text" inputMode="numeric" min={3} max={80} style={{ paddingLeft:30 }} placeholder="Ex : 12" value={minAge} onChange={e=>setMinAge(e.target.value?Number(e.target.value):"")}/>
                       </div>
                     </Field>
                   </div>
@@ -794,7 +794,7 @@ export default function NouvelleExcursionClient({
                         <div style={{ display:"flex", alignItems:"center", gap:8, background:"#FAFBFC", border:"1.5px solid #E2E8F0", borderRadius:10, padding:"9px 14px", flex:1 }}>
                           <Users size={14} color="#0F766E"/>
                           <input
-                            type="number" min={1} max={maxPeople}
+                           type="text" inputMode="numeric" min={1} max={maxPeople}
                             value={newSlots}
                             onChange={e => setNewSlots(Number(e.target.value))}
                             style={{ border:"none", background:"transparent", outline:"none", fontSize:13, color:"#0F172A", fontFamily:"inherit", width:"60px", fontWeight:700 }}
@@ -868,7 +868,7 @@ export default function NouvelleExcursionClient({
                     {/* Places récurrentes */}
                     <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:14 }}>
                       <span style={{ fontSize:12, fontWeight:600, color:"#475569" }}>Places par date :</span>
-                      <input type="number" min={1} max={maxPeople} value={recurSlots} onChange={e=>setRecurSlots(Number(e.target.value))} className="num"/>
+                      <input type="text" inputMode="numeric" min={1} max={maxPeople} value={recurSlots} onChange={e=>setRecurSlots(Number(e.target.value))} className="num"/>
                       <span style={{ fontSize:11, color:"#94A3B8" }}>/ {maxPeople} max</span>
                     </div>
 
