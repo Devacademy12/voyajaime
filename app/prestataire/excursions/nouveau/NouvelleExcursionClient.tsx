@@ -620,7 +620,7 @@ export default function NouvelleExcursionClient({
                     </Field>
                     <Field label="Prix par personne (EUR)">
                       <div className="nf-field">
-                        <input type="number" min={1} max={9999} step={0.5} value={price} onChange={e=>setPrice(Number(e.target.value))}/>
+                        <input type="text" inputMode="numeric" min={1} max={9999} step={0.5} value={price} onChange={e=>setPrice(Number(e.target.value))} />
                       </div>
                     </Field>
                     <Field label="Personnes max" hint="Capacité du groupe">
