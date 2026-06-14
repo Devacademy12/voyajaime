@@ -83,6 +83,9 @@ export default function EditItineraireClient({ itineraireId }: { itineraireId: s
   const [editDayCity,   setEditDayCity]   = useState<number | null>(null);
   const [allVilles,     setAllVilles]     = useState<string[]>([]);
 
+  /* Sidebar mobile */
+  const [showDaysMobile, setShowDaysMobile] = useState(false);
+
   /* Catalogue */
   const [showCatalogue, setShowCatalogue] = useState(false);
   const [catSearch,     setCatSearch]     = useState("");
@@ -229,22 +232,29 @@ export default function EditItineraireClient({ itineraireId }: { itineraireId: s
     @keyframes spin{to{transform:rotate(360deg)}}
     @keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
     @keyframes slideIn{from{opacity:0;transform:translateX(20px)}to{opacity:1;transform:translateX(0)}}
+    @keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
 
     /* Topbar */
-.ed-top{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 10rem;background:white;border-bottom:1px solid #EEF2FF;position:sticky;top:0;z-index:100}    .ed-top-left{display:flex;align-items:center;gap:12px}
-    .ed-top-right{display:flex;align-items:center;gap:10px}
-    .ed-back{display:flex;align-items:center;gap:6px;background:#F3F4F6;border:none;padding:8px 14px;border-radius:20px;font-size:13px;font-weight:600;color:#374151;cursor:pointer;font-family:inherit;transition:all .15s}
+    .ed-top{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 10rem;background:white;border-bottom:1px solid #EEF2FF;position:sticky;top:0;z-index:100}
+    .ed-top-left{display:flex;align-items:center;gap:12px;flex:1;min-width:0}
+    .ed-top-right{display:flex;align-items:center;gap:10px;flex-shrink:0}
+    .ed-back{display:flex;align-items:center;gap:6px;background:#F3F4F6;border:none;padding:8px 14px;border-radius:20px;font-size:13px;font-weight:600;color:#374151;cursor:pointer;font-family:inherit;transition:all .15s;flex-shrink:0}
     .ed-back:hover{background:#E5E7EB}
-    .ed-title-input{font-family:'Playfair Display',serif;font-size:18px;font-weight:900;color:#111827;border:none;background:transparent;outline:none;min-width:200px;max-width:400px;cursor:text;border-bottom:2px solid transparent;transition:border .2s}
+    .ed-back-label{display:inline}
+    .ed-title-input{font-family:'Playfair Display',serif;font-size:18px;font-weight:900;color:#111827;border:none;background:transparent;outline:none;min-width:0;max-width:400px;width:100%;cursor:text;border-bottom:2px solid transparent;transition:border .2s}
     .ed-title-input:focus{border-bottom-color:#02AFCF}
-    .ed-save-btn{display:flex;align-items:center;gap:7px;padding:9px 20px;background:linear-gradient(135deg,#02AFCF,#053366);color:white;border:none;border-radius:20px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;transition:all .2s;box-shadow:0 4px 14px rgba(2,175,207,.3)}
+    .ed-save-btn{display:flex;align-items:center;gap:7px;padding:9px 20px;background:linear-gradient(135deg,#02AFCF,#053366);color:white;border:none;border-radius:20px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;transition:all .2s;box-shadow:0 4px 14px rgba(2,175,207,.3);white-space:nowrap}
     .ed-save-btn:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(2,175,207,.4)}
     .ed-save-btn:disabled{background:#E5E7EB;color:#9CA3AF;cursor:not-allowed;transform:none;box-shadow:none}
     .ed-save-btn.ok{background:linear-gradient(135deg,#059669,#047857)}
-    .ed-stat{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;color:#6B7280;padding:6px 12px;background:#F3F4F6;border-radius:20px}
+    .ed-save-label{display:inline}
+    .ed-stat{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;color:#6B7280;padding:6px 12px;background:#F3F4F6;border-radius:20px;white-space:nowrap}
+
+    /* Mobile day toggle button (hidden on desktop) */
+    .ed-days-toggle{display:none}
 
     /* Layout */
-.ed-body{display:grid;grid-template-columns:260px 1fr;min-height:calc(100vh - 64px);padding:0 10rem}    @media(max-width:900px){.ed-body{grid-template-columns:1fr}}
+    .ed-body{display:grid;grid-template-columns:260px 1fr;min-height:calc(100vh - 64px);padding:0 10rem}
 
     /* Sidebar jours */
     .ed-sidebar{background:white;border-right:1px solid #EEF2FF;padding:20px 14px;display:flex;flex-direction:column;gap:8px;position:sticky;top:64px;height:calc(100vh - 64px);overflow-y:auto}
@@ -262,11 +272,11 @@ export default function EditItineraireClient({ itineraireId }: { itineraireId: s
     .ed-add-day:hover{border-color:#02AFCF;color:#02AFCF;background:#F8FAFF}
 
     /* Zone principale */
-    .ed-main{padding:24px 28px;display:flex;flex-direction:column;gap:20px;max-width:900px}
+    .ed-main{padding:24px 28px;display:flex;flex-direction:column;gap:20px;max-width:900px;width:100%}
 
     /* En-tête du jour */
-    .ed-day-header{background:white;border-radius:18px;border:1px solid #EEF2FF;padding:18px 22px;display:flex;align-items:center;justify-content:space-between;gap:16px;box-shadow:0 2px 8px rgba(5,51,102,.04)}
-    .ed-day-header-left{display:flex;align-items:center;gap:14px}
+    .ed-day-header{background:white;border-radius:18px;border:1px solid #EEF2FF;padding:18px 22px;display:flex;align-items:center;justify-content:space-between;gap:16px;box-shadow:0 2px 8px rgba(5,51,102,.04);flex-wrap:wrap}
+    .ed-day-header-left{display:flex;align-items:center;gap:14px;min-width:0}
     .ed-day-num{width:48px;height:48px;border-radius:14px;background:linear-gradient(135deg,#02AFCF,#053366);display:flex;align-items:center;justify-content:center;color:white;font-size:16px;font-weight:800;flex-shrink:0}
     .ed-day-city-btn{display:flex;align-items:center;gap:6px;background:#F3F4F6;border:none;padding:6px 12px;border-radius:20px;font-size:13px;font-weight:600;color:#374151;cursor:pointer;font-family:inherit;transition:all .15s}
     .ed-day-city-btn:hover{background:#E5E7EB}
@@ -278,7 +288,7 @@ export default function EditItineraireClient({ itineraireId }: { itineraireId: s
 
     /* Slots */
     .ed-slot{background:white;border-radius:16px;border:1px solid #EEF2FF;overflow:hidden;box-shadow:0 2px 6px rgba(5,51,102,.03)}
-    .ed-slot-hdr{display:flex;align-items:center;gap:8px;padding:12px 16px;background:#F9FAFF;border-bottom:1px solid #EEF2FF}
+    .ed-slot-hdr{display:flex;align-items:center;gap:8px;padding:12px 16px;background:#F9FAFF;border-bottom:1px solid #EEF2FF;flex-wrap:wrap}
     .ed-slot-label{font-size:13px;font-weight:700}
     .ed-slot-hint{font-size:11px;color:#9CA3AF}
     .ed-slot-budget{margin-left:auto;font-size:12px;font-weight:700;color:#059669;display:flex;align-items:center;gap:4px}
@@ -286,17 +296,17 @@ export default function EditItineraireClient({ itineraireId }: { itineraireId: s
     .ed-slot-empty{text-align:center;padding:16px;font-size:12px;color:#C4C9D0;font-style:italic;background:#FAFBFF;border-radius:10px;border:1px dashed #EEF2FF}
 
     /* Act card */
-    .act-card{display:flex;align-items:center;gap:10px;padding:10px 12px;background:#FAFBFF;border-radius:12px;border:1.5px solid #EEF2FF;margin-bottom:8px;transition:all .15s;position:relative;animation:fadeUp .2s ease}
+    .act-card{display:flex;align-items:center;gap:10px;padding:10px 12px;background:#FAFBFF;border-radius:12px;border:1.5px solid #EEF2FF;margin-bottom:8px;transition:all .15s;position:relative;animation:fadeUp .2s ease;flex-wrap:wrap}
     .act-card:hover{border-color:#DCE5FF;background:white;box-shadow:0 3px 10px rgba(5,51,102,.06)}
     .act-photo{width:44px;height:44px;border-radius:10px;object-fit:cover;flex-shrink:0;border:1px solid #EEF2FF}
     .act-photo-ph{width:44px;height:44px;border-radius:10px;background:#EEF2FF;flex-shrink:0;display:flex;align-items:center;justify-content:center}
-    .act-info{flex:1;min-width:0}
+    .act-info{flex:1;min-width:140px}
     .act-title{font-size:13px;font-weight:700;color:#111827;margin-bottom:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
     .act-meta{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
     .act-meta-item{display:inline-flex;align-items:center;gap:3px;font-size:11px;color:#6B7280}
     .act-note-badge{display:inline-flex;align-items:center;gap:3px;font-size:10px;background:#FEF3C7;color:#B45309;padding:2px 7px;border-radius:20px}
     .act-price{font-size:13px;font-weight:800;color:#02AFCF;flex-shrink:0}
-    .act-actions{display:flex;gap:5px;flex-shrink:0}
+    .act-actions{display:flex;gap:5px;flex-shrink:0;margin-left:auto}
     .act-action-btn{background:#F3F4F6;border:none;padding:5px;border-radius:8px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s}
     .act-action-btn:hover.note{background:#FEF3C7;color:#B45309}
     .act-action-btn.note:hover{background:#FEF3C7;color:#B45309}
@@ -313,9 +323,9 @@ export default function EditItineraireClient({ itineraireId }: { itineraireId: s
     .cat-panel{background:white;border-radius:24px 24px 0 0;width:100%;max-width:680px;max-height:90vh;display:flex;flex-direction:column;box-shadow:0 -8px 40px rgba(0,0,0,.2);animation:slideIn .25s ease}
     @media(min-width:640px){.cat-panel{border-radius:24px;max-height:85vh}}
     .cat-header{padding:18px 20px 14px;border-bottom:1px solid #EEF2FF}
-    .cat-header-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+    .cat-header-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;gap:12px}
     .cat-title{font-size:16px;font-weight:800;color:#111827}
-    .cat-close{background:#F3F4F6;border:none;width:32px;height:32px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#9CA3AF;transition:all .15s}
+    .cat-close{background:#F3F4F6;border:none;width:32px;height:32px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#9CA3AF;transition:all .15s;flex-shrink:0}
     .cat-close:hover{background:#E5E7EB;color:#374151}
     .cat-search{position:relative}
     .cat-search-icon{position:absolute;left:12px;top:50%;transform:translateY(-50%);pointer-events:none}
@@ -343,7 +353,7 @@ export default function EditItineraireClient({ itineraireId }: { itineraireId: s
     .slot-box{background:white;border-radius:20px;padding:22px;width:100%;max-width:380px;box-shadow:0 20px 50px rgba(0,0,0,.2)}
     .slot-box-title{font-size:15px;font-weight:800;color:#111827;margin-bottom:3px}
     .slot-box-sub{font-size:12px;color:#9CA3AF;margin-bottom:14px}
-    .slot-option{display:flex;align-items:center;gap:10px;padding:10px;border-radius:12px;background:#F9FAFB;margin-bottom:6px;cursor:pointer;transition:all .15s;border:1.5px solid transparent}
+    .slot-option{display:flex;align-items:center;gap:10px;padding:10px;border-radius:12px;background:#F9FAFB;margin-bottom:6px;cursor:pointer;transition:all .15s;border:1.5px solid transparent;flex-wrap:wrap}
     .slot-option.sel{background:rgba(2,175,207,.08);border-color:rgba(2,175,207,.3)}
     .slot-option-icon{width:30px;height:30px;border-radius:9px;display:flex;align-items:center;justify-content:center}
     .slot-option-label{font-size:13px;font-weight:700}
@@ -367,6 +377,70 @@ export default function EditItineraireClient({ itineraireId }: { itineraireId: s
     /* Scrollbar */
     *::-webkit-scrollbar{width:4px;height:4px}
     *::-webkit-scrollbar-thumb{background:#E5E7EB;border-radius:2px}
+
+    /* ══════════ RESPONSIVE ══════════ */
+
+    /* Tablette */
+    @media(max-width:1280px){
+      .ed-top{padding:14px 24px}
+      .ed-body{padding:0 24px}
+    }
+
+    /* Mobile / tablette portrait */
+    @media(max-width:900px){
+      .ed-body{grid-template-columns:1fr}
+
+      .ed-top{padding:10px 14px;flex-wrap:wrap;gap:8px}
+      .ed-top-left{order:1;width:100%}
+      .ed-top-right{order:2;width:100%;justify-content:space-between}
+      .ed-title-input{font-size:15px}
+      .ed-back-label{display:none}
+      .ed-back{padding:8px 10px}
+      .ed-save-label{display:none}
+      .ed-save-btn{padding:9px 14px}
+      .ed-stat{font-size:11px;padding:5px 9px}
+
+      /* Sidebar -> bouton + drawer */
+      .ed-days-toggle{
+        display:flex;align-items:center;justify-content:space-between;gap:10px;
+        background:white;border:1px solid #EEF2FF;border-radius:14px;
+        padding:12px 14px;cursor:pointer;font-family:inherit;width:100%;
+        font-size:13px;font-weight:700;color:#111827;
+        box-shadow:0 2px 8px rgba(5,51,102,.04);
+      }
+      .ed-days-toggle-left{display:flex;align-items:center;gap:8px}
+
+      .ed-sidebar{
+        position:fixed;inset:0 0 0 auto;width:min(280px,82vw);height:100vh;top:0;
+        z-index:900;box-shadow:-10px 0 30px rgba(0,0,0,.15);
+        transform:translateX(100%);transition:transform .25s ease;
+        border-right:none;
+      }
+      .ed-sidebar.open{transform:translateX(0)}
+      .ed-sidebar-backdrop{
+        position:fixed;inset:0;background:rgba(5,19,51,.45);
+        backdrop-filter:blur(2px);z-index:899;
+      }
+
+      .ed-main{padding:14px;max-width:100%;gap:14px}
+
+      .ed-day-header{padding:14px 16px;gap:10px}
+      .ed-day-num{width:40px;height:40px;font-size:14px}
+      .ed-day-header-left{flex:1;width:100%}
+      .ed-day-stats{width:100%;justify-content:flex-start}
+
+      .act-card{padding:10px}
+      .act-actions{margin-left:0}
+      .act-slot-select{font-size:10px;padding:4px}
+    }
+
+    /* Très petit écran */
+    @media(max-width:420px){
+      .ed-stat{display:none}
+      .ed-stat:first-of-type{display:inline-flex}
+      .ed-day-stats{gap:6px}
+      .act-photo,.act-photo-ph{width:38px;height:38px}
+    }
   `;
 
   /* ── Loading ── */
@@ -387,7 +461,7 @@ export default function EditItineraireClient({ itineraireId }: { itineraireId: s
       <div style={{ display:"flex", alignItems:"center", justifyContent:"center", minHeight:"100vh", flexDirection:"column", gap:14, fontFamily:"'DM Sans',sans-serif" }}>
         <AlertCircle size={36} color="#DC2626"/>
         <p style={{ fontSize:16, fontWeight:700, color:"#111827" }}>{error}</p>
-        <button onClick={() => router.back()} className="ed-back"><ArrowLeft size={14}/> Retour</button>
+        <button onClick={() => router.back()} className="ed-back"><ArrowLeft size={14}/> <span className="ed-back-label">Retour</span></button>
       </div>
     </>
   );
@@ -395,6 +469,36 @@ export default function EditItineraireClient({ itineraireId }: { itineraireId: s
   const currentDay = plan[activeDay];
   const dayBudget  = currentDay?.activities.reduce((s,a) => s+(a.excursion.price_per_person||0), 0) || 0;
   const dayHours   = currentDay?.activities.reduce((s,a) => s+(a.excursion.duration_hours||0), 0) || 0;
+
+  /* Liste des jours, factorisée pour sidebar desktop + drawer mobile */
+  const DaysList = (
+    <>
+      <p className="ed-sidebar-title">Jours du voyage</p>
+      {plan.map((day, i) => (
+        <button
+          key={i}
+          className={`ed-day-btn ${activeDay===i?"active":""}`}
+          onClick={() => { setActiveDay(i); setCatalogue([]); setShowDaysMobile(false); }}
+        >
+          <div className={`ed-day-icon ${activeDay===i?"active":""}`}>
+            {i+1}
+          </div>
+          <div className="ed-day-info">
+            <div className="ed-day-label">Jour {i+1}</div>
+            <div className="ed-day-meta">
+              <MapPin size={9} style={{ display:"inline", verticalAlign:"middle" }}/> {day.city || "Ville non définie"}
+            </div>
+          </div>
+          {day.activities.length > 0 && (
+            <span className="ed-day-cnt">{day.activities.length}</span>
+          )}
+        </button>
+      ))}
+      <button className="ed-add-day" onClick={addDay}>
+        <Plus size={13}/> Ajouter un jour
+      </button>
+    </>
+  );
 
   return (
     <>
@@ -404,7 +508,7 @@ export default function EditItineraireClient({ itineraireId }: { itineraireId: s
       <div className="ed-top">
         <div className="ed-top-left">
           <button className="ed-back" onClick={() => router.push(ROUTES.touriste.itineraires)}>
-            <ArrowLeft size={14}/> Mes itinéraires
+            <ArrowLeft size={14}/> <span className="ed-back-label">Mes itinéraires</span>
           </button>
           <input
             className="ed-title-input"
@@ -421,9 +525,9 @@ export default function EditItineraireClient({ itineraireId }: { itineraireId: s
             onClick={save}
             disabled={saving || saveOk}
           >
-            {saving ? <><Loader2 size={13} style={{ animation:"spin .7s linear infinite" }}/> Enregistrement…</>
-             : saveOk ? <><Check size={13}/> Enregistré !</>
-             : <><Save size={13}/> Enregistrer</>}
+            {saving ? <><Loader2 size={13} style={{ animation:"spin .7s linear infinite" }}/> <span className="ed-save-label">Enregistrement…</span></>
+             : saveOk ? <><Check size={13}/> <span className="ed-save-label">Enregistré !</span></>
+             : <><Save size={13}/> <span className="ed-save-label">Enregistrer</span></>}
           </button>
         </div>
       </div>
@@ -431,36 +535,26 @@ export default function EditItineraireClient({ itineraireId }: { itineraireId: s
       {/* ── Body ── */}
       <div className="ed-body">
 
-        {/* Sidebar jours */}
-        <div className="ed-sidebar">
-          <p className="ed-sidebar-title">Jours du voyage</p>
-          {plan.map((day, i) => (
-            <button
-              key={i}
-              className={`ed-day-btn ${activeDay===i?"active":""}`}
-              onClick={() => { setActiveDay(i); setCatalogue([]); }}
-            >
-              <div className={`ed-day-icon ${activeDay===i?"active":""}`}>
-                {i+1}
-              </div>
-              <div className="ed-day-info">
-                <div className="ed-day-label">Jour {i+1}</div>
-                <div className="ed-day-meta">
-                  <MapPin size={9} style={{ display:"inline", verticalAlign:"middle" }}/> {day.city || "Ville non définie"}
-                </div>
-              </div>
-              {day.activities.length > 0 && (
-                <span className="ed-day-cnt">{day.activities.length}</span>
-              )}
-            </button>
-          ))}
-          <button className="ed-add-day" onClick={addDay}>
-            <Plus size={13}/> Ajouter un jour
-          </button>
+        {/* Sidebar jours (desktop fixe / drawer mobile) */}
+        {showDaysMobile && <div className="ed-sidebar-backdrop" onClick={() => setShowDaysMobile(false)} />}
+        <div className={`ed-sidebar ${showDaysMobile ? "open" : ""}`}>
+          {DaysList}
         </div>
 
         {/* Zone principale */}
         <div className="ed-main">
+
+          {/* Toggle mobile (affiché ici réellement via CSS) */}
+          <div
+            className="ed-days-toggle"
+            onClick={() => setShowDaysMobile(true)}
+          >
+            <div className="ed-days-toggle-left">
+              <div className="ed-day-icon active" style={{ width:30, height:30, fontSize:12 }}>{activeDay+1}</div>
+              <span>Jour {activeDay+1} · {currentDay?.city || "Ville non définie"}</span>
+            </div>
+            <ChevronDown size={16} color="#9CA3AF"/>
+          </div>
 
           {/* En-tête du jour */}
           <div className="ed-day-header">

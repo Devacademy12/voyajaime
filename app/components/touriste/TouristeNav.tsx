@@ -107,7 +107,7 @@ export default function TouristeNav({
 
     const onScroll = () => setScrolled(window.scrollY > 10);
     window.addEventListener("scroll", onScroll, { passive: true });
-    
+
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
@@ -165,16 +165,18 @@ export default function TouristeNav({
   // Pendant le SSR (isHydrated=false), on ignore scrolled pour être cohérent
   const effectiveScrolled = isHydrated ? scrolled : false;
 
-  const navTextColor = isHeroPage && !effectiveScrolled ? "rgba(255,255,255,0.92)" : "#1E293B";
-  const navTextHover = isHeroPage && !effectiveScrolled ? "#ffffff" : "#2B96A8";
-  const navBg = effectiveScrolled ? "#FFFFFF" : isHeroPage ? "transparent" : "#FFFFFF";
+  // ── Mode "navbar bleue" : actif soit en hero non-scrollé, soit dès qu'on scrolle (sur n'importe quelle page) ──
+  const useLightTextMode = (isHeroPage && !effectiveScrolled) || effectiveScrolled;
+
+  const navTextColor = useLightTextMode ? "rgba(255,255,255,0.92)" : "#1E293B";
+  const navBg = effectiveScrolled ? "#053366" : isHeroPage ? "transparent" : "#FFFFFF";
   const navBorder = effectiveScrolled
-    ? "1px solid rgba(5,51,102,0.10)"
+    ? "1px solid rgba(255,255,255,0.10)"
     : isHeroPage
     ? "1px solid transparent"
     : "1px solid rgba(5,51,102,0.10)";
   const navShadow = effectiveScrolled
-    ? "0 2px 20px rgba(5,51,102,0.08)"
+    ? "0 4px 24px rgba(5,51,102,0.25)"
     : isHeroPage
     ? "none"
     : "0 2px 20px rgba(5,51,102,0.06)";
@@ -218,7 +220,7 @@ export default function TouristeNav({
         }
         .glink.on i { opacity: 1; }
 
-        /* Override for hero transparent bg — white links */
+        /* Override for hero / scrolled transparent-or-blue bg — white links */
         .gnav-hero-mode .glink { color: rgba(255,255,255,0.88); }
         .gnav-hero-mode .glink:hover { color: #fff; background: rgba(255,255,255,0.12); border-color: rgba(255,255,255,0.2); }
         .gnav-hero-mode .glink.on { color: #fff; background: rgba(255,255,255,0.15); border-color: rgba(255,255,255,0.25); }
@@ -309,7 +311,7 @@ export default function TouristeNav({
         .g-btn i { font-size: 14px; }
         .g-btn:hover { opacity: 0.92; box-shadow: 0 4px 16px rgba(2,175,207,0.38); transform: translateY(-1px); }
 
-        /* Hero override — outlined white button */
+        /* Hero / scrolled override — outlined white button */
         .gnav-hero-mode .g-btn {
           background: rgba(255,255,255,0.15);
           border: 1.5px solid rgba(255,255,255,0.55);
@@ -497,7 +499,7 @@ export default function TouristeNav({
       `}</style>
 
       <header
-        className={`gnav${isHeroPage && !effectiveScrolled ? " gnav-hero-mode" : ""}`}
+        className={`gnav${useLightTextMode ? " gnav-hero-mode" : ""}`}
         style={{
           position: "fixed",
           top: 0,
