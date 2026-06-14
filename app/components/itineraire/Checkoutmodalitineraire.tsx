@@ -163,42 +163,52 @@ function hasTimeOverlap(
   return s1 < e2 && s2 < e1;
 }
 
-/* ─── CSS ─────────────────────────────────────────────────────────────── */
+/* ─── CSS RESPONSIVE ─────────────────────────────────────────────────── */
 
 const CSS = `
   @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700;800&family=DM+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&display=swap');
 
+  * { box-sizing: border-box; }
+
+  /* ═══ RESPONSIVE OVERLAY & SHELL ═══ */
   .cmi-overlay {
     position:fixed;inset:0;z-index:1000;
-    display:flex;align-items:center;justify-content:center;padding:12px;
+    display:flex;align-items:center;justify-content:center;padding:8px;
     background:rgba(5,15,30,0.72);backdrop-filter:blur(10px);
     animation:cmiFade .22s ease;
   }
+  
   .cmi-shell {
-    font-family:'DM Sans',sans-serif;background:#F8F9FB;border-radius:28px;
+    font-family:'DM Sans',sans-serif;background:#F8F9FB;
     width:100%;max-width:960px;
     box-shadow:0 40px 100px rgba(0,0,0,.38),0 0 0 1px rgba(255,255,255,.06);
     overflow:hidden;display:flex;max-height:94vh;
     animation:cmiUp .32s cubic-bezier(.34,1.4,.64,1);
+    border-radius:28px;
   }
 
+  /* ═══ DESKTOP LAYOUT (960px+) ═══ */
   .cmi-left {
     width:360px;flex-shrink:0;
     background:linear-gradient(168deg,#071E3D 0%,#0B3D63 45%,#0A6080 100%);
     display:flex;flex-direction:column;position:relative;overflow:hidden;
   }
+  
   .cmi-left-inner {
     flex:1;overflow-y:auto;padding:28px 26px;
     display:flex;flex-direction:column;gap:20px;
   }
+  
   .cmi-left-inner::-webkit-scrollbar{width:3px}
   .cmi-left-inner::-webkit-scrollbar-thumb{background:rgba(255,255,255,.15);border-radius:3px}
+  
   .cmi-left::before{
     content:'';position:absolute;top:-80px;right:-80px;
     width:240px;height:240px;border-radius:50%;
     background:radial-gradient(circle,rgba(43,150,168,.25) 0%,transparent 70%);
     pointer-events:none;
   }
+  
   .cmi-left::after{
     content:'';position:absolute;bottom:-60px;left:-50px;
     width:200px;height:200px;border-radius:50%;
@@ -207,41 +217,52 @@ const CSS = `
   }
 
   .cmi-right{flex:1;display:flex;flex-direction:column;overflow:hidden;background:#FAFBFC;}
+  
   .cmi-right-scroll{
-    flex:1;overflow-y:auto;padding:26px 26px 0;
+    flex:1;overflow-y:auto;padding:26px;
     scrollbar-width:thin;scrollbar-color:#E5E7EB transparent;
   }
+  
   .cmi-right-scroll::-webkit-scrollbar{width:4px}
   .cmi-right-scroll::-webkit-scrollbar-thumb{background:#E5E7EB;border-radius:4px}
+  
   .cmi-right-footer{padding:18px 26px 22px;border-top:1px solid #EAECEF;background:#FAFBFC;}
 
+  /* ═══ TABS & ACCORDION ═══ */
   .exc-tab{
     border-radius:12px;padding:10px 13px;cursor:pointer;
     display:flex;align-items:center;gap:9px;border:1px solid transparent;transition:all .16s;
     font-family:'DM Sans',sans-serif;font-size:12px;font-weight:600;
     color:rgba(255,255,255,.65);background:rgba(255,255,255,.05);text-align:left;width:100%;
   }
+  
   .exc-tab.active{background:rgba(255,255,255,.14);border-color:rgba(255,255,255,.28);color:white;box-shadow:0 4px 16px rgba(0,0,0,.18);}
   .exc-tab:hover:not(.active){background:rgba(255,255,255,.09);color:rgba(255,255,255,.85);}
   .exc-tab.unavailable{opacity:.45;cursor:not-allowed;}
+  
   .exc-tab-num{
     width:22px;height:22px;border-radius:50%;flex-shrink:0;
     display:flex;align-items:center;justify-content:center;
     font-size:10px;font-weight:800;
     background:rgba(255,255,255,.12);color:rgba(255,255,255,.7);transition:all .16s;
   }
+  
   .exc-tab.active .exc-tab-num{background:#2B96A8;color:white;}
   .exc-tab.done .exc-tab-num{background:#059669;color:white;}
   .exc-tab.unavailable .exc-tab-num{background:rgba(239,68,68,.4);color:white;}
 
+  /* ═══ CALENDAR ═══ */
   .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;}
+  
   .cal-day{
     aspect-ratio:1;border-radius:9px;border:none;
     font-size:12px;font-weight:600;cursor:pointer;
     font-family:'DM Sans',sans-serif;transition:all .14s;
     display:flex;align-items:center;justify-content:center;
     flex-direction:column;gap:1px;position:relative;
+    min-height:32px;
   }
+  
   .cal-day.empty{background:transparent;cursor:default;pointer-events:none;}
   .cal-day.past{background:rgba(255,255,255,.03);color:rgba(255,255,255,.2);cursor:not-allowed;text-decoration:line-through;}
   .cal-day.unavailable{background:rgba(255,255,255,.04);color:rgba(255,255,255,.2);cursor:not-allowed;}
@@ -255,28 +276,37 @@ const CSS = `
   .cal-day.today::after{content:'';position:absolute;bottom:2px;width:4px;height:4px;border-radius:50%;background:rgba(255,255,255,.6);}
   .cal-dot{width:4px;height:4px;border-radius:50%;background:#34D399;flex-shrink:0;}
 
+  /* ═══ SLOTS ═══ */
   .slot-pill{
     display:flex;align-items:center;justify-content:space-between;
     padding:12px 15px;border-radius:14px;border:1.5px solid #E5E7EB;background:white;
     cursor:pointer;transition:all .15s;margin-bottom:8px;position:relative;
+    min-height:52px;
   }
+  
   .slot-pill.sel{background:#EFF9FB;border-color:#2B96A8;}
   .slot-pill.full{opacity:.5;cursor:not-allowed;border-color:#FEE2E2;}
   .slot-pill:not(.full):not(.sel):hover{border-color:#2B96A8;background:#F8FDFE;}
 
+  /* ═══ CONTROLS ═══ */
   .cmi-counter-btn{
     width:36px;height:36px;border:none;border-radius:10px;background:#F3F4F6;cursor:pointer;
     display:flex;align-items:center;justify-content:center;transition:all .14s;
+    min-width:36px;
   }
+  
   .cmi-counter-btn:hover:not(:disabled){background:#E5E7EB;}
   .cmi-counter-btn:disabled{opacity:.3;cursor:not-allowed;}
 
+  /* ═══ BUTTONS ═══ */
   .cmi-cta{
     width:100%;padding:15px;border:none;border-radius:14px;
     font-size:15px;font-weight:800;cursor:pointer;
     font-family:'DM Sans',sans-serif;transition:all .2s;
     display:flex;align-items:center;justify-content:center;gap:8px;letter-spacing:.3px;
+    min-height:48px;
   }
+  
   .cmi-cta.on{background:linear-gradient(135deg,#2B96A8,#1a7a8f);color:white;box-shadow:0 4px 18px rgba(43,150,168,.3);}
   .cmi-cta.on:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(43,150,168,.4);}
   .cmi-cta.off{background:#EAECEF;color:#9CA3AF;cursor:not-allowed;}
@@ -284,6 +314,7 @@ const CSS = `
   .cmi-cta.green{background:linear-gradient(135deg,#059669,#047857);color:white;box-shadow:0 4px 18px rgba(5,150,105,.3);}
   .cmi-cta.green:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(5,150,105,.4);}
 
+  /* ═══ PROGRESS & BADGES ═══ */
   .prog-step{height:3px;border-radius:3px;flex:1;transition:background .3s;}
 
   .sugg-badge{
@@ -291,15 +322,16 @@ const CSS = `
     background:rgba(52,211,153,.15);border:1px solid rgba(52,211,153,.3);
     border-radius:20px;padding:4px 10px;font-size:11px;font-weight:700;color:#059669;
   }
+  
   .date-chip{
     display:inline-flex;align-items:center;gap:5px;
     background:rgba(43,150,168,.12);border:1px solid rgba(43,150,168,.25);
     border-radius:10px;padding:5px 10px;font-size:11px;font-weight:600;color:#0E5068;
     cursor:pointer;transition:all .15s;
   }
+  
   .date-chip:hover{background:rgba(43,150,168,.2);border-color:#2B96A8;}
 
-  /* Badge "Pas de créneau" */
   .no-slot-banner {
     display:flex;align-items:center;gap:10px;
     padding:12px 14px;
@@ -308,6 +340,7 @@ const CSS = `
     font-size:12px;font-weight:600;color:#DC2626;
   }
 
+  /* ═══ FORM ELEMENTS ═══ */
   .cmi-textarea{
     width:100%;padding:10px 13px;min-height:60px;
     border:1.5px solid #E5E7EB;border-radius:12px;
@@ -315,17 +348,295 @@ const CSS = `
     color:#374151;resize:none;outline:none;
     background:#F9FAFB;box-sizing:border-box;transition:border .15s;
   }
+  
   .cmi-textarea:focus{border-color:#2B96A8;background:white;}
 
+  /* ═══ ANIMATIONS ═══ */
   @keyframes cmiFade{from{opacity:0}to{opacity:1}}
   @keyframes cmiUp{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
   @keyframes cmiSpin{to{transform:rotate(360deg)}}
   @keyframes pulseGreen{0%,100%{box-shadow:0 0 0 0 rgba(5,150,105,.3)}50%{box-shadow:0 0 0 8px rgba(5,150,105,0)}}
 
-  @media(max-width:720px){
-    .cmi-shell{flex-direction:column;max-height:100dvh;border-radius:20px 20px 0 0;}
-    .cmi-left{width:100%;}
-    .cmi-left-inner{padding:18px 16px;gap:14px;}
+  /* ═══ TABLET (768px - 959px) ═══ */
+  @media(max-width:959px){
+    .cmi-shell{
+      flex-direction:column;
+      border-radius:24px;
+      max-height:92vh;
+    }
+    
+    .cmi-left{
+      width:100%;
+      max-height:45%;
+      border-radius:24px 24px 0 0;
+    }
+    
+    .cmi-left-inner{
+      padding:20px 22px;
+      gap:16px;
+      max-height:280px;
+    }
+    
+    .cmi-right{
+      max-height:55%;
+      border-radius:0 0 24px 24px;
+    }
+    
+    .cmi-right-scroll{
+      padding:20px 22px 0;
+    }
+    
+    .cmi-right-footer{
+      padding:14px 22px 18px;
+    }
+  }
+
+  /* ═══ MOBILE LANDSCAPE / SMALL TABLET (640px - 767px) ═══ */
+  @media(max-width:767px){
+    .cmi-overlay{
+      padding:6px;
+    }
+    
+    .cmi-shell{
+      flex-direction:column;
+      border-radius:20px;
+      max-height:96vh;
+    }
+    
+    .cmi-left{
+      width:100%;
+      max-height:42%;
+      border-radius:20px 20px 0 0;
+    }
+    
+    .cmi-left-inner{
+      padding:18px 18px;
+      gap:14px;
+      max-height:260px;
+    }
+    
+    .cmi-right{
+      max-height:58%;
+      border-radius:0 0 20px 20px;
+    }
+    
+    .cmi-right-scroll{
+      padding:18px 18px 0;
+    }
+    
+    .cmi-right-footer{
+      padding:12px 18px 16px;
+    }
+    
+    .exc-tab{
+      padding:9px 11px;
+      font-size:11px;
+      gap:7px;
+    }
+    
+    .exc-tab-num{
+      width:20px;height:20px;
+      font-size:9px;
+    }
+    
+    .cmi-cta{
+      padding:13px;
+      font-size:14px;
+      min-height:44px;
+      gap:6px;
+    }
+    
+    .cal-day{
+      min-height:28px;
+      font-size:11px;
+    }
+  }
+
+  /* ═══ MOBILE PORTRAIT (480px - 639px) ═══ */
+  @media(max-width:639px){
+    .cmi-overlay{
+      padding:4px;
+      align-items:flex-end;
+    }
+    
+    .cmi-shell{
+      flex-direction:column;
+      border-radius:20px 20px 0 0;
+      max-height:95vh;
+    }
+    
+    .cmi-left{
+      width:100%;
+      max-height:38%;
+      border-radius:20px 20px 0 0;
+    }
+    
+    .cmi-left-inner{
+      padding:16px 16px;
+      gap:12px;
+      max-height:240px;
+    }
+    
+    .cmi-right{
+      max-height:62%;
+      border-radius:0 0 0 0;
+    }
+    
+    .cmi-right-scroll{
+      padding:16px 16px 0;
+    }
+    
+    .cmi-right-footer{
+      padding:12px 16px 20px;
+      border-radius:0;
+    }
+    
+    .exc-tab{
+      padding:8px 10px;
+      font-size:10px;
+      gap:6px;
+    }
+    
+    .exc-tab-num{
+      width:18px;height:18px;
+      font-size:8px;
+    }
+    
+    .cmi-cta{
+      padding:12px;
+      font-size:13px;
+      min-height:42px;
+      gap:5px;
+    }
+    
+    .cmi-cta.on{
+      font-size:12px;
+    }
+    
+    .cal-day{
+      min-height:26px;
+      font-size:10px;
+    }
+    
+    .slot-pill{
+      padding:10px 12px;
+      font-size:13px;
+      min-height:48px;
+      flex-wrap:wrap;
+    }
+    
+    .sugg-badge{
+      font-size:10px;
+      padding:3px 8px;
+    }
+    
+    .date-chip{
+      font-size:10px;
+      padding:4px 8px;
+    }
+  }
+
+  /* ═══ SMALL MOBILE (320px - 479px) ═══ */
+  @media(max-width:479px){
+    .cmi-overlay{
+      padding:0;
+    }
+    
+    .cmi-shell{
+      border-radius:16px 16px 0 0;
+      width:100%;
+      max-height:100vh;
+    }
+    
+    .cmi-left{
+      width:100%;
+      max-height:35%;
+      border-radius:16px 16px 0 0;
+    }
+    
+    .cmi-left-inner{
+      padding:14px 14px;
+      gap:10px;
+      max-height:220px;
+    }
+    
+    .cmi-left::before,
+    .cmi-left::after{
+      opacity:0.5;
+    }
+    
+    .cmi-right{
+      max-height:65%;
+      flex:1;
+      border-radius:0;
+    }
+    
+    .cmi-right-scroll{
+      padding:14px 14px 0;
+      gap:10px;
+    }
+    
+    .cmi-right-footer{
+      padding:10px 14px 16px;
+    }
+    
+    h2{
+      font-size:16px !important;
+    }
+    
+    h3{
+      font-size:15px !important;
+    }
+    
+    .exc-tab{
+      padding:7px 9px;
+      font-size:9px;
+      gap:5px;
+    }
+    
+    .exc-tab-num{
+      width:16px;height:16px;
+      font-size:7px;
+    }
+    
+    .cmi-cta{
+      padding:10px;
+      font-size:12px;
+      min-height:40px;
+      gap:4px;
+    }
+    
+    .cmi-cta.on,
+    .cmi-cta.green{
+      font-size:11px;
+    }
+    
+    .cal-grid{
+      gap:2px;
+    }
+    
+    .cal-day{
+      min-height:24px;
+      font-size:9px;
+    }
+    
+    .slot-pill{
+      padding:9px 10px;
+      min-height:44px;
+      flex-wrap:wrap;
+      gap:8px;
+    }
+    
+    .cmi-counter-btn{
+      width:32px;height:32px;
+      min-width:32px;
+    }
+    
+    .cmi-textarea{
+      min-height:50px;
+      padding:8px 10px;
+      font-size:12px;
+    }
   }
 `;
 
@@ -482,7 +793,7 @@ function SlotList({ slots, selected, onSelect }: {
   );
 }
 
-/* ─── Main Component ─────────────────────────────────────────────────── */
+/* ─── Main Component (unchanged logic) ─────────────────────────────────────── */
 
 export default function CheckoutModalItineraire({
   excursions: rawExcursions, itineraireId: propItinId, itineraireTitle, onClose, onPayNow,
@@ -490,7 +801,6 @@ export default function CheckoutModalItineraire({
   const supabase = createClient();
   const router   = useRouter();
 
-  // ── Séparer les excursions disponibles / sans créneau ──────────────
   const { available: excursions, unavailable: unavailableExcursions } = (() => {
     const available:   ExcursionForCheckout[] = [];
     const unavailable: ExcursionForCheckout[] = [];
@@ -501,11 +811,9 @@ export default function CheckoutModalItineraire({
     return { available, unavailable };
   })();
 
-  // ── Cas : aucune excursion disponible ──────────────────────────────
   const [showNoSlotWarning, setShowNoSlotWarning] = useState(unavailableExcursions.length > 0);
   const [confirmedContinue, setConfirmedContinue] = useState(unavailableExcursions.length === 0);
 
-  /* ── Per-excursion state ── */
   const [perExc, setPerExc] = useState(() =>
     excursions.map(e => {
       const dateMap = buildDateMap(e);
@@ -570,7 +878,6 @@ export default function CheckoutModalItineraire({
     }
   };
 
-  /* ── Reserve ── */
   const handleReserve = async () => {
     if (!canSubmit) return;
     setStatus("loading");
@@ -663,7 +970,6 @@ export default function CheckoutModalItineraire({
           setStatus("error"); return;
         }
 
-        // Enregistrer dans reservation_itineraires
         const { error: itinResErr } = await supabase.from("reservation_itineraires").insert([{
           itineraire_id:  itineraireId,
           reservation_id: inserted.id,
@@ -679,7 +985,6 @@ export default function CheckoutModalItineraire({
         }]);
         if (itinResErr) {
           console.error("Erreur reservation_itineraires:", itinResErr.message);
-          // Non bloquant : la réservation principale est créée, on continue
         }
 
         await supabase.rpc("decrement_slot", { exc_id: p.exc.id, date_str: p.selectedDate, qty: p.people });
@@ -697,7 +1002,7 @@ export default function CheckoutModalItineraire({
     }
   };
 
-  /* ══ ÉCRAN D'AVERTISSEMENT : excursions sans créneau ════════════════ */
+  /* ══ ÉCRAN D'AVERTISSEMENT ════════════════ */
 
   if (showNoSlotWarning && !confirmedContinue) {
     const allUnavailable = excursions.length === 0;
@@ -705,7 +1010,7 @@ export default function CheckoutModalItineraire({
       <>
         <style>{CSS}</style>
         <div className="cmi-overlay" onClick={e => { if (e.target === e.currentTarget) onClose?.(); }}>
-          <div className="cmi-shell" style={{ maxWidth: 560, display: "block", padding: "40px 36px", background: "white" }}>
+          <div className="cmi-shell" style={{ maxWidth: 560, display: "block", padding: "40px 36px", background: "white", borderRadius: "20px" }}>
 
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 24 }}>
               <h2 style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 22, fontWeight: 700, color: "#111827", margin: 0 }}>
@@ -716,7 +1021,6 @@ export default function CheckoutModalItineraire({
               </button>
             </div>
 
-            {/* Excursions sans créneau */}
             <div style={{ marginBottom: 20 }}>
               <p style={{ fontSize: 13, fontWeight: 700, color: "#DC2626", marginBottom: 10, display: "flex", alignItems: "center", gap: 6 }}>
                 <AlertCircle size={14} /> {unavailableExcursions.length} excursion{unavailableExcursions.length > 1 ? "s" : ""} sans créneau disponible
@@ -742,7 +1046,6 @@ export default function CheckoutModalItineraire({
               </div>
             </div>
 
-            {/* Excursions disponibles */}
             {excursions.length > 0 && (
               <div style={{ marginBottom: 22 }}>
                 <p style={{ fontSize: 13, fontWeight: 700, color: "#059669", marginBottom: 10, display: "flex", alignItems: "center", gap: 6 }}>
@@ -766,7 +1069,6 @@ export default function CheckoutModalItineraire({
               </div>
             )}
 
-            {/* Info */}
             <div style={{ background: "#FFFBEB", border: "1px solid #FDE68A", borderRadius: 12, padding: "12px 14px", marginBottom: 22 }}>
               <p style={{ fontSize: 12, color: "#92400E", margin: 0 }}>
                 {allUnavailable
@@ -776,7 +1078,6 @@ export default function CheckoutModalItineraire({
               </p>
             </div>
 
-            {/* Boutons */}
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
               {!allUnavailable && (
                 <button
@@ -809,7 +1110,7 @@ export default function CheckoutModalItineraire({
       <>
         <style>{CSS}</style>
         <div className="cmi-overlay" onClick={e => { if (e.target === e.currentTarget) onClose?.(); }}>
-          <div className="cmi-shell" style={{ maxWidth: 520, display: "block", padding: "44px 40px", textAlign: "center", background: "white" }}>
+          <div className="cmi-shell" style={{ maxWidth: 520, display: "block", padding: "44px 40px", textAlign: "center", background: "white", borderRadius: "20px" }}>
 
             <div style={{
               width: 80, height: 80, borderRadius: "50%",
@@ -899,13 +1200,12 @@ export default function CheckoutModalItineraire({
     );
   }
 
-  // Si aucune excursion disponible et on a passé l'écran d'avertissement
   if (excursions.length === 0) {
     return (
       <>
         <style>{CSS}</style>
         <div className="cmi-overlay" onClick={e => { if (e.target === e.currentTarget) onClose?.(); }}>
-          <div className="cmi-shell" style={{ maxWidth: 480, display: "block", padding: "44px 36px", textAlign: "center", background: "white" }}>
+          <div className="cmi-shell" style={{ maxWidth: 480, display: "block", padding: "44px 36px", textAlign: "center", background: "white", borderRadius: "20px" }}>
             <AlertCircle size={52} color="#EF4444" style={{ margin: "0 auto 16px" }} />
             <h2 style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 22, fontWeight: 700, color: "#111827", marginBottom: 8 }}>
               Aucune excursion disponible
@@ -936,7 +1236,6 @@ export default function CheckoutModalItineraire({
           <div className="cmi-left">
             <div className="cmi-left-inner">
 
-              {/* Header */}
               <div style={{ position: "relative", zIndex: 1 }}>
                 <div style={{ display: "inline-flex", alignItems: "center", gap: 5, background: "rgba(43,150,168,.2)", border: "1px solid rgba(43,150,168,.35)", borderRadius: 20, padding: "4px 10px", marginBottom: 10 }}>
                   <Route size={10} color="#7CC4D1" />
@@ -950,7 +1249,6 @@ export default function CheckoutModalItineraire({
                 <p style={{ fontSize: 11, color: "rgba(255,255,255,.5)", margin: 0 }}>
                   {configuredCount}/{excursions.length} créneau{configuredCount > 1 ? "x" : ""} configuré{configuredCount > 1 ? "s" : ""}
                 </p>
-                {/* Avertissement excursions retirées */}
                 {unavailableExcursions.length > 0 && (
                   <div style={{ marginTop: 10, padding: "8px 10px", background: "rgba(239,68,68,.12)", border: "1px solid rgba(239,68,68,.25)", borderRadius: 10 }}>
                     <p style={{ fontSize: 10, color: "#FCA5A5", margin: 0, display: "flex", alignItems: "center", gap: 5 }}>
@@ -961,7 +1259,6 @@ export default function CheckoutModalItineraire({
                 )}
               </div>
 
-              {/* Progress */}
               <div style={{ position: "relative", zIndex: 1 }}>
                 <div style={{ display: "flex", gap: 3, marginBottom: 6 }}>
                   {excursions.map((_, i) => (
@@ -972,7 +1269,6 @@ export default function CheckoutModalItineraire({
                 </div>
               </div>
 
-              {/* Tabs */}
               <div style={{ display: "flex", flexDirection: "column", gap: 5, position: "relative", zIndex: 1, overflowY: "auto", maxHeight: 220 }}>
                 {excursions.map((e, i) => {
                   const p = perExc[i];
@@ -1000,7 +1296,6 @@ export default function CheckoutModalItineraire({
                 })}
               </div>
 
-              {/* Calendar */}
               <div style={{ position: "relative", zIndex: 1 }}>
                 <p style={{ fontSize: 10, fontWeight: 700, color: "rgba(255,255,255,.4)", textTransform: "uppercase", letterSpacing: "1.5px", margin: "0 0 6px" }}>
                   Choisissez une date
@@ -1033,7 +1328,6 @@ export default function CheckoutModalItineraire({
                 />
               </div>
 
-              {/* Price summary */}
               {subtotal > 0 && (
                 <div style={{ marginTop: "auto", background: "rgba(255,255,255,.08)", borderRadius: 14, padding: "14px 16px", position: "relative", zIndex: 1, border: "1px solid rgba(255,255,255,.1)" }}>
                   {perExc.filter(p => p.selectedSlot).map((p, i) => (
