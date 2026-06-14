@@ -439,15 +439,16 @@ const CSS = `
     
     .cmi-left{
       width:100%;
-      max-height:none;
+      max-height:62vh;
       flex:0 0 auto;
       border-radius:0;
       overflow-y:auto;
+      overflow-x:hidden;
     }
     
     .cmi-left-inner{
-      padding:18px 18px;
-      gap:14px;
+      padding:16px 16px;
+      gap:12px;
     }
     
     .cmi-right{
@@ -457,21 +458,21 @@ const CSS = `
     }
     
     .cmi-right-scroll{
-      padding:18px 18px;
+      padding:16px 16px;
     }
     
     .cmi-right-footer{
-      padding:12px 18px 16px;
+      padding:12px 16px 16px;
     }
     
     .exc-tab{
-      padding:9px 11px;
+      padding:8px 10px;
       font-size:11px;
-      gap:7px;
+      gap:6px;
     }
     
     .exc-tab-num{
-      width:20px;height:20px;
+      width:18px;height:18px;
       font-size:9px;
     }
     
@@ -483,18 +484,46 @@ const CSS = `
     }
     
     .cal-day{
-      min-height:30px;
-      font-size:11px;
+      min-height:34px;
+      font-size:12px;
     }
 
-    /* Liste des excursions: scroll limité pour ne pas pousser tout */
+    /* Liste des excursions : devient un scroll horizontal compact */
     .cmi-exc-list{
-      max-height:160px !important;
+      display:flex !important;
+      flex-direction:row !important;
+      overflow-x:auto !important;
+      overflow-y:visible !important;
+      max-height:none !important;
+      gap:8px !important;
+      padding-bottom:4px;
+      scrollbar-width:none;
+    }
+    .cmi-exc-list::-webkit-scrollbar{ display:none; }
+    .cmi-exc-list .exc-tab{
+      flex:0 0 auto;
+      width:auto;
+      min-width:150px;
+      flex-direction:column;
+      align-items:flex-start;
+      gap:6px;
+    }
+    .cmi-exc-list .exc-tab > div:first-child{
+      width:100%;
+    }
+
+    /* Récap budget : compact */
+    .cmi-budget-box{
+      padding:10px 12px !important;
     }
   }
 
   /* ═══ MOBILE PORTRAIT (480px - 639px) ═══ */
   @media(max-width:639px){
+    .cmi-left{
+      max-height:58vh;
+    }
+
     .cmi-header{
       margin-bottom:14px;
     }
@@ -519,8 +548,8 @@ const CSS = `
       font-size:8px;
     }
 
-    .cmi-exc-list{
-      max-height:130px !important;
+    .cmi-exc-list .exc-tab{
+      min-width:135px;
     }
     
     .cmi-cta{
@@ -535,8 +564,8 @@ const CSS = `
     }
     
     .cal-day{
-      min-height:28px;
-      font-size:10px;
+      min-height:30px;
+      font-size:11px;
     }
     
     .slot-pill{
@@ -573,6 +602,10 @@ const CSS = `
 
   /* ═══ SMALL MOBILE (320px - 479px) ═══ */
   @media(max-width:479px){
+    .cmi-left{
+      max-height:56vh;
+    }
+
     .cmi-left-inner{
       padding:14px 14px;
       gap:10px;
@@ -607,8 +640,8 @@ const CSS = `
       font-size:7px;
     }
 
-    .cmi-exc-list{
-      max-height:110px !important;
+    .cmi-exc-list .exc-tab{
+      min-width:120px;
     }
     
     .cmi-cta{
@@ -628,8 +661,8 @@ const CSS = `
     }
     
     .cal-day{
-      min-height:26px;
-      font-size:9px;
+      min-height:28px;
+      font-size:10px;
     }
     
     .slot-pill{
@@ -1340,7 +1373,7 @@ export default function CheckoutModalItineraire({
               </div>
 
               {subtotal > 0 && (
-                <div style={{ marginTop: "auto", background: "rgba(255,255,255,.08)", borderRadius: 14, padding: "14px 16px", position: "relative", zIndex: 1, border: "1px solid rgba(255,255,255,.1)" }}>
+                <div className="cmi-budget-box" style={{ marginTop: "auto", background: "rgba(255,255,255,.08)", borderRadius: 14, padding: "14px 16px", position: "relative", zIndex: 1, border: "1px solid rgba(255,255,255,.1)" }}>
                   {perExc.filter(p => p.selectedSlot).map((p, i) => (
                     <div key={i} style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: "rgba(255,255,255,.65)", marginBottom: 4, gap: 8 }}>
                       <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "65%", display: "flex", alignItems: "center", gap: 4 }}>
