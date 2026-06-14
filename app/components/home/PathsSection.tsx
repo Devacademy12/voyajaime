@@ -116,9 +116,25 @@ const PATHS_CSS = `
     box-shadow: 0 8px 24px rgba(5,51,102,0.06);
   }
 
-  @media(max-width:900px){
-    .paths-container-light { flex-direction: column !important; }
+ @media(max-width:900px){
+  .paths-container-light { flex-direction: column !important; }
+}
+
+@media(max-width:640px){
+  .presta-banner-light {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+    padding: 20px;
   }
+  .presta-banner-light > div:first-child {
+    width: 100%;
+  }
+  .presta-banner-light > div:last-child {
+    align-self: stretch;
+    justify-content: center;
+  }
+}
 `;
 
 export default function PathsSection({ slides, user, openAuth }: PathsSectionProps) {

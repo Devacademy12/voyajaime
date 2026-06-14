@@ -109,13 +109,24 @@ const CSS_PAGE = `
     flex-wrap: wrap;
     gap: 12px;
   }
+
+  /* ── Grille -> Carousel scrollable horizontal ────────────────────────── */
   .cities-grid {
-    display: grid;
-    grid-template-columns: repeat(5, 1fr);
+    display: flex;
     gap: 14px;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 10px;
+    scrollbar-width: none;
+    margin: 0 -64px;
+    padding-left: 64px;
+    padding-right: 64px;
   }
-  
-  /* FIX #1: .city-card doit être display: block avec dimensions explicites */
+  .cities-grid::-webkit-scrollbar {
+    display: none;
+  }
+
   .city-card {
     position: relative;
     border-radius: 16px;
@@ -126,13 +137,14 @@ const CSS_PAGE = `
     display: block;
     transition: transform 0.3s cubic-bezier(.16,1,.3,1), box-shadow 0.3s;
     box-shadow: 0 2px 10px rgba(0,0,0,0.06);
+    flex: 0 0 240px;
+    scroll-snap-align: start;
   }
   .city-card:hover {
     transform: translateY(-6px);
     box-shadow: 0 18px 44px rgba(0,0,0,0.14);
   }
-  
-  /* FIX #2: Position absolute + inset + z-index sur l'image */
+
   .city-card-img {
     position: absolute;
     inset: 0;
@@ -142,37 +154,36 @@ const CSS_PAGE = `
     transition: transform 0.5s ease;
     z-index: 1;
   }
-  .city-card:hover .city-card-img { 
-    transform: scale(1.07); 
+  .city-card:hover .city-card-img {
+    transform: scale(1.07);
   }
-  
-  /* FIX #3: Z-index sur overlay pour qu'il soit au-dessus de l'image */
+
   .city-card-overlay {
-    position: absolute; 
+    position: absolute;
     inset: 0;
     background: linear-gradient(to top, rgba(0,0,0,0.62) 0%, rgba(0,0,0,0.08) 55%, transparent 100%);
     z-index: 2;
   }
-  
+
   .city-card-name {
-    position: absolute; 
-    bottom: 13px; 
+    position: absolute;
+    bottom: 13px;
     left: 13px;
     font-family: 'Cormorant Garamond', serif;
-    font-size: 17px; 
+    font-size: 17px;
     font-weight: 700;
-    color: white; 
+    color: white;
     letter-spacing: -0.2px;
     z-index: 3;
   }
   .city-card-count {
-    position: absolute; 
-    bottom: 36px; 
+    position: absolute;
+    bottom: 36px;
     left: 14px;
-    font-size: 10px; 
+    font-size: 10px;
     font-weight: 700;
     color: rgba(255,255,255,0.65);
-    text-transform: uppercase; 
+    text-transform: uppercase;
     letter-spacing: 1.5px;
     z-index: 3;
   }
@@ -260,16 +271,21 @@ const CSS_PAGE = `
   }
 
   @media (max-width: 1024px) {
-    .cities-grid { grid-template-columns: repeat(3, 1fr) !important; }
     .cities-strip-inner { padding: 0 24px; }
+    .cities-grid {
+      margin: 0 -24px;
+      padding-left: 24px;
+      padding-right: 24px;
+    }
+    .city-card { flex: 0 0 200px; }
   }
   @media (max-width: 640px) {
     .trust-bar-inner { flex-wrap: wrap; }
     .trust-item { flex: 1 1 50%; border-bottom: 1px solid #E5E7EB; }
-    .cities-grid { grid-template-columns: repeat(2, 1fr) !important; }
     .newsletter-form { flex-direction: column; }
     .newsletter-btn { width: 100%; justify-content: center; }
     .cities-strip { padding: 56px 0; }
+    .city-card { flex: 0 0 160px; }
   }
 `;
 
@@ -295,10 +311,9 @@ const CITIES = [
     img: "/images/cities/hammamet.webp",
     count: 9,
   },
-  
-  
   {
-    name: "Kairouan", img: "/images/cities/Kairouan.webp",
+    name: "Kairouan",
+    img: "/images/cities/Kairouan.webp",
     count: 7,
   },
 ];
@@ -417,7 +432,7 @@ export default function HomePage() {
 
       <hr className="home-divider" />
 
-      {/* -- 4. NOS DESTINATIONS — cities strip ────────────────────────── */}
+      {/* -- 4. NOS DESTINATIONS — cities strip (scroll horizontal) ────── */}
       <div ref={refCities} className="home-section-reveal cities-strip">
         <div className="cities-strip-inner">
           <div className="cities-strip-header">
@@ -434,8 +449,8 @@ export default function HomePage() {
                 Explorez la Tunisie
               </h2>
             </div>
-            
-            <a  href={ROUTES.excursions}
+
+            <a href={ROUTES.excursions}
               style={{
                 fontSize: 13, fontWeight: 700, color: "#0B7A8A",
                 textDecoration: "none", display: "flex", alignItems: "center", gap: 6,
@@ -458,17 +473,16 @@ export default function HomePage() {
 
           <div className="cities-grid">
             {CITIES.map((city, i) => (
-             <a
+              <a
                 key={i}
                 href={`${ROUTES.excursions}?city=${encodeURIComponent(city.name)}`}
                 className="city-card"
                 style={{ animationDelay: `${i * 0.06}s` }}
               >
-                {/* FIX: loading="eager" pour charger immédiatement */}
-                <img 
-                  src={city.img} 
-                  alt={city.name} 
-                  className="city-card-img" 
+                <img
+                  src={city.img}
+                  alt={city.name}
+                  className="city-card-img"
                   loading="eager"
                   decoding="async"
                 />
