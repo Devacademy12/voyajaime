@@ -216,7 +216,7 @@ const CSS = `
     pointer-events:none;
   }
 
-  .cmi-right{flex:1;display:flex;flex-direction:column;overflow:hidden;background:#FAFBFC;}
+  .cmi-right{flex:1;display:flex;flex-direction:column;overflow:hidden;background:#FAFBFC;min-width:0;}
   
   .cmi-right-scroll{
     flex:1;overflow-y:auto;padding:26px;
@@ -227,6 +227,20 @@ const CSS = `
   .cmi-right-scroll::-webkit-scrollbar-thumb{background:#E5E7EB;border-radius:4px}
   
   .cmi-right-footer{padding:18px 26px 22px;border-top:1px solid #EAECEF;background:#FAFBFC;}
+
+  /* ═══ HEADER (titre + bouton fermer) ═══ */
+  .cmi-header{
+    display:flex;justify-content:space-between;align-items:flex-start;
+    gap:12px;margin-bottom:20px;
+  }
+  .cmi-header-meta{
+    display:flex;align-items:center;gap:8px;flex-wrap:wrap;
+  }
+  .cmi-close-btn{
+    width:32px;height:32px;border-radius:50%;border:none;background:#F3F4F6;
+    cursor:pointer;display:flex;align-items:center;justify-content:center;
+    color:#9CA3AF;flex-shrink:0;
+  }
 
   /* ═══ TABS & ACCORDION ═══ */
   .exc-tab{
@@ -281,7 +295,7 @@ const CSS = `
     display:flex;align-items:center;justify-content:space-between;
     padding:12px 15px;border-radius:14px;border:1.5px solid #E5E7EB;background:white;
     cursor:pointer;transition:all .15s;margin-bottom:8px;position:relative;
-    min-height:52px;
+    min-height:52px;gap:10px;
   }
   
   .slot-pill.sel{background:#EFF9FB;border-color:#2B96A8;}
@@ -304,7 +318,7 @@ const CSS = `
     font-size:15px;font-weight:800;cursor:pointer;
     font-family:'DM Sans',sans-serif;transition:all .2s;
     display:flex;align-items:center;justify-content:center;gap:8px;letter-spacing:.3px;
-    min-height:48px;
+    min-height:48px;text-align:center;
   }
   
   .cmi-cta.on{background:linear-gradient(135deg,#2B96A8,#1a7a8f);color:white;box-shadow:0 4px 18px rgba(43,150,168,.3);}
@@ -324,7 +338,7 @@ const CSS = `
   }
   
   .date-chip{
-    display:inline-flex;align-items:center;gap:5px;
+    display:inline-flex;align-items:center;gap:5px;flex-wrap:wrap;
     background:rgba(43,150,168,.12);border:1px solid rgba(43,150,168,.25);
     border-radius:10px;padding:5px 10px;font-size:11px;font-weight:600;color:#0E5068;
     cursor:pointer;transition:all .15s;
@@ -351,6 +365,23 @@ const CSS = `
   
   .cmi-textarea:focus{border-color:#2B96A8;background:white;}
 
+  /* ═══ FOOTER GUARANTEES ═══ */
+  .cmi-guarantees{
+    display:flex;justify-content:center;gap:20px;margin-top:12px;flex-wrap:wrap;
+  }
+  .cmi-guarantee-item{
+    font-size:11px;color:#9CA3AF;display:flex;align-items:center;gap:4px;
+    white-space:nowrap;
+  }
+
+  /* ═══ NAV BUTTONS (Précédent/Suivant) ═══ */
+  .cmi-navbtn{
+    flex:1;padding:10px 14px;border-radius:12px;cursor:pointer;
+    font-size:12px;font-weight:700;display:flex;align-items:center;
+    justify-content:center;gap:5px;font-family:'DM Sans',sans-serif;
+    min-height:40px;
+  }
+
   /* ═══ ANIMATIONS ═══ */
   @keyframes cmiFade{from{opacity:0}to{opacity:1}}
   @keyframes cmiUp{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
@@ -369,12 +400,12 @@ const CSS = `
       width:100%;
       max-height:45%;
       border-radius:24px 24px 0 0;
+      flex-shrink:0;
     }
     
     .cmi-left-inner{
       padding:20px 22px;
       gap:16px;
-      max-height:280px;
     }
     
     .cmi-right{
@@ -383,7 +414,7 @@ const CSS = `
     }
     
     .cmi-right-scroll{
-      padding:20px 22px 0;
+      padding:20px 22px;
     }
     
     .cmi-right-footer{
@@ -394,34 +425,39 @@ const CSS = `
   /* ═══ MOBILE LANDSCAPE / SMALL TABLET (640px - 767px) ═══ */
   @media(max-width:767px){
     .cmi-overlay{
-      padding:6px;
+      padding:0;
+      align-items:stretch;
     }
     
     .cmi-shell{
       flex-direction:column;
-      border-radius:20px;
-      max-height:96vh;
+      border-radius:0;
+      max-height:100vh;
+      height:100vh;
+      width:100vw;
     }
     
     .cmi-left{
       width:100%;
-      max-height:42%;
-      border-radius:20px 20px 0 0;
+      max-height:none;
+      flex:0 0 auto;
+      border-radius:0;
+      overflow-y:auto;
     }
     
     .cmi-left-inner{
       padding:18px 18px;
       gap:14px;
-      max-height:260px;
     }
     
     .cmi-right{
-      max-height:58%;
-      border-radius:0 0 20px 20px;
+      flex:1;
+      min-height:0;
+      border-radius:0;
     }
     
     .cmi-right-scroll{
-      padding:18px 18px 0;
+      padding:18px 18px;
     }
     
     .cmi-right-footer{
@@ -447,50 +483,31 @@ const CSS = `
     }
     
     .cal-day{
-      min-height:28px;
+      min-height:30px;
       font-size:11px;
+    }
+
+    /* Liste des excursions: scroll limité pour ne pas pousser tout */
+    .cmi-exc-list{
+      max-height:160px !important;
     }
   }
 
   /* ═══ MOBILE PORTRAIT (480px - 639px) ═══ */
   @media(max-width:639px){
-    .cmi-overlay{
-      padding:4px;
-      align-items:flex-end;
+    .cmi-header{
+      margin-bottom:14px;
     }
-    
-    .cmi-shell{
-      flex-direction:column;
-      border-radius:20px 20px 0 0;
-      max-height:95vh;
+    .cmi-header h3{
+      font-size:17px !important;
     }
-    
-    .cmi-left{
-      width:100%;
-      max-height:38%;
-      border-radius:20px 20px 0 0;
+    .cmi-header-meta{
+      gap:6px;
     }
-    
-    .cmi-left-inner{
-      padding:16px 16px;
-      gap:12px;
-      max-height:240px;
+    .cmi-header-meta > span{
+      font-size:11px !important;
     }
-    
-    .cmi-right{
-      max-height:62%;
-      border-radius:0 0 0 0;
-    }
-    
-    .cmi-right-scroll{
-      padding:16px 16px 0;
-    }
-    
-    .cmi-right-footer{
-      padding:12px 16px 20px;
-      border-radius:0;
-    }
-    
+
     .exc-tab{
       padding:8px 10px;
       font-size:10px;
@@ -501,11 +518,15 @@ const CSS = `
       width:18px;height:18px;
       font-size:8px;
     }
+
+    .cmi-exc-list{
+      max-height:130px !important;
+    }
     
     .cmi-cta{
       padding:12px;
       font-size:13px;
-      min-height:42px;
+      min-height:44px;
       gap:5px;
     }
     
@@ -514,7 +535,7 @@ const CSS = `
     }
     
     .cal-day{
-      min-height:26px;
+      min-height:28px;
       font-size:10px;
     }
     
@@ -522,7 +543,6 @@ const CSS = `
       padding:10px 12px;
       font-size:13px;
       min-height:48px;
-      flex-wrap:wrap;
     }
     
     .sugg-badge{
@@ -534,30 +554,28 @@ const CSS = `
       font-size:10px;
       padding:4px 8px;
     }
+
+    /* Garanties: empiler en colonne et centrer */
+    .cmi-guarantees{
+      flex-direction:column;
+      align-items:center;
+      gap:6px;
+    }
+
+    /* Boutons Précédent/Suivant: texte court */
+    .cmi-navbtn-label-full{ display:none; }
+    .cmi-navbtn-label-short{ display:inline; }
+  }
+
+  @media(min-width:640px){
+    .cmi-navbtn-label-short{ display:none; }
   }
 
   /* ═══ SMALL MOBILE (320px - 479px) ═══ */
   @media(max-width:479px){
-    .cmi-overlay{
-      padding:0;
-    }
-    
-    .cmi-shell{
-      border-radius:16px 16px 0 0;
-      width:100%;
-      max-height:100vh;
-    }
-    
-    .cmi-left{
-      width:100%;
-      max-height:35%;
-      border-radius:16px 16px 0 0;
-    }
-    
     .cmi-left-inner{
       padding:14px 14px;
       gap:10px;
-      max-height:220px;
     }
     
     .cmi-left::before,
@@ -565,26 +583,16 @@ const CSS = `
       opacity:0.5;
     }
     
-    .cmi-right{
-      max-height:65%;
-      flex:1;
-      border-radius:0;
-    }
-    
     .cmi-right-scroll{
-      padding:14px 14px 0;
+      padding:14px 14px;
       gap:10px;
     }
     
     .cmi-right-footer{
-      padding:10px 14px 16px;
+      padding:10px 14px 14px;
     }
     
-    h2{
-      font-size:16px !important;
-    }
-    
-    h3{
+    .cmi-header h3{
       font-size:15px !important;
     }
     
@@ -598,11 +606,15 @@ const CSS = `
       width:16px;height:16px;
       font-size:7px;
     }
+
+    .cmi-exc-list{
+      max-height:110px !important;
+    }
     
     .cmi-cta{
       padding:10px;
       font-size:12px;
-      min-height:40px;
+      min-height:42px;
       gap:4px;
     }
     
@@ -616,14 +628,13 @@ const CSS = `
     }
     
     .cal-day{
-      min-height:24px;
+      min-height:26px;
       font-size:9px;
     }
     
     .slot-pill{
       padding:9px 10px;
-      min-height:44px;
-      flex-wrap:wrap;
+      min-height:46px;
       gap:8px;
     }
     
@@ -762,7 +773,7 @@ function SlotList({ slots, selected, onSelect }: {
             onClick={() => avail && onSelect(slot)}>
             {!avail && <span style={{ position: "absolute", top: -8, right: 10, background: "#EF4444", color: "white", fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 20 }}>Complet</span>}
             {low && avail && <span style={{ position: "absolute", top: -8, right: 10, background: "#F59E0B", color: "white", fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 20 }}>Dernières places !</span>}
-            <div>
+            <div style={{ minWidth: 0, flex: 1 }}>
               <span style={{ fontSize: 14, fontWeight: 800, color: avail ? "#111827" : "#9CA3AF" }}>{slot.time}</span>
               {slot.language && <span style={{ marginLeft: 8, fontSize: 11, background: "#F3F4F6", color: "#6B7280", padding: "2px 7px", borderRadius: 20, fontWeight: 600 }}>{slot.language}</span>}
               {slot.groupPrice && (
@@ -771,7 +782,7 @@ function SlotList({ slots, selected, onSelect }: {
                 </div>
               )}
             </div>
-            <div style={{ textAlign: "right" }}>
+            <div style={{ textAlign: "right", flexShrink: 0 }}>
               {avail ? (
                 <>
                   <div style={{ fontSize: 16, fontWeight: 900, color: "#2B96A8" }}>{slot.price} EUR <span style={{ fontSize: 11, color: "#9CA3AF", fontWeight: 400 }}>/pers.</span></div>
@@ -780,7 +791,7 @@ function SlotList({ slots, selected, onSelect }: {
               ) : <span style={{ fontSize: 13, fontWeight: 700, color: "#EF4444" }}>Complet</span>}
             </div>
             {avail && (
-              <div style={{ marginLeft: 8, flexShrink: 0 }}>
+              <div style={{ flexShrink: 0 }}>
                 <div style={{ width: 18, height: 18, borderRadius: "50%", border: `2px solid ${isSel ? "#2B96A8" : "#D1D5DB"}`, background: isSel ? "#2B96A8" : "white", display: "flex", alignItems: "center", justifyContent: "center" }}>
                   {isSel && <div style={{ width: 8, height: 8, borderRadius: "50%", background: "white" }} />}
                 </div>
@@ -1010,13 +1021,13 @@ export default function CheckoutModalItineraire({
       <>
         <style>{CSS}</style>
         <div className="cmi-overlay" onClick={e => { if (e.target === e.currentTarget) onClose?.(); }}>
-          <div className="cmi-shell" style={{ maxWidth: 560, display: "block", padding: "40px 36px", background: "white", borderRadius: "20px" }}>
+          <div className="cmi-shell" style={{ maxWidth: 560, display: "block", padding: "40px 36px", background: "white", borderRadius: "20px", overflowY: "auto" }}>
 
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 24 }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 24, gap: 12 }}>
               <h2 style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 22, fontWeight: 700, color: "#111827", margin: 0 }}>
                 Vérification des disponibilités
               </h2>
-              <button onClick={() => onClose?.()} style={{ width: 32, height: 32, borderRadius: "50%", border: "none", background: "#F3F4F6", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <button onClick={() => onClose?.()} className="cmi-close-btn">
                 <X size={15} color="#9CA3AF" />
               </button>
             </div>
@@ -1110,7 +1121,7 @@ export default function CheckoutModalItineraire({
       <>
         <style>{CSS}</style>
         <div className="cmi-overlay" onClick={e => { if (e.target === e.currentTarget) onClose?.(); }}>
-          <div className="cmi-shell" style={{ maxWidth: 520, display: "block", padding: "44px 40px", textAlign: "center", background: "white", borderRadius: "20px" }}>
+          <div className="cmi-shell" style={{ maxWidth: 520, display: "block", padding: "44px 40px", textAlign: "center", background: "white", borderRadius: "20px", overflowY: "auto" }}>
 
             <div style={{
               width: 80, height: 80, borderRadius: "50%",
@@ -1142,9 +1153,9 @@ export default function CheckoutModalItineraire({
               {confirmed.map((p, i) => (
                 <div key={i} style={{ background: "linear-gradient(135deg,#EFF9FB,#E0F5FA)", border: "1px solid rgba(43,150,168,.2)", borderRadius: 14, padding: "13px 16px", textAlign: "left" }}>
                   <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 8 }}>
-                    <div>
+                    <div style={{ minWidth: 0, flex: 1 }}>
                       <p style={{ margin: "0 0 2px", fontSize: 13, fontWeight: 700, color: "#111827" }}>{sanitizeText(p.exc.title)}</p>
-                      <p style={{ margin: "0 0 5px", fontSize: 12, color: "#6B7280", display: "flex", alignItems: "center", gap: 6 }}>
+                      <p style={{ margin: "0 0 5px", fontSize: 12, color: "#6B7280", display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
                         <MapPin size={10} color="#9CA3AF" />{p.exc.city}
                         {p.exc.plan_time && (
                           <span style={{ display: "inline-flex", alignItems: "center", gap: 3 }}>
@@ -1152,7 +1163,7 @@ export default function CheckoutModalItineraire({
                           </span>
                         )}
                       </p>
-                      <p style={{ margin: 0, fontSize: 11, color: "#374151", display: "flex", alignItems: "center", gap: 5, fontWeight: 600 }}>
+                      <p style={{ margin: 0, fontSize: 11, color: "#374151", display: "flex", alignItems: "center", gap: 5, fontWeight: 600, flexWrap: "wrap" }}>
                         <Calendar size={10} color="#2B96A8" />
                         {formatDateFR(p.selectedDate, { day: "numeric", month: "long", year: "numeric" })} · {p.selectedSlot!.time} · {p.people} pers.
                       </p>
@@ -1161,7 +1172,7 @@ export default function CheckoutModalItineraire({
                       #{bookingCodes[i]?.split("-").slice(-1)[0]}
                     </span>
                   </div>
-                  <div style={{ marginTop: 8, paddingTop: 8, borderTop: "1px dashed rgba(43,150,168,.2)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <div style={{ marginTop: 8, paddingTop: 8, borderTop: "1px dashed rgba(43,150,168,.2)", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 6 }}>
                     <span style={{ fontSize: 11, color: "#6B7280" }}>{bookingCodes[i]}</span>
                     <span style={{ fontSize: 12, fontWeight: 800, color: "#2B96A8" }}>
                       {(p.selectedSlot!.price * p.people) + Math.round(p.selectedSlot!.price * p.people * .1)} EUR
@@ -1205,7 +1216,7 @@ export default function CheckoutModalItineraire({
       <>
         <style>{CSS}</style>
         <div className="cmi-overlay" onClick={e => { if (e.target === e.currentTarget) onClose?.(); }}>
-          <div className="cmi-shell" style={{ maxWidth: 480, display: "block", padding: "44px 36px", textAlign: "center", background: "white", borderRadius: "20px" }}>
+          <div className="cmi-shell" style={{ maxWidth: 480, display: "block", padding: "44px 36px", textAlign: "center", background: "white", borderRadius: "20px", overflowY: "auto" }}>
             <AlertCircle size={52} color="#EF4444" style={{ margin: "0 auto 16px" }} />
             <h2 style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 22, fontWeight: 700, color: "#111827", marginBottom: 8 }}>
               Aucune excursion disponible
@@ -1269,7 +1280,7 @@ export default function CheckoutModalItineraire({
                 </div>
               </div>
 
-              <div style={{ display: "flex", flexDirection: "column", gap: 5, position: "relative", zIndex: 1, overflowY: "auto", maxHeight: 220 }}>
+              <div className="cmi-exc-list" style={{ display: "flex", flexDirection: "column", gap: 5, position: "relative", zIndex: 1, overflowY: "auto", maxHeight: 220 }}>
                 {excursions.map((e, i) => {
                   const p = perExc[i];
                   return (
@@ -1331,12 +1342,12 @@ export default function CheckoutModalItineraire({
               {subtotal > 0 && (
                 <div style={{ marginTop: "auto", background: "rgba(255,255,255,.08)", borderRadius: 14, padding: "14px 16px", position: "relative", zIndex: 1, border: "1px solid rgba(255,255,255,.1)" }}>
                   {perExc.filter(p => p.selectedSlot).map((p, i) => (
-                    <div key={i} style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: "rgba(255,255,255,.65)", marginBottom: 4 }}>
+                    <div key={i} style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: "rgba(255,255,255,.65)", marginBottom: 4, gap: 8 }}>
                       <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "65%", display: "flex", alignItems: "center", gap: 4 }}>
                         {p.exc.plan_time && TIME_ICON[p.exc.plan_time]}
                         {sanitizeText(p.exc.title)}
                       </span>
-                      <span>{p.selectedSlot!.price * p.people} EUR</span>
+                      <span style={{ flexShrink: 0 }}>{p.selectedSlot!.price * p.people} EUR</span>
                     </div>
                   ))}
                   <div style={{ height: 1, background: "rgba(255,255,255,.12)", margin: "8px 0" }} />
@@ -1356,12 +1367,12 @@ export default function CheckoutModalItineraire({
           <div className="cmi-right">
             <div className="cmi-right-scroll">
 
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 20 }}>
-                <div>
+              <div className="cmi-header">
+                <div style={{ minWidth: 0, flex: 1 }}>
                   <h3 style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 20, fontWeight: 700, color: "#111827", margin: "0 0 3px" }}>
                     {sanitizeText(cur.exc.title)}
                   </h3>
-                  <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                  <div className="cmi-header-meta">
                     <span style={{ fontSize: 12, color: "#9CA3AF", display: "flex", alignItems: "center", gap: 3 }}><MapPin size={11} />{cur.exc.city}</span>
                     <span style={{ fontSize: 12, color: "#9CA3AF", display: "flex", alignItems: "center", gap: 3 }}><Clock size={11} />{cur.exc.duration_hours}h</span>
                     {cur.exc.plan_day && (
@@ -1376,15 +1387,14 @@ export default function CheckoutModalItineraire({
                     )}
                   </div>
                 </div>
-                <button onClick={() => onClose?.()}
-                  style={{ width: 32, height: 32, borderRadius: "50%", border: "none", background: "#F3F4F6", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "#9CA3AF", flexShrink: 0 }}>
+                <button onClick={() => onClose?.()} className="cmi-close-btn">
                   <X size={15} />
                 </button>
               </div>
 
               {status === "error" && (
                 <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "11px 14px", background: "#FEF2F2", border: "1px solid #FCA5A5", borderRadius: 10, marginBottom: 16, fontSize: 13, color: "#DC2626", fontWeight: 600 }}>
-                  <AlertCircle size={14} />{errorMsg}
+                  <AlertCircle size={14} style={{ flexShrink: 0 }} />{errorMsg}
                 </div>
               )}
 
@@ -1400,7 +1410,7 @@ export default function CheckoutModalItineraire({
                 </div>
               ) : (
                 <div style={{ marginBottom: 18 }}>
-                  <p style={{ fontSize: 11, fontWeight: 700, color: "#374151", marginBottom: 10, display: "flex", alignItems: "center", gap: 5, textTransform: "uppercase", letterSpacing: ".5px" }}>
+                  <p style={{ fontSize: 11, fontWeight: 700, color: "#374151", marginBottom: 10, display: "flex", alignItems: "center", gap: 5, textTransform: "uppercase", letterSpacing: ".5px", flexWrap: "wrap" }}>
                     <Clock size={11} color="#2B96A8" /> Créneaux disponibles
                     {cur.selectedDate && (
                       <span style={{ fontWeight: 400, textTransform: "none", letterSpacing: 0, color: "#9CA3AF" }}>
@@ -1435,21 +1445,25 @@ export default function CheckoutModalItineraire({
 
               <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
                 {activeIdx > 0 && (
-                  <button onClick={() => setActiveIdx(activeIdx - 1)}
-                    style={{ flex: 1, padding: "10px 14px", borderRadius: 12, border: "1.5px solid #E5E7EB", background: "white", cursor: "pointer", fontSize: 12, fontWeight: 700, color: "#374151", display: "flex", alignItems: "center", justifyContent: "center", gap: 5, fontFamily: "'DM Sans',sans-serif" }}>
-                    <ChevronLeft size={13} /> Précédent
+                  <button className="cmi-navbtn" onClick={() => setActiveIdx(activeIdx - 1)}
+                    style={{ border: "1.5px solid #E5E7EB", background: "white", color: "#374151" }}>
+                    <ChevronLeft size={13} />
+                    <span className="cmi-navbtn-label-full">Précédent</span>
+                    <span className="cmi-navbtn-label-short">Préc.</span>
                   </button>
                 )}
                 {activeIdx < excursions.length - 1 && (
-                  <button onClick={() => setActiveIdx(activeIdx + 1)}
-                    style={{ flex: 1, padding: "10px 14px", borderRadius: 12, border: "1.5px solid #2B96A8", background: "#EFF9FB", cursor: "pointer", fontSize: 12, fontWeight: 700, color: "#2B96A8", display: "flex", alignItems: "center", justifyContent: "center", gap: 5, fontFamily: "'DM Sans',sans-serif" }}>
-                    Suivant <ChevronRight size={13} />
+                  <button className="cmi-navbtn" onClick={() => setActiveIdx(activeIdx + 1)}
+                    style={{ border: "1.5px solid #2B96A8", background: "#EFF9FB", color: "#2B96A8" }}>
+                    <span className="cmi-navbtn-label-full">Suivant</span>
+                    <span className="cmi-navbtn-label-short">Suiv.</span>
+                    <ChevronRight size={13} />
                   </button>
                 )}
               </div>
 
               <div style={{ marginBottom: 8 }}>
-                <label style={{ fontSize: 11, fontWeight: 700, color: "#374151", display: "flex", alignItems: "center", gap: 5, marginBottom: 6, textTransform: "uppercase", letterSpacing: ".5px" }}>
+                <label style={{ fontSize: 11, fontWeight: 700, color: "#374151", display: "flex", alignItems: "center", gap: 5, marginBottom: 6, textTransform: "uppercase", letterSpacing: ".5px", flexWrap: "wrap" }}>
                   <MessageSquare size={11} color="#2B96A8" />
                   Besoins spéciaux <span style={{ color: "#9CA3AF", fontWeight: 400, textTransform: "none" }}>(optionnel)</span>
                 </label>
@@ -1466,7 +1480,7 @@ export default function CheckoutModalItineraire({
             <div className="cmi-right-footer">
               {configuredCount > 0 && configuredCount < excursions.length && (
                 <div style={{ background: "#FFFBEB", border: "1px solid #FDE68A", borderRadius: 10, padding: "9px 12px", marginBottom: 12, fontSize: 12, color: "#92400E", display: "flex", alignItems: "center", gap: 7 }}>
-                  <AlertCircle size={13} color="#F59E0B" />
+                  <AlertCircle size={13} color="#F59E0B" style={{ flexShrink: 0 }} />
                   {excursions.length - configuredCount} excursion{excursions.length - configuredCount > 1 ? "s" : ""} sans créneau — vous pouvez quand même continuer.
                 </div>
               )}
@@ -1484,13 +1498,13 @@ export default function CheckoutModalItineraire({
                 }
               </button>
 
-              <div style={{ display: "flex", justifyContent: "center", gap: 20, marginTop: 12, flexWrap: "wrap" }}>
+              <div className="cmi-guarantees">
                 {[
                   { icon: <Lock size={10} color="#059669" />,       text: "Paiement sécurisé" },
                   { icon: <RefreshCcw size={10} color="#2563EB" />,  text: "Annulation 24h" },
                   { icon: <ShieldCheck size={10} color="#8B5CF6" />, text: "Confirmé instantanément" },
                 ].map(g => (
-                  <span key={g.text} style={{ fontSize: 11, color: "#9CA3AF", display: "flex", alignItems: "center", gap: 4 }}>
+                  <span key={g.text} className="cmi-guarantee-item">
                     {g.icon}{g.text}
                   </span>
                 ))}
