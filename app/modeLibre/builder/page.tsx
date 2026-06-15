@@ -429,7 +429,7 @@ const CSS = `
   font-size:11px;font-weight:700;color:var(--primary);
   font-family:inherit;
 }
-.bldr-slot-footer{display:flex;gap:8px;padding:0 18px 16px}
+.bldr-slot-footer{display:flex;gap:8px;padding:14px 18px 16px;border-top:1px solid var(--border);margin-top:4px}
 .bldr-slot-cancel{
   padding:9px 16px;border-radius:50px;border:1.5px solid var(--border);
   background:var(--surface);color:var(--text);font-size:12px;font-weight:700;
@@ -1284,15 +1284,15 @@ function BuilderInner() {
                   </div>
                 ))
               ) : (
-                <div className="bldr-slot-option fixed selected">
-                  <div className="bldr-slot-icon" style={{background:"rgba(43,150,168,.10)"}}>
+                <div className="bldr-slot-option fixed selected" style={{flexWrap:"wrap"}}>
+                  <div className="bldr-slot-icon" style={{background:"rgba(43,150,168,.10)",flexShrink:0}}>
                     <Clock size={13} color={BRAND}/>
                   </div>
-                  <div style={{flex:1}}>
+                  <div style={{flex:"1 1 140px",minWidth:0}}>
                     <div className="bldr-slot-label" style={{color:BRAND}}>Heure de départ</div>
                     <div className="bldr-slot-hint">Horaire fixe pour cette excursion</div>
                   </div>
-                  <div className="bldr-time-fixed">{fixedDepartureTime || pickTime}</div>
+                  <div className="bldr-time-fixed" style={{flexShrink:0}}>{fixedDepartureTime || pickTime}</div>
                 </div>
               )}
             </div>
