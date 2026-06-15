@@ -51,9 +51,9 @@ const BRAND = "#2B96A8";
 const NAVY  = "#053366";
 
 const SLOTS = [
-  { key:"matin" as TimeKey,  label:"Matin",      icon:<Sunrise size={13}/>, color:"#F59E0B", bg:"rgba(245,158,11,.10)", hint:"8h – 12h" },
-  { key:"aprem" as TimeKey,  label:"Après-midi", icon:<Sun size={13}/>,     color:BRAND,     bg:"rgba(43,150,168,.10)", hint:"13h – 17h" },
-  { key:"soir"  as TimeKey,  label:"Soir",        icon:<Moon size={13}/>,    color:"#8B5CF6", bg:"rgba(139,92,246,.10)", hint:"18h – 22h" },
+  { key:"matin" as TimeKey,  label:"Matin",      icon:<Sunrise size={13}/>, color:"#F59E0B", bg:"rgba(245,158,11,.10)", hint:"8h – 12h", defaultTime:"09:00" },
+  { key:"aprem" as TimeKey,  label:"Après-midi", icon:<Sun size={13}/>,     color:BRAND,     bg:"rgba(43,150,168,.10)", hint:"13h – 17h", defaultTime:"14:00" },
+  { key:"soir"  as TimeKey,  label:"Soir",        icon:<Moon size={13}/>,    color:"#8B5CF6", bg:"rgba(139,92,246,.10)", hint:"18h – 22h", defaultTime:"19:00" },
 ];
 
 function normalizeDate(d: string): string { return String(d||"").trim().substring(0,10); }
