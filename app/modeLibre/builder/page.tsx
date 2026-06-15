@@ -26,7 +26,7 @@ type Excursion = {
   price_per_person: number; duration_hours: number;
   rating: number; reviews_count: number;
   categories: string[]; photos: string[];
-  departure_time?: string; available_dates?: any;
+  departure_time?: string; departure_times?: string[]; available_dates?: any;
   max_people?: number; difficulty?: string; min_age?: number;
 };
 type ExcursionDetail = {
@@ -38,7 +38,7 @@ type ExcursionDetail = {
   difficulty: string|null; min_age: number|null;
   what_to_bring: string|null; not_included: string|null;
   important_info: string|null; cancel_policy: string|null;
-  available_dates: any; depart_time: string|null;
+  available_dates: any; depart_time: string|null; depart_times?: string[]|null;
 };
 type Categorie  = { id: string; nom: string; emoji: string; couleur: string };
 type Ville      = { id: string; nom: string; region: string; description: string|null; active: boolean; image_url: string|null };
@@ -51,9 +51,9 @@ const BRAND = "#2B96A8";
 const NAVY  = "#053366";
 
 const SLOTS = [
-  { key:"matin" as TimeKey,  label:"Matin",      icon:<Sunrise size={13}/>, color:"#F59E0B", bg:"rgba(245,158,11,.10)", hint:"8h – 12h", defaultTime:"09:00" },
-  { key:"aprem" as TimeKey,  label:"Après-midi", icon:<Sun size={13}/>,     color:BRAND,     bg:"rgba(43,150,168,.10)", hint:"13h – 17h", defaultTime:"14:00" },
-  { key:"soir"  as TimeKey,  label:"Soir",        icon:<Moon size={13}/>,    color:"#8B5CF6", bg:"rgba(139,92,246,.10)", hint:"18h – 22h", defaultTime:"19:00" },
+  { key:"matin" as TimeKey,  label:"Matin",      icon:<Sunrise size={13}/>, color:"#F59E0B", bg:"rgba(245,158,11,.10)", hint:"8h – 12h" },
+  { key:"aprem" as TimeKey,  label:"Après-midi", icon:<Sun size={13}/>,     color:BRAND,     bg:"rgba(43,150,168,.10)", hint:"13h – 17h" },
+  { key:"soir"  as TimeKey,  label:"Soir",        icon:<Moon size={13}/>,    color:"#8B5CF6", bg:"rgba(139,92,246,.10)", hint:"18h – 22h" },
 ];
 
 function normalizeDate(d: string): string { return String(d||"").trim().substring(0,10); }
@@ -90,6 +90,19 @@ function isAvailableOnDate(exc: Excursion, date: string): boolean {
     }
   }
   return true;
+}
+
+/** Renvoie la liste des horaires de départ distincts proposés par l'excursion. */
+function getDepartureTimes(exc: Excursion | null): string[] {
+  if (!exc) return [];
+  const raw = Array.isArray(exc.departure_times) ? exc.departure_times : [];
+  const cleaned = raw
+    .map(t => String(t||"").trim().substring(0,5))
+    .filter(Boolean);
+  const unique = Array.from(new Set(cleaned));
+  if (unique.length > 0) return unique;
+  if (exc.departure_time) return [exc.departure_time.substring(0,5)];
+  return [];
 }
 
 function toSummaryDays(itin: DayPlan[]): SummaryDayPlan[] {
@@ -396,6 +409,8 @@ const CSS = `
 }
 .bldr-slot-option:hover{border-color:rgba(43,150,168,.3);background:rgba(43,150,168,.03)}
 .bldr-slot-option.selected{border-color:var(--primary);background:rgba(43,150,168,.06)}
+.bldr-slot-option.fixed{cursor:default}
+.bldr-slot-option.fixed:hover{border-color:var(--border);background:transparent}
 .bldr-slot-icon{
   width:30px;height:30px;border-radius:9px;flex-shrink:0;
   display:flex;align-items:center;justify-content:center;
@@ -407,6 +422,12 @@ const CSS = `
   border:1.5px solid var(--primary);background:rgba(43,150,168,.06);
   font-size:11px;font-weight:700;color:var(--primary);
   outline:none;cursor:pointer;font-family:inherit;
+}
+.bldr-time-fixed{
+  margin-left:auto;padding:5px 9px;border-radius:7px;
+  border:1.5px solid var(--primary);background:rgba(43,150,168,.06);
+  font-size:11px;font-weight:700;color:var(--primary);
+  font-family:inherit;
 }
 .bldr-slot-footer{display:flex;gap:8px;padding:0 18px 16px}
 .bldr-slot-cancel{
@@ -798,14 +819,36 @@ function BuilderInner() {
 
   const toast = (msg:string) => { setShowSuccessMsg(msg); setTimeout(()=>setShowSuccessMsg(null),3000); };
 
+  // Horaires de départ disponibles pour l'excursion en attente de programmation
+  const pendingDepartureTimes = useMemo(() => getDepartureTimes(pendingExc), [pendingExc]);
+  const hasMultipleSlots = pendingDepartureTimes.length > 1;
+  const fixedDepartureTime = pendingDepartureTimes.length === 1 ? pendingDepartureTimes[0] : null;
+
+  /** Détermine le créneau (matin/aprem/soir) correspondant à une heure HH:MM */
+  const slotForTime = (time: string): TimeKey => {
+    const h = Number(time.split(":")[0]);
+    if (h < 12) return "matin";
+    if (h < 18) return "aprem";
+    return "soir";
+  };
+
   const openSlotPicker = (exc: Excursion) => {
     if (currentDayDate && !isAvailableOnDate(exc, currentDayDate)) {
       alert(`⚠️ "${exc.title}" n'est pas disponible le ${formatDate(currentDayDate)}.`);
       return;
     }
     setPendingExc(exc);
-    setPickSlot("matin");
-    setPickTime(exc.departure_time?.substring(0,5)||"09:00");
+    const times = getDepartureTimes(exc);
+    if (times.length === 1) {
+      // Horaire fixe : on le pré-sélectionne directement
+      const t = times[0];
+      setPickTime(t);
+      setPickSlot(slotForTime(t));
+    } else {
+      // Plusieurs horaires (ou aucun défini) : choix matin/après-midi/soir
+      setPickSlot("matin");
+      setPickTime("09:00");
+    }
   };
 
   const confirmAdd = () => {
@@ -1223,22 +1266,35 @@ function BuilderInner() {
               </div>
             </div>
             <div className="bldr-slot-body">
-              {SLOTS.map(slot=>(
-                <div key={slot.key} className={`bldr-slot-option${pickSlot===slot.key?" selected":""}`}
-                  onClick={()=>{setPickSlot(slot.key);setPickTime(pendingExc.departure_time?.substring(0,5)||slot.defaultTime);}}>
-                  <div className="bldr-slot-icon" style={{background:slot.bg}}>
-                    {React.cloneElement(slot.icon as React.ReactElement,{color:slot.color})}
+              {hasMultipleSlots ? (
+                SLOTS.map(slot=>(
+                  <div key={slot.key} className={`bldr-slot-option${pickSlot===slot.key?" selected":""}`}
+                    onClick={()=>{setPickSlot(slot.key);setPickTime(prev=>prev||"09:00");}}>
+                    <div className="bldr-slot-icon" style={{background:slot.bg}}>
+                      {React.cloneElement(slot.icon as React.ReactElement,{color:slot.color})}
+                    </div>
+                    <div style={{flex:1}}>
+                      <div className="bldr-slot-label" style={{color:slot.color}}>{slot.label}</div>
+                      <div className="bldr-slot-hint">{slot.hint}</div>
+                    </div>
+                    {pickSlot===slot.key && (
+                      <input type="time" className="bldr-time-input" value={pickTime}
+                        onChange={e=>setPickTime(e.target.value)} onClick={e=>e.stopPropagation()}/>
+                    )}
+                  </div>
+                ))
+              ) : (
+                <div className="bldr-slot-option fixed selected">
+                  <div className="bldr-slot-icon" style={{background:"rgba(43,150,168,.10)"}}>
+                    <Clock size={13} color={BRAND}/>
                   </div>
                   <div style={{flex:1}}>
-                    <div className="bldr-slot-label" style={{color:slot.color}}>{slot.label}</div>
-                    <div className="bldr-slot-hint">{slot.hint}</div>
+                    <div className="bldr-slot-label" style={{color:BRAND}}>Heure de départ</div>
+                    <div className="bldr-slot-hint">Horaire fixe pour cette excursion</div>
                   </div>
-                  {pickSlot===slot.key && (
-                    <input type="time" className="bldr-time-input" value={pickTime}
-                      onChange={e=>setPickTime(e.target.value)} onClick={e=>e.stopPropagation()}/>
-                  )}
+                  <div className="bldr-time-fixed">{fixedDepartureTime || pickTime}</div>
                 </div>
-              ))}
+              )}
             </div>
             <div className="bldr-slot-footer">
               <button className="bldr-slot-cancel" onClick={()=>setPendingExc(null)}>Annuler</button>
@@ -1262,6 +1318,7 @@ function BuilderInner() {
               rating:selectedExcursion.rating, reviews_count:selectedExcursion.reviews_count,
               categories:selectedExcursion.categories, photos:selectedExcursion.photos,
               departure_time:selectedExcursion.depart_time||undefined,
+              departure_times:selectedExcursion.depart_times||undefined,
               available_dates:selectedExcursion.available_dates,
             };
             openSlotPicker(exc);
