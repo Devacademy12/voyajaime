@@ -1,13 +1,13 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   MapPin, Clock, Globe, RefreshCw, ChevronLeft, ChevronRight,
   CheckCircle, RotateCcw, Star, Sparkles, Navigation,
   ArrowRight, Camera, X, Plus,
   BadgeCheck, Download, Share2, Bookmark,
-  Sunrise, Sun, Moon, CalendarDays, Euro,
-  AlertTriangle, ChevronDown, TrendingUp,
+  Sunrise, Sun, Moon,
+  AlertTriangle, TrendingUp,
 } from "lucide-react";
 
 /* ─── Types ─── */
@@ -34,6 +34,15 @@ type ExcursionData = {
   is_active?: boolean;
 };
 
+type Ville = {
+  id: string;
+  nom: string;
+  region: string;
+  description?: string;
+  active?: boolean;
+  image_url?: string;
+};
+
 type ItineraireDisplayProps = {
   itinerary: Itinerary;
   selectedCities: string[];
@@ -48,6 +57,8 @@ type ItineraireDisplayProps = {
   onCheckout?: () => void;
   onSave: () => void;
   onChangeActivity: (dayIdx: number, actIdx: number, alt: Activity) => void;
+  supabaseUrl?: string;
+  supabaseKey?: string;
 };
 
 /* ─── Helpers ─── */
@@ -57,9 +68,9 @@ function parseList(val?: string | string[]): string[] {
   try { const p = JSON.parse(val); if (Array.isArray(p)) return p; } catch {}
   return val.split(/[,;|]/).map(s => s.trim()).filter(Boolean);
 }
+
 function parsePhotos(val?: string | string[]): string[] {
   if (!val) return [];
-  
   if (typeof val === "string") {
     try {
       const parsed = JSON.parse(val);
@@ -72,7 +83,6 @@ function parsePhotos(val?: string | string[]): string[] {
     if (val.startsWith("http") || val.startsWith("/")) return [val];
     return [];
   }
-  
   if (Array.isArray(val)) {
     return val.flatMap(p => {
       if (typeof p !== "string") return [];
@@ -85,9 +95,9 @@ function parsePhotos(val?: string | string[]): string[] {
       return (p.startsWith("http") || p.startsWith("/")) ? [p] : [];
     });
   }
-  
   return [];
 }
+
 function getSlot(time?: string): "morning" | "afternoon" | "evening" | "unset" {
   if (!time) return "unset";
   const h = parseInt(time.split(":")[0] ?? "0", 10);
@@ -346,23 +356,16 @@ const CSS = `
   background:linear-gradient(135deg,rgba(43,150,168,.04),rgba(5,51,102,.03));
   border-style:dashed;
 }
-
 .itin-act-img{
   width:110px;min-width:110px;flex-shrink:0;
-  overflow:hidden;
+  overflow:hidden;position:relative;
   background:linear-gradient(135deg,#EFF6FF,#F0F9FF);
 }
 .itin-act-img img{
-  width:110px;
-  height:100%;
-  min-height:140px;
-  object-fit:cover;
-  display:block;
+  width:110px;height:100%;min-height:140px;object-fit:cover;display:block;
 }
 .itin-act-img-ph{
-  width:110px;
-  min-height:140px;
-  height:100%;
+  width:110px;min-height:140px;height:100%;
   display:flex;flex-direction:column;align-items:center;justify-content:center;
   gap:5px;color:#CBD5E1;font-size:10px;
 }
@@ -436,7 +439,7 @@ const CSS = `
 }
 .itin-modal{
   background:var(--surface);border-radius:var(--r-xl);
-  width:100%;max-width:480px;max-height:85vh;
+  width:100%;max-width:480px;max-height:88vh;
   display:flex;flex-direction:column;overflow:hidden;
   box-shadow:0 24px 64px rgba(5,51,102,.22);
 }
@@ -486,13 +489,62 @@ const CSS = `
   transition:border-color .2s;color:var(--navy);
 }
 .itin-form-input:focus{border-color:var(--primary)}
-.itin-form-select{
-  width:100%;padding:8px 11px;border-radius:var(--r-md);
-  border:1.5px solid var(--border);background:var(--bg);
-  font-size:12px;font-family:inherit;outline:none;color:var(--navy);cursor:pointer;
-}
-.itin-form-select:focus{border-color:var(--primary)}
 .itin-form-row{margin-bottom:12px}
+
+/* ── VILLE LIST (AddDayModal) ── */
+.ville-list{
+  max-height:220px;overflow-y:auto;
+  border:1.5px solid var(--border);border-radius:var(--r-md);
+  background:var(--surface);
+}
+.ville-item{
+  display:flex;align-items:center;gap:10px;
+  padding:9px 12px;cursor:pointer;
+  border-left:3px solid transparent;
+  transition:background .15s,border-color .15s;
+}
+.ville-item:not(:last-child){border-bottom:1px solid var(--border)}
+.ville-item:hover{background:rgba(43,150,168,.05)}
+.ville-item.selected{
+  background:rgba(43,150,168,.08);
+  border-left-color:var(--primary);
+}
+.ville-thumb{
+  width:36px;height:36px;border-radius:8px;flex-shrink:0;
+  background:var(--bg);border:1px solid var(--border);
+  display:flex;align-items:center;justify-content:center;overflow:hidden;
+}
+.ville-thumb img{width:100%;height:100%;object-fit:cover}
+.ville-nom{font-size:12px;font-weight:700;color:var(--navy)}
+.ville-region{font-size:10px;color:var(--muted);margin-top:1px}
+.ville-selected-badge{
+  margin-left:auto;display:flex;align-items:center;gap:4px;
+  font-size:10px;font-weight:700;color:var(--primary);
+  background:rgba(43,150,168,.09);padding:3px 8px;border-radius:12px;
+}
+.ville-loading{
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  padding:22px;color:var(--muted);font-size:12px;
+}
+.ville-empty{
+  display:flex;flex-direction:column;align-items:center;
+  padding:22px;color:var(--muted);font-size:11px;text-align:center;gap:6px;
+}
+.ville-selected-preview{
+  display:flex;align-items:center;gap:7px;
+  margin-top:8px;padding:7px 11px;
+  background:rgba(43,150,168,.06);
+  border:1px solid rgba(43,150,168,.18);
+  border-radius:var(--r-md);
+}
+.ville-selected-preview-name{font-size:12px;font-weight:700;color:var(--primary)}
+.ville-selected-preview-region{font-size:10px;color:var(--muted)}
+@keyframes spin{to{transform:rotate(360deg)}}
+.spinner{
+  width:16px;height:16px;border-radius:50%;
+  border:2px solid var(--border);border-top-color:var(--primary);
+  animation:spin .7s linear infinite;flex-shrink:0;
+}
 
 .itin-btn-modal-primary{
   flex:1;display:flex;align-items:center;justify-content:center;gap:5px;
@@ -562,14 +614,12 @@ function SaveButton({ saving, saveStatus, onClick }: {
 }
 
 /* ── ActivityCard ── */
-// ✅ FIX : excursions passé en prop pour récupérer les vraies photos Supabase
 function ActivityCard({ activity, onEdit, onRemove, excursions }: {
   activity: Activity;
   onEdit: () => void;
   onRemove: () => void;
   excursions: ExcursionData[];
-  }) {
-  // ✅ Recherche multicritère identique à extractItinerary
+}) {
   const actName = (activity.name ?? "").toLowerCase().trim();
   const realExc =
     excursions.find(e => String(e.id) === String(activity.id)) ||
@@ -577,7 +627,6 @@ function ActivityCard({ activity, onEdit, onRemove, excursions }: {
     excursions.find(e => actName.includes(e.title?.toLowerCase().trim() ?? "___")) ||
     excursions.find(e => e.title?.toLowerCase().trim().includes(actName));
 
-  // ✅ Photos : Supabase → activité → vide
   const supabasePhotos = parsePhotos(realExc?.photos);
   const activityPhotos = parsePhotos(activity.photos).filter(
     p => p.startsWith("http") || p.startsWith("/")
@@ -588,20 +637,7 @@ function ActivityCard({ activity, onEdit, onRemove, excursions }: {
   const inclusions = parseList(activity.inclusion);
   const price      = activity.price || 0;
   const isFree     = price === 0;
-  // 🔍 DEBUG TEMPORAIRE - à supprimer après fix
-  // Dans ActivityCard, ajoutez juste après le calcul de photos :
-console.log("📸 PHOTO URL:", photos[0]);
-console.log("📸 SUPABASE RAW:", realExc?.photos);
-console.log("📸 ACTIVITY RAW:", activity.photos);
-console.log("🖼️ CARD:", {
-  activityId: activity.id,
-  activityName: activity.name,
-  activityPhotos: activity.photos,
-  realExcFound: realExc ? `✅ ${realExc.id} - ${realExc.title}` : "❌ NON TROUVÉ",
-  supabasePhotos,
-  finalPhotos: photos,
-  photo0: photos[0] ?? "VIDE ❌",
-});
+
   if (activity.is_free_day) {
     return (
       <div className="itin-act free-day">
@@ -611,7 +647,7 @@ console.log("🖼️ CARD:", {
             <span className="itin-price free">Gratuit</span>
           </div>
           {activity.description && <p className="itin-act-desc">{activity.description}</p>}
-          <div style={{ display:"flex", justifyContent:"flex-end", marginTop:4 }}>
+          <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 4 }}>
             <button className="itin-btn-sm danger" onClick={onRemove}>
               <X size={10}/> Supprimer
             </button>
@@ -624,23 +660,13 @@ console.log("🖼️ CARD:", {
   return (
     <div className="itin-act">
       <div className="itin-act-img">
-       {photos[0] ? (
-  <>
-    {/* ✅ TEST DEBUG */}
-    <img
-  src={photos[0]}
-  alt={activity.name}
-  style={{
-    width: "106px",
-    height: "130px",
-    objectFit: "cover",
-    display: "block",
-  }}
-  onError={(e) => {
-    (e.currentTarget as HTMLImageElement).style.display = "none";
-  }}
-/>
-  </>
+        {photos[0] ? (
+          <img
+            src={photos[0]}
+            alt={activity.name}
+            style={{ width: "110px", height: "100%", minHeight: "140px", objectFit: "cover", display: "block" }}
+            onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
+          />
         ) : (
           <div className="itin-act-img-ph">
             <Camera size={24} strokeWidth={1.5}/>
@@ -691,9 +717,10 @@ console.log("🖼️ CARD:", {
     </div>
   );
 }
+
 /* ── AlternativePicker ── */
 function AlternativePicker({ alternatives, currentName, onPick, onClose }: {
-  alternatives: any[]; currentName: string;
+  alternatives: ExcursionData[]; currentName: string;
   onPick: (alt: Activity) => void; onClose: () => void;
 }) {
   return (
@@ -707,7 +734,10 @@ function AlternativePicker({ alternatives, currentName, onPick, onClose }: {
           <button className="itin-close-btn" onClick={onClose}><X size={13} color="#6B7280"/></button>
         </div>
         {alternatives.length === 0
-          ? <div className="itin-no-alt"><Camera size={28} strokeWidth={1.5} style={{opacity:.3,marginBottom:10}}/><p style={{fontSize:12}}>Aucune alternative disponible</p></div>
+          ? <div className="itin-no-alt">
+              <Camera size={28} strokeWidth={1.5} style={{opacity:.3,marginBottom:10}}/>
+              <p style={{fontSize:12}}>Aucune alternative disponible</p>
+            </div>
           : <div className="itin-modal-body">
               {alternatives.map(exc => (
                 <div key={exc.id} className="itin-alt-item"
@@ -735,7 +765,11 @@ function AlternativePicker({ alternatives, currentName, onPick, onClose }: {
                     <div className="itin-alt-meta">
                       {exc.price_per_person != null && <span>{exc.price_per_person} €</span>}
                       {exc.duration_hours && <span>{exc.duration_hours}h</span>}
-                      {exc.rating && <span style={{display:"flex",alignItems:"center",gap:2}}><Star size={9} fill="#2B96A8" color="#2B96A8"/>{exc.rating}</span>}
+                      {exc.rating && (
+                        <span style={{display:"flex",alignItems:"center",gap:2}}>
+                          <Star size={9} fill="#2B96A8" color="#2B96A8"/>{exc.rating}
+                        </span>
+                      )}
                     </div>
                   </div>
                   <ArrowRight size={13} color="#2B96A8"/>
@@ -751,12 +785,13 @@ function AlternativePicker({ alternatives, currentName, onPick, onClose }: {
 /* ── AddExcursionModal ── */
 function AddExcursionModal({ city, excursions, existingIds, slotKey, onAdd, onClose }: {
   city: string; excursions: ExcursionData[]; existingIds: string[];
-  slotKey: "morning"|"afternoon"|"evening"; onAdd:(a:Activity)=>void; onClose:()=>void;
+  slotKey: "morning" | "afternoon" | "evening"; onAdd: (a: Activity) => void; onClose: () => void;
 }) {
   const [search, setSearch] = useState("");
   const filtered = excursions.filter(e =>
     e.city === city && !existingIds.includes(e.id) &&
-    (e.title.toLowerCase().includes(search.toLowerCase()) || (e.description||"").toLowerCase().includes(search.toLowerCase()))
+    (e.title.toLowerCase().includes(search.toLowerCase()) ||
+     (e.description || "").toLowerCase().includes(search.toLowerCase()))
   ).slice(0, 20);
 
   return (
@@ -765,14 +800,29 @@ function AddExcursionModal({ city, excursions, existingIds, slotKey, onAdd, onCl
         <div className="itin-modal-hdr">
           <div>
             <div className="itin-modal-title">Ajouter une excursion</div>
-            <div className="itin-modal-sub">{city} · {slotKey==="morning"?"Matin":slotKey==="afternoon"?"Après-midi":"Soir"}</div>
+            <div className="itin-modal-sub">
+              {city} · {slotKey === "morning" ? "Matin" : slotKey === "afternoon" ? "Après-midi" : "Soir"}
+            </div>
           </div>
           <button className="itin-close-btn" onClick={onClose}><X size={13} color="#6B7280"/></button>
         </div>
         <div className="itin-modal-body">
-          <input className="itin-exc-search" placeholder="Rechercher…" value={search} onChange={e=>setSearch(e.target.value)} autoFocus/>
+          <input
+            className="itin-exc-search"
+            placeholder="Rechercher…"
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            autoFocus
+          />
           {filtered.length === 0
-            ? <div className="itin-no-alt"><Camera size={24} strokeWidth={1.5} style={{opacity:.3,marginBottom:10}}/><p style={{fontSize:12}}>{excursions.filter(e=>e.city===city).length===0?`Aucune excursion à ${city}`:"Aucun résultat"}</p></div>
+            ? <div className="itin-no-alt">
+                <Camera size={24} strokeWidth={1.5} style={{opacity:.3,marginBottom:10}}/>
+                <p style={{fontSize:12}}>
+                  {excursions.filter(e => e.city === city).length === 0
+                    ? `Aucune excursion à ${city}`
+                    : "Aucun résultat"}
+                </p>
+              </div>
             : filtered.map(exc => (
                 <div key={exc.id} className="itin-alt-item"
                   onClick={() => onAdd({
@@ -798,8 +848,8 @@ function AddExcursionModal({ city, excursions, existingIds, slotKey, onAdd, onCl
                   <div style={{flex:1,minWidth:0}}>
                     <div className="itin-alt-name">{exc.title}</div>
                     <div className="itin-alt-meta">
-                      {exc.price_per_person!=null&&<span>{exc.price_per_person} €</span>}
-                      {exc.duration_hours&&<span>{exc.duration_hours}h</span>}
+                      {exc.price_per_person != null && <span>{exc.price_per_person} €</span>}
+                      {exc.duration_hours && <span>{exc.duration_hours}h</span>}
                     </div>
                   </div>
                   <Plus size={13} color="#2B96A8"/>
@@ -813,42 +863,213 @@ function AddExcursionModal({ city, excursions, existingIds, slotKey, onAdd, onCl
 }
 
 /* ── AddDayModal ── */
-function AddDayModal({ cities, onAdd, onClose }: {
-  cities:string[]; onAdd:(c:string,t:string,d:string)=>void; onClose:()=>void;
+function AddDayModal({ cities, onAdd, onClose, supabaseUrl, supabaseKey }: {
+  cities: string[];
+  onAdd: (c: string, t: string, d: string) => void;
+  onClose: () => void;
+  supabaseUrl?: string;
+  supabaseKey?: string;
 }) {
-  const [city,setCity]   = useState(cities[0]||"");
-  const [theme,setTheme] = useState("");
-  const [date,setDate]   = useState("");
+  const [city,    setCity]    = useState(cities[0] || "");
+  const [theme,   setTheme]   = useState("");
+  const [date,    setDate]    = useState("");
+  const [search,  setSearch]  = useState("");
+  const [villes,  setVilles]  = useState<Ville[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error,   setError]   = useState(false);
+
+  /* Fetch villes from Supabase on mount */
+  useEffect(() => {
+    if (!supabaseUrl || !supabaseKey) return;
+    setLoading(true);
+    setError(false);
+    fetch(
+      `${supabaseUrl}/rest/v1/villes?active=eq.true&order=nom.asc&select=id,nom,region,image_url`,
+      {
+        headers: {
+          apikey: supabaseKey,
+          Authorization: `Bearer ${supabaseKey}`,
+          "Content-Type": "application/json",
+        },
+      }
+    )
+      .then(r => {
+        if (!r.ok) throw new Error("fetch error");
+        return r.json();
+      })
+      .then((data: Ville[]) => {
+        setVilles(data);
+        if (data.length > 0) setCity(data[0].nom);
+      })
+      .catch(() => setError(true))
+      .finally(() => setLoading(false));
+  }, [supabaseUrl, supabaseKey]);
+
+  /* Source: Supabase si dispo, sinon props cities */
+  const allCityNames: string[] =
+    villes.length > 0
+      ? villes.map(v => v.nom)
+      : cities;
+
+  const filtered = allCityNames.filter(c =>
+    c.toLowerCase().includes(search.toLowerCase())
+  );
+
+  const selectedVille = villes.find(v => v.nom === city);
+
   return (
-    <div className="itin-overlay" onClick={e => { if (e.target===e.currentTarget) onClose(); }}>
-      <div className="itin-modal" style={{maxWidth:400}}>
+    <div className="itin-overlay" onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
+      <div className="itin-modal" style={{ maxWidth: 430 }}>
+
+        {/* Header */}
         <div className="itin-modal-hdr">
           <div>
             <div className="itin-modal-title">Ajouter un jour</div>
             <div className="itin-modal-sub">Configurer la nouvelle journée</div>
           </div>
-          <button className="itin-close-btn" onClick={onClose}><X size={13} color="#6B7280"/></button>
+          <button className="itin-close-btn" onClick={onClose}>
+            <X size={13} color="#6B7280"/>
+          </button>
         </div>
-        <div className="itin-modal-body">
-          <div className="itin-form-row">
-            <label className="itin-form-label">Ville *</label>
-            <select className="itin-form-select" value={city} onChange={e=>setCity(e.target.value)}>
-              {cities.map(c=><option key={c} value={c}>{c}</option>)}
-            </select>
+
+        {/* Body */}
+        <div className="itin-modal-body" style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+
+          {/* ── Sélection de ville ── */}
+          <div className="itin-form-row" style={{ marginBottom: 0 }}>
+            <label className="itin-form-label">
+              Ville <span style={{ color: "#DC2626" }}>*</span>
+            </label>
+
+            {/* Barre de recherche */}
+            <input
+              className="itin-exc-search"
+              style={{ marginBottom: 6 }}
+              placeholder="Rechercher une ville…"
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              autoFocus
+            />
+
+            {/* Liste */}
+            {loading ? (
+              <div className="ville-loading">
+                <div className="spinner"/>
+                <span>Chargement des villes…</span>
+              </div>
+            ) : error ? (
+              <div className="ville-empty" style={{ color: "#DC2626" }}>
+                <AlertTriangle size={18} style={{ opacity: .6 }}/>
+                <span>Impossible de charger les villes.</span>
+                <span style={{ fontSize: 10 }}>Vérifiez votre connexion.</span>
+              </div>
+            ) : (
+              <div className="ville-list">
+                {filtered.length === 0 ? (
+                  <div className="ville-empty">
+                    <MapPin size={18} style={{ opacity: .35 }}/>
+                    <span>Aucune ville trouvée</span>
+                  </div>
+                ) : (
+                  filtered.map(nom => {
+                    const v = villes.find(vl => vl.nom === nom);
+                    const isSelected = city === nom;
+                    return (
+                      <div
+                        key={nom}
+                        className={`ville-item${isSelected ? " selected" : ""}`}
+                        onClick={() => { setCity(nom); setSearch(""); }}
+                      >
+                        {/* Thumbnail */}
+                        <div className="ville-thumb">
+                          {v?.image_url ? (
+                            <img
+                              src={v.image_url}
+                              alt={nom}
+                              onError={e => {
+                                (e.currentTarget as HTMLImageElement).style.display = "none";
+                              }}
+                            />
+                          ) : (
+                            <MapPin size={15} color="#94A3B8"/>
+                          )}
+                        </div>
+
+                        {/* Nom + région */}
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div className="ville-nom">{nom}</div>
+                          {v?.region && <div className="ville-region">{v.region}</div>}
+                        </div>
+
+                        {/* Badge sélectionné */}
+                        {isSelected && (
+                          <div className="ville-selected-badge">
+                            <CheckCircle size={11}/> Sélectionnée
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            )}
+
+            {/* Preview ville sélectionnée (quand la recherche est vide) */}
+            {city && !search && (
+              <div className="ville-selected-preview">
+                {selectedVille?.image_url && (
+                  <img
+                    src={selectedVille.image_url}
+                    alt={city}
+                    style={{ width: 28, height: 28, borderRadius: 6, objectFit: "cover", flexShrink: 0 }}
+                    onError={e => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
+                  />
+                )}
+                <MapPin size={12} color="var(--primary)"/>
+                <div>
+                  <span className="ville-selected-preview-name">{city}</span>
+                  {selectedVille?.region && (
+                    <span className="ville-selected-preview-region"> · {selectedVille.region}</span>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
-          <div className="itin-form-row">
-            <label className="itin-form-label">Thème (optionnel)</label>
-            <input className="itin-form-input" placeholder="Ex: Culture & gastronomie…" value={theme} onChange={e=>setTheme(e.target.value)}/>
+
+          {/* ── Thème ── */}
+          <div className="itin-form-row" style={{ marginBottom: 0 }}>
+            <label className="itin-form-label">Thème <span style={{ color: "var(--muted)", fontWeight: 500 }}>(optionnel)</span></label>
+            <input
+              className="itin-form-input"
+              placeholder="Ex : Culture & gastronomie…"
+              value={theme}
+              onChange={e => setTheme(e.target.value)}
+            />
           </div>
-          <div className="itin-form-row">
-            <label className="itin-form-label">Date (optionnel)</label>
-            <input className="itin-form-input" type="date" value={date} onChange={e=>setDate(e.target.value)}/>
+
+          {/* ── Date ── */}
+          <div className="itin-form-row" style={{ marginBottom: 0 }}>
+            <label className="itin-form-label">Date <span style={{ color: "var(--muted)", fontWeight: 500 }}>(optionnel)</span></label>
+            <input
+              className="itin-form-input"
+              type="date"
+              value={date}
+              onChange={e => setDate(e.target.value)}
+            />
           </div>
         </div>
+
+        {/* Footer */}
         <div className="itin-modal-footer">
           <button className="itin-btn-modal-cancel" onClick={onClose}>Annuler</button>
-          <button className="itin-btn-modal-primary" onClick={()=>{if(city){onAdd(city,theme||"Découverte",date);onClose();}}} disabled={!city}>
-            <Plus size={13}/> Ajouter
+          <button
+            className="itin-btn-modal-primary"
+            onClick={() => {
+              if (city) { onAdd(city, theme || "Découverte", date); onClose(); }
+            }}
+            disabled={!city}
+          >
+            <Plus size={13}/> Ajouter le jour
           </button>
         </div>
       </div>
@@ -871,63 +1092,92 @@ export default function ItineraireDisplay({
   onCheckout,
   onSave,
   onChangeActivity,
+  supabaseUrl,
+  supabaseKey,
 }: ItineraireDisplayProps) {
   const [itinerary,  setItinerary]  = useState(initialItinerary);
   const [activeDay,  setActiveDay]  = useState(0);
-  const [editing,    setEditing]    = useState<{dayIdx:number;actIdx:number}|null>(null);
-  const [addingExc,  setAddingExc]  = useState<{slotKey:"morning"|"afternoon"|"evening"}|null>(null);
+  const [editing,    setEditing]    = useState<{ dayIdx: number; actIdx: number } | null>(null);
+  const [addingExc,  setAddingExc]  = useState<{ slotKey: "morning" | "afternoon" | "evening" } | null>(null);
   const [showAddDay, setShowAddDay] = useState(false);
 
-  const currentDay = itinerary.days[activeDay];
-  const totalActivities = itinerary.days.reduce((s,d)=>s+d.activities.length,0);
-  const totalPrice = itinerary.days.reduce((acc,d)=>acc+d.activities.reduce((a,act)=>a+(Number(act.price)||0),0),0);
-  const dayPrice = currentDay.activities.reduce((a,act)=>a+(Number(act.price)||0),0);
+  const currentDay      = itinerary.days[activeDay];
+  const totalActivities = itinerary.days.reduce((s, d) => s + d.activities.length, 0);
+  const totalPrice      = itinerary.days.reduce((acc, d) => acc + d.activities.reduce((a, act) => a + (Number(act.price) || 0), 0), 0);
+  const dayPrice        = currentDay.activities.reduce((a, act) => a + (Number(act.price) || 0), 0);
 
-  function activitiesForSlot(slot:"morning"|"afternoon"|"evening") {
-    const slotted = currentDay.activities.filter(a => getSlot(a.time)===slot);
-    if (slot==="morning" && slotted.length===0)
-      return currentDay.activities.filter(a => getSlot(a.time)==="unset");
+  function activitiesForSlot(slot: "morning" | "afternoon" | "evening") {
+    const slotted = currentDay.activities.filter(a => getSlot(a.time) === slot);
+    if (slot === "morning" && slotted.length === 0)
+      return currentDay.activities.filter(a => getSlot(a.time) === "unset");
     return slotted;
   }
-  function slotTotal(slot:"morning"|"afternoon"|"evening") {
-    return activitiesForSlot(slot).reduce((a,act)=>a+(Number(act.price)||0),0);
+  function slotTotal(slot: "morning" | "afternoon" | "evening") {
+    return activitiesForSlot(slot).reduce((a, act) => a + (Number(act.price) || 0), 0);
   }
-  function globalIdx(act:Activity) {
-    return currentDay.activities.findIndex(a=>a.id===act.id);
+  function globalIdx(act: Activity) {
+    return currentDay.activities.findIndex(a => a.id === act.id);
   }
   function getAlts() {
     if (!editing) return [];
     const day = itinerary.days[editing.dayIdx];
     const cur = day.activities[editing.actIdx];
-    return excursions.filter(e=>e.city===day.city && e.id!==cur.id).slice(0,10);
+    return excursions.filter(e => e.city === day.city && e.id !== cur.id).slice(0, 10);
   }
 
-  const handleChange = (dayIdx:number, actIdx:number, alt:Activity) => {
-    setItinerary(prev=>({...prev, days:prev.days.map((day,dIdx)=>dIdx!==dayIdx?day:{...day,activities:day.activities.map((act,aIdx)=>aIdx!==actIdx?act:alt)})}));
+  const handleChange = (dayIdx: number, actIdx: number, alt: Activity) => {
+    setItinerary(prev => ({
+      ...prev,
+      days: prev.days.map((day, dIdx) =>
+        dIdx !== dayIdx ? day : {
+          ...day,
+          activities: day.activities.map((act, aIdx) => aIdx !== actIdx ? act : alt),
+        }
+      ),
+    }));
     onChangeActivity(dayIdx, actIdx, alt);
   };
-  const handleRemove = (dayIdx:number, actIdx:number) => {
-    setItinerary(prev=>({...prev, days:prev.days.map((day,dIdx)=>dIdx!==dayIdx?day:{...day,activities:day.activities.filter((_,aIdx)=>aIdx!==actIdx)})}));
+
+  const handleRemove = (dayIdx: number, actIdx: number) => {
+    setItinerary(prev => ({
+      ...prev,
+      days: prev.days.map((day, dIdx) =>
+        dIdx !== dayIdx ? day : {
+          ...day,
+          activities: day.activities.filter((_, aIdx) => aIdx !== actIdx),
+        }
+      ),
+    }));
   };
-  const handleAddAct = (slotKey:"morning"|"afternoon"|"evening", act:Activity) => {
-    setItinerary(prev=>({...prev, days:prev.days.map((day,dIdx)=>dIdx!==activeDay?day:{...day,activities:[...day.activities,act]})}));
+
+  const handleAddAct = (slotKey: "morning" | "afternoon" | "evening", act: Activity) => {
+    setItinerary(prev => ({
+      ...prev,
+      days: prev.days.map((day, dIdx) =>
+        dIdx !== activeDay ? day : { ...day, activities: [...day.activities, act] }
+      ),
+    }));
     setAddingExc(null);
   };
-  const handleAddDay = (city:string, theme:string, date:string) => {
-    setItinerary(prev=>({...prev, days:[...prev.days,{day:prev.days.length+1,city,theme,date,activities:[]}]}));
+
+  const handleAddDay = (city: string, theme: string, date: string) => {
+    setItinerary(prev => ({
+      ...prev,
+      days: [...prev.days, { day: prev.days.length + 1, city, theme, date, activities: [] }],
+    }));
     setActiveDay(itinerary.days.length);
   };
 
-  const allCities = Array.from(new Set([...selectedCities,...itinerary.days.map(d=>d.city)]));
+  const allCities = Array.from(new Set([...selectedCities, ...itinerary.days.map(d => d.city)]));
 
   return (
     <div suppressHydrationWarning className="itin-root">
       <style suppressHydrationWarning>{CSS}</style>
 
-      {/* NAV */}
+      {/* ── NAV ── */}
       <nav className="itin-nav">
         <div className="itin-nav-pill"><Sparkles size={10}/> Mode Assisté</div>
-        <div style={{display:"flex",alignItems:"center",gap:7}}>
+        <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
           <button className="btn btn-ghost" onClick={onReset}><RotateCcw size={13}/> Recommencer</button>
           <button className="btn btn-ghost" onClick={onBack}><ChevronLeft size={13}/> Modifier</button>
           <SaveButton saving={saving} saveStatus={saveStatus} onClick={onSave}/>
@@ -939,15 +1189,15 @@ export default function ItineraireDisplay({
         </div>
       </nav>
 
-      {/* HERO */}
+      {/* ── HERO ── */}
       <div className="itin-hero">
         <div>
           <div className="itin-hero-ai"><Sparkles size={9}/> Généré par IA</div>
           <div className="itin-hero-title">{itinerary.title}</div>
           <div className="itin-hero-cities">
-            {selectedCities.map((c,i)=>(
+            {selectedCities.map((c, i) => (
               <React.Fragment key={c}>
-                {i>0&&<ArrowRight size={11} style={{opacity:.6}}/>}
+                {i > 0 && <ArrowRight size={11} style={{ opacity: .6 }}/>}
                 <span>{c}</span>
               </React.Fragment>
             ))}
@@ -955,11 +1205,11 @@ export default function ItineraireDisplay({
         </div>
         <div className="itin-hero-stats">
           {[
-            {val:itinerary.days.length,lbl:"Jours"},
-            {val:selectedCities.length,lbl:"Villes"},
-            {val:totalActivities,lbl:"Activités"},
-            {val:`${totalPrice.toLocaleString("fr-FR")} €`,lbl:"Budget"},
-          ].map(s=>(
+            { val: itinerary.days.length, lbl: "Jours" },
+            { val: selectedCities.length, lbl: "Villes" },
+            { val: totalActivities, lbl: "Activités" },
+            { val: `${totalPrice.toLocaleString("fr-FR")} €`, lbl: "Budget" },
+          ].map(s => (
             <div key={s.lbl} className="itin-stat">
               <span className="itin-stat-val">{s.val}</span>
               <span className="itin-stat-lbl">{s.lbl}</span>
@@ -969,32 +1219,38 @@ export default function ItineraireDisplay({
       </div>
 
       <div className="itin-layout">
-        {/* SIDEBAR */}
+
+        {/* ── SIDEBAR ── */}
         <aside className="itin-sidebar">
           <div>
             <div className="itin-sec-label">Jours du voyage</div>
-            {itinerary.days.map((day,idx)=>(
-              <div key={idx} className={`itin-day-item${activeDay===idx?" active":""}`}
-                onClick={()=>{setActiveDay(idx);setEditing(null);setAddingExc(null);}}>
+            {itinerary.days.map((day, idx) => (
+              <div
+                key={idx}
+                className={`itin-day-item${activeDay === idx ? " active" : ""}`}
+                onClick={() => { setActiveDay(idx); setEditing(null); setAddingExc(null); }}
+              >
                 <div className="itin-day-num">{day.day}</div>
                 <div>
                   <div className="itin-day-city">{day.city}</div>
-                  {day.theme&&<div className="itin-day-sub">{day.theme}</div>}
+                  {day.theme && <div className="itin-day-sub">{day.theme}</div>}
                 </div>
-                <span className="itin-day-badge">{day.activities.length>0?`${day.activities.length} act.`:"—"}</span>
+                <span className="itin-day-badge">
+                  {day.activities.length > 0 ? `${day.activities.length} act.` : "—"}
+                </span>
               </div>
             ))}
-            <button className="itin-add-day" onClick={()=>setShowAddDay(true)}>
+            <button className="itin-add-day" onClick={() => setShowAddDay(true)}>
               <Plus size={12}/> Ajouter un jour
             </button>
           </div>
           <div className="itin-summary-box">
-            <div className="itin-sec-label" style={{marginBottom:9}}>Récapitulatif</div>
+            <div className="itin-sec-label" style={{ marginBottom: 9 }}>Récapitulatif</div>
             {[
-              {icon:<Clock size={11}/>,key:"Durée",val:`${itinerary.days.length} jours`},
-              {icon:<MapPin size={11}/>,key:"Villes",val:`${selectedCities.length} étapes`},
-              {icon:<CheckCircle size={11}/>,key:"Activités",val:`${totalActivities} au total`},
-            ].map(r=>(
+              { icon: <Clock size={11}/>,         key: "Durée",      val: `${itinerary.days.length} jours` },
+              { icon: <MapPin size={11}/>,         key: "Villes",     val: `${selectedCities.length} étapes` },
+              { icon: <CheckCircle size={11}/>,    key: "Activités",  val: `${totalActivities} au total` },
+            ].map(r => (
               <div key={r.key} className="itin-sum-row">
                 <span className="itin-sum-key">{r.icon}{r.key}</span>
                 <span className="itin-sum-val">{r.val}</span>
@@ -1007,61 +1263,63 @@ export default function ItineraireDisplay({
           </div>
         </aside>
 
-        {/* CONTENT */}
+        {/* ── CONTENT ── */}
         <div className="itin-content">
           <div className="itin-day-hdr">
             <div className="itin-day-icon"><Navigation size={19} color="#2B96A8"/></div>
             <div>
               <div className="itin-day-htitle">Jour {currentDay.day} — {currentDay.city}</div>
               <div className="itin-day-hsub">
-                {currentDay.date||""}
-                {currentDay.theme?` · ${currentDay.theme}`:""}
+                {currentDay.date || ""}
+                {currentDay.theme ? ` · ${currentDay.theme}` : ""}
               </div>
             </div>
             <div className="itin-day-hbadge">
               <CheckCircle size={11}/>
-              {currentDay.activities.length} activité{currentDay.activities.length!==1?"s":""}
-              {dayPrice>0&&` · ${dayPrice} €`}
+              {currentDay.activities.length} activité{currentDay.activities.length !== 1 ? "s" : ""}
+              {dayPrice > 0 && ` · ${dayPrice} €`}
             </div>
           </div>
 
           {currentDay.activities.length === 0 ? (
             <div className="itin-empty">
-              <Camera size={34} strokeWidth={1.5} color="#CBD5E1" style={{marginBottom:10}}/>
+              <Camera size={34} strokeWidth={1.5} color="#CBD5E1" style={{ marginBottom: 10 }}/>
               <p>Aucune activité pour cette journée</p>
-              <button className="btn btn-teal" style={{margin:"0 auto"}}
-                onClick={()=>setAddingExc({slotKey:"morning"})}>
+              <button
+                className="btn btn-teal"
+                style={{ margin: "0 auto" }}
+                onClick={() => setAddingExc({ slotKey: "morning" })}
+              >
                 <Plus size={13}/> Ajouter une activité
               </button>
             </div>
           ) : (
-            SLOTS.map(({key,label,icon,color,bg,time})=>{
+            SLOTS.map(({ key, label, icon, color, bg, time }) => {
               const acts = activitiesForSlot(key);
-              const sp = slotTotal(key);
+              const sp   = slotTotal(key);
               return (
                 <div key={key} className="itin-slot">
                   <div className="itin-slot-head">
-                    <div className="itin-slot-icon-wrap" style={{background:bg}}>
-                      {React.cloneElement(icon as React.ReactElement, {color})}
+                    <div className="itin-slot-icon-wrap" style={{ background: bg }}>
+                      {React.cloneElement(icon as React.ReactElement, { color })}
                     </div>
                     <span className="itin-slot-label">{label}</span>
                     <span className="itin-slot-time">{time}</span>
-                    {sp>0&&<span className="itin-slot-total">{sp} €</span>}
+                    {sp > 0 && <span className="itin-slot-total">{sp} €</span>}
                   </div>
-                  {acts.length===0
+                  {acts.length === 0
                     ? <div className="itin-slot-empty">Aucune activité — ajoutez-en une ci-dessous</div>
-                    : acts.map(act=>(
-                        // ✅ FIX : excursions passé à ActivityCard pour récupérer les vraies photos
+                    : acts.map(act => (
                         <ActivityCard
                           key={act.id}
                           activity={act}
                           excursions={excursions}
-                          onEdit={()=>setEditing({dayIdx:activeDay,actIdx:globalIdx(act)})}
-                          onRemove={()=>handleRemove(activeDay,globalIdx(act))}
+                          onEdit={() => setEditing({ dayIdx: activeDay, actIdx: globalIdx(act) })}
+                          onRemove={() => handleRemove(activeDay, globalIdx(act))}
                         />
                       ))
                   }
-                  <button className="itin-add-act" onClick={()=>setAddingExc({slotKey:key})}>
+                  <button className="itin-add-act" onClick={() => setAddingExc({ slotKey: key })}>
                     <Plus size={12}/> Ajouter au {label.toLowerCase()}
                   </button>
                 </div>
@@ -1070,19 +1328,27 @@ export default function ItineraireDisplay({
           )}
 
           <div className="itin-day-nav">
-            <button className="btn btn-ghost" disabled={activeDay===0} onClick={()=>setActiveDay(p=>p-1)}
-              style={{opacity:activeDay===0?.35:1}}>
+            <button
+              className="btn btn-ghost"
+              disabled={activeDay === 0}
+              onClick={() => setActiveDay(p => p - 1)}
+              style={{ opacity: activeDay === 0 ? .35 : 1 }}
+            >
               <ChevronLeft size={13}/> Jour précédent
             </button>
-            <button className="btn btn-ghost" disabled={activeDay===itinerary.days.length-1} onClick={()=>setActiveDay(p=>p+1)}
-              style={{opacity:activeDay===itinerary.days.length-1?.35:1}}>
+            <button
+              className="btn btn-ghost"
+              disabled={activeDay === itinerary.days.length - 1}
+              onClick={() => setActiveDay(p => p + 1)}
+              style={{ opacity: activeDay === itinerary.days.length - 1 ? .35 : 1 }}
+            >
               Jour suivant <ChevronRight size={13}/>
             </button>
           </div>
         </div>
       </div>
 
-      {/* BOTTOM BAR */}
+      {/* ── BOTTOM BAR ── */}
       <div className="itin-bottom">
         <div>
           <div className="itin-total-lbl">Budget total estimé</div>
@@ -1092,9 +1358,9 @@ export default function ItineraireDisplay({
           </div>
         </div>
         <div className="itin-bottom-right">
-          {saveStatus==="ok"    && <span className="itin-save-ok">✓ Sauvegardé</span>}
-          {saveStatus==="error" && <span className="itin-save-err">Erreur de sauvegarde</span>}
-          {saveStatus==="login" && <span className="itin-save-login">Connectez-vous d'abord</span>}
+          {saveStatus === "ok"    && <span className="itin-save-ok">✓ Sauvegardé</span>}
+          {saveStatus === "error" && <span className="itin-save-err">Erreur de sauvegarde</span>}
+          {saveStatus === "login" && <span className="itin-save-login">Connectez-vous d'abord</span>}
           <button className="btn btn-ghost"><Download size={12}/> PDF</button>
           <button className="btn btn-ghost"><Share2 size={12}/> Partager</button>
           <SaveButton saving={saving} saveStatus={saveStatus} onClick={onSave}/>
@@ -1106,23 +1372,33 @@ export default function ItineraireDisplay({
         </div>
       </div>
 
-      {/* MODALS */}
+      {/* ── MODALS ── */}
       {editing && (
         <AlternativePicker
           alternatives={getAlts()}
-          currentName={itinerary.days[editing.dayIdx].activities[editing.actIdx]?.name??""}
-          onPick={alt=>{handleChange(editing.dayIdx,editing.actIdx,alt);setEditing(null);}}
-          onClose={()=>setEditing(null)}/>
+          currentName={itinerary.days[editing.dayIdx].activities[editing.actIdx]?.name ?? ""}
+          onPick={alt => { handleChange(editing.dayIdx, editing.actIdx, alt); setEditing(null); }}
+          onClose={() => setEditing(null)}
+        />
       )}
       {addingExc && (
-        <AddExcursionModal city={currentDay.city} excursions={excursions}
-          existingIds={currentDay.activities.map(a=>a.id)}
+        <AddExcursionModal
+          city={currentDay.city}
+          excursions={excursions}
+          existingIds={currentDay.activities.map(a => a.id)}
           slotKey={addingExc.slotKey}
-          onAdd={act=>handleAddAct(addingExc.slotKey,act)}
-          onClose={()=>setAddingExc(null)}/>
+          onAdd={act => handleAddAct(addingExc.slotKey, act)}
+          onClose={() => setAddingExc(null)}
+        />
       )}
       {showAddDay && (
-        <AddDayModal cities={allCities} onAdd={handleAddDay} onClose={()=>setShowAddDay(false)}/>
+        <AddDayModal
+          cities={allCities}
+          onAdd={handleAddDay}
+          onClose={() => setShowAddDay(false)}
+          supabaseUrl={supabaseUrl}
+          supabaseKey={supabaseKey}
+        />
       )}
     </div>
   );
