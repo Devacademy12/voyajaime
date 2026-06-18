@@ -8,7 +8,7 @@ import { NewsletterWidget } from "@/app/components/touriste/NewsletterWidget";
 import HomeFooter from "@/app/components/home/HomeFooter";
 import {
   Calendar, Clock, Eye, ArrowLeft, ArrowRight,
-  Tag, MessageSquare, ChevronRight,
+  Tag, MessageSquare, ChevronRight, Compass,
 } from "lucide-react";
 
 const COLORS: Record<string, string> = {
@@ -20,7 +20,7 @@ const COLORS: Record<string, string> = {
   Actualités:  "#053366",
 };
 
-const FALLBACK = "https://images.unsplash.com/photo-1568515387631-8b650bbcdb90?w=800&q=80";
+const FALLBACK = "https://images.unsplash.com/photo-1568515387631-8b650bbcdb90?w=1400&q=80";
 
 function fmtDate(d: string) {
   return new Date(d).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" });
@@ -42,53 +42,89 @@ const CSS = `
     color: #374151;
   }
 
-  @keyframes slideUp    { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes slideUp    { from { opacity: 0; transform: translateY(28px); filter: blur(5px); } to { opacity: 1; transform: translateY(0); filter: blur(0); } }
   @keyframes slideRight { from { opacity: 0; transform: translateX(-14px); } to { opacity: 1; transform: translateX(0); } }
+  @keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50%       { transform: translateY(10px); }
+  }
 
-  /* ── Cover Hero ── */
-  .cover-hero { position: relative; height: 480px; overflow: hidden; margin-top: 64px; border-bottom: 1px solid #E5E7EB; }
-
-  .cover-overlay {
+  /* ══ HERO (style blog list) ══ */
+  .hero-wrap {
+    position: relative; height: 560px; overflow: hidden;
+    margin-top: 64px; border-bottom: 1px solid #E5E7EB;
+  }
+  .hero-overlay {
     position: absolute; inset: 0;
-    background:
-      linear-gradient(to right, rgba(5,51,102,.85) 0%, rgba(5,51,102,.48) 55%, rgba(11,122,138,.15) 100%),
-      linear-gradient(to top, rgba(5,51,102,.65) 0%, transparent 50%);
+    background: linear-gradient(100deg, rgba(5,51,102,.85) 0%, rgba(5,51,102,.48) 50%, rgba(11,122,138,.15) 100%);
   }
-
-  .cover-content {
-    position: absolute; bottom: 0; left: 0;
-    width: 100%; max-width: 1280px; left: 50%; transform: translateX(-50%);
+  .hero-overlay-bottom {
+    position: absolute; inset: 0;
+    background: linear-gradient(to top, rgba(5,51,102,.65) 0%, transparent 55%);
+  }
+  .hero-content {
+    position: absolute; bottom: 0; left: 50%; transform: translateX(-50%);
+    width: 100%; max-width: 1280px;
     padding: 40px 40px;
-    animation: slideUp .6s cubic-bezier(.34,1.2,.64,1) .1s both;
+    display: flex; align-items: flex-end; justify-content: space-between; gap: 40px;
   }
+  .hero-left  { flex: 1; max-width: 680px; animation: slideUp 0.7s cubic-bezier(0.34,1.2,0.64,1) 0.1s both; }
+  .hero-right { flex-shrink: 0; animation: slideUp 0.7s cubic-bezier(0.34,1.2,0.64,1) 0.3s both; }
 
-  .cover-badge {
-    display: inline-flex; align-items: center; gap: 7px;
-    padding: 5px 14px; border-radius: 100px;
-    font-size: 10px; font-weight: 800; letter-spacing: 1.8px; text-transform: uppercase;
-    margin-bottom: 14px;
+  .hero-badge {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 5px 16px; border-radius: 100px;
+    background: rgba(165,243,252,0.15); border: 1px solid rgba(165,243,252,0.35);
+    color: #A5F3FC; font-size: 10px; font-weight: 800;
+    letter-spacing: 2px; text-transform: uppercase; margin-bottom: 18px;
   }
-  .cover-title {
+  .hero-title {
     font-family: 'Cormorant Garamond', serif;
-    font-size: clamp(26px, 3.5vw, 46px); font-weight: 700; color: #fff;
-    line-height: 1.08; letter-spacing: -1.5px; margin-bottom: 16px;
-    text-shadow: 0 2px 20px rgba(0,0,0,.3); max-width: 640px;
+    font-size: clamp(30px, 3.8vw, 52px);
+    font-weight: 700; color: #fff; line-height: 1.07;
+    letter-spacing: -1.5px; margin-bottom: 16px;
+    text-shadow: 0 4px 40px rgba(0,0,0,0.3);
   }
-  .cover-excerpt {
-    font-size: 15px; color: rgba(255,255,255,.65); line-height: 1.7; max-width: 520px;
+  .hero-excerpt {
+    font-size: 15px; color: rgba(255,255,255,.68); line-height: 1.75;
     margin-bottom: 22px;
-    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+    display: -webkit-box; -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical; overflow: hidden;
   }
-  .cover-meta {
+  .hero-meta {
     display: flex; align-items: center; gap: 14px;
-    font-size: 12px; color: rgba(255,255,255,.48); flex-wrap: wrap;
+    font-size: 12px; color: rgba(255,255,255,.5); flex-wrap: wrap;
   }
-  .cover-meta-item { display: flex; align-items: center; gap: 5px; }
-  .cover-meta-sep  { width: 3px; height: 3px; border-radius: 50%; background: rgba(255,255,255,.25); }
-  .cover-avatar {
+  .hero-meta-dot { width: 3px; height: 3px; background: rgba(255,255,255,.3); border-radius: 50%; }
+  .hero-meta-item { display: flex; align-items: center; gap: 5px; }
+  .hero-avatar {
     width: 28px; height: 28px; border-radius: 50%; background: #0B7A8A;
     display: inline-flex; align-items: center; justify-content: center;
     font-size: 10px; font-weight: 800; color: #fff; flex-shrink: 0;
+  }
+  .hero-cta {
+    display: inline-flex; align-items: center; gap: 10px;
+    padding: 14px 28px; background: #0B7A8A; color: #fff;
+    border-radius: 40px; font-size: 14px; font-weight: 700;
+    white-space: nowrap; border: 2px solid #0B7A8A;
+    box-shadow: 0 6px 20px rgba(11,122,138,0.35);
+    text-decoration: none;
+  }
+  .hero-float {
+    position: absolute; top: 28px; right: 40px;
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 10px 18px; border-radius: 100px;
+    background: rgba(255,255,255,0.12); backdrop-filter: blur(12px);
+    border: 1px solid rgba(255,255,255,0.2);
+    color: rgba(255,255,255,0.9); font-size: 12px; font-weight: 700;
+    animation: slideUp 0.5s ease both;
+  }
+  .hero-float-dot { width: 7px; height: 7px; border-radius: 50%; background: #A5F3FC; }
+
+  .scroll-hint {
+    position: absolute; bottom: 24px; left: 50%; transform: translateX(-50%);
+    animation: float 2.4s ease-in-out infinite;
+    opacity: .6;
   }
 
   /* ── Breadcrumb ── */
@@ -240,8 +276,10 @@ const CSS = `
     .post-nav { grid-template-columns: 1fr !important; }
   }
   @media (max-width: 640px) {
-    .cover-hero { height: 420px; }
-    .cover-content { padding: 0 20px 28px; }
+    .hero-wrap { height: 480px; }
+    .hero-content { flex-direction: column; align-items: stretch; padding: 24px; gap: 20px; }
+    .hero-right { display: none; }
+    .hero-float { display: none; }
     .content-area { padding: 0 20px 64px !important; }
     .article-wrap { padding: 24px !important; }
     .related-grid { grid-template-columns: 1fr !important; }
@@ -305,65 +343,94 @@ export default async function BlogDetailPage({
       <style>{CSS}</style>
       <TouristeNav />
 
-      {/* ══ COVER HERO ══ */}
-      <div className="cover-hero">
-        <div style={{ position: "absolute", inset: 0 }}>
-          <BlogImage
-            src={post.cover_url || FALLBACK}
-            alt={post.title}
-            style={{ width: "100%", height: "100%", objectFit: "cover", display: "block", filter: "brightness(0.52)" }}
-          />
-        </div>
-        <div className="cover-overlay" />
+      {/* ══ HERO (identique au hero de blog.tsx) ══ */}
+      <div className="hero-wrap">
+        {/* Image de fond */}
+        <BlogImage
+          src={post.cover_url || FALLBACK}
+          alt={post.title}
+          style={{
+            position: "absolute", inset: 0,
+            width: "100%", height: "100%",
+            objectFit: "cover", display: "block",
+            filter: "brightness(0.48)",
+          }}
+        />
+        <div className="hero-overlay" />
+        <div className="hero-overlay-bottom" />
 
-        <div className="cover-content">
-          <div>
-            <span
-              className="cover-badge"
-              style={{ borderColor: `${catColor}55`, color: catColor, background: `${catColor}18` }}
-            >
+        {/* Badge flottant haut-droite */}
+        <div className="hero-float">
+          <span className="hero-float-dot" />
+          {post.category}
+        </div>
+
+        {/* Contenu principal */}
+        <div className="hero-content">
+          <div className="hero-left">
+            <div className="hero-badge">
+              <Compass size={11} />
               {post.category}
-            </span>
-          </div>
-          <h1 className="cover-title">{post.title}</h1>
-          {post.excerpt && <p className="cover-excerpt">{post.excerpt}</p>}
-          <div className="cover-meta">
-            {post.author_name && (
-              <>
-                <span style={{ display: "flex", alignItems: "center", gap: 7 }}>
-                  <span className="cover-avatar">
-                    {post.author_name.split(" ").map((n: string) => n[0]).join("").slice(0, 2)}
+            </div>
+            <h1 className="hero-title">{post.title}</h1>
+            {post.excerpt && <p className="hero-excerpt">{post.excerpt}</p>}
+            <div className="hero-meta">
+              {post.author_name && (
+                <>
+                  <span style={{ display: "flex", alignItems: "center", gap: 7 }}>
+                    <span className="hero-avatar">
+                      {post.author_name.split(" ").map((n: string) => n[0]).join("").slice(0, 2)}
+                    </span>
+                    <span style={{ color: "rgba(255,255,255,.85)", fontWeight: 600 }}>
+                      {post.author_name}
+                    </span>
                   </span>
-                  <span style={{ color: "rgba(255,255,255,.82)", fontWeight: 600 }}>{post.author_name}</span>
-                </span>
-                <span className="cover-meta-sep" />
-              </>
-            )}
-            <span className="cover-meta-item"><Calendar size={11} />{fmtDate(post.published_at || post.created_at)}</span>
-            <span className="cover-meta-sep" />
-            <span className="cover-meta-item"><Clock size={11} />{readTime(post.content)} de lecture</span>
-            {post.views > 0 && (
-              <>
-                <span className="cover-meta-sep" />
-                <span className="cover-meta-item"><Eye size={11} />{(post.views || 0).toLocaleString("fr-FR")} vues</span>
-              </>
-            )}
-            {(comments || []).length > 0 && (
-              <>
-                <span className="cover-meta-sep" />
-                <span className="cover-meta-item">
-                  <MessageSquare size={11} />
-                  {(comments || []).length} commentaire{(comments || []).length !== 1 ? "s" : ""}
-                </span>
-              </>
-            )}
+                  <span className="hero-meta-dot" />
+                </>
+              )}
+              <span className="hero-meta-item"><Calendar size={11} />{fmtDate(post.published_at || post.created_at)}</span>
+              <span className="hero-meta-dot" />
+              <span className="hero-meta-item"><Clock size={11} />{readTime(post.content)} de lecture</span>
+              {post.views > 0 && (
+                <>
+                  <span className="hero-meta-dot" />
+                  <span className="hero-meta-item"><Eye size={11} />{(post.views || 0).toLocaleString("fr-FR")} vues</span>
+                </>
+              )}
+              {(comments || []).length > 0 && (
+                <>
+                  <span className="hero-meta-dot" />
+                  <span className="hero-meta-item">
+                    <MessageSquare size={11} />
+                    {(comments || []).length} commentaire{(comments || []).length !== 1 ? "s" : ""}
+                  </span>
+                </>
+              )}
+            </div>
           </div>
+
+          {/* Bouton CTA droite */}
+          <div className="hero-right">
+            <a href="#article" className="hero-cta">
+              Lire l'article <ArrowRight size={15} />
+            </a>
+          </div>
+        </div>
+
+        {/* Scroll hint */}
+        <div className="scroll-hint">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.5">
+            <path d="M6 9l6 6 6-6" />
+          </svg>
         </div>
       </div>
 
       {/* ══ CONTENT + SIDEBAR ══ */}
-      <div className="content-area" style={{ maxWidth: 1200, margin: "0 auto", padding: "36px 40px 80px" }}>
-
+      <div
+        id="article"
+        className="content-area"
+        style={{ maxWidth: 1200, margin: "0 auto", padding: "36px 40px 80px" }}
+      >
         {/* Breadcrumb */}
         <div className="breadcrumb">
           <Link href="/">Accueil</Link>

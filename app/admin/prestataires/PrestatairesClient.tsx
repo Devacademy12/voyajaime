@@ -5,66 +5,98 @@ import { useCrudOperation } from "../../../lib/useCrudOperation";
 import { useListFiltering } from "../../../lib/useListFiltering";
 import { useToast } from "../../../lib/useToast";
 import { Toast } from "../../components/ui/Toast";
-import { Search, SlidersHorizontal, X } from "lucide-react";
+import { Search, X } from "lucide-react";
 import {
   EmptyPrestataires,
   PrestastaireCard,
   PrestastaireModal,
 } from "../../components/admin/PrestatairesUI";
 
-const CITIES = ["Tunis","Sfax","Sousse","Kairouan","Hammamet","Tozeur","Djerba","Tataouine","Gafsa","Douz"];
+const CITIES = [
+  "Tunis","Sfax","Sousse","Kairouan","Hammamet",
+  "Tozeur","Djerba","Tataouine","Gafsa","Douz",
+];
 
 interface Prestataire {
-  id: string; user_id: string; full_name: string | null;
-  agency_name: string | null; city: string | null;
-  address: string | null; description: string | null;
-  phone: string | null; website: string | null;
-  avatar_url: string | null; is_validated: boolean;
-  rating: number | null; created_at: string;
-  excursion_count: number; excursion_active: number;
-  year_founded: number | null; patente: string | null;
-  agency_photos: string[] | null; declaration_url: string | null;
+  id: string;
+  user_id: string;
+  full_name: string | null;
+  agency_name: string | null;
+  city: string | null;
+  address: string | null;
+  description: string | null;
+  phone: string | null;
+  website: string | null;
+  avatar_url: string | null;
+  is_validated: boolean;
+  rating: number | null;
+  created_at: string;
+  excursion_count: number;
+  excursion_active: number;
+  year_founded: number | null;
+  patente: string | null;
+  agency_photos: string[] | null;
+  declaration_url: string | null;
   profil_complete: boolean | null;
+  // ── Email récupéré depuis auth.users côté serveur ──
+  email?: string | null;
 }
 
 type FilterType = "pending" | "validated" | "all";
 
-export default function PrestatairesClient({ prestataires: initial }: { prestataires: Prestataire[] }) {
-  const { loading, data: prestataires, execute } = useCrudOperation(initial, async (payload) => {
-    const res = await fetch("/api/admin/validate-prestataire", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ userId: payload.id, action: payload.action }),
-    });
-    const json = await res.json();
-    if (!res.ok) throw new Error(json.error || "Erreur");
-    return json;
-  });
+export default function PrestatairesClient({
+  prestataires: initial,
+}: {
+  prestataires: Prestataire[];
+}) {
+  const { loading, data: prestataires, execute } = useCrudOperation(
+    initial,
+    async (payload) => {
+      const res = await fetch("/api/admin/validate-prestataire", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId: payload.id, action: payload.action }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || "Erreur");
+      return json;
+    }
+  );
 
-  const [selected, setSelected]       = useState<Prestataire | null>(null);
-  const [mode, setMode]               = useState<"view" | "edit">("view");
-  const [editFullName, setEditFullName] = useState("");
-  const [editAgency,   setEditAgency]   = useState("");
-  const [editCity,     setEditCity]     = useState("");
-  const [editPhone,    setEditPhone]    = useState("");
-  const [editDesc,     setEditDesc]     = useState("");
-  const [editAddress,  setEditAddress]  = useState("");
-  const [editWebsite,  setEditWebsite]  = useState("");
-  const [editPatente,  setEditPatente]  = useState("");
-  const [editYear,     setEditYear]     = useState("");
-  const [editLoading,  setEditLoading]  = useState(false);
+  const [selected, setSelected]           = useState<Prestataire | null>(null);
+  const [mode, setMode]                   = useState<"view" | "edit">("view");
+
+  // ── Champs d'édition profil ──────────────────────────────────────────
+  const [editFullName,  setEditFullName]  = useState("");
+  const [editAgency,    setEditAgency]    = useState("");
+  const [editCity,      setEditCity]      = useState("");
+  const [editPhone,     setEditPhone]     = useState("");
+  const [editDesc,      setEditDesc]      = useState("");
+  const [editAddress,   setEditAddress]   = useState("");
+  const [editWebsite,   setEditWebsite]   = useState("");
+  const [editPatente,   setEditPatente]   = useState("");
+  const [editYear,      setEditYear]      = useState("");
+
+  // ── Champ email (auth.users) ─────────────────────────────────────────
+  const [editEmail,     setEditEmail]     = useState("");
+
+  const [editLoading,   setEditLoading]   = useState(false);
 
   const { toast, showToast } = useToast();
 
-  const { search, setSearch, filter, setFilter, cityFilter, setCityFilter, filtered, cities } =
-    useListFiltering<Prestataire>({
-      data: prestataires,
-      searchFields: ["agency_name", "full_name", "city"],
-      filterFn: (item, value) =>
-        value === "pending"   ? !item.is_validated :
-        value === "validated" ?  item.is_validated : true,
-      initialFilter: "pending",
-    });
+  const {
+    search, setSearch,
+    filter, setFilter,
+    cityFilter, setCityFilter,
+    filtered, cities,
+  } = useListFiltering<Prestataire>({
+    data: prestataires,
+    searchFields: ["agency_name", "full_name", "city"],
+    filterFn: (item, value) =>
+      value === "pending"   ? !item.is_validated :
+      value === "validated" ?  item.is_validated : true,
+    initialFilter: "pending",
+  });
 
   const counts = {
     pending:   prestataires.filter(p => !p.is_validated).length,
@@ -72,8 +104,10 @@ export default function PrestatairesClient({ prestataires: initial }: { prestata
     all:       prestataires.length,
   };
 
+  // ── Ouvrir modal ─────────────────────────────────────────────────────
   const openModal = (p: Prestataire, m: "view" | "edit" = "view") => {
-    setSelected(p); setMode(m);
+    setSelected(p);
+    setMode(m);
     setEditFullName(p.full_name    || "");
     setEditAgency(p.agency_name    || "");
     setEditCity(p.city             || "");
@@ -83,31 +117,41 @@ export default function PrestatairesClient({ prestataires: initial }: { prestata
     setEditWebsite(p.website       || "");
     setEditPatente(p.patente       || "");
     setEditYear(p.year_founded ? String(p.year_founded) : "");
+    setEditEmail(p.email           || "");  // ← initialiser l'email
   };
 
+  // ── Valider ──────────────────────────────────────────────────────────
   const handleValidate = async (userId: string, name: string) => {
     await execute(userId, { id: userId, action: "validate" }, {
       onSuccess: (items) => {
-        if (selected?.user_id === userId) setSelected({ ...selected, is_validated: true });
-        return items.map(p => p.user_id === userId ? { ...p, is_validated: true } : p);
+        if (selected?.user_id === userId)
+          setSelected({ ...selected, is_validated: true });
+        return items.map(p =>
+          p.user_id === userId ? { ...p, is_validated: true } : p
+        );
       },
       successMessage: `${name} validé avec succès`,
       errorPrefix: "Validation",
     });
   };
 
+  // ── Révoquer ─────────────────────────────────────────────────────────
   const handleRevoke = async (userId: string, name: string) => {
     await execute(userId, { id: userId, action: "revoke" }, {
       confirmMessage: `Révoquer l'accès de ${name} ?`,
       onSuccess: (items) => {
-        if (selected?.user_id === userId) setSelected({ ...selected, is_validated: false });
-        return items.map(p => p.user_id === userId ? { ...p, is_validated: false } : p);
+        if (selected?.user_id === userId)
+          setSelected({ ...selected, is_validated: false });
+        return items.map(p =>
+          p.user_id === userId ? { ...p, is_validated: false } : p
+        );
       },
       successMessage: `Accès de ${name} révoqué`,
       errorPrefix: "Révocation",
     });
   };
 
+  // ── Supprimer ────────────────────────────────────────────────────────
   const handleDelete = async (userId: string, name: string) => {
     await execute(userId, { id: userId, action: "delete" }, {
       confirmMessage: `Supprimer définitivement ${name} ? Irréversible.`,
@@ -120,38 +164,82 @@ export default function PrestatairesClient({ prestataires: initial }: { prestata
     });
   };
 
+  // ── Sauvegarder les modifications ────────────────────────────────────
   const handleSaveEdit = async () => {
     if (!selected) return;
     setEditLoading(true);
     try {
+      // ── 1. Mettre à jour l'email dans auth.users si modifié ──────────
+      const emailChanged =
+        editEmail.trim() !== "" && editEmail.trim() !== (selected.email ?? "");
+
+      if (emailChanged) {
+        const emailRes = await fetch("/api/admin/update-prestataire-email", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            userId: selected.user_id,
+            email:  editEmail.trim(),
+          }),
+        });
+        if (!emailRes.ok) {
+          const j = await emailRes.json();
+          throw new Error(j.error || "Erreur mise à jour email");
+        }
+      }
+
+      // ── 2. Mettre à jour le profil (table profiles) ──────────────────
       const res = await fetch("/api/admin/update-prestataire", {
-        method: "POST", headers: { "Content-Type": "application/json" },
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           userId: selected.user_id,
           updates: {
-            full_name: editFullName, agency_name: editAgency, city: editCity,
-            phone: editPhone, description: editDesc, address: editAddress,
-            website: editWebsite, patente: editPatente,
+            full_name:    editFullName,
+            agency_name:  editAgency,
+            city:         editCity,
+            phone:        editPhone,
+            description:  editDesc,
+            address:      editAddress,
+            website:      editWebsite,
+            patente:      editPatente,
             year_founded: editYear ? Number(editYear) : null,
           },
         }),
       });
       if (!res.ok) throw new Error((await res.json()).error);
-      const updated = {
+
+      const updated: Prestataire = {
         ...selected,
-        full_name: editFullName, agency_name: editAgency, city: editCity,
-        phone: editPhone, description: editDesc, address: editAddress,
-        website: editWebsite, patente: editPatente,
+        full_name:    editFullName,
+        agency_name:  editAgency,
+        city:         editCity,
+        phone:        editPhone,
+        description:  editDesc,
+        address:      editAddress,
+        website:      editWebsite,
+        patente:      editPatente,
         year_founded: editYear ? Number(editYear) : null,
+        email:        emailChanged ? editEmail.trim() : selected.email,
       };
-      await execute(selected.user_id, { id: selected.user_id, action: "update", value: updated }, {
-        onSuccess: (items) => items.map(p => p.user_id === selected.user_id ? updated : p),
-        successMessage: "Profil mis à jour",
-      });
+
+      await execute(
+        selected.user_id,
+        { id: selected.user_id, action: "update", value: updated },
+        {
+          onSuccess: (items) =>
+            items.map(p => p.user_id === selected.user_id ? updated : p),
+          successMessage: "Profil mis à jour",
+        }
+      );
+
       setSelected(updated);
       setMode("view");
     } catch (e) {
-      showToast(`Erreur : ${e instanceof Error ? e.message : "Erreur"}`, "error");
+      showToast(
+        `Erreur : ${e instanceof Error ? e.message : "Erreur inconnue"}`,
+        "error"
+      );
     }
     setEditLoading(false);
   };
@@ -236,9 +324,15 @@ export default function PrestatairesClient({ prestataires: initial }: { prestata
 
           {/* City filter */}
           {cities.length > 0 && (
-            <select className="pcity" value={cityFilter} onChange={e => setCityFilter(e.target.value)}>
+            <select
+              className="pcity"
+              value={cityFilter}
+              onChange={e => setCityFilter(e.target.value)}
+            >
               <option value="">Toutes les villes</option>
-              {cities.map(c => <option key={c} value={c}>{c}</option>)}
+              {cities.map(c => (
+                <option key={c} value={c}>{c}</option>
+              ))}
             </select>
           )}
 
@@ -271,14 +365,20 @@ export default function PrestatairesClient({ prestataires: initial }: { prestata
           </div>
         </div>
 
-        {/* Active filter summary */}
+        {/* Résumé filtres actifs */}
         {(hasActiveFilters || filter !== "all") && (
-          <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 12, paddingTop: 12, borderTop: "1px solid #EEF2FF" }}>
+          <div style={{
+            display: "flex", alignItems: "center", gap: 10,
+            marginTop: 12, paddingTop: 12, borderTop: "1px solid #EEF2FF",
+          }}>
             <span style={{ fontSize: 11, color: "#9CA3AF", fontWeight: 600 }}>
               {filtered.length} résultat{filtered.length !== 1 ? "s" : ""}
             </span>
             {hasActiveFilters && (
-              <button className="pclear" onClick={() => { setSearch(""); setCityFilter(""); }}>
+              <button
+                className="pclear"
+                onClick={() => { setSearch(""); setCityFilter(""); }}
+              >
                 <X size={11} /> Effacer les filtres
               </button>
             )}
@@ -286,7 +386,7 @@ export default function PrestatairesClient({ prestataires: initial }: { prestata
         )}
       </div>
 
-      {/* ── List ── */}
+      {/* ── Liste ── */}
       {filtered.length === 0 ? (
         <EmptyPrestataires filter={filter} />
       ) : (
@@ -297,9 +397,24 @@ export default function PrestatairesClient({ prestataires: initial }: { prestata
               p={p}
               isLoading={loading === p.user_id}
               onViewEdit={() => openModal(p, "view")}
-              onValidate={() => handleValidate(p.user_id, p.agency_name || p.full_name || "Sans nom")}
-              onRevoke={()   => handleRevoke(p.user_id,   p.agency_name || p.full_name || "Sans nom")}
-              onDelete={()   => handleDelete(p.user_id,   p.agency_name || p.full_name || "Sans nom")}
+              onValidate={() =>
+                handleValidate(
+                  p.user_id,
+                  p.agency_name || p.full_name || "Sans nom"
+                )
+              }
+              onRevoke={() =>
+                handleRevoke(
+                  p.user_id,
+                  p.agency_name || p.full_name || "Sans nom"
+                )
+              }
+              onDelete={() =>
+                handleDelete(
+                  p.user_id,
+                  p.agency_name || p.full_name || "Sans nom"
+                )
+              }
             />
           ))}
         </div>
@@ -308,7 +423,9 @@ export default function PrestatairesClient({ prestataires: initial }: { prestata
       {/* ── Modal ── */}
       {selected && (
         <PrestastaireModal
-          p={selected} mode={mode} onModeChange={setMode}
+          p={selected}
+          mode={mode}
+          onModeChange={setMode}
           onClose={() => setSelected(null)}
           loading={loading === selected.user_id}
           editFullName={editFullName}   setEditFullName={setEditFullName}
@@ -320,10 +437,26 @@ export default function PrestatairesClient({ prestataires: initial }: { prestata
           editWebsite={editWebsite}     setEditWebsite={setEditWebsite}
           editPatente={editPatente}     setEditPatente={setEditPatente}
           editYear={editYear}           setEditYear={setEditYear}
+          editEmail={editEmail}         setEditEmail={setEditEmail}
           editLoading={editLoading}
-          onValidate={() => handleValidate(selected.user_id, selected.agency_name || selected.full_name || "—")}
-          onRevoke={()   => handleRevoke(selected.user_id,   selected.agency_name || selected.full_name || "—")}
-          onDelete={()   => handleDelete(selected.user_id,   selected.agency_name || selected.full_name || "—")}
+          onValidate={() =>
+            handleValidate(
+              selected.user_id,
+              selected.agency_name || selected.full_name || "—"
+            )
+          }
+          onRevoke={() =>
+            handleRevoke(
+              selected.user_id,
+              selected.agency_name || selected.full_name || "—"
+            )
+          }
+          onDelete={() =>
+            handleDelete(
+              selected.user_id,
+              selected.agency_name || selected.full_name || "—"
+            )
+          }
           onSave={handleSaveEdit}
           cities={CITIES}
         />

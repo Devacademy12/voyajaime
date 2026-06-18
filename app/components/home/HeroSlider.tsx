@@ -7,8 +7,6 @@ import { createClient } from "@/lib/supabaseClient";
 import { ROUTES } from "@/app/lib/routes";
 import styles from "./HeroSlider.module.css";
 
-// ─── Types ────────────────────────────────────────────────────────────────────
-
 interface ExcursionRow {
   id: string;
   title: string;
@@ -44,15 +42,11 @@ interface SlideDisplay {
   categories: string[];
 }
 
-// ─── Constants ────────────────────────────────────────────────────────────────
-
 const FALLBACK_IMG =
   "https://images.unsplash.com/photo-1568515387631-8b650bbcdb90?w=1600&q=80";
 
 const SLIDE_DURATION = 6000;
 const FADE_DURATION  = 600;
-
-// ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function isYouTube(url: string) {
   return /youtube\.com|youtu\.be/.test(url);
@@ -70,9 +64,9 @@ function rawToDisplay(raw: RawSlide): SlideDisplay {
     ? (raw.excursion[0] ?? null)
     : (raw.excursion ?? null);
 
-  let imageUrl = FALLBACK_IMG;
-  let title    = raw.custom_title || "";
-  let subtitle = raw.custom_subtitle || "";
+  let imageUrl    = FALLBACK_IMG;
+  let title       = raw.custom_title || "";
+  let subtitle    = raw.custom_subtitle || "";
   let categories: string[] = [];
   let excursionId: string | null = null;
 
@@ -101,8 +95,6 @@ function rawToDisplay(raw: RawSlide): SlideDisplay {
   };
 }
 
-// ─── Video Background ─────────────────────────────────────────────────────────
-
 function VideoBackground({ url, muted }: { url: string; muted: boolean }) {
   const embedUrl = isYouTube(url) ? getYouTubeEmbed(url) : null;
 
@@ -130,9 +122,7 @@ function VideoBackground({ url, muted }: { url: string; muted: boolean }) {
   );
 }
 
-// ─── Main Component ───────────────────────────────────────────────────────────
-
-export default function HomeSlider() {
+export default function HeroSlider() {
   const supabase = createClient();
 
   const [slides,   setSlides]   = useState<SlideDisplay[]>([]);
@@ -146,7 +136,6 @@ export default function HomeSlider() {
   const progressRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const mountedRef  = useRef(true);
 
-  // ── Fetch ──────────────────────────────────────────────────────────────────
   useEffect(() => {
     let cancelled = false;
     async function fetchSlides() {
@@ -177,7 +166,6 @@ export default function HomeSlider() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // ── Auto-advance ──────────────────────────────────────────────────────────
   const goTo = useCallback((idx: number) => {
     if (!mountedRef.current) return;
     setFading(true);
@@ -230,7 +218,7 @@ export default function HomeSlider() {
 
   return (
     <section className={styles.sliderSection} aria-label="Slider principal">
-      {/* ── Loading ── */}
+
       {loading && (
         <div className={styles.skeletonShimmer} style={{ position: "absolute", inset: 0, zIndex: 50 }}>
           <div className={styles.loadingContainer}>
@@ -240,7 +228,6 @@ export default function HomeSlider() {
         </div>
       )}
 
-      {/* ── Fallback ── */}
       {!loading && !slides.length && (
         <div className={styles.fallbackContainer} style={{ backgroundImage: `url(${FALLBACK_IMG})` }}>
           <div className={styles.fallbackOverlay} />
@@ -256,12 +243,10 @@ export default function HomeSlider() {
         </div>
       )}
 
-      {/* ── Slides ── */}
       {!loading && slide && (
         <>
-          {/* Background */}
           {slide.type === "video" && slide.videoUrl ? (
-            <VideoBackground url={slide.videoUrl} muted={muted}/>
+            <VideoBackground url={slide.videoUrl} muted={muted} />
           ) : (
             <div
               className={styles.slideBg}
@@ -273,20 +258,17 @@ export default function HomeSlider() {
             />
           )}
 
-          {/* Overlays modernes */}
           <div className={styles.gradientOverlay} />
           <div className={styles.gradientTopOverlay} />
           <div className={styles.patternOverlay} />
-          
-          {/* Mute button */}
+
           {slide.type === "video" && slide.videoUrl && !isYouTube(slide.videoUrl) && (
             <button className={styles.muteBtn} onClick={() => setMuted(m => !m)}>
-              {muted ? <VolumeX size={14}/> : <Volume2 size={14}/>}
+              {muted ? <VolumeX size={14} /> : <Volume2 size={14} />}
               <span>{muted ? "Activer le son" : "Couper le son"}</span>
             </button>
           )}
 
-          {/* Hero Content */}
           <div className={styles.heroContent}>
             <div className={styles.heroCopy}>
               {slide.subtitle && (
@@ -307,7 +289,7 @@ export default function HomeSlider() {
                     fontWeight: 700,
                     color: "white",
                     letterSpacing: 1.8,
-                    textTransform: "uppercase"
+                    textTransform: "uppercase",
                   }}>
                     {slide.subtitle}
                   </span>
@@ -345,7 +327,7 @@ export default function HomeSlider() {
                     lineHeight: 1.5,
                     margin: 0,
                     fontWeight: 500,
-                    maxWidth: "90%"
+                    maxWidth: "90%",
                   }}>
                     Vivez une expérience inoubliable au cœur de la Tunisie
                   </p>
@@ -372,13 +354,14 @@ export default function HomeSlider() {
             </div>
           </div>
 
-          {/* Navigation Dots */}
           <div className={styles.navContainer}>
             {slides.map((_, i) => (
-              <button key={i} className={styles.dotBtn}
-                onClick={() => { 
-                  if (timerRef.current) clearInterval(timerRef.current); 
-                  goTo(i); 
+              <button
+                key={i}
+                className={styles.dotBtn}
+                onClick={() => {
+                  if (timerRef.current) clearInterval(timerRef.current);
+                  goTo(i);
                 }}
                 aria-label={`Slide ${i + 1}`}
               >
@@ -393,17 +376,15 @@ export default function HomeSlider() {
             ))}
           </div>
 
-          {/* Counter */}
           <div className={styles.counter}>
-            {String(current + 1).padStart(2,"0")} / {String(slides.length).padStart(2,"0")}
+            {String(current + 1).padStart(2, "0")} / {String(slides.length).padStart(2, "0")}
           </div>
 
-          {/* Scroll Indicator */}
-          <div 
+          <div
             className={styles.scrollIndicator}
             onClick={() => window.scrollTo({ top: window.innerHeight, behavior: "smooth" })}
           >
-            <ChevronDown size={28} color="white" strokeWidth={1.5}/>
+            <ChevronDown size={28} color="white" strokeWidth={1.5} />
           </div>
         </>
       )}
